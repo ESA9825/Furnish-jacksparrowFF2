@@ -30,7 +30,7 @@ try{
  assert(commands.some(c=>c.file.endsWith('codesign')&&c.args.includes('--verify')));
  assert(commands.some(c=>c.args.includes('Add :CFBundleName string Furnish Helper (GPU)')));
  for(const name of ['start-furnish.command','start-furnish-desktop.command','connect-codex.command']){
-  const text=fs.readFileSync(path.join(out,name),'utf8');assert(text.startsWith('#!/bin/bash\n'));assert(!text.includes('\r'));assert(text.includes('cd -- "$(dirname -- "$0")"'));
+  const text=fs.readFileSync(path.join(out,name),'utf8');assert(text.startsWith('#!/bin/bash\n'));assert(!text.includes('\r'));assert(text.includes('$HOME/.local/bin:'),'Finder launcher includes user-installed tools');assert(text.includes('cd -- "$(dirname -- "$0")"'));
  }
  assert.throws(()=>build({out,platform:'darwin',arch:'arm64',electronExecutable:executable}),/已存在/);
  const source=path.join(job.dir,'source');job.discard('source');const installed=path.join(source,'output/desktop/Furnish-darwin-arm64/Furnish.app/Contents/MacOS/Electron');fs.mkdirSync(path.dirname(installed),{recursive:true});fs.writeFileSync(installed,header);

@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 cd -- "$(dirname -- "$0")"
-export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 # A packaged app has its own Node runtime; no external Node is needed.
 if [[ -x Furnish.app/Contents/MacOS/Electron ]]; then
   unset ELECTRON_RUN_AS_NODE

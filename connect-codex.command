@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 cd -- "$(dirname -- "$0")"
-export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 if [[ -x Furnish.app/Contents/MacOS/Electron ]]; then
   export ELECTRON_RUN_AS_NODE=1
   exec Furnish.app/Contents/MacOS/Electron scripts/register-codex-mcp.cjs --automatic --start-desktop

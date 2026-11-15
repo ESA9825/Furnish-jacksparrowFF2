@@ -39,4 +39,4 @@ r = select(scene, 'cpu', p)
 assert r['backend'] == 'CPU' and not p.tried and not r['fallback']
 print('PASS GPU backend order, CPU device exclusion, vendor alternatives, automatic fallback and strict GPU mode')
 `;
-const result=spawnSync('python',['-c',source],{encoding:'utf8',windowsHide:true});assert.equal(result.status,0,result.stderr||result.error?.message);process.stdout.write(result.stdout);
+const result=spawnSync(process.platform==='win32'?'python':'python3',['-c',source],{encoding:'utf8',windowsHide:true});assert.equal(result.status,0,result.stderr||result.error?.message);process.stdout.write(result.stdout);

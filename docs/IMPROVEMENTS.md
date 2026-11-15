@@ -1,3 +1,5 @@
+2026-11-15（Mac 原生实测）：完成 arm64 Node/Electron、原生签名打包、Furnish 两项技能与 Blender 插件/MCP 安装，Finder 入口补用户工具目录；桌面验收沿共用浏览器配置选择本机 Chrome，设备规则测试在非 Windows 使用 python3。打包桌面保存／Cmd／重开、HTTP 与离线 file 三维、WebGPU 观察及 Blender GUI／代表性 GLB 重建回读通过。正式云盘数据仍待完整落盘，私人精修工程、长时间压力及人工 Dock／触控板未验；用户指定 Cycles 继续由 Windows 承担，未改生产渲染策略。见[实机记录](validation/macos-native-20261115/README.md)。
+
 2026-11-15（Mac AI交接）：新增[接手说明](MAC-AI-HANDOFF.md)并链接README／macOS，说明代码／正式数据／Blender三类迁移、目录与单项目范围、首次配置及重新读取户型ID再绑定的差别，并补充渐进WebGPU的Mac待验点。公开说明不含实际用户路径、方案内容、ID或哈希；私人现场上下文另留本机随迁移介质提供。明确磁盘核对不代表无未保存编辑，没有改方案／工程。仅检查文档内容／链接与差异，未执行Mac实机或全量回归。
 
 2026-11-14（默认渐进高清）：三维默认自动光追采样，相机停稳后重采样并复用BVH，场景／灯光变化沿生产GLB重建；交互及辅助编辑立即响应。实际采样性能不足先降到640px，持续较慢／设备不可用再回退并可重试，本机偏好不写项目。独立高清下载与Cycles保留。相关规则、离线加载、HTTP/file／同正式EXE隔离及真实1601 GPU收敛通过；其他GPU／Mac、低配实机和长时显存压力未验，未跑全量。见[契约](LIGHTING-PREVIEW.md)与[增量证据](validation/progressive-view-20261114/README.md)。

@@ -80,7 +80,7 @@ async function main(){
   fs.writeFileSync(path.join(run,'print.pdf'),Buffer.from(pdf,'base64'));
   assert.ok(fs.statSync(path.join(run,'print.pdf')).size>1000);checks.push('Chromium print-to-PDF renders existing page');
   // A separate clean browser sees the same file; simultaneous writes retain revision protection.
-  browser=await chromium.launch({headless:true});const browserPage=await browser.newPage();
+  browser=await chromium.launch(require('./lib/browser-verification.cjs').configuration().launchOptions);const browserPage=await browser.newPage();
   await browserPage.goto(`http://127.0.0.1:${port}/`);await browserPage.locator('#repository-loading').waitFor({state:'hidden'});
   assert.equal(await browserPage.evaluate(id=>state.furniture.find(f=>f.id===id).color,edit.id),'#73918a');
   await browserPage.screenshot({path:path.join(run,'browser-http.png')});
