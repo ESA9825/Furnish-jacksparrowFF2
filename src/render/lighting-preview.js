@@ -4,7 +4,7 @@ import {GLTFLoader} from '../../vendor/lighting-preview/three/examples/jsm/loade
 import {WebGPUPathTracer,OIDNDenoiser} from '../../vendor/lighting-preview/three-gpu-pathtracer/src/webgpu/index.js';
 import {GenerateMeshBVHWorker} from '../../vendor/lighting-preview/three-mesh-bvh/src/workers/GenerateMeshBVHWorker.js';
 import {initUNetFromURL} from '../../vendor/lighting-preview/oidn-webgpu/dist/oidn.js';
-let token=null,renderer=null,tracer=null,scene=null,stopped=false,poll=null;
+let token=null,renderer=null,tracer=null,scene=null,stopped=false;
 let live=false,liveCamera=null,viewKey=null,aspect=1,edge=1200,liveVersion=0,paused=false,liveComplete=false;
 function renderLoop(){renderer?.setAnimationLoop(()=>{if(stopped||paused)return;try{tracer.renderSample();}catch(error){fail(error);}});}
 function resizeLive(nextEdge){liveComplete=false;edge=nextEdge;const {width,height}=globalThis.FurnishProgressivePolicy.size(aspect,edge);renderer.setSize(width,height);tracer.reset();}
@@ -13,7 +13,7 @@ function updateLiveCamera(data){if(!live||!tracer||!liveCamera)return;
  if(!c0||!valid(c0.matrixWorld)||!valid(c0.projectionMatrix)||!Number.isFinite(c0.aspect)||c0.aspect<.1||c0.aspect>10||!Number.isFinite(c0.near)||!Number.isFinite(c0.far))throw Error('相机数据无效');liveVersion++;viewKey=data.viewKey;const c=data.camera;aspect=c.aspect;liveCamera.matrixWorld.fromArray(c.matrixWorld);liveCamera.matrixWorld.decompose(liveCamera.position,liveCamera.quaternion,liveCamera.scale);liveCamera.updateMatrixWorld(true);liveCamera.projectionMatrix.fromArray(c.projectionMatrix);liveCamera.projectionMatrixInverse.copy(liveCamera.projectionMatrix).invert();liveCamera.near=c.near;liveCamera.far=c.far;resizeLive(edge);tracer.updateCamera();paused=false;tracer.pause=false;renderLoop();}
 const send=(type,values={})=>parent.postMessage({channel:'furnish-lighting-preview',token,type,...values},location.origin);
 const status=message=>send('status',{message});
-function stop(){stopped=true;clearInterval(poll);renderer?.setAnimationLoop(null);}
+function stop(){stopped=true;renderer?.setAnimationLoop(null);}
 function fail(error){if(stopped)return;console.warn('Furnish HD preview:',error?.stack||error);stop();send('error',{message:String(error?.message||error).slice(0,350)});}
 window.addEventListener('pagehide',()=>{stop();tracer?.dispose();if(scene){const resources=new Set();scene.traverse(o=>{if(o.geometry)resources.add(o.geometry);for(const m of [o.material].flat().filter(Boolean)){resources.add(m);for(const v of Object.values(m))if(v?.isTexture)resources.add(v);}});for(const r of resources)r.dispose();}renderer?.dispose();});
 async function run(data){
@@ -42,6 +42,8 @@ async function run(data){
   for(const r of data.lighting.rects){const light=new T.RectAreaLight(new T.Color().fromArray(r.color),r.radiance,r.width,r.height);light.position.fromArray(r.position);light.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(new T.Vector3().fromArray(r.u),new T.Vector3().fromArray(r.v),new T.Vector3().fromArray(r.normal).negate()));light.visibleToCameraRays=true;scene.add(light);}
   for(const r of data.lighting.spots){const light=new T.SpotLight(new T.Color().fromArray(r.color),r.intensity,r.distance,r.angle,r.penumbra,2);light.position.fromArray(r.position);light.target.position.fromArray(r.target);scene.add(light,light.target);}
   tracer=new WebGPUPathTracer(renderer);tracer.maxBounces=8;tracer.maxTransparentBounces=16;tracer.maxSamples=samples;tracer.minSamples=1;tracer.renderDelay=0;tracer.fadeDuration=0;tracer.asyncCompile=true;
+  // Spend more work per settled-view submission, keeping all sampling and optical settings intact.
+  tracer.frameBudget=1000000;tracer.targetFrameTime=32;
   const denoiser=new OIDNDenoiser({initUNetFromURL,auxWeightsUrl:new URL('../../vendor/lighting-preview/rt_hdr_alb_nrm_small.tza',import.meta.url).href,maxTileSize:512});denoiser.addEventListener('error',e=>fail(e.error));denoiser.addEventListener('progress',e=>status('正在降噪 · '+Math.round(e.progress*100)+'%'));tracer.setDenoiser(denoiser);
   tracer.setBVHWorker(GenerateMeshBVHWorker);tracer.addEventListener('progress',e=>{if(!stopped&&e.stage==='building')status('正在准备场景 · '+Math.round(e.progress*100)+'%');});
   status('正在准备场景…');await tracer.setSceneAsync(scene,camera);if(stopped)return;if(live){updateLiveCamera({camera:data.camera,viewKey:data.viewKey});send('live-ready',{viewKey});}
@@ -52,7 +54,10 @@ async function run(data){
     stop();send('complete',{blob,width,height,samples,seconds:(performance.now()-started)/1000});
    }catch(error){fail(error);}
   });
-  let polling=false;poll=setInterval(async()=>{if(polling||stopped||paused||liveComplete)return;polling=true;try{const version=liveVersion,count=await tracer.getSampleCountsAsync();if(!stopped&&version===liveVersion){if(live)send('live-progress',{viewKey,samples:count.avg,frameTime:tracer.frameTime});else status('正在预览 · '+Math.floor(count.avg)+' / '+samples+' 采样');}}catch(error){fail(error);}finally{polling=false;}},1300);
+  // The tracer already measures counts to detect completion. Reuse that result instead of
+  // submitting another reduction and GPU readback from a separate polling timer.
+  let lastReport=-Infinity;
+  tracer.addEventListener('progress',e=>{if(stopped||paused||liveComplete||e.stage!=='rendering'||!e.samples)return;const now=performance.now();if(now-lastReport<1300)return;lastReport=now;const count=e.samples;if(live)send('live-progress',{viewKey,samples:count.avg,frameTime:tracer.frameTime});else status('正在预览 · '+Math.floor(count.avg)+' / '+samples+' 采样');});
   status('正在编译并开始预览…');renderLoop();
  }catch(error){fail(error);}
 }
