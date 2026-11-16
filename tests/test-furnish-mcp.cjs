@@ -10,7 +10,7 @@ const Core=require('../src/core/mcp-core.js'),Bridge=require('../scripts/desktop
  const discovered=(await message('tools/list')).result.tools;assert.equal(discovered.length,Core.tools.length);for(const name of ['get_ceilings','configure_ceilings','remove_furniture','configure_scene'])assert(discovered.some(t=>t.name===name));
  assert.equal((await message('execute_code')).error.code,-32601);
  assert.equal((await message('tools/call',{name:'get_current_plan'})).result.isError,true);
- const calls=[],server=await Bridge.start({root,dispatch:async(name,args)=>{calls.push([name,args]);return {name,args,...(name==='take_screenshot'?{image:{mimeType:'image/png',data:'iVBORw0KGgo=',width:1,height:1}}:{})};}});
+ const calls=[],server=await Bridge.start({root,dispatch:async(name,args)=>{calls.push([name,args]);return {name,args,...(args.requestId==='unsaved-noop'?{applied:false,persisted:false}:{}),...(name==='take_screenshot'?{image:{mimeType:'image/png',data:'iVBORw0KGgo=',width:1,height:1}}:{})};}});
  try{
   const info=JSON.parse(fs.readFileSync(path.join(root,'.local/desktop-mcp/runtime.json'))),url=`http://127.0.0.1:${info.port}/command`;
   const command=JSON.stringify({name:'get_current_plan',arguments:{}}),headers={Authorization:'Bearer '+info.token,'Content-Type':'application/json'};
@@ -24,6 +24,9 @@ const Core=require('../src/core/mcp-core.js'),Bridge=require('../scripts/desktop
   assert.throws(()=>Core.validate('update_furniture',{planId:'p',revision:'r',requestId:'i',updates:[{id:'f',cx:1},{id:'f',cy:2}]}));
   assert.throws(()=>Core.validate('copy_design',{name:'x'}));
   const write={planId:'p',revision:'r',requestId:'i'};
+  Core.validate('switch_design',{...write,designId:'design-a'});for(const args of [{...write},{...write,designId:''},{...write,designId:'a',name:'ambiguous'}])assert.throws(()=>Core.validate('switch_design',args));
+  const switched=(await message('tools/call',{name:'switch_design',arguments:{...write,designId:'design-a'}})).result;assert(!switched.isError);assert.equal(switched.structuredContent.name,'switch_design');assert.equal(switched.structuredContent.args.designId,'design-a');
+  assert((await message('tools/call',{name:'switch_design',arguments:{...write,requestId:'unsaved-noop',designId:'design-a'}})).result.isError,'explicit persisted:false must surface even for a same-design no-op');
   Core.validate('add_furniture_batch',{...write,items:[{catalogKey:'key',cx:0,cy:0,parameters:{mountHeight:300}}]});assert.throws(()=>Core.validate('add_furniture_batch',{...write,items:[]}));assert.throws(()=>Core.validate('add_furniture_batch',{...write,items:[{catalogKey:'key',cx:0,cy:0,w:0}]}));
   Core.validate('configure_ceilings',{...write,regions:[{id:'ceiling-a'}]});
   for(const args of [{},{regions:[]},{regions:[{}]},{regions:[{id:'a'},{id:'a'}]},{regions:[{id:'a'}],removeIds:['a']},{removeIds:['a','a']},{regions:[JSON.parse('{"id":"a","__proto__":{}}')]}])assert.throws(()=>Core.validate('configure_ceilings',{...write,...args}));

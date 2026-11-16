@@ -1,0 +1,36 @@
+'use strict';
+module.exports=async(p,V)=>{
+ const assert=require('node:assert/strict'),path=require('node:path'),Mcp=require('../../scripts/furnish-mcp.cjs'),errors=[];p.on('pageerror',e=>errors.push(e.message));
+ const call=(name,args={})=>V.mode==='desktop'?Mcp.callDesktop(path.join(V.artifact(''),'workspace'),name,args):p.evaluate(({name,args})=>FurnishMcp.execute(name,args),{name,args});
+ const read=()=>call('get_current_plan',{includeDetails:true});let seq=0;
+ const args=c=>({planId:c.plan.id,revision:c.revision,requestId:'switch-ui-'+(++seq)});
+ let c=await read();const a=await call('copy_design',{...args(c),name:'MCP switch A'});
+ await p.evaluate(()=>mutate(()=>state.designNote='A saved independently'));
+ c=await read();const aWork=c.work,b=await call('copy_design',{...args(c),name:'MCP switch B'});
+ await p.evaluate(()=>mutate(()=>state.designNote='B saved independently'));
+ c=await read();const bWork=c.work,switchArgs={...args(c),designId:a.activeDesign.id};
+ const back=await call('switch_design',switchArgs);assert(back.applied&&back.persisted&&back.designChanged);assert.equal(back.undoable,false);assert.equal(back.activeDesign.id,a.activeDesign.id);assert.equal(back.undo.available,0);assert.equal(back.undo.redoAvailable,0);assert.deepEqual((await read()).work,aWork);
+ assert.deepEqual(await call('switch_design',switchArgs),back,'receipt retry must not switch again');
+ await assert.rejects(()=>call('switch_design',{...switchArgs,designId:b.activeDesign.id}),/requestId/);
+ const same=await call('switch_design',{...args(await read()),designId:a.activeDesign.id});assert.equal(same.applied,false);assert.equal(same.designChanged,false);assert(same.persisted);assert.equal(same.undoable,false);
+ await assert.rejects(()=>call('switch_design',{...switchArgs,requestId:'stale-switch'}),/revision/);
+ const rejectUnchanged=async designId=>{const before=await read();await assert.rejects(()=>call('switch_design',{...args(before),designId}));assert.equal((await read()).revision,before.revision);};
+ await rejectUnchanged('missing');
+ await p.evaluate(()=>{store.designs.push({id:'foreign',name:'foreign',planId:'other-plan',editable:true,work:JSON.parse(snap()),ts:1},{id:'history',name:'history',planId:PLAN.id,work:JSON.parse(snap()),ts:1},{id:'invalid',name:'invalid',planId:PLAN.id,editable:true,work:{furniture:'broken'},ts:1});});
+ for(const id of ['foreign','history','invalid'])await rejectUnchanged(id);
+ await p.evaluate(()=>{store.designs=store.designs.filter(d=>!['foreign','history','invalid'].includes(d.id));ui.mA='fixture';});
+ await rejectUnchanged(b.activeDesign.id);await p.evaluate(()=>{ui.mA=null;});
+ await p.evaluate(()=>{$('#dlg').hidden=false;});await rejectUnchanged(b.activeDesign.id);await p.evaluate(()=>{$('#dlg').hidden=true;});
+ await p.evaluate(()=>{window.switchOriginalActive=FurnishCatalog.active;window.switchPreviewFlush=repositoryClient.flush;FurnishCatalog.active=()=>true;repositoryClient.flush=async()=>{throw Error('must not flush a preview');};});
+ const previewArgs={...args(await read()),designId:b.activeDesign.id};await assert.rejects(()=>call('switch_design',previewArgs),/临时预览/);
+ await p.evaluate(()=>{FurnishCatalog.active=window.switchOriginalActive;repositoryClient.flush=window.switchPreviewFlush;delete window.switchOriginalActive;delete window.switchPreviewFlush;});
+ const toB=await call('switch_design',{...args(await read()),designId:b.activeDesign.id});assert(toB.persisted);assert.deepEqual((await read()).work,bWork);
+ await p.reload();await p.waitForFunction(()=>!repositoryBooting);c=await read();assert.equal(c.activeDesign.id,b.activeDesign.id);assert.equal(c.work.designNote,bWork.designNote);
+ await call('switch_design',{...args(c),designId:a.activeDesign.id});assert.equal((await read()).work.designNote,aWork.designNote);
+ // A failed post-switch save must be reported as applied but not persisted.
+ await p.evaluate(()=>{window.switchOriginalFlush=repositoryClient.flush;let count=0;repositoryClient.flush=async()=>{if(++count===2)throw Error('fixture save conflict');return window.switchOriginalFlush.call(repositoryClient);};});
+ const partial=await call('switch_design',{...args(await read()),designId:b.activeDesign.id});assert(partial.applied);assert.equal(partial.persisted,false);assert.match(partial.saveError,/fixture save conflict/);assert.equal(partial.activeDesign.id,b.activeDesign.id);
+ await p.evaluate(async()=>{repositoryClient.flush=window.switchOriginalFlush;delete window.switchOriginalFlush;await repositoryClient.flush();});
+ assert.deepEqual(errors,[]);await V.screenshot('switch-design');
+ return {passed:true,checks:['actual UI switch chain preserves independent saved works and clears cross-design undo','same-design no-op and receipt idempotency','stale revision / missing / foreign / history / invalid target and active editor rejected without changes','saved reload preserves selected design and both independent works','post-switch flush failure reports applied:true,persisted:false']};
+};

@@ -1,0 +1,13 @@
+[
+  {
+    "mode": "desktop",
+    "passed": true,
+    "checks": [
+      "actual UI switch chain preserves independent saved works and clears cross-design undo",
+      "same-design no-op and receipt idempotency",
+      "stale revision / missing / foreign / history / invalid target and active editor rejected without changes",
+      "saved reload preserves selected design and both independent works",
+      "post-switch flush failure reports applied:true,persisted:false"
+    ]
+  }
+]

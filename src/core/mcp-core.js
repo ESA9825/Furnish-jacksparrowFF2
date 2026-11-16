@@ -15,6 +15,7 @@
   {name:'check_space',description:'对当前桌面方案运行与工作台相同的空间核对，包括家具实体、开启空间和通道；返回问题与未知信息，不移动家具或标记已确认。',inputSchema:schema({focusIds:{type:'array',minItems:1,maxItems:100,items:string}}),annotations:{readOnlyHint:true}}
  ];
  tools.push(
+  command('switch_design','按get_current_plan返回的designId切换当前户型已有可编辑方案；先保存当前布置，沿界面切换与正式保存链，清空跨方案撤销。不能切换其它户型或恢复历史。同一方案为无变化操作；重试沿用requestId。',{...write,designId:string},['planId','revision','requestId','designId'],true),
   command('list_catalog','查询当前内置及我的家具库；用返回的 catalogKey 新增，不能凭 type 猜型号。',{query:{type:'string',minLength:1,maxLength:200}}),
   command('add_furniture','按 catalogKey 在精确模型中心 cx/cy（mm）新增库条目，含完整关联组合；不自动避让。返回 addedIds，一次撤销，显式保存。',{...write,catalogKey:{type:'string',minLength:1,maxLength:2000},cx:{type:'number'},cy:{type:'number'}},['planId','revision','requestId','catalogKey','cx','cy'],true),
   command('add_furniture_batch','批量新增单件库产品，可同时设置w/d/h/rot及通用、普通产品参数。组合条目与结构动作拒绝；全部校验后一次撤销／保存，addedIds与输入顺序一致。',{...write,items:{type:'array',minItems:1,maxItems:100,items:schema({catalogKey:{type:'string',minLength:1,maxLength:2000},cx:{type:'number'},cy:{type:'number'},w:{type:'number',exclusiveMinimum:0,maximum:20000},d:{type:'number',exclusiveMinimum:0,maximum:20000},h:{type:'number',minimum:10,maximum:20000},rot:{type:'number'},parameters:{type:'object',additionalProperties:true}},['catalogKey','cx','cy'])}},['planId','revision','requestId','items'],true),

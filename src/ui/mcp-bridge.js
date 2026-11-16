@@ -3,7 +3,7 @@
  'use strict';
  const clone=v=>JSON.parse(JSON.stringify(v)),core=FurnishMcpCore,receipts=new Map(),session=Array.from(crypto.getRandomValues(new Uint32Array(4))).join('-');
  let queue=Promise.resolve();
- const writes=new Set(['copy_design','update_furniture','add_furniture','add_furniture_batch','configure_furniture','configure_ceilings','remove_furniture','configure_scene']);
+ const writes=new Set(['copy_design','switch_design','update_furniture','add_furniture','add_furniture_batch','configure_furniture','configure_ceilings','remove_furniture','configure_scene']);
  function catalog(){return libAll().flatMap(c=>c.items.map(it=>({catalogKey:JSON.stringify([it[0],it[1],it[7]||null,it[9]||null,it[10]||null]),category:c.cat,it})));}
  function parameters(id,f=getF(id)){if(!f)throw Error('家具不存在：'+id);const def=FurnishProducts.definition(f),fields={...Object.fromEntries(Object.entries(core.commonParameters).map(([k,rule])=>[k,{...rule,value:f[k]??null}])),...Object.fromEntries((def?.fields||[]).map(k=>[k,{...FurnishProducts.fields[k],value:f[k]??null,default:def.defaults?.[k]??null}]))};if(def?.inventoryArray&&!f.obj){fields.inventoryArray.readOnly=true;fields.arrayEdit={value:null,limits:def.inventoryArray,description:'阵列动作：新建{memberIds:[现有ID按顺序],arrayId:新ID,columns,rows,gapX,gapZ,gapY,pattern,angle}，须与原位置完全一致且不移动；已在阵列中时可编辑count/columns/rows/gapX/gapZ/gapY/pattern/angle，或{detach:true}。动作不持久化。'};}fields.replacementCatalogKey={type:'string',minLength:1,maxLength:2000,value:null,description:'使用list_catalog的catalogKey替换为单件模型，保持ID和中心；只写动作，不持久化此键'};if(FurnishCabinet.supported(f)&&!f.kitchen)fields.cabinet={value:f.cabinet??null,description:'完整 cabinet 结构替换，沿柜体核心校验'};if(FurnishCabinet.supported(f)&&!f.kitchen&&!FurnishCabinetBuilder.is(f))fields.cabinetUpgrade={type:'boolean',value:null,description:'true 显式升级支持的普通柜为组件柜，保留ID/位置/尺寸/参考价；不支持的结构拒绝。动作不持久化，不能与cabinet或替换动作混用。'};if(FurnishProducts.supports(f,'paperArray'))Object.assign(fields.paperArray,{value:FurnishProducts.paperArrayConfig(f),limits:def.paperArray,description:'完整阵列对象；单件尺寸和间距为mm。编辑自动计算w/d/h；null恢复原单层排列，保留单件尺寸。'});return {id,type:f.type,parameters:clone(fields),furniture:clone(f),semantics:'null 删除可选覆盖；嵌套对象整体替换。使用 update_furniture 调整位置和机身尺寸。'};}
  function visualReady(){ready();if(typeof drag!=='undefined'&&drag||ui.mA||!$('#dlg').hidden||globalThis.FurnishCatalog?.active()||globalThis.FurnishWorkflowTools?.styleId())throw Error('请先结束拖动、绘制、模态编辑或临时预览');}
@@ -48,11 +48,20 @@
   if(name==='check_space'){const source=revisionSource(),result=space(args);return {revision:await revision(source),...result,save:saving()};}
   await assertRevision(args);
   if(name==='set_camera'){visualReady();if(args.focusIds?.some(id=>!getF(id)))throw Error('取景家具不存在');if(args.roomId&&!ROOMS.some(r=>r.id===args.roomId))throw Error('取景房间不存在');await setView(args.view);await assertRevision(args);if((is3D()?'3d':'2d')!==args.view)throw Error('视图切换失败');if(is3D())await window.View3D.automationCamera(args);return {viewChanged:true,undoable:false,revision:await revision(),...await camera()};}
+  if(name==='switch_design')visualReady();
   await repositoryClient.flush();ready(true);
   await assertRevision(args);ready(true);
-  let addedIds;
+  let addedIds,designChanged;
   if(['add_furniture','add_furniture_batch'].includes(name)&&FurnishLayers.list(state).some(l=>l.id==='0'&&l.locked))throw Error('默认图层已锁定，请先解锁');
-  if(name==='copy_design')FurnishDesignUI.createDesign(args.name);
+  if(name==='switch_design'){
+   visualReady();
+   const target=store.designs.find(d=>d.id===args.designId&&d.planId===PLAN.id&&d.editable===true);
+   if(!target)throw Error('目标须为当前户型已有的可编辑方案，请从 get_current_plan.designs 读取 designId');
+   FurnishProject.validateWork(target.work);
+   designChanged=FurnishDesign.activeDesign(store,PLAN.id)?.id!==args.designId;
+   if(designChanged&&!switchDesign(args.designId,{throwOnError:true}))throw Error('方案切换未完成，请重新读取当前状态');
+  }
+  else if(name==='copy_design')FurnishDesignUI.createDesign(args.name);
   else if(name==='configure_ceilings')applyCeilings(args);
   else if(name==='configure_scene'){
    const scene3d=FurnishDesign.sceneSettings({...FurnishDesign.sceneSettings(state.scene3d),...args.settings});FurnishProject.validateWork({...state,scene3d});mutate(()=>{state.scene3d=scene3d;});
@@ -85,8 +94,8 @@
    mutate(()=>{for(const next of candidates)Object.assign(getF(next.id),next);});
   }
   let saveError=null;try{await repositoryClient.flush();}catch(e){saveError=e.message;}
-  const result={applied:true,persisted:!saveError&&!repositoryClient.blocked&&repositoryClient.status.mode==='saved',...(saveError?{saveError}:{}),...(addedIds?{addedIds}:{}),...(name==='copy_design'?{undoable:false}:{}),...await read()};
-  toast(name==='copy_design'?'MCP 已复制当前方案':'MCP 已应用调整，可使用撤销');return result;
+  const result={applied:name==='switch_design'?designChanged:true,persisted:!saveError&&!repositoryClient.blocked&&repositoryClient.status.mode==='saved',...(saveError?{saveError}:{}),...(addedIds?{addedIds}:{}),...(['copy_design','switch_design'].includes(name)?{undoable:false}:{}),...(name==='switch_design'?{designChanged}:{}),...await read()};
+  toast(name==='copy_design'?'MCP 已复制当前方案':name==='switch_design'?(designChanged?'MCP 已切换方案':'MCP 当前已是目标方案'):'MCP 已应用调整，可使用撤销');return result;
  }
  window.FurnishMcp=Object.freeze({execute(name,args={}){
   try{core.validate(name,args);}catch(e){return Promise.reject(e);}

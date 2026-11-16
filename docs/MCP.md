@@ -10,6 +10,7 @@ MCP 连接正在运行的 Furnish 桌面主窗口。它读取的是当前画布�
 | --- | --- |
 | `get_current_plan` | 返回当前户型、方案列表、家具完整记录、模型坐标说明、保存状态、撤销计数及 `revision`。`includeDetails:true` 另返回当前完整 `work`。 |
 | `copy_design` | 以当前布置创建并进入具名可编辑副本，原方案保留。调用现有 `FurnishDesignUI.createDesign`，不另建复制／保存机制。 |
+| `switch_design` | 按当前户型的 `designId` 切换已有可编辑方案；先保存当前布置，沿界面同一切换链，清空跨方案撤销。相同目标为无变化操作，不恢复历史或切换其它户型。 |
 | `update_furniture` | 按家具 ID 一次批量修改 `cx/cy/w/d/h/rot`，先完整预演与校验，再通过一次原 `mutate()` 应用，整批可从界面撤销／重做。 |
 | `list_catalog` | 查询内置及“我的家具”，可按 `query` 过滤；返回唯一 `catalogKey`、初始尺寸及组合标记。 |
 | `add_furniture` | 用 `catalogKey/cx/cy` 在精确模型中心新增。与界面共用 `createCatalogFurniture`，完整洗衣区连同关联成员一起新增；返回全部 `addedIds`。不吸附、取整或自动避让。 |
@@ -27,7 +28,7 @@ MCP 连接正在运行的 Furnish 桌面主窗口。它读取的是当前画布�
 
 输入使用 mm，`cx/cy` 是户型模型坐标中的家具中心，`w/d` 是家具局部宽深，`h` 是机身高度，`rot` 是角度。屏幕旋转、缩放、镜像不改变这些输入的解释。尺寸调整复用 `resizeFurniture` 及原尺寸基准；尺寸可能联动中心或关联家具，调用者应读取返回的实际结果。省略字段保持原值，不把缺失高度补成厂家尺寸。安装高度、开合、灯光和柜体／厨房结构由参数接口按原产品能力编辑；墙体编辑和新材质节点仍不在此接口范围。
 
-新增、配置、尺寸编辑、复制和相机控制请求需要 `planId`、读取时的 `revision` 和唯一 `requestId`。先读取，再复制方案，使用复制结果的新 revision 调整家具。方案被手工修改、撤销／重做或页面重载后，旧 revision 失效；不会自动重读后强行套用旧请求。完全相同的 requestId 重试返回原回执，同一 ID 携带不同参数则拒绝；回执缓存仅限本次页面会话最近 200 次修改，重载后须重新读取，不盲目重放。
+新增、配置、尺寸编辑、复制、方案切换和相机控制请求需要 `planId`、读取时的 `revision` 和唯一 `requestId`。先读取，再复制方案，使用复制结果的新 revision 调整家具。方案被手工修改、撤销／重做或页面重载后，旧 revision 失效；不会自动重读后强行套用旧请求。完全相同的 requestId 重试返回原回执，同一 ID 携带不同参数则拒绝；回执缓存仅限本次页面会话最近 200 次修改，重载后须重新读取，不盲目重放。
 
 ```json
 {
@@ -74,11 +75,11 @@ node scripts/register-codex-mcp.cjs --no-automatic
 
 工具会从 PATH 和本机 Codex 安装目录发现 CLI；特殊位置可用 `FURNISH_CODEX_CLI` 或 `--codex` 指定实际程序，桌面程序可用 `--desktop` 指定，工作目录可用 `--root` 指定。已有同目录注册直接保留命令、超时、工具限制和禁用设置，不重复注册；同名 `furnish` 指向其它目录时拒绝覆盖。首次写入前备份现有 Codex 配置到被 Git 忽略的 `.local/codex-mcp-backups`，实际写入交给 `codex mcp add`，不自行重写 TOML，也不把全局配置纳入仓库。
 
-菜单“检查 Codex 注册与工具”及 CLI `--status` 为只读注册检查，验证的是**新 stdio 连接**。注册／启动不等于刷新当前 Codex 聊天：已经加载的旧进程仍可能只显示4工具，需由 Codex 重载 MCP。新服务应返回16工具；若已有 `enabled_tools/disabled_tools` 限制，另报有效数量并保留原限制。自动检查失败只记录诊断，不妨碍 Furnish 编辑；可随时再次点击连接入口。`FURNISH_MCP_DISABLE=1` 继续禁止桌面端点和一键启动。
+菜单“检查 Codex 注册与工具”及 CLI `--status` 为只读注册检查，验证的是**新 stdio 连接**。注册／启动不等于刷新当前 Codex 聊天：已经加载的旧进程仍可能只显示4工具，需由 Codex 重载 MCP。新服务应返回17工具；若已有 `enabled_tools/disabled_tools` 限制，另报有效数量并保留原限制。自动检查失败只记录诊断，不妨碍 Furnish 编辑；可随时再次点击连接入口。`FURNISH_MCP_DISABLE=1` 继续禁止桌面端点和一键启动。
 
 ## 连接与本机配置
 
-入口为 `node scripts/furnish-mcp.cjs`，或 `npm run mcp`。它使用 MCP 2025-11-25 的 stdio 生命周期和换行 JSON-RPC，协商兼容 2025-06-18、2025-03-26、2024-11-05；宣告上述 16 个工具，不提供脚本执行、任意文件或远程网络访问工具。无新增 npm 依赖。
+入口为 `node scripts/furnish-mcp.cjs`，或 `npm run mcp`。它使用 MCP 2025-11-25 的 stdio 生命周期和换行 JSON-RPC，协商兼容 2025-06-18、2025-03-26、2024-11-05；宣告上述 17 个工具，不提供脚本执行、任意文件或远程网络访问工具。无新增 npm 依赖。
 
 在 Codex 配置中添加 stdio 服务，例如从本仓库运行：
 
@@ -123,3 +124,12 @@ get_furniture_parameters返回只写动作replacementCatalogKey。configure_furn
 上述编辑工具沿已有revision/requestId鉴权、请求去重、排队及flush回执。编辑器打开时写操作拒绝；applied:true/persisted:false仍必须报告未保存，不换请求ID重试。专项回归包含区域增删改、错误整批回滚、锁定、撤销重做、保存刷新与正式文件隔离。
 
 `add_furniture_batch` 接受最多100个单件库产品，按输入顺序返回addedIds。每项可带cx/cy/w/d/h/rot和普通产品parameters，复用库构造、resizeFurniture、产品规则与applyWork，整批一次mutate/flush。组合、物品阵列和柜体／替换等结构动作须走原专用入口；某一项无效或默认层锁定时整批拒绝，不遗留半成品。
+
+
+## 2026-11-17：切换已有命名方案
+
+`switch_design` 接收 `planId / revision / requestId / designId`。目标ID必须来自当前 `get_current_plan.designs`；只允许当前户型已有的可编辑方案，拒绝历史记录、其它户型、缺失或无效目标。先沿原repository flush保存当前布置，再调用界面同一 `switchDesign` 链，保留当前独立成果、切换目标、清空跨方案撤销栈，最后再次flush并返回完整当前状态和新revision。拖动、绘制、编辑器或临时预览、正式保存冲突时拒绝。
+
+切换成功返回 `applied:true / designChanged:true / undoable:false`；已经选中目标时返回 `applied:false / designChanged:false`，保留原撤销栈。相同requestId的完全相同重试返回原回执，不会再次切换；相同ID不同参数拒绝。`persisted:false`始终以MCP错误回执呈现，已经切换但未保存时保留内存状态，不换ID盲目重试。工具总数现为17；既有桌面主进程需重启加载固定命令白名单，既有Codex stdio连接需重载工具列表。原方案文件不需要迁移。
+
+增量验证：`node tests/test-furnish-mcp.cjs`、`node tests/test-design-switching.cjs`、`node tests/test-mcp-design-switch-ui.cjs`。最后一项复用独立工作目录／缓存／端口的真实桌面验证，覆盖A/B独立修改、重复请求、无效目标、编辑器保护、保存失败回执和刷新恢复。

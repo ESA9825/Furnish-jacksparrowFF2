@@ -1,5 +1,5 @@
 // The current work slot remains the active canvas; every save mirrors only its selected design.
-function switchDesign(id){
+function switchDesign(id,{throwOnError=false}={}){
   if(repositoryBooting)return;
   const d=store.designs.find(d=>d.id===id&&d.planId===PLAN.id);
   if(!d||!d.editable||FurnishDesign.activeDesign(store,PLAN.id)?.id===id)return;
@@ -14,7 +14,8 @@ function switchDesign(id){
     undoStack.length=redoStack.length=0;ui.sel=null;ui.mA=null;ui.mCur=null;hoverRoom='';
     save();renderAll();renderDesigns();window.View3D?.replan();$('#fileMenu').open=false;
     toast(tr(`已切换到「${d.name}」`,`Switched to "${d.name}"`));
-  }catch(e){toast(e.message);}
+    return true;
+  }catch(e){if(throwOnError)throw e;toast(e.message);}
 }
 function renderDesignBar(){
   const host=$('#designBar');if(!host)return;
