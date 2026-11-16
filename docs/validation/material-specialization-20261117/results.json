@@ -1,0 +1,503 @@
+{
+  "bsdf": {
+    "evidence": "progressive-profile-Rpz3Ia",
+    "baselineMs": [
+      52182.70000000298,
+      47518.89999999106
+    ],
+    "candidateMs": [
+      51492.90000000596,
+      50030.20000000298
+    ],
+    "baselineMeanMs": 49850.79999999702,
+    "candidateMeanMs": 50761.55000000447,
+    "improvementPercent": -1.8269516236600225,
+    "materialAudit": {
+      "materials": 1410,
+      "features": {
+        "clearcoat": {
+          "used": true,
+          "positive": 20,
+          "textures": 0,
+          "unknown": 0,
+          "max": 0.8999999761581421
+        },
+        "sheen": {
+          "used": false,
+          "positive": 0,
+          "textures": 0,
+          "unknown": 0,
+          "max": 0
+        },
+        "iridescence": {
+          "used": false,
+          "positive": 0,
+          "textures": 0,
+          "unknown": 0,
+          "max": 0
+        },
+        "anisotropy": {
+          "used": false,
+          "positive": 0,
+          "textures": 0,
+          "unknown": 0,
+          "max": 0
+        },
+        "transmission": {
+          "used": true,
+          "positive": 3,
+          "textures": 0,
+          "unknown": 0,
+          "max": 1
+        },
+        "dispersion": {
+          "used": false,
+          "positive": 0,
+          "textures": 0,
+          "unknown": 0,
+          "max": 0
+        }
+      }
+    },
+    "images": [
+      {
+        "variant": "baseline-material",
+        "image": "baseline-material-0.png",
+        "difference": null
+      },
+      {
+        "variant": "specialized",
+        "image": "specialized-1.png",
+        "difference": {
+          "max": 15,
+          "mean": 0.08793428536102868,
+          "changed": 282070,
+          "total": 3235200
+        }
+      },
+      {
+        "variant": "specialized",
+        "image": "specialized-2.png",
+        "difference": {
+          "max": 15,
+          "mean": 0.08598571958456973,
+          "changed": 276146,
+          "total": 3235200
+        }
+      },
+      {
+        "variant": "baseline-material",
+        "image": "baseline-material-3.png",
+        "difference": {
+          "max": 21,
+          "mean": 0.08829160484668645,
+          "changed": 283628,
+          "total": 3235200
+        }
+      }
+    ]
+  },
+  "surface": {
+    "evidence": "progressive-profile-iVYV1F",
+    "baselineMs": [
+      48675.5,
+      46799
+    ],
+    "candidateMs": [
+      45381.70000000298,
+      45723.80000001192
+    ],
+    "baselineMeanMs": 47737.25,
+    "candidateMeanMs": 45552.75000000745,
+    "improvementPercent": 4.576090998104309,
+    "materialAudit": {
+      "materials": 1410,
+      "features": {
+        "clearcoat": {
+          "used": true,
+          "positive": 20,
+          "textures": 0,
+          "unknown": 0,
+          "max": 0.8999999761581421
+        },
+        "sheen": {
+          "used": false,
+          "positive": 0,
+          "textures": 0,
+          "unknown": 0,
+          "max": 0
+        },
+        "iridescence": {
+          "used": false,
+          "positive": 0,
+          "textures": 0,
+          "unknown": 0,
+          "max": 0
+        },
+        "anisotropy": {
+          "used": false,
+          "positive": 0,
+          "textures": 0,
+          "unknown": 0,
+          "max": 0
+        },
+        "transmission": {
+          "used": true,
+          "positive": 3,
+          "textures": 0,
+          "unknown": 0,
+          "max": 1
+        },
+        "dispersion": {
+          "used": false,
+          "positive": 0,
+          "textures": 0,
+          "unknown": 0,
+          "max": 0
+        }
+      }
+    },
+    "images": [
+      {
+        "variant": "baseline-material",
+        "image": "baseline-material-0.png",
+        "difference": null
+      },
+      {
+        "variant": "specialized-full",
+        "image": "specialized-full-1.png",
+        "difference": {
+          "max": 14,
+          "mean": 0.08917593966369931,
+          "changed": 286647,
+          "total": 3235200
+        }
+      },
+      {
+        "variant": "specialized-full",
+        "image": "specialized-full-2.png",
+        "difference": {
+          "max": 14,
+          "mean": 0.08666975766567754,
+          "changed": 279158,
+          "total": 3235200
+        }
+      },
+      {
+        "variant": "baseline-material",
+        "image": "baseline-material-3.png",
+        "difference": {
+          "max": 14,
+          "mean": 0.08843904549950544,
+          "changed": 283945,
+          "total": 3235200
+        }
+      }
+    ]
+  },
+  "textures": {
+    "evidence": "progressive-profile-hFpFVu",
+    "baselineMs": [
+      47716.80000001192,
+      48836.5
+    ],
+    "candidateMs": [
+      44265.5,
+      45266.20000000298
+    ],
+    "baselineMeanMs": 48276.65000000596,
+    "candidateMeanMs": 44765.85000000149,
+    "improvementPercent": 7.272252735026219,
+    "materialAudit": {
+      "materials": 1410,
+      "features": {
+        "clearcoat": {
+          "used": true,
+          "positive": 20,
+          "textures": 0,
+          "unknown": 0,
+          "max": 0.8999999761581421
+        },
+        "sheen": {
+          "used": false,
+          "positive": 0,
+          "textures": 0,
+          "unknown": 0,
+          "max": 0
+        },
+        "iridescence": {
+          "used": false,
+          "positive": 0,
+          "textures": 0,
+          "unknown": 0,
+          "max": 0
+        },
+        "anisotropy": {
+          "used": false,
+          "positive": 0,
+          "textures": 0,
+          "unknown": 0,
+          "max": 0
+        },
+        "transmission": {
+          "used": true,
+          "positive": 3,
+          "textures": 0,
+          "unknown": 0,
+          "max": 1
+        },
+        "dispersion": {
+          "used": false,
+          "positive": 0,
+          "textures": 0,
+          "unknown": 0,
+          "max": 0
+        }
+      },
+      "textures": {
+        "map": {
+          "used": true,
+          "count": 188
+        },
+        "normalMap": {
+          "used": false,
+          "count": 0
+        },
+        "bumpMap": {
+          "used": true,
+          "count": 9
+        },
+        "roughnessMap": {
+          "used": true,
+          "count": 60
+        },
+        "metalnessMap": {
+          "used": true,
+          "count": 60
+        },
+        "emissiveMap": {
+          "used": true,
+          "count": 3
+        },
+        "transmissionMap": {
+          "used": false,
+          "count": 0
+        },
+        "clearcoatMap": {
+          "used": false,
+          "count": 0
+        },
+        "clearcoatNormalMap": {
+          "used": false,
+          "count": 0
+        },
+        "clearcoatRoughnessMap": {
+          "used": false,
+          "count": 0
+        },
+        "sheenColorMap": {
+          "used": false,
+          "count": 0
+        },
+        "sheenRoughnessMap": {
+          "used": false,
+          "count": 0
+        },
+        "iridescenceMap": {
+          "used": false,
+          "count": 0
+        },
+        "iridescenceThicknessMap": {
+          "used": false,
+          "count": 0
+        },
+        "specularColorMap": {
+          "used": false,
+          "count": 0
+        },
+        "specularIntensityMap": {
+          "used": false,
+          "count": 0
+        },
+        "anisotropyMap": {
+          "used": false,
+          "count": 0
+        },
+        "alphaMap": {
+          "used": false,
+          "count": 0
+        }
+      }
+    },
+    "images": [
+      {
+        "variant": "baseline-material",
+        "image": "baseline-material-0.png",
+        "difference": null
+      },
+      {
+        "variant": "specialized-textures",
+        "image": "specialized-textures-1.png",
+        "difference": {
+          "max": 15,
+          "mean": 0.08521606083086053,
+          "changed": 273974,
+          "total": 3235200
+        }
+      },
+      {
+        "variant": "specialized-textures",
+        "image": "specialized-textures-2.png",
+        "difference": {
+          "max": 11,
+          "mean": 0.0861313056379822,
+          "changed": 276676,
+          "total": 3235200
+        }
+      },
+      {
+        "variant": "baseline-material",
+        "image": "baseline-material-3.png",
+        "difference": {
+          "max": 15,
+          "mean": 0.08512704005934718,
+          "changed": 272915,
+          "total": 3235200
+        }
+      }
+    ]
+  },
+  "kitchen": {
+    "evidence": "progressive-profile-3fc0Nt",
+    "baselineMs": 55732.59999999404,
+    "candidateMs": 53475.5,
+    "improvementPercent": 4.049873861966391,
+    "materialAudit": {
+      "materials": 1410,
+      "features": {
+        "clearcoat": {
+          "used": true,
+          "positive": 20,
+          "textures": 0,
+          "unknown": 0,
+          "max": 0.8999999761581421
+        },
+        "sheen": {
+          "used": false,
+          "positive": 0,
+          "textures": 0,
+          "unknown": 0,
+          "max": 0
+        },
+        "iridescence": {
+          "used": false,
+          "positive": 0,
+          "textures": 0,
+          "unknown": 0,
+          "max": 0
+        },
+        "anisotropy": {
+          "used": false,
+          "positive": 0,
+          "textures": 0,
+          "unknown": 0,
+          "max": 0
+        },
+        "transmission": {
+          "used": true,
+          "positive": 3,
+          "textures": 0,
+          "unknown": 0,
+          "max": 1
+        },
+        "dispersion": {
+          "used": false,
+          "positive": 0,
+          "textures": 0,
+          "unknown": 0,
+          "max": 0
+        }
+      },
+      "textures": {
+        "map": {
+          "used": true,
+          "count": 188
+        },
+        "normalMap": {
+          "used": false,
+          "count": 0
+        },
+        "bumpMap": {
+          "used": true,
+          "count": 9
+        },
+        "roughnessMap": {
+          "used": true,
+          "count": 60
+        },
+        "metalnessMap": {
+          "used": true,
+          "count": 60
+        },
+        "emissiveMap": {
+          "used": true,
+          "count": 3
+        },
+        "transmissionMap": {
+          "used": false,
+          "count": 0
+        },
+        "clearcoatMap": {
+          "used": false,
+          "count": 0
+        },
+        "clearcoatNormalMap": {
+          "used": false,
+          "count": 0
+        },
+        "clearcoatRoughnessMap": {
+          "used": false,
+          "count": 0
+        },
+        "sheenColorMap": {
+          "used": false,
+          "count": 0
+        },
+        "sheenRoughnessMap": {
+          "used": false,
+          "count": 0
+        },
+        "iridescenceMap": {
+          "used": false,
+          "count": 0
+        },
+        "iridescenceThicknessMap": {
+          "used": false,
+          "count": 0
+        },
+        "specularColorMap": {
+          "used": false,
+          "count": 0
+        },
+        "specularIntensityMap": {
+          "used": false,
+          "count": 0
+        },
+        "anisotropyMap": {
+          "used": false,
+          "count": 0
+        },
+        "alphaMap": {
+          "used": false,
+          "count": 0
+        }
+      }
+    },
+    "pixelDifference": {
+      "max": 12,
+      "mean": 0.17740386993076163,
+      "changed": 557408,
+      "total": 3235200
+    }
+  }
+}

@@ -8,7 +8,7 @@ module.exports=async(p,V)=>{
  await call('configure_scene',{planId:c.plan.id,revision:c.revision,requestId:'schedule-night-'+Date.now(),settings:{night:true,lamps:true,cut:2.8,labels:false,wallNumbers:false,clearances:false}});
  await p.setViewportSize({width:1640,height:1060});await p.locator('#tgLib').click();await p.locator('#tgPanel').click();
  await p.evaluate(()=>setView('3d'));await p.evaluate(()=>View3D.automationReady());
- await p.evaluate(()=>View3D.automationCamera({mode:'orbit',horizontalFov:70,position:{x:8410,y:6270,z:1660},target:{x:8410,y:3400,z:1880}}));
+ await p.evaluate(camera=>View3D.automationCamera(camera),V.benchmark?.camera||{mode:'orbit',horizontalFov:70,position:{x:8410,y:6270,z:1660},target:{x:8410,y:3400,z:1880}});
  await p.evaluate(()=>View3D.automationReady());
  const snapshotMs=await p.evaluate(async()=>{FurnishProgressiveView.exit();const t=performance.now(),data=await View3D.progressiveScene();window.scheduleScene={...data,camera:View3D.progressiveState().camera};return performance.now()-t;});
  const candidate=fs.readFileSync(path.resolve(__dirname,'../../src/render/lighting-preview.js'),'utf8');
@@ -50,5 +50,6 @@ module.exports=async(p,V)=>{
   await p.evaluate(()=>document.querySelector('#schedule-film').remove());
  }
  fs.writeFileSync(V.artifact('scheduling.json'),JSON.stringify(reports,null,2));const repeat=reports[3]?.pixelDifference.mean??0;for(const r of reports.filter(r=>r.label==='after'))assert(r.pixelDifference.mean<=.5&&r.pixelDifference.mean<=repeat*1.25+.5,'candidate image difference must stay within repeated baseline noise');assert.deepEqual(errors,[]);
+ if(V.benchmark?.validate)V.benchmark.validate(reports);
  return {passed:true,reports};
 };
