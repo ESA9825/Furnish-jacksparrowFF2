@@ -1,0 +1,255 @@
+[
+  {
+    "run": "progressive-profile-28MogC",
+    "variant": "baseline",
+    "totalMs": 47428.59999999404,
+    "snapshotMs": null,
+    "readyMs": 1747.7000000029802,
+    "denoiseMs": null,
+    "cpuRenderMs": 553.4000006914139,
+    "frames": 1609,
+    "scene": null,
+    "merge": null,
+    "pixelDifference": null,
+    "gpuKernelPercent": {
+      "ResetSlotsKernel": 0.007545067267176628,
+      "ZeroOutBufferKernel": 0.032501828227837745,
+      "PopulatePixelIndicesKernel": 0.006964677477393811,
+      "LogicKernel": 28.9887288302822,
+      "MaterialKernel": 29.418797664511736,
+      "QueueLengthToDispatchKernel": 0.3261790618579474,
+      "TraceRayKernel": 26.058340781669003,
+      "TraceShadowRayKernel": 9.020998502594281,
+      "QueueMediumWalksKernel": 6.110343706833503,
+      "MediumKernel": 0.029599879278923668
+    }
+  },
+  {
+    "run": "progressive-profile-28MogC",
+    "variant": "wg32",
+    "totalMs": 47377.90000000596,
+    "snapshotMs": null,
+    "readyMs": 1683.7000000029802,
+    "denoiseMs": null,
+    "cpuRenderMs": 522.1999995708466,
+    "frames": 1622,
+    "scene": null,
+    "merge": null,
+    "pixelDifference": {
+      "max": 20,
+      "mean": 0.09247218100890207,
+      "changed": 296835,
+      "total": 3235200
+    },
+    "gpuKernelPercent": {
+      "ResetSlotsKernel": 0.00684603272403642,
+      "ZeroOutBufferKernel": 0.029095639077154768,
+      "PopulatePixelIndicesKernel": 0.00684603272403642,
+      "LogicKernel": 28.817233746377028,
+      "MaterialKernel": 28.90509116633605,
+      "QueueLengthToDispatchKernel": 0.3171995162136912,
+      "TraceRayKernel": 25.54254809337995,
+      "TraceShadowRayKernel": 8.813126126742837,
+      "QueueMediumWalksKernel": 7.5334885100750695,
+      "MediumKernel": 0.028525136350151727
+    }
+  },
+  {
+    "run": "progressive-profile-28MogC",
+    "variant": "wg128",
+    "totalMs": 47872.90000000596,
+    "snapshotMs": null,
+    "readyMs": 1654.5,
+    "denoiseMs": null,
+    "cpuRenderMs": 590.5999998450279,
+    "frames": 1628,
+    "scene": null,
+    "merge": null,
+    "pixelDifference": {
+      "max": 20,
+      "mean": 0.08674919634025717,
+      "changed": 278029,
+      "total": 3235200
+    },
+    "gpuKernelPercent": {
+      "ResetSlotsKernel": 0.006883496816382725,
+      "ZeroOutBufferKernel": 0.030402110939023674,
+      "PopulatePixelIndicesKernel": 0.0074571215510812845,
+      "LogicKernel": 29.262892215912057,
+      "MaterialKernel": 29.59559456203776,
+      "QueueLengthToDispatchKernel": 0.3137727298801162,
+      "TraceRayKernel": 25.947914874089435,
+      "TraceShadowRayKernel": 8.900361383582817,
+      "QueueMediumWalksKernel": 5.901451270578803,
+      "MediumKernel": 0.033270234612516464
+    }
+  },
+  {
+    "run": "progressive-profile-28MogC",
+    "variant": "baseline",
+    "totalMs": 48740.89999999106,
+    "snapshotMs": null,
+    "readyMs": 1702.199999988079,
+    "denoiseMs": null,
+    "cpuRenderMs": 748.7999996095896,
+    "frames": 1543,
+    "scene": null,
+    "merge": null,
+    "pixelDifference": {
+      "max": 20,
+      "mean": 0.08936881800197824,
+      "changed": 286196,
+      "total": 3235200
+    },
+    "gpuKernelPercent": {
+      "ResetSlotsKernel": 0.007105533570913222,
+      "ZeroOutBufferKernel": 0.03443450884365635,
+      "PopulatePixelIndicesKernel": 0.009838431098187538,
+      "LogicKernel": 30.54942171888303,
+      "MaterialKernel": 29.192264806839027,
+      "QueueLengthToDispatchKernel": 0.2875008198692613,
+      "TraceRayKernel": 25.321935328712954,
+      "TraceShadowRayKernel": 8.646341196790416,
+      "QueueMediumWalksKernel": 5.921642362097992,
+      "MediumKernel": 0.029515293294562584
+    }
+  },
+  {
+    "run": "progressive-profile-T4fGhd",
+    "variant": "leaf2",
+    "totalMs": 48945.70000000298,
+    "snapshotMs": 677,
+    "readyMs": 1979.2999999970198,
+    "denoiseMs": 145.80000001192093,
+    "cpuRenderMs": 601.1000002324581,
+    "frames": 1628,
+    "scene": {
+      "glbBytes": 153736272,
+      "meshes": 5148,
+      "rects": 20,
+      "spots": 6
+    },
+    "merge": null,
+    "pixelDifference": null,
+    "gpuKernelPercent": {
+      "ResetSlotsKernel": 0.006889306074645645,
+      "ZeroOutBufferKernel": 0.032724203854566786,
+      "PopulatePixelIndicesKernel": 0.008037523753753252,
+      "LogicKernel": 31.441644707003512,
+      "MaterialKernel": 30.707359501214267,
+      "QueueLengthToDispatchKernel": 0.08783865245173178,
+      "TraceRayKernel": 23.56142677528808,
+      "TraceShadowRayKernel": 8.137992800675129,
+      "QueueMediumWalksKernel": 5.987381087706625,
+      "MediumKernel": 0.02870544197769016
+    }
+  },
+  {
+    "run": "progressive-profile-T4fGhd",
+    "variant": "baseline",
+    "totalMs": 48897.70000000298,
+    "snapshotMs": 677,
+    "readyMs": 1738.8999999910593,
+    "denoiseMs": 132.8999999910593,
+    "cpuRenderMs": 548.8000002354383,
+    "frames": 1544,
+    "scene": {
+      "glbBytes": 153736272,
+      "meshes": 5148,
+      "rects": 20,
+      "spots": 6
+    },
+    "merge": null,
+    "pixelDifference": {
+      "max": 21,
+      "mean": 0.08789224777448071,
+      "changed": 281932,
+      "total": 3235200
+    },
+    "gpuKernelPercent": {
+      "ResetSlotsKernel": 0.0072182121043864594,
+      "ZeroOutBufferKernel": 0.03775680177679067,
+      "PopulatePixelIndicesKernel": 0.008883953359244872,
+      "LogicKernel": 30.58245419211541,
+      "MaterialKernel": 29.772903942254292,
+      "QueueLengthToDispatchKernel": 0.1027207107162686,
+      "TraceRayKernel": 24.866740699611423,
+      "TraceShadowRayKernel": 8.535813436979437,
+      "QueueMediumWalksKernel": 6.049972237645768,
+      "MediumKernel": 0.035535813436979445
+    }
+  },
+  {
+    "run": "progressive-profile-kR0ouJ",
+    "variant": "baseline",
+    "totalMs": 49606.29999999702,
+    "snapshotMs": 676.7000000029802,
+    "readyMs": 1833.6000000089407,
+    "denoiseMs": 124.70000000298023,
+    "cpuRenderMs": 590.0999999046326,
+    "frames": 1537,
+    "scene": {
+      "glbBytes": 153736272,
+      "meshes": 5148,
+      "rects": 20,
+      "spots": 6
+    },
+    "merge": null,
+    "pixelDifference": null,
+    "gpuKernelPercent": {
+      "ResetSlotsKernel": 0.007118528983364545,
+      "ZeroOutBufferKernel": 0.02354590356035964,
+      "PopulatePixelIndicesKernel": 0.00930884559363056,
+      "LogicKernel": 30.3112439903187,
+      "MaterialKernel": 30.436639616256617,
+      "QueueLengthToDispatchKernel": 0.3126676961154771,
+      "TraceRayKernel": 24.662965031595377,
+      "TraceShadowRayKernel": 8.462288223762698,
+      "QueueMediumWalksKernel": 5.745200468727757,
+      "MediumKernel": 0.029021695086024656
+    }
+  },
+  {
+    "run": "progressive-profile-kR0ouJ",
+    "variant": "merge",
+    "totalMs": 52416.10000000894,
+    "snapshotMs": 676.7000000029802,
+    "readyMs": 1751.4000000059605,
+    "denoiseMs": 105.90000000596046,
+    "cpuRenderMs": 537.9000002294779,
+    "frames": 1559,
+    "scene": {
+      "glbBytes": 153736272,
+      "meshes": 5148,
+      "rects": 20,
+      "spots": 6
+    },
+    "merge": {
+      "before": 5442,
+      "removed": 3328,
+      "batches": 220,
+      "after": 2334,
+      "trianglesBefore": 2244003,
+      "trianglesAfter": 2244003,
+      "boundsMaxDelta": 9.855360780105367e-08
+    },
+    "pixelDifference": {
+      "max": 19,
+      "mean": 0.09592359050445104,
+      "changed": 306849,
+      "total": 3235200
+    },
+    "gpuKernelPercent": {
+      "ResetSlotsKernel": 0.006181170095499081,
+      "ZeroOutBufferKernel": 0.02730016792178758,
+      "PopulatePixelIndicesKernel": 0.008756657635290363,
+      "LogicKernel": 28.277822991892254,
+      "MaterialKernel": 28.163471345125654,
+      "QueueLengthToDispatchKernel": 0.2951508720600847,
+      "TraceRayKernel": 27.773027434093375,
+      "TraceShadowRayKernel": 9.178007396800206,
+      "QueueMediumWalksKernel": 6.244527088977932,
+      "MediumKernel": 0.02575487539791281
+    }
+  }
+]

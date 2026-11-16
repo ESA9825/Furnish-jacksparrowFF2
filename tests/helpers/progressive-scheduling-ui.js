@@ -10,26 +10,28 @@ module.exports=async(p,V)=>{
  await p.evaluate(()=>setView('3d'));await p.evaluate(()=>View3D.automationReady());
  await p.evaluate(()=>View3D.automationCamera({mode:'orbit',horizontalFov:70,position:{x:8410,y:6270,z:1660},target:{x:8410,y:3400,z:1880}}));
  await p.evaluate(()=>View3D.automationReady());
- await p.evaluate(async()=>{FurnishProgressiveView.exit();const data=await View3D.progressiveScene();window.scheduleScene={...data,camera:View3D.progressiveState().camera};});
+ const snapshotMs=await p.evaluate(async()=>{FurnishProgressiveView.exit();const t=performance.now(),data=await View3D.progressiveScene();window.scheduleScene={...data,camera:View3D.progressiveState().camera};return performance.now()-t;});
  const candidate=fs.readFileSync(path.resolve(__dirname,'../../src/render/lighting-preview.js'),'utf8');
  const baseline=process.env.FURNISH_PROGRESSIVE_BASELINE?fs.readFileSync(process.env.FURNISH_PROGRESSIVE_BASELINE,'utf8'):candidate.replace('tracer.frameBudget=1000000;tracer.targetFrameTime=32;','');
- const reports=[];let source=baseline;
+ const reports=[];let source=baseline,labelNow='before';
+ if(V.benchmark?.routes)await V.benchmark.routes(p,()=>labelNow);
  await p.route('**/src/render/lighting-preview.js',r=>r.fulfill({contentType:'text/javascript',body:source}));
  // Repeat in reverse order to expose cache/order effects. Every run uses the exact same GLB bytes.
- for(const label of (process.env.FURNISH_PROGRESSIVE_BENCHMARK_REPEATS==='1'?['before','after']:['before','after','after','before'])){
-  source=label==='before'?baseline:candidate;
+ for(const label of (V.benchmark?.labels||(process.env.FURNISH_PROGRESSIVE_BENCHMARK_REPEATS==='1'?['before','after']:['before','after','after','before']))){
+  labelNow=label;source=V.benchmark?.source?V.benchmark.source(candidate,label):label==='before'?baseline:candidate;
   const result=await p.evaluate(async label=>{
    const f=document.createElement('iframe');f.id='schedule-film';f.style='position:fixed;inset:100px 0 0;width:100%;height:80%;z-index:99999';f.src='src/render/lighting-preview.html';
-   const token='schedule-'+Math.random(),start=performance.now(),progress=[];
+   const token='schedule-'+Math.random(),start=performance.now(),progress=[],stages=[];
    return await new Promise((resolve,reject)=>{
     const timer=setTimeout(()=>{cleanup();reject(Error('benchmark timeout'));},240000);
     function cleanup(){clearTimeout(timer);window.removeEventListener('message',receive);}
     function receive(e){if(e.source!==f.contentWindow||e.data?.channel!=='furnish-lighting-preview')return;const d=e.data;
      if(d.type==='ready'){const data={...scheduleScene,mode:'live',quality:'detail',edge:1200,token,viewKey:'fixed'};data.buffer=data.buffer.slice(0);f.contentWindow.postMessage({channel:'furnish-lighting-preview',type:'scene',...data},location.origin,[data.buffer]);}
      if(d.token!==token)return;
+     if(d.type==='status'||d.type==='live-ready')stages.push({ms:performance.now()-start,type:d.type,message:d.message});
      if(d.type==='live-progress')progress.push({ms:performance.now()-start,samples:d.samples,frameTime:d.frameTime});
      if(d.type==='error'){cleanup();reject(Error(d.message));}
-     if(d.type==='live-complete'){cleanup();resolve({label,ms:performance.now()-start,samples:d.samples,progress});}
+     if(d.type==='live-complete'){cleanup();resolve({label,ms:performance.now()-start,samples:d.samples,progress,stages});}
     }
     window.addEventListener('message',receive);document.body.append(f);
    });
@@ -37,7 +39,8 @@ module.exports=async(p,V)=>{
   const pixels=await p.frameLocator('#schedule-film').locator('canvas').evaluate(c=>({width:c.width,height:c.height,png:c.toDataURL('image/png')}));
   assert.equal(Math.max(pixels.width,pixels.height),1200);assert.equal(result.samples,256);
   const name=label+'-'+reports.length;fs.writeFileSync(V.artifact(name+'.png'),Buffer.from(pixels.png.split(',')[1],'base64'));
-  reports.push({...result,width:pixels.width,height:pixels.height,image:name+'.png'});console.log('SCHEDULE '+label+' '+Math.round(result.ms)+'ms');
+  const profile=await p.frameLocator('#schedule-film').locator('body').evaluate(()=>globalThis.__perf||null);
+  reports.push({...result,profile,snapshotMs,width:pixels.width,height:pixels.height,image:name+'.png'});console.log('SCHEDULE '+label+' '+Math.round(result.ms)+'ms');fs.writeFileSync(V.artifact('scheduling.json'),JSON.stringify(reports,null,2));
   // Compare final decoded pixels in-browser, without a lossy screenshot or a new imaging dependency.
   if(!await p.evaluate(()=>!!window.scheduleReference))await p.evaluate(png=>{window.scheduleReference=png;},pixels.png);
   else {
