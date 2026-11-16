@@ -12,6 +12,7 @@ function noise(x,y,n=8){
  return mix(mix(h(ix,iy),h(ix+1,iy),sx),mix(h(ix,iy+1),h(ix+1,iy+1),sx),sy);
 }
 function relief(kind,u,v){
+ if(kind==='clear')return 0;
  if(kind==='reeded'||kind==='fluted')return .5+.5*Math.cos(tau*u);
  if(kind==='ingot')return Math.pow(Math.max(0,Math.sin(Math.PI*u)*Math.sin(Math.PI*v)),.55);
  // Periodic domain warping breaks the square noise lattice without a moving
@@ -50,9 +51,9 @@ function roughnessPixels(kind,size=256){
 function build(T,f){
  const P=products(),l=P.artGlass(f),r=P.artGlassPatterns[l.pattern],g=new T.Group(),Physical=T.MeshPhysicalMaterial||T.MeshStandardMaterial;
  const options={color:f.color||'#ffffff',roughness:r.roughness,metalness:0};
- if(T.MeshPhysicalMaterial)Object.assign(options,{transmission:1,ior:1.5,thickness:f.d/1000,attenuationColor:'#e5f6f0',attenuationDistance:3});
+ if(T.MeshPhysicalMaterial)Object.assign(options,{transmission:1,ior:1.5,thickness:f.d/1000,attenuationColor:l.pattern==='clear'?'#ffffff':'#e5f6f0',attenuationDistance:3});
  const clear=new Physical(options),pattern=clear.clone?clear.clone():new Physical(options);
- if(T.DataTexture&&pattern.normalScale){
+ if(l.pattern!=='clear'&&T.DataTexture&&pattern.normalScale){
   // A private texture per instance: changing dimensions never mutates another pane.
   const texture=data=>{const tex=new T.DataTexture(data,256,256,T.RGBAFormat);tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.repeat.set(f.w/r.pitch,l.h/r.pitch);tex.magFilter=T.LinearFilter;tex.minFilter=T.LinearMipmapLinearFilter;tex.generateMipmaps=true;tex.needsUpdate=true;return tex;};
   const tex=texture(normalPixels(l.pattern));

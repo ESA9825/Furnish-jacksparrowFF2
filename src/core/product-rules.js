@@ -23,6 +23,7 @@ const kitchen=()=>root.FurnishKitchen||(typeof require==='function'?require('./k
 // Sample names follow the user's photos. Pitch/relief are visual estimates (mm),
 // not supplier specifications; IOR 1.5 is a rendering approximation.
 const artGlassPatterns={
+ clear:{label:'超白透明（无花纹）',pitch:100,relief:0,roughness:.015},
  cube:{label:'水立方',pitch:120,relief:9,roughness:.035},
  reeded:{label:'大灯芯',pitch:8,relief:.7,roughness:.04},
  fluted:{label:'长虹',pitch:24,relief:2.0,roughness:.025},
