@@ -20,6 +20,14 @@ try{
  const app=path.join(out,'Furnish.app'),binary=path.join(app,'Contents/MacOS/Electron');
  assert.equal(desktopExecutable(out,{env:{},platform:'darwin',arch:'arm64'}),binary);
  assert.equal(applicationRoot({packaged:true,executable:binary,platform:'darwin'}),out);
+ // Stock-named Electron reports isPackaged=false even after embedding our app.
+ const resources=path.join(app,'Contents/Resources');
+ assert.equal(applicationRoot({packaged:false,executable:binary,sourceRoot:resources,platform:'darwin'}),out);
+ const cwd=process.cwd();try{process.chdir(job.dir);assert.equal(workspaceRoot({appRoot:applicationRoot({packaged:false,executable:binary,sourceRoot:resources,platform:'darwin'})}),fs.realpathSync(out));}finally{process.chdir(cwd);}
+ assert.equal(applicationRoot({packaged:false,executable:binary,sourceRoot:job.dir,platform:'darwin'}),job.dir,'Source mode must keep its source root even with a macOS runtime');
+ const applications=path.join(job.dir,'Applications');fs.mkdirSync(applications);job.discard('Applications');
+ const shortcut=path.join(applications,'Furnish.app');fs.symlinkSync(app,shortcut,'dir');
+ try{assert.equal(applicationRoot({packaged:false,executable:path.join(shortcut,'Contents/MacOS/Electron'),sourceRoot:resources,platform:'darwin'}),out,'A Finder symlink and the loaded code must resolve to the same bundle');}finally{fs.unlinkSync(shortcut);}
  assert.equal(workspaceRoot({appRoot:out}),fs.realpathSync(out));
  assert.equal(applicationRoot({packaged:false,sourceRoot:out,platform:'darwin'}),out);
  assert.equal(applicationRoot({packaged:true,executable:path.join(out,'Furnish.exe'),platform:'win32'}),out);

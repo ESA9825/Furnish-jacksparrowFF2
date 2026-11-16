@@ -2,8 +2,14 @@
 const fs=require('node:fs'),path=require('node:path');
 // The writable workspace lives beside the .app, never inside its signed bundle.
 function applicationRoot({packaged,executable,sourceRoot,platform=process.platform}){
- if(!packaged)return sourceRoot;
- return platform==='darwin'?path.resolve(path.dirname(executable),'../../..'):path.dirname(executable);
+ // Electron's stock executable name reports isPackaged=false. Treat code
+ // actually loaded from this .app's Resources/app as embedded nevertheless;
+ // running source code with node_modules/Electron.app must stay source mode.
+ const mac=platform==='darwin',real=p=>fs.existsSync(p)?fs.realpathSync(p):path.resolve(p);
+ const bin=executable&&path.dirname(mac?real(executable):executable);
+ const embedded=mac&&bin&&path.basename(bin)==='MacOS'&&path.basename(path.dirname(bin))==='Contents'&&path.extname(path.resolve(bin,'../..'))==='.app'&&sourceRoot&&real(sourceRoot)===path.resolve(bin,'../Resources');
+ if(!packaged&&!embedded)return sourceRoot;
+ return mac?path.resolve(bin,'../../..'):path.dirname(executable);
 }
 function workspaceRoot({appRoot,config,override}){
  const root=path.resolve(override||config?.root||appRoot);

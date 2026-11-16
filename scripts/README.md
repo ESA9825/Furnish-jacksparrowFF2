@@ -8,6 +8,7 @@
 | `serve.cjs`、`repository-server.cjs` | 正式本地服务与仓库设计保存接口 |
 | `workspace-files.cjs`、`configure-storage.cjs` | 本地正式存档、历史备份与显式修改本机保存位置；支持 `node scripts/configure-storage.cjs --status` |
 | `package-desktop.cjs`、`verify-desktop.cjs` | 可选 Electron Windows 便携包与隔离真实桌面／浏览器验收；不构建网页源码 |
+| `verify-desktop-startup.cjs` | macOS 实机无 root 环境变量的配置／符号链接／便携启动验收；保留签名副本和截图，见[记录](../docs/validation/macos-startup-20261116/README.md) |
 | `verify-browser.cjs` | 浏览器验收调度、隔离副本、临时服务、依赖排序和结果 |
 | `verify/` | 浏览器函数与 8 个独立 Node 验收实现，当前名称以 `--list` 为准 |
 | `lib/` | 浏览器环境配置、预览模板装配等共用代码 |

@@ -1,3 +1,5 @@
+2026-11-16（Mac快捷启动）：修复保留Electron文件名导致isPackaged=false时误把Resources作为工作目录，以及符号链接入口与模块实际路径不一致的问题；只识别同一包的实际嵌入目录，源码／Windows及配置优先级保持。补充无root环境变量的真实配置、快捷链接和便携启动验收，四项桌面回归通过；本机应用备份后更新并重签，正式存档及路径配置哈希保持。未跑全量或重复模型渲染。见[根因与验收](validation/macos-startup-20261116/README.md)。
+
 2026-11-16（淘宝资料采集修复）：归档 cn-scraper-mcp 0.5.0 的独立兼容入口，仅将被 RGV587 拒绝的淘宝详情改为本人登录浏览器的商品页读取；校验商品身份，价格歧义保留未知，登录／验证留给本人处理。上游包和其它工具保留，配置与登录状态不入库。两商品、新建登记连接及用户重启后当前聊天调用通过；新增无网络回归及 MCP 探针。页面结构变化、其它平台与 Windows 实机未覆盖，未改应用／正式方案或运行全量。见[原因、部署、回滚与验收](CN-SCRAPER-TAOBAO.md)。
 
 2026-11-15（Mac 原生实测）：完成 arm64 Node/Electron、原生签名打包、Furnish 两项技能与 Blender 插件/MCP 安装，Finder 入口补用户工具目录；桌面验收沿共用浏览器配置选择本机 Chrome，设备规则测试在非 Windows 使用 python3。打包桌面保存／Cmd／重开、HTTP 与离线 file 三维、WebGPU 观察及 Blender GUI／代表性 GLB 重建回读通过。正式云盘数据仍待完整落盘，私人精修工程、长时间压力及人工 Dock／触控板未验；用户指定 Cycles 继续由 Windows 承担，未改生产渲染策略。见[实机记录](validation/macos-native-20261115/README.md)。
