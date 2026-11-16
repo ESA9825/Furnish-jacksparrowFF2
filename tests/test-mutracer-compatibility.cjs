@@ -1,0 +1,5 @@
+'use strict';
+const assert=require('node:assert/strict'),{inspect}=require('./helpers/mutracer-compatibility.cjs');
+const projection=Array(16).fill(0),material={clearcoat:.5,transmission:1,ior:1.5,roughness:.1,bumpMap:true,converted:{coatWeight:.5,transmissionWeight:1,specularIor:1.5,specularRoughness:.1,bumpMap:false}};
+const r={profile:{backend:'MuTracer',materials:[material],projection:{requested:projection,actual:projection,transform:projection,requestedTransform:projection},meshCount:1,geometry:{sourceMeshes:1,sourceTriangles:12,convertedTriangles:12}}};let a=inspect(r);assert.equal(a.compatible,false);assert.equal(a.lostBumpMaterials,1);assert.equal(a.numericMismatches.length,0);assert.equal(a.projectionMax,0);assert(a.geometry.triangleCountEqual);
+material.converted.specularIor=1.3;a=inspect(r);assert.equal(a.numericMismatches[0].property,'ior');material.bumpMap=false;a=inspect(r);assert.equal(a.compatible,false,'no auto approval from counts alone');assert.throws(()=>inspect({profile:null}));console.log('PASS missing bump-map rejection, numeric IOR mismatch, camera/geometry audit and no automatic visual-equivalence claim');

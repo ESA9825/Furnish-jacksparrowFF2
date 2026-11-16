@@ -1,0 +1,624 @@
+{
+  "package": {
+    "name": "@meimu/mutracer",
+    "version": "0.3.1",
+    "tgzSha256": "d052be9a8a479b4a18c16b4e80c1c45e8f406838c3b83565e5511e4ccf627748",
+    "umdSha256": "fad18f1a10b948d81524c9a62f130a1068f8d84f6f0579d3d9f5f3eba91acfec",
+    "workerSha256": "84812512cd42b873f2fb10e0849ded5b2387c29ca29364a4287cbb7ed5a88126"
+  },
+  "runs": [
+    {
+      "label": "three",
+      "ms": 46568.59999999404,
+      "firstMs": 2431.7000000029802,
+      "sixteenMs": 5696,
+      "tracedMs": null,
+      "finishedMs": null,
+      "width": 1200,
+      "height": 672,
+      "pixelDifference": null,
+      "evidence": "mutracer-comparison-E6hzgB",
+      "phase": "initial-fp32-mu-auto-three"
+    },
+    {
+      "label": "mutracer",
+      "ms": 52810.79999999702,
+      "firstMs": 2174.5,
+      "sixteenMs": 5301.9000000059605,
+      "tracedMs": null,
+      "finishedMs": 52724.5,
+      "width": 1200,
+      "height": 672,
+      "pixelDifference": {
+        "max": 76,
+        "mean": 3.9802049231150796,
+        "changed": 2265856,
+        "total": 3225600
+      },
+      "evidence": "mutracer-comparison-E6hzgB",
+      "phase": "initial-fp32-mu-auto-three",
+      "audit": {
+        "sourceMaterials": 1410,
+        "coatCount": 20,
+        "glass": [
+          {
+            "name": "",
+            "clearcoat": 0,
+            "transmission": 1,
+            "roughness": 0.02500000037252903,
+            "ior": 1.4700000286102295,
+            "converted": {
+              "coatWeight": 0,
+              "coatRoughness": 0,
+              "transmissionWeight": 1,
+              "specularIor": 1.4700000286102295
+            }
+          },
+          {
+            "name": "art-glass-polished-edge",
+            "clearcoat": 0,
+            "transmission": 1,
+            "roughness": 0.015,
+            "ior": 1.5,
+            "converted": {
+              "coatWeight": 0,
+              "coatRoughness": 0,
+              "transmissionWeight": 1,
+              "specularIor": 1.5
+            }
+          },
+          {
+            "name": "art-glass-clear",
+            "clearcoat": 0,
+            "transmission": 1,
+            "roughness": 0.015,
+            "ior": 1.5,
+            "converted": {
+              "coatWeight": 0,
+              "coatRoughness": 0,
+              "transmissionWeight": 1,
+              "specularIor": 1.5
+            }
+          }
+        ],
+        "missingBumps": 0,
+        "geometry": null,
+        "projectionMax": null,
+        "matrixMax": null,
+        "lightCount": 28,
+        "pointSpotRadii": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "textureScale": 1,
+        "lightSampling": {
+          "emissiveTriangles": 8788,
+          "activeChoices": 8816,
+          "totalWeight": 10.905099868774414,
+          "domains": {
+            "environment": {
+              "count": 1,
+              "weight": 0.2322259904498082,
+              "pmf": 0.021295173093676567
+            },
+            "infinite": {
+              "count": 1,
+              "weight": 0.0008534154202783028,
+              "pmf": 7.825837383279577e-05
+            },
+            "localAndEmissive": {
+              "count": 8814,
+              "weight": 10.672020629324841,
+              "pmf": 0.9786265749013876
+            }
+          }
+        },
+        "gpuTraceTiming": {
+          "causticTimeMs": 0,
+          "photonMappingTimeMs": 0,
+          "pathTracingTimeMs": 43.58144,
+          "tileTimeMs": 43.58144,
+          "tileTimePerSampleMs": 43.58144,
+          "estimatedFullFrameTimeMs": 174.32576,
+          "tileCount": 4
+        },
+        "sourceParametersPreservedButEffectsEquivalent": false
+      }
+    },
+    {
+      "label": "mutracer",
+      "ms": 52274.89999999106,
+      "firstMs": 1569.7999999970198,
+      "sixteenMs": 4622.699999988079,
+      "tracedMs": null,
+      "finishedMs": 52236.19999998808,
+      "width": 1200,
+      "height": 672,
+      "pixelDifference": null,
+      "evidence": "mutracer-comparison-oCJISv",
+      "phase": "reverse-fp32-mu-auto-three",
+      "audit": {
+        "sourceMaterials": 1410,
+        "coatCount": 20,
+        "glass": [
+          {
+            "name": "",
+            "clearcoat": 0,
+            "transmission": 1,
+            "roughness": 0.02500000037252903,
+            "ior": 1.4700000286102295,
+            "bumpMap": false,
+            "bumpScale": 1,
+            "converted": {
+              "coatWeight": 0,
+              "coatRoughness": 0,
+              "transmissionWeight": 1,
+              "specularIor": 1.4700000286102295,
+              "bumpMap": false,
+              "thinWalled": false
+            }
+          },
+          {
+            "name": "art-glass-polished-edge",
+            "clearcoat": 0,
+            "transmission": 1,
+            "roughness": 0.015,
+            "ior": 1.5,
+            "bumpMap": false,
+            "bumpScale": 1,
+            "converted": {
+              "coatWeight": 0,
+              "coatRoughness": 0,
+              "transmissionWeight": 1,
+              "specularIor": 1.5,
+              "bumpMap": false,
+              "thinWalled": false
+            }
+          },
+          {
+            "name": "art-glass-clear",
+            "clearcoat": 0,
+            "transmission": 1,
+            "roughness": 0.015,
+            "ior": 1.5,
+            "bumpMap": false,
+            "bumpScale": 1,
+            "converted": {
+              "coatWeight": 0,
+              "coatRoughness": 0,
+              "transmissionWeight": 1,
+              "specularIor": 1.5,
+              "bumpMap": false,
+              "thinWalled": false
+            }
+          }
+        ],
+        "missingBumps": 9,
+        "geometry": null,
+        "projectionMax": 0.0,
+        "matrixMax": 0,
+        "lightCount": 28,
+        "pointSpotRadii": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "textureScale": 1,
+        "lightSampling": {
+          "emissiveTriangles": 8788,
+          "activeChoices": 8816,
+          "totalWeight": 10.905099868774414,
+          "domains": {
+            "environment": {
+              "count": 1,
+              "weight": 0.2322259904498082,
+              "pmf": 0.021295173093676567
+            },
+            "infinite": {
+              "count": 1,
+              "weight": 0.0008534154202783028,
+              "pmf": 7.825837383279577e-05
+            },
+            "localAndEmissive": {
+              "count": 8814,
+              "weight": 10.672020629324841,
+              "pmf": 0.9786265749013876
+            }
+          }
+        },
+        "gpuTraceTiming": {
+          "causticTimeMs": 0,
+          "photonMappingTimeMs": 0,
+          "pathTracingTimeMs": 45.154304,
+          "tileTimeMs": 45.154304,
+          "tileTimePerSampleMs": 45.154304,
+          "estimatedFullFrameTimeMs": 180.617216,
+          "tileCount": 4
+        },
+        "sourceParametersPreservedButEffectsEquivalent": false
+      }
+    },
+    {
+      "label": "three",
+      "ms": 46444.5,
+      "firstMs": 2530.7000000029802,
+      "sixteenMs": 5877.4000000059605,
+      "tracedMs": null,
+      "finishedMs": null,
+      "width": 1200,
+      "height": 672,
+      "pixelDifference": {
+        "max": 89,
+        "mean": 3.9763045634920635,
+        "changed": 2265758,
+        "total": 3225600
+      },
+      "evidence": "mutracer-comparison-oCJISv",
+      "phase": "reverse-fp32-mu-auto-three"
+    },
+    {
+      "label": "three",
+      "ms": 51229.30000001192,
+      "firstMs": 2700.2000000029802,
+      "sixteenMs": 6099.300000011921,
+      "tracedMs": null,
+      "finishedMs": null,
+      "width": 1200,
+      "height": 672,
+      "pixelDifference": null,
+      "evidence": "mutracer-comparison-VEek3v",
+      "phase": "kitchen-visual"
+    },
+    {
+      "label": "mutracer",
+      "ms": 55118.10000000894,
+      "firstMs": 1377.2000000029802,
+      "sixteenMs": 4529.300000011921,
+      "tracedMs": null,
+      "finishedMs": 55077.10000000894,
+      "width": 1200,
+      "height": 672,
+      "pixelDifference": {
+        "max": 126,
+        "mean": 9.803763330853174,
+        "changed": 2406785,
+        "total": 3225600
+      },
+      "evidence": "mutracer-comparison-VEek3v",
+      "phase": "kitchen-visual",
+      "audit": {
+        "sourceMaterials": 1410,
+        "coatCount": 20,
+        "glass": [
+          {
+            "name": "",
+            "clearcoat": 0,
+            "transmission": 1,
+            "roughness": 0.02500000037252903,
+            "ior": 1.4700000286102295,
+            "bumpMap": false,
+            "bumpScale": 1,
+            "thickness": 0.0018,
+            "attenuationDistance": 20,
+            "sourceThinWalled": false,
+            "converted": {
+              "coatWeight": 0,
+              "coatRoughness": 0,
+              "transmissionWeight": 1,
+              "specularIor": 1.4700000286102295,
+              "bumpMap": false,
+              "thinWalled": false
+            }
+          },
+          {
+            "name": "art-glass-polished-edge",
+            "clearcoat": 0,
+            "transmission": 1,
+            "roughness": 0.015,
+            "ior": 1.5,
+            "bumpMap": false,
+            "bumpScale": 1,
+            "thickness": 0.012,
+            "attenuationDistance": 3,
+            "sourceThinWalled": false,
+            "converted": {
+              "coatWeight": 0,
+              "coatRoughness": 0,
+              "transmissionWeight": 1,
+              "specularIor": 1.5,
+              "bumpMap": false,
+              "thinWalled": false
+            }
+          },
+          {
+            "name": "art-glass-clear",
+            "clearcoat": 0,
+            "transmission": 1,
+            "roughness": 0.015,
+            "ior": 1.5,
+            "bumpMap": false,
+            "bumpScale": 1,
+            "thickness": 0.012,
+            "attenuationDistance": 3,
+            "sourceThinWalled": false,
+            "converted": {
+              "coatWeight": 0,
+              "coatRoughness": 0,
+              "transmissionWeight": 1,
+              "specularIor": 1.5,
+              "bumpMap": false,
+              "thinWalled": false
+            }
+          }
+        ],
+        "missingBumps": 9,
+        "geometry": null,
+        "projectionMax": 0.0,
+        "matrixMax": 3.365363543395006e-16,
+        "lightCount": 28,
+        "pointSpotRadii": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "textureScale": 1,
+        "lightSampling": {
+          "emissiveTriangles": 8788,
+          "activeChoices": 8816,
+          "totalWeight": 10.905099868774414,
+          "domains": {
+            "environment": {
+              "count": 1,
+              "weight": 0.2322259904498082,
+              "pmf": 0.021295173093676567
+            },
+            "infinite": {
+              "count": 1,
+              "weight": 0.0008534154202783028,
+              "pmf": 7.825837383279577e-05
+            },
+            "localAndEmissive": {
+              "count": 8814,
+              "weight": 10.672020629324841,
+              "pmf": 0.9786265749013876
+            }
+          }
+        },
+        "gpuTraceTiming": {
+          "causticTimeMs": 0,
+          "photonMappingTimeMs": 0,
+          "pathTracingTimeMs": 32.374784,
+          "tileTimeMs": 32.374784,
+          "tileTimePerSampleMs": 32.374784,
+          "estimatedFullFrameTimeMs": 194.24870399999998,
+          "tileCount": 6
+        },
+        "sourceParametersPreservedButEffectsEquivalent": false
+      }
+    },
+    {
+      "label": "three",
+      "ms": 47082.69999998808,
+      "firstMs": 2745.5999999940395,
+      "sixteenMs": 6097.0999999940395,
+      "tracedMs": 46903.79999999702,
+      "finishedMs": null,
+      "width": 1200,
+      "height": 672,
+      "pixelDifference": null,
+      "evidence": "mutracer-comparison-Rxqkfj",
+      "phase": "matched-fp32-control",
+      "denoiser": {
+        "precision": "fp32",
+        "gpuEngine": "wgsl",
+        "model": "oidn-unet-small-v1",
+        "hdrTransfer": "pu",
+        "dynamicTile": {
+          "enabled": false,
+          "currentTileSize": 512,
+          "minTileSize": 256,
+          "maxTileSize": 512,
+          "targetTileTimeMs": 16
+        }
+      }
+    },
+    {
+      "label": "mutracer",
+      "ms": 52208.79999999702,
+      "firstMs": 1518.7999999970198,
+      "sixteenMs": 4533.29999999702,
+      "tracedMs": 52065.40000000596,
+      "finishedMs": 52176.70000000298,
+      "width": 1200,
+      "height": 672,
+      "pixelDifference": {
+        "max": 76,
+        "mean": 3.9919593253968255,
+        "changed": 2267656,
+        "total": 3225600
+      },
+      "evidence": "mutracer-comparison-Rxqkfj",
+      "phase": "matched-fp32-control",
+      "audit": {
+        "sourceMaterials": 1410,
+        "coatCount": 20,
+        "glass": [
+          {
+            "name": "",
+            "clearcoat": 0,
+            "transmission": 1,
+            "roughness": 0.02500000037252903,
+            "ior": 1.4700000286102295,
+            "bumpMap": false,
+            "bumpScale": 1,
+            "thickness": 0.0018,
+            "attenuationDistance": 20,
+            "sourceThinWalled": false,
+            "converted": {
+              "coatWeight": 0,
+              "coatRoughness": 0,
+              "transmissionWeight": 1,
+              "specularIor": 1.4700000286102295,
+              "specularRoughness": 0.02500000037252903,
+              "baseMetalness": 0,
+              "coatIor": 1.5,
+              "coatDarkening": 0,
+              "transmissionDepth": 20,
+              "transmissionColor": [
+                0.97,
+                0.99,
+                1
+              ],
+              "bumpMap": false,
+              "thinWalled": false
+            }
+          },
+          {
+            "name": "art-glass-polished-edge",
+            "clearcoat": 0,
+            "transmission": 1,
+            "roughness": 0.015,
+            "ior": 1.5,
+            "bumpMap": false,
+            "bumpScale": 1,
+            "thickness": 0.012,
+            "attenuationDistance": 3,
+            "sourceThinWalled": false,
+            "converted": {
+              "coatWeight": 0,
+              "coatRoughness": 0,
+              "transmissionWeight": 1,
+              "specularIor": 1.5,
+              "specularRoughness": 0.015,
+              "baseMetalness": 0,
+              "coatIor": 1.5,
+              "coatDarkening": 0,
+              "transmissionDepth": 3,
+              "transmissionColor": [
+                1,
+                1,
+                1
+              ],
+              "bumpMap": false,
+              "thinWalled": false
+            }
+          },
+          {
+            "name": "art-glass-clear",
+            "clearcoat": 0,
+            "transmission": 1,
+            "roughness": 0.015,
+            "ior": 1.5,
+            "bumpMap": false,
+            "bumpScale": 1,
+            "thickness": 0.012,
+            "attenuationDistance": 3,
+            "sourceThinWalled": false,
+            "converted": {
+              "coatWeight": 0,
+              "coatRoughness": 0,
+              "transmissionWeight": 1,
+              "specularIor": 1.5,
+              "specularRoughness": 0.015,
+              "baseMetalness": 0,
+              "coatIor": 1.5,
+              "coatDarkening": 0,
+              "transmissionDepth": 3,
+              "transmissionColor": [
+                1,
+                1,
+                1
+              ],
+              "bumpMap": false,
+              "thinWalled": false
+            }
+          }
+        ],
+        "missingBumps": 9,
+        "geometry": {
+          "sourceMeshes": 5442,
+          "sourceTriangles": 2244003,
+          "convertedTriangles": 2244003,
+          "sourceBounds": {
+            "min": [
+              -4.850000010490417,
+              -2.3841857821338408e-08,
+              -4.899999997317791
+            ],
+            "max": [
+              4.896000009536743,
+              2.76000000037998,
+              6.017000008583069
+            ]
+          },
+          "convertedBounds": {
+            "min": {
+              "0": -4.849999904632568,
+              "1": -2.3841858265427618e-08,
+              "2": -4.900000095367432
+            },
+            "max": {
+              "0": 4.895999908447266,
+              "1": 2.759999990463257,
+              "2": 6.017000198364258
+            }
+          }
+        },
+        "projectionMax": 0.0,
+        "matrixMax": 0,
+        "lightCount": 28,
+        "pointSpotRadii": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "textureScale": 1,
+        "lightSampling": {
+          "emissiveTriangles": 8788,
+          "activeChoices": 8816,
+          "totalWeight": 10.905099868774414,
+          "domains": {
+            "environment": {
+              "count": 1,
+              "weight": 0.2322259904498082,
+              "pmf": 0.021295173093676567
+            },
+            "infinite": {
+              "count": 1,
+              "weight": 0.0008534154202783028,
+              "pmf": 7.825837383279577e-05
+            },
+            "localAndEmissive": {
+              "count": 8814,
+              "weight": 10.672020629324841,
+              "pmf": 0.9786265749013876
+            }
+          }
+        },
+        "gpuTraceTiming": {
+          "causticTimeMs": 0,
+          "photonMappingTimeMs": 0,
+          "pathTracingTimeMs": 45.940736,
+          "tileTimeMs": 45.940736,
+          "tileTimePerSampleMs": 45.940736,
+          "estimatedFullFrameTimeMs": 183.762944,
+          "tileCount": 4
+        },
+        "sourceParametersPreservedButEffectsEquivalent": false
+      }
+    }
+  ]
+}
