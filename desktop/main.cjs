@@ -54,6 +54,7 @@ function ensureMcp(){
     const win=mainWindow;if(quitting||!win||win.isDestroyed())throw Error('Furnish 主窗口尚未就绪');
     const page=new URL(win.webContents.getURL());if(page.origin!==new URL(backend.url).origin||!['/','/index.html'].includes(page.pathname))throw Error('Furnish 主窗口未处于正式项目页面');
     const result=await win.webContents.executeJavaScript(`(async()=>{if(!window.FurnishMcp)throw Error('Furnish 页面尚未加载 MCP 接口，请刷新');return window.FurnishMcp.execute(${JSON.stringify(name)},${JSON.stringify(args)});})()`);
+    if(name==='export_artifact'){const {artifact,...metadata}=result;return {...metadata,artifact:require(path.join(root,'scripts/mcp-artifacts.cjs')).writeArtifact(root,args.requestId,artifact)};}
     if(name==='take_screenshot'){
      const picture=await win.webContents.capturePage(result.screenshotTarget==='window'?undefined:result.viewport);
      if(picture.isEmpty())throw Error('桌面截图为空，请恢复窗口后重试');

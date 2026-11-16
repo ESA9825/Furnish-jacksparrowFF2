@@ -2,7 +2,7 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),{execFileSync}=require('node:child_process');
 const root=path.resolve(__dirname,'..');
-const runtimeFiles=['serve.cjs','server-runtime.cjs','server-recovery.cjs','backend-update.cjs','repository-server.cjs','workspace-files.cjs','blender-server.cjs','blender-render.py','blender-sync-server.cjs','blender-sync-addon.py','blender-project.cjs','blender-refined.py','desktop-mcp.cjs','furnish-mcp.cjs','register-codex-mcp.cjs','launch-desktop.cjs','windows-integrity.cjs','windows-integrity.ps1'];
+const runtimeFiles=['serve.cjs','server-runtime.cjs','server-recovery.cjs','backend-update.cjs','repository-server.cjs','workspace-files.cjs','blender-server.cjs','blender-render.py','blender-sync-server.cjs','blender-sync-addon.py','blender-project.cjs','blender-refined.py','desktop-mcp.cjs','furnish-mcp.cjs','mcp-artifacts.cjs','mcp-references.cjs','register-codex-mcp.cjs','launch-desktop.cjs','windows-integrity.cjs','windows-integrity.ps1'];
 function macArchitecture(file){
  const fd=fs.openSync(file,'r'),header=Buffer.alloc(8);try{fs.readSync(fd,header,0,8,0);}finally{fs.closeSync(fd);}
  if(header.readUInt32LE(0)!==0xfeedfacf)return null;

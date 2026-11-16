@@ -1,3 +1,5 @@
+2026-11-17（MCP工作流补齐）：mcp-core声明33项固定工具；renderer沿原商品／采购、组件柜、空间、建筑、方案与导出核心完成操作。stdio将产品档案操作限定到既有assets/models目录，桌面主进程将成果限定到.local/mcp-exports；不接受任意路径或脚本。复用原mutate／flush／revision／requestId与项目格式，新增诊断分别比较传输层／页面清单。见[MCP契约](MCP-CAPABILITIES.md)。
+
 2026-11-14（默认渐进观察）：progressive-view-core集中相机稳定键／视口与性能分级，progressive-view UI沿公有生产快照把独立r187光追叠加到主画布；相机更新复用BVH，场景变更重建，交互辅助与性能回退仍由r160负责。高清下载与Cycles沿原入口；仅本机画质偏好，无新项目字段／保存通道。见[契约](LIGHTING-PREVIEW.md)及[验收](validation/progressive-view-20261114/README.md)。
 
 2026-11-14（项目迁移入口）：workflow-tools在同一菜单提供完整项目导入／导出与动态范围说明，project-ui沿原pack/unpack和restore增加名称预览与文件类型说明；原单布置JSON保留高级入口，无新保存通道／格式。见[桌面迁移](DESKTOP.md#重新打包与迁移)及[增量验收](validation/project-transfer-20261114/README.md)。

@@ -15,7 +15,9 @@ async function start({root,dispatch}){
    const command=JSON.parse(Buffer.concat(chunks).toString('utf8'));
    if(!command||Object.keys(command).some(k=>!['name','arguments'].includes(k)))throw Error('Invalid command envelope');Core.validate(command.name,command.arguments||{});
    const task=queue.catch(()=>{}).then(()=>{if(closing||req.destroyed&&res.destroyed)throw Error('Desktop connection closed');return dispatch(command.name,command.arguments||{});});queue=task;
-   reply(200,{result:await task});
+   const result=await task;
+   if(command.name==='get_current_plan')result.mcp={...result.mcp,transportVersion:Core.capabilityVersion,transportTools:Core.tools.map(t=>t.name)};
+   reply(200,{result});
   }catch(e){reply(400,{error:e.message});}
  });
  server.requestTimeout=15000;server.headersTimeout=10000;server.maxConnections=16;

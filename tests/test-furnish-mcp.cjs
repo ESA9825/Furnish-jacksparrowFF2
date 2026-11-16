@@ -9,6 +9,10 @@ const Core=require('../src/core/mcp-core.js'),Bridge=require('../scripts/desktop
  assert.equal((await message('initialize',{protocolVersion:'2025-11-25'})).result.protocolVersion,'2025-11-25');
  const discovered=(await message('tools/list')).result.tools;assert.equal(discovered.length,Core.tools.length);for(const name of ['get_ceilings','configure_ceilings','remove_furniture','configure_scene'])assert(discovered.some(t=>t.name===name));
  assert.equal((await message('execute_code')).error.code,-32601);
+ const dossier=path.join(root,'assets/models/mcp-example');fs.mkdirSync(dossier,{recursive:true});fs.writeFileSync(path.join(dossier,'asset.json'),JSON.stringify({format:1,id:'mcp-example',references:[],sourceLinks:[]}));
+ const reference=(await message('tools/call',{name:'get_product_dossier',arguments:{productId:'mcp-example'}})).result;assert.equal(reference.structuredContent.product.id,'mcp-example');
+ const archived=(await message('tools/call',{name:'archive_product_reference',arguments:{productId:'mcp-example',dossierRevision:reference.structuredContent.dossierRevision,requestId:'stdio-reference',sourceUrl:'https://example.org/item?access=complete',note:'fixture'}})).result;assert(archived.structuredContent.archived);assert.equal(archived.structuredContent.sourceLinks[0],'https://example.org/item?access=complete');
+ const offlineStatus=(await message('tools/call',{name:'get_connection_status',arguments:{}})).result;assert.equal(offlineStatus.structuredContent.desktop.reachable,false);assert(offlineStatus.structuredContent.needsDesktopReload);
  assert.equal((await message('tools/call',{name:'get_current_plan'})).result.isError,true);
  const calls=[],server=await Bridge.start({root,dispatch:async(name,args)=>{calls.push([name,args]);return {name,args,...(args.requestId==='unsaved-noop'?{applied:false,persisted:false}:{}),...(name==='take_screenshot'?{image:{mimeType:'image/png',data:'iVBORw0KGgo=',width:1,height:1}}:{})};}});
  try{
@@ -20,6 +24,7 @@ const Core=require('../src/core/mcp-core.js'),Bridge=require('../scripts/desktop
   assert.equal((await fetch(url,{method:'POST',headers,body:JSON.stringify({name:'get_current_plan',arguments:{code:'arbitrary'}})})).status,400);
   assert.equal((await fetch(url,{method:'POST',headers,body:JSON.stringify({name:'execute_code',arguments:{}})})).status,400);
   const reply=await message('tools/call',{name:'get_current_plan',arguments:{}});assert.equal(reply.result.structuredContent.name,'get_current_plan');assert.equal(calls.length,1);
+  const status=(await message('tools/call',{name:'get_connection_status',arguments:{}})).result;assert(status.structuredContent.desktop.reachable);assert(status.structuredContent.sourceTools.includes('configure_cabinet_components'));assert(status.structuredContent.needsDesktopReload,'old desktop snapshots must explicitly require reload');
   assert.throws(()=>Core.validate('update_furniture',{planId:'p',revision:'r',requestId:'i',updates:[{id:'f',w:-1}]}));
   assert.throws(()=>Core.validate('update_furniture',{planId:'p',revision:'r',requestId:'i',updates:[{id:'f',cx:1},{id:'f',cy:2}]}));
   assert.throws(()=>Core.validate('copy_design',{name:'x'}));

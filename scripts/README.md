@@ -13,6 +13,7 @@
 | `verify/` | 浏览器函数与 8 个独立 Node 验收实现，当前名称以 `--list` 为准 |
 | `lib/` | 浏览器环境配置、预览模板装配等共用代码 |
 | `research/` | 可选 cn-scraper 淘宝详情兼容入口与 MCP 探针；独立 Python 环境，见[修复与验证](../docs/CN-SCRAPER-TAOBAO.md) |
+| `mcp-artifacts.cjs`、`mcp-references.cjs` | 桌面固定目录成果与stdio产品证据归档；不开放任意路径，见[33项工具工作流](../docs/MCP-CAPABILITIES.md) |
 | `generate-previews.cjs`、`preview-*.cjs` | 预览生成入口和生成器，独立于浏览器验收用例 |
 | `inspect-*`、`validate-*`、`make-*` 等 | 图纸检查、固定合成输入及维护工具 |
 

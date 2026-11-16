@@ -37,9 +37,13 @@ async def verify(args):
     async with stdio_client(params) as (read, write):
         async with ClientSession(read, write) as client:
             await client.initialize()
-            names = [t.name for t in (await client.list_tools()).tools]
+            listed = (await client.list_tools()).tools
+            names = [t.name for t in listed]
             if len(names) != 40 or 'taobao_product' not in names:
                 raise RuntimeError('Unexpected tool list for the pinned 0.5.0 server')
+            description = next(t.description or '' for t in listed if t.name == 'taobao_product')
+            if 'logged_in_browser_page' not in description or '19222' not in description:
+                raise RuntimeError('Taobao tool description does not match the browser adapter')
             receipt = {'connection': 'fresh_registered' if args.registered else 'fresh_local',
                        'toolCount': len(names)}
             if args.item_id:

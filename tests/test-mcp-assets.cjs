@@ -1,0 +1,27 @@
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const A=require('../scripts/lib/test-artifacts.cjs'),C=require('../src/core/mcp-core.js'),R=require('../scripts/mcp-references.cjs'),E=require('../scripts/mcp-artifacts.cjs');
+const job=A.createRun({parent:path.resolve('output/desktop-verification'),prefix:'mcp-assets-'});let passed=false;
+try{
+ const root=path.join(job.dir,'root');job.discard('root');fs.mkdirSync(path.join(root,'assets/models/example'),{recursive:true});
+ const file=path.join(root,'assets/models/example/asset.json');fs.writeFileSync(file,JSON.stringify({format:1,id:'example',references:[],sourceLinks:[]}));
+ const before=R.call(root,'get_product_dossier',{productId:'example'}),url='https://www.xiaohongshu.com/explore/example?xsec_token=sample&xsec_source=pc_search';
+ const imageBase64='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jL1cAAAAASUVORK5CYII=';
+ const args={productId:'example',dossierRevision:before.dossierRevision,requestId:'archive-1',sourceUrl:url,capturedOn:'2026-11-17',note:'页面资料；尺寸未独立确认',imageType:'png',imageBase64};C.validate('archive_product_reference',args);
+ const result=R.call(root,'archive_product_reference',args);assert(result.archived);assert.equal(result.references.length,2);assert(result.sourceLinks.includes(url));assert.deepEqual(R.call(root,'archive_product_reference',args),result);
+ assert.throws(()=>R.call(root,'archive_product_reference',{...args,note:'changed'}),/requestId/);
+ assert.throws(()=>R.call(root,'archive_product_reference',{...args,requestId:'stale'}),/changed/);
+ const current=R.call(root,'get_product_dossier',{productId:'example'});assert.equal(current.product.references.length,2);
+ const hash=current.dossierRevision;
+ for(const bad of [{imageBase64:'not an image',imageType:'png'},{imageBase64:Buffer.from('secret').toString('base64'),imageType:'jpeg'}])assert.throws(()=>R.call(root,'archive_product_reference',{...args,dossierRevision:hash,requestId:JSON.stringify(bad),...bad}));
+ assert.equal(R.call(root,'get_product_dossier',{productId:'example'}).dossierRevision,hash);
+ assert.throws(()=>R.call(root,'get_product_dossier',{productId:'../../elsewhere'}));assert.throws(()=>R.call(root,'get_product_dossier',{productId:'missing'}));assert(!fs.existsSync(path.join(root,'assets/models/missing')),'read must not create directories');
+ for(const extra of [{sourceUrl:'file:///etc/passwd'},{capturedOn:'2026-02-30'},{imageType:'png',imageBase64:undefined}])assert.throws(()=>C.validate('archive_product_reference',{productId:'example',dossierRevision:hash,requestId:'bad',note:'test',...extra}));
+ for(const price of [0,null])C.validate('configure_product_info',{planId:'p',revision:'r',requestId:'i',updates:[{ids:['f'],values:{price}}]});
+ for(const price of [-1,'0',{},false,1e8])assert.throws(()=>C.validate('configure_product_info',{planId:'p',revision:'r',requestId:'i',updates:[{ids:['f'],values:{price}}]}));
+ const artifact={format:'plan_svg',mimeType:'image/svg+xml',encoding:'utf8',content:'<svg xmlns="http://www.w3.org/2000/svg"/>'};const saved=E.writeArtifact(root,'../../no-path',artifact);assert(saved.file.startsWith(path.join(root,'.local/mcp-exports/')));assert.deepEqual(E.writeArtifact(root,'../../no-path',artifact),saved);assert.equal(fs.readFileSync(saved.file,'utf8'),artifact.content);
+ assert.throws(()=>E.writeArtifact(root,'x',{...artifact,format:'../../outside'}));assert.throws(()=>E.writeArtifact(root,'x',{...artifact,mimeType:'text/plain'}));assert.throws(()=>E.writeArtifact(root,'x',{...artifact,encoding:'base64',content:'INVALID'}));
+ fs.writeFileSync(saved.file,'changed');assert.throws(()=>E.writeArtifact(root,'../../no-path',artifact));
+ const large=Buffer.alloc(33*1024*1024,7),big=E.writeArtifact(root,'large-production-glb',{format:'scene_glb',mimeType:'model/gltf-binary',encoding:'base64',content:large.toString('base64')});assert.equal(big.bytes,large.length);assert(fs.readFileSync(big.file).equals(large),'production GLBs can exceed the 30 MB project JSON cap without overflowing a regular-expression stack');
+ console.log('PASS MCP dossier CAS / complete links / reference hashes / persistent replay / invalid image and path rejection; scoped idempotent artifact writes; product-info validation');passed=true;
+}finally{job.finish(passed);}

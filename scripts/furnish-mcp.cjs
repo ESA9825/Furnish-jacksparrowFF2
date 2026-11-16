@@ -4,6 +4,8 @@ const fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const Core=require('../src/core/mcp-core.js');
 function callDesktop(root,name,args,{timeout=180000}={}){
  Core.validate(name,args);
+ if(name==='get_connection_status')return (async()=>{const sourceTools=Core.tools.map(t=>t.name);let desktop;try{const current=await callDesktop(root,'get_current_plan',{}, {timeout:5000});desktop={reachable:true,version:current.mcp?.transportVersion??null,rendererVersion:current.mcp?.version??null,tools:current.mcp?.transportTools??null,rendererTools:current.mcp?.tools??null,save:current.save?.mode,pending:current.save?.pending};}catch(e){desktop={reachable:false,error:e.message};}const matches=names=>Array.isArray(names)&&sourceTools.length===names.length&&sourceTools.every(n=>names.includes(n));return {sourceVersion:Core.capabilityVersion,sourceTools,desktop,needsDesktopReload:desktop.version!==Core.capabilityVersion||desktop.rendererVersion!==Core.capabilityVersion||!matches(desktop.tools)||!matches(desktop.rendererTools),blenderProjectRegistered:!!require('./blender-project.cjs').read(root),limit:'新连接检查不代表当前聊天清单已热重载；不自动接管或重启。'};})();
+ if(['get_product_dossier','archive_product_reference'].includes(name))return Promise.resolve(require('./mcp-references.cjs').call(root,name,args));
  const file=path.join(root,'.local/desktop-mcp/runtime.json');let info;
  try{info=JSON.parse(fs.readFileSync(file,'utf8'));}catch{throw Error('请先启动此工作目录的 Furnish 桌面快捷方式（需支持 MCP 的桌面壳）');}
  if(info.version!==1||info.root!==fs.realpathSync(root)||!Number.isInteger(info.port)||info.port<1||info.port>65535||!/^[a-f0-9]{64}$/.test(info.token))throw Error('Furnish 桌面连接记录无效，请重新启动桌面版');
@@ -23,7 +25,7 @@ function serve({input=process.stdin,output=process.stdout,root=path.resolve(__di
   if(id===undefined)return;
   try{
    let result;
-   if(message.method==='initialize'){initialized=true;result={protocolVersion:versions.includes(message.params?.protocolVersion)?message.params.protocolVersion:versions[0],capabilities:{tools:{listChanged:false}},serverInfo:{name:'furnish',version:'1.0.0'},instructions:'Operate the live Furnish desktop. Read before editing; use returned planId/revision and a unique requestId. Retry the same edit only with the same requestId. Respect saved:false or persisted:false. Copy a design before experimenting. Furniture edits use existing undo; copying uses existing design creation semantics.'};}
+   if(message.method==='initialize'){initialized=true;result={protocolVersion:versions.includes(message.params?.protocolVersion)?message.params.protocolVersion:versions[0],capabilities:{tools:{listChanged:false}},serverInfo:{name:'furnish',version:'1.1.0'},instructions:'Operate the live Furnish desktop. Read before editing; use returned planId/revision and a unique requestId. Retry the same edit only with the same requestId. Respect saved:false or persisted:false. Copy a design before experimenting. Furniture edits use existing undo; copying uses existing design creation semantics.'};}
    else if(message.method==='ping')result={};
    else if(!initialized)throw Object.assign(Error('Initialize MCP first'),{rpcCode:-32002});
    else if(message.method==='tools/list')result={tools:Core.tools.map(t=>({...t,annotations:{...t.annotations,openWorldHint:false}}))};
