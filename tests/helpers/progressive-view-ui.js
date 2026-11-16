@@ -11,13 +11,23 @@ module.exports=async(p,V)=>{
   await p.setViewportSize({width:1640,height:1060});await p.locator('#tgLib').click();await p.locator('#tgPanel').click();
   await call('set_camera',{...write(),view:'3d',mode:'orbit',horizontalFov:70,position:{x:8410,y:6270,z:1660},target:{x:8410,y:3400,z:1880}});
  }else await p.evaluate(()=>setView('3d'));
- await p.evaluate(()=>View3D.automationReady());await p.locator('#progressive-mode').waitFor();assert.equal(await p.locator('#progressive-mode').inputValue(),'auto');
+ const observationStarted=Date.now();await p.evaluate(()=>View3D.automationReady());await p.locator('#progressive-mode').waitFor();assert.equal(await p.locator('#progressive-mode').inputValue(),'auto');
  if(V.mode==='file'){
   await p.waitForFunction(()=>document.querySelector('#progressive-controls')?.dataset.state==='fallback');assert.match(await p.locator('#progressive-status').textContent(),/直接打开文件/);assert.equal(await p.locator('#progressive-frame').count(),0);
  }else{
   const progress=setInterval(async()=>{try{console.log('LIVE '+V.mode+' '+await p.locator('#progressive-status').textContent());}catch{}},10000);
   try{await p.waitForFunction(()=>{const d=document.querySelector('#progressive-controls');if(d?.dataset.state==='fallback')throw Error(document.querySelector('#progressive-status').textContent);return d?.dataset.state==='progressive';},null,{timeout:180000});}finally{clearInterval(progress);}
-  await V.screenshot('progressive');const viewport=await p.locator('#progressive-frame').boundingBox(),film=await p.frameLocator('#progressive-frame').locator('canvas').boundingBox();assert(Math.abs(viewport.width-film.width)<1&&Math.abs(viewport.height-film.height)<1,'live film fills its viewport without stretching to a different aspect');assert.equal(await p.locator('#progressive-frame').evaluate(e=>getComputedStyle(e).pointerEvents),'none');
+  await p.waitForFunction(()=>/已收敛/.test(document.querySelector('#progressive-status')?.textContent||''),null,{timeout:180000});
+  const metrics=await p.frameLocator('#progressive-frame').locator('canvas').evaluate(c=>({width:c.width,height:c.height}));assert.equal(Math.max(metrics.width,metrics.height),800);fs.writeFileSync(V.artifact('performance.json'),JSON.stringify({...metrics,mode:V.mode,samples:64,firstConvergedMs:Date.now()-observationStarted},null,2));
+  await V.screenshot('progressive');
+  if(V.mode==='desktop'&&process.env.FURNISH_PROGRESSIVE_BENCHMARK==='1'){
+   const started=Date.now();await p.locator('#progressive-mode').selectOption('detail');
+   await p.waitForFunction(()=>/已收敛/.test(document.querySelector('#progressive-status')?.textContent||''),null,{timeout:180000});
+   const detail=await p.frameLocator('#progressive-frame').locator('canvas').evaluate(c=>({width:c.width,height:c.height}));assert.equal(Math.max(detail.width,detail.height),1200);await V.screenshot('detail-converged');
+   fs.writeFileSync(V.artifact('detail-performance.json'),JSON.stringify({...detail,samples:256,firstConvergedMs:Date.now()-started},null,2));
+   await p.locator('#progressive-mode').selectOption('auto');await p.waitForFunction(()=>/已收敛/.test(document.querySelector('#progressive-status')?.textContent||''),null,{timeout:180000});
+  }
+  const viewport=await p.locator('#progressive-frame').boundingBox(),film=await p.frameLocator('#progressive-frame').locator('canvas').boundingBox();assert(Math.abs(viewport.width-film.width)<1&&Math.abs(viewport.height-film.height)<1,'live film fills its viewport without stretching to a different aspect');assert.equal(await p.locator('#progressive-frame').evaluate(e=>getComputedStyle(e).pointerEvents),'none');
   const baseline=await p.evaluate(()=>{window.liveFrame=document.querySelector('#progressive-frame');return liveExports;});
   const previous=await p.evaluate(()=>View3D.progressiveState().viewKey),camera=await p.evaluate(()=>View3D.automationCamera());
   await p.evaluate(camera=>View3D.automationCamera({mode:'orbit',position:{...camera.position,x:camera.position.x+100},target:camera.target}),camera);
@@ -31,13 +41,14 @@ module.exports=async(p,V)=>{
    const progress=setInterval(async()=>{try{console.log('LIVE settled '+await p.locator('#progressive-status').textContent());}catch{}},10000);
    try{await p.waitForFunction(()=>/已收敛/.test(document.querySelector('#progressive-status')?.textContent||''),null,{timeout:180000});}finally{clearInterval(progress);}
    await V.screenshot('converged');
-   await p.evaluate(()=>selectIds([state.furniture.find(f=>f.type==='surface_light').id]));await p.waitForFunction(()=>View3D.progressiveState()?.editing&&document.querySelector('#progressive-frame')?.hidden);assert.match(await p.locator('#progressive-status').textContent(),/编辑中/);await p.evaluate(()=>selectIds([]));await p.waitForFunction(()=>!document.querySelector('#progressive-frame')?.hidden,null,{timeout:15000});
+   await p.evaluate(()=>selectIds([state.furniture.find(f=>f.type.startsWith('sofa')).id]));await p.waitForFunction(()=>View3D.progressiveState()?.editing&&document.querySelector('#progressive-frame')?.hidden);assert.match(await p.locator('#progressive-status').textContent(),/编辑中/);await p.evaluate(()=>selectIds([]));await p.waitForFunction(()=>!document.querySelector('#progressive-frame')?.hidden,null,{timeout:15000});
    fs.writeFileSync(V.artifact('live-result.json'),JSON.stringify(await p.evaluate(()=>({status:document.querySelector('#progressive-status').textContent,exports:liveExports,state:View3D.progressiveState()})),null,2));
    c=await call('get_current_plan',{includeDetails:true});c=await call('configure_scene',{...write(),settings:{lamps:false}});
    await p.waitForFunction(()=>liveFrame!==document.querySelector('#progressive-frame'));await p.waitForFunction(()=>!!document.querySelector('#progressive-frame'),null,{timeout:60000});assert(await p.evaluate(()=>liveExports)>baseline,'light change requests a new production scene');await p.waitForFunction(()=>liveAudits.length>=2);assert(await p.evaluate(()=>liveAudits.at(-1).rects<liveAudits[0].rects),'off main lights disappear from the next production scene');
    await p.locator('#vLightingPreview').click();await p.waitForFunction(()=>!document.querySelector('#progressive-frame'));await p.locator('#lighting-stop').click();await p.locator('#lighting-close').click();
   }
  }
+ await p.locator('#progressive-mode').selectOption('detail');await p.evaluate(()=>setView('2d'));await p.evaluate(()=>setView('3d'));await p.locator('#progressive-mode').waitFor();assert.equal(await p.locator('#progressive-mode').inputValue(),'detail','detail preference survives exit/reentry');
  await p.locator('#progressive-mode').selectOption('smooth');await p.waitForFunction(()=>!document.querySelector('#progressive-frame'));assert.equal(await p.locator('#view3d canvas').count(),1);
  await p.evaluate(()=>setView('2d'));assert.equal(await p.locator('#progressive-controls').count(),0);await p.evaluate(()=>setView('3d'));await p.locator('#progressive-mode').waitFor();assert.equal(await p.locator('#progressive-mode').inputValue(),'smooth','local preference survives exit/reentry');
  if(V.mode!=='file'){

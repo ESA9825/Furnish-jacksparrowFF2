@@ -5,9 +5,9 @@ import {WebGPUPathTracer,OIDNDenoiser} from '../../vendor/lighting-preview/three
 import {GenerateMeshBVHWorker} from '../../vendor/lighting-preview/three-mesh-bvh/src/workers/GenerateMeshBVHWorker.js';
 import {initUNetFromURL} from '../../vendor/lighting-preview/oidn-webgpu/dist/oidn.js';
 let token=null,renderer=null,tracer=null,scene=null,stopped=false,poll=null;
-let live=false,liveCamera=null,viewKey=null,aspect=1,edge=1200,liveVersion=0,paused=false;
+let live=false,liveCamera=null,viewKey=null,aspect=1,edge=1200,liveVersion=0,paused=false,liveComplete=false;
 function renderLoop(){renderer?.setAnimationLoop(()=>{if(stopped||paused)return;try{tracer.renderSample();}catch(error){fail(error);}});}
-function resizeLive(nextEdge){edge=nextEdge;const {width,height}=globalThis.FurnishProgressivePolicy.size(aspect,edge);renderer.setSize(width,height);tracer.reset();}
+function resizeLive(nextEdge){liveComplete=false;edge=nextEdge;const {width,height}=globalThis.FurnishProgressivePolicy.size(aspect,edge);renderer.setSize(width,height);tracer.reset();}
 function updateLiveCamera(data){if(!live||!tracer||!liveCamera)return;
  const valid=a=>Array.isArray(a)&&a.length===16&&a.every(Number.isFinite),c0=data.camera;
  if(!c0||!valid(c0.matrixWorld)||!valid(c0.projectionMatrix)||!Number.isFinite(c0.aspect)||c0.aspect<.1||c0.aspect>10||!Number.isFinite(c0.near)||!Number.isFinite(c0.far))throw Error('相机数据无效');liveVersion++;viewKey=data.viewKey;const c=data.camera;aspect=c.aspect;liveCamera.matrixWorld.fromArray(c.matrixWorld);liveCamera.matrixWorld.decompose(liveCamera.position,liveCamera.quaternion,liveCamera.scale);liveCamera.updateMatrixWorld(true);liveCamera.projectionMatrix.fromArray(c.projectionMatrix);liveCamera.projectionMatrixInverse.copy(liveCamera.projectionMatrix).invert();liveCamera.near=c.near;liveCamera.far=c.far;resizeLive(edge);tracer.updateCamera();paused=false;tracer.pause=false;renderLoop();}
@@ -24,7 +24,7 @@ async function run(data){
   if(stopped)return;
   const requiredLimits={maxStorageBufferBindingSize:Math.min(adapter.limits.maxStorageBufferBindingSize,536870912),maxBufferSize:Math.min(adapter.limits.maxBufferSize,536870912)};
   renderer=new T.WebGPURenderer({antialias:false,trackTimestamp:true,powerPreference:'high-performance',requiredLimits});renderer.setPixelRatio(1);
-  const targetEdge=live?edge:(data.quality==='fine'?1920:1200),{width,height}=globalThis.FurnishProgressivePolicy.size(data.aspect,targetEdge),samples=live?256:(data.quality==='fine'?1024:128);
+  const targetEdge=live?edge:(data.quality==='fine'?1920:1200),{width,height}=globalThis.FurnishProgressivePolicy.size(data.aspect,targetEdge),samples=live?globalThis.FurnishProgressivePolicy.quality(data.quality).samples:(data.quality==='fine'?1024:128);
   renderer.setSize(width,height);renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=data.environment.exposure;renderer.outputColorSpace=T.SRGBColorSpace;document.body.append(renderer.domElement);await renderer.init();
   renderer.backend.device.addEventListener('uncapturederror',e=>{e.preventDefault();fail(e.error);});renderer.backend.device.lost.then(info=>{if(!stopped)fail(Error('图形设备连接中断：'+info.message));});
   if(stopped)return;status('正在读取生产模型…');
@@ -46,16 +46,16 @@ async function run(data){
   tracer.setBVHWorker(GenerateMeshBVHWorker);tracer.addEventListener('progress',e=>{if(!stopped&&e.stage==='building')status('正在准备场景 · '+Math.round(e.progress*100)+'%');});
   status('正在准备场景…');await tracer.setSceneAsync(scene,camera);if(stopped)return;if(live){updateLiveCamera({camera:data.camera,viewKey:data.viewKey});send('live-ready',{viewKey});}
   tracer.addEventListener('complete',async()=>{
-   if(stopped)return;if(live){const version=liveVersion;await renderer.backend.device.queue.onSubmittedWorkDone();if(stopped||version!==liveVersion)return;send('live-complete',{viewKey,samples,frameTime:tracer.frameTime});renderer.setAnimationLoop(null);return;}
+   if(stopped)return;if(live){const version=liveVersion;await renderer.backend.device.queue.onSubmittedWorkDone();if(stopped||version!==liveVersion)return;liveComplete=true;send('live-complete',{viewKey,samples,frameTime:tracer.frameTime});renderer.setAnimationLoop(null);return;}
    try{await renderer.backend.device.queue.onSubmittedWorkDone();
     const blob=await new Promise(resolve=>renderer.domElement.toBlob(resolve,'image/png'));if(stopped)return;if(!blob)throw Error('无法生成预览图片');
     stop();send('complete',{blob,width,height,samples,seconds:(performance.now()-started)/1000});
    }catch(error){fail(error);}
   });
-  let polling=false;poll=setInterval(async()=>{if(polling||stopped)return;polling=true;try{const version=liveVersion,count=await tracer.getSampleCountsAsync();if(!stopped&&version===liveVersion){if(live)send('live-progress',{viewKey,samples:count.avg,frameTime:tracer.frameTime});else status('正在预览 · '+Math.floor(count.avg)+' / '+samples+' 采样');}}catch(error){fail(error);}finally{polling=false;}},1300);
+  let polling=false;poll=setInterval(async()=>{if(polling||stopped||paused||liveComplete)return;polling=true;try{const version=liveVersion,count=await tracer.getSampleCountsAsync();if(!stopped&&version===liveVersion){if(live)send('live-progress',{viewKey,samples:count.avg,frameTime:tracer.frameTime});else status('正在预览 · '+Math.floor(count.avg)+' / '+samples+' 采样');}}catch(error){fail(error);}finally{polling=false;}},1300);
   status('正在编译并开始预览…');renderLoop();
  }catch(error){fail(error);}
 }
 window.addEventListener('message',e=>{if(e.source!==parent||e.origin!==location.origin||e.data?.channel!=='furnish-lighting-preview'||e.data.type!=='scene'||token!==null)return;run(e.data);});
-window.addEventListener('message',e=>{if(e.source!==parent||e.origin!==location.origin||e.data?.channel!=='furnish-lighting-preview'||e.data.token!==token||!live||stopped)return;const d=e.data;try{if(d.type==='pause'){paused=true;if(tracer)tracer.pause=true;renderer?.setAnimationLoop(null);}else if(d.type==='resume'){paused=false;if(tracer)tracer.pause=false;renderLoop();}else if(d.type==='camera')updateLiveCamera(d);else if(d.type==='resize'&&tracer&&[640,1200].includes(d.edge)){liveVersion++;resizeLive(d.edge);paused=false;tracer.pause=false;renderLoop();}}catch(error){fail(error);}});
+window.addEventListener('message',e=>{if(e.source!==parent||e.origin!==location.origin||e.data?.channel!=='furnish-lighting-preview'||e.data.token!==token||!live||stopped)return;const d=e.data;try{if(d.type==='pause'){paused=true;if(tracer)tracer.pause=true;renderer?.setAnimationLoop(null);}else if(d.type==='resume'){paused=false;if(tracer)tracer.pause=false;if(liveComplete)send('live-complete',{viewKey,samples:tracer.maxSamples,frameTime:tracer.frameTime});else renderLoop();}else if(d.type==='camera')updateLiveCamera(d);else if(d.type==='resize'&&tracer&&[640,800,1200].includes(d.edge)){liveVersion++;resizeLive(d.edge);paused=false;tracer.pause=false;renderLoop();}}catch(error){fail(error);}});
 send('ready');
