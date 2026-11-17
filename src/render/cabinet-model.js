@@ -237,8 +237,14 @@ const syncIdentity=root.FurnishPartIdentity||(typeof require==='function'?requir
     if(col.fridgeBay){
      const fh=s.fridgeHeight/1000,fd=(s.fridgeDepth??f.d)/1000,fz=rearOf('fridge')+fd/2;
      // Floor and rear remain clear for a separately placed refrigerator.
-     for(const sign of syncIdentity.items("cabinet-model.js:generator-7",[["item-a",-1],["item-b",1]]))syncIdentity.produce("cabinet-model:site-10",()=>add(g,t,h,fd,x+sign*(cw/2+t/2),0,fz));
-     const ceiling=syncIdentity.produce("cabinet-model:site-11",()=>add(g,cw,t,fd,x,fh,fz));ceiling.userData.cabinetSection='fridgeCeiling';ceiling.userData.cabinetInspect={kind:'structure',column:i,section:'fridgeCeiling'};syncIdentity.produce("cabinet-model:site-12",()=>add(g,cw,t,fd,x,h-t,fz));
+     // Keep the refrigerator surround, but reserve the upper door's thickness
+     // above its floor. Full-depth upper boards otherwise intersect closed doors.
+     const upperBase=fh+t,upperDepth=fd-t,upperZ=rearOf('fridge')+upperDepth/2;
+     for(const sign of syncIdentity.items("cabinet-model.js:generator-7",[["item-a",-1],["item-b",1]])){
+      syncIdentity.produce("cabinet-model:site-10",()=>add(g,t,upperBase,fd,x+sign*(cw/2+t/2),0,fz));
+      const side=syncIdentity.produce('cabinet-fridge-upper:side',()=>add(g,t,h-upperBase,upperDepth,x+sign*(cw/2+t/2),upperBase,upperZ));side.userData.cabinetBay={column:i};
+     }
+     const ceiling=syncIdentity.produce("cabinet-model:site-11",()=>add(g,cw,t,fd,x,fh,fz));ceiling.userData.cabinetSection='fridgeCeiling';ceiling.userData.cabinetInspect={kind:'structure',column:i,section:'fridgeCeiling'};syncIdentity.produce("cabinet-model:site-12",()=>add(g,cw,t,upperDepth,x,h-t,upperZ));
      rearPanel(g,cw,h-fh-2*t,x,fh+t,'cabinet-model:site-13',{cabinetBay:{column:i}},bodyColor,'solid',rearOf('fridge')*1000);syncIdentity.produce("cabinet-model.js:generator-call-1",()=>door(col,i,fh+t,h,fd,'fridgeUpper'));
     }else{
      for(const [bottom,top,D] of syncIdentity.items("cabinet-model.js:generator-8",[["item-a",[p+t,base-t,ld]],["item-b",[display+t,upper,ud]],["item-c",[upper+t,h-t,ud]]])){
