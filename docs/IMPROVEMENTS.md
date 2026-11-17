@@ -3601,3 +3601,12 @@ L 形详细设计新增「两边正视展开」，两份正交生产预览分别
 macOS 的 test-artifacts 新建运行目录追加 `.noindex`，保留失败证据时也避免 Spotlight 收录测试应用；默认 Mac 打包目录改为 `output/desktop/Furnish-darwin-<arch>.noindex`。启动器优先新路径，兼容已有正式安装的旧路径。显式 `--out` 不改写调用方路径，Mac 测试／临时打包及备份必须放在 `.noindex` 目录内；只有正式安装入口供日常搜索。清理旧副本时先检查 Applications 链接真实目标与运行进程，只删除闲置应用包，保留项目、缓存、报告和回执。现有正式应用路径不迁移，以免改变缓存身份。Spotlight 旧结果消退取决于系统索引刷新，不以 mdfind 空结果宣称 UI 已验收。
 
 本机清理：正式入口为 `~/Applications/Furnish.app` 符号链接，实际包为旧 `output/desktop/Furnish-darwin-arm64/Furnish.app`，保持原位。已核对只有正式包在运行，删除 8 个闲置包及 1 个测试链接；这些包不含 workspace.furnish.json，外围项目／缓存／报告／备份回执保留。部分未注册包的 lsregister 注销返回 1，已注册测试包返回 0；不重建全局应用数据库。增量通过 `test-test-artifacts`、`test-desktop-macos`（布局模拟）、`test-desktop-executable`，未执行全量、重新原生打包或 Spotlight UI 目视验收。
+
+
+## 2026-11-17：清理已结束测试的可再生成产物
+
+按用户授权清理 desktop-verification／tauri-comparison 中已有测试归属标记且已结束的源码副本、独立应用包与图形／网络缓存，以及 Tauri release 的 build／deps／incremental／.fingerprint；删除公牛 G12 v7 的自动备份 panel-bull-g12-v1.blend1，正式 .blend／GLB 保留。共清理 1368 个目标，output 占用由 32391820 KiB 降至 7881060 KiB（减少约23.38 GiB；APFS实际释放量可能不同）。
+
+正式 Applications 链接及其 output/desktop/Furnish-darwin-arm64/Furnish.app 目标保持原位；projects、.local、测试方案、浏览器 Local Storage／IndexedDB、日志、截图及验收报告保留。清理前后逐文件 SHA-256 核对 10459 个保留文件，无差异。两处仍标记 running／带锁的 progressive-scheduling-YU0A3C、progressive-scheduling-jepNeX 整体保留；未按历史 PID 推断其已结束。进程检查未发现测试目录中的运行程序。清单与哈希在本机 output/cleanup-20261117.noindex/manifest.json（不入库）。
+
+验证仅覆盖清理范围、保留文件哈希、正式入口与 Git 差异；未执行应用功能回归或全量测试。清理后的历史测试源码和缓存需重新生成，截图／报告与方案仍可检查。
