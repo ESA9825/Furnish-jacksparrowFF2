@@ -1,0 +1,524 @@
+{
+  "date": "2026-11-17",
+  "scope": "Isolated packaged Electron, formal 1601 file copied; never entered 3D. GC and dropped-reference controls are diagnostic only.",
+  "runs": {
+    "allocationBaseline": {
+      "artifact": "output/tauri-comparison/compare-oXmde4.noindex",
+      "variant": "baseline",
+      "sourceHash": "2b743b4992ec6a63511e02bc6f1b4efdef37b6307d479b1e5957c95ba4aa2329",
+      "sourceUnchanged": true,
+      "state": {
+        "planId": "custom_mv37igji",
+        "furniture": 182,
+        "designs": 38,
+        "work": 9,
+        "storeBytes": 11591812,
+        "view": "2d",
+        "dom": 7352,
+        "assetScripts": 48,
+        "undo": 0,
+        "redo": 0
+      },
+      "errors": [],
+      "records": [
+        {
+          "stage": "ready",
+          "heapMiB": 751.0227584838867,
+          "rendererRssMiB": 1191.703125,
+          "electronTotalRssMiB": 1509.984375
+        },
+        {
+          "stage": "idle-5s",
+          "heapMiB": 751.0227584838867,
+          "rendererRssMiB": 1191.953125,
+          "electronTotalRssMiB": 1508.734375
+        },
+        {
+          "stage": "after-renderer-gc",
+          "heapMiB": 477.9618339538574,
+          "rendererRssMiB": 854.71875,
+          "electronTotalRssMiB": 1171.546875
+        },
+        {
+          "stage": "reload",
+          "heapMiB": 1810.6500129699707,
+          "rendererRssMiB": 2894.671875,
+          "electronTotalRssMiB": 3242.40625
+        },
+        {
+          "stage": "reload-after-gc",
+          "heapMiB": 473.22021865844727,
+          "rendererRssMiB": 1333.046875,
+          "electronTotalRssMiB": 1685.359375
+        },
+        {
+          "stage": "final",
+          "heapMiB": 495.55184173583984,
+          "rendererRssMiB": 1354.65625,
+          "electronTotalRssMiB": 1701.5625
+        }
+      ],
+      "backend": [
+        {
+          "stage": "natural",
+          "rssMiB": 683.78125,
+          "heapMiB": 322.1048812866211,
+          "externalMiB": 131.43349838256836
+        },
+        {
+          "stage": "natural",
+          "rssMiB": 309.0625,
+          "heapMiB": 100.66074752807617,
+          "externalMiB": 170.79190635681152
+        }
+      ]
+    },
+    "jsonAssets": {
+      "artifact": "output/tauri-comparison/compare-htrIa9.noindex",
+      "variant": "json-assets",
+      "sourceHash": "2b743b4992ec6a63511e02bc6f1b4efdef37b6307d479b1e5957c95ba4aa2329",
+      "sourceUnchanged": true,
+      "state": {
+        "planId": "custom_mv37igji",
+        "furniture": 182,
+        "designs": 38,
+        "work": 9,
+        "storeBytes": 11591812,
+        "view": "2d",
+        "dom": 7352,
+        "assetScripts": 48,
+        "undo": 0,
+        "redo": 0
+      },
+      "errors": [],
+      "records": [
+        {
+          "stage": "ready",
+          "heapMiB": 770.7413864135742,
+          "rendererRssMiB": 1611.578125,
+          "electronTotalRssMiB": 2140.546875
+        },
+        {
+          "stage": "idle-5s",
+          "heapMiB": 770.7413864135742,
+          "rendererRssMiB": 1610.890625,
+          "electronTotalRssMiB": 2135.171875
+        },
+        {
+          "stage": "after-renderer-gc",
+          "heapMiB": 477.9656066894531,
+          "rendererRssMiB": 1088.09375,
+          "electronTotalRssMiB": 1612.375
+        },
+        {
+          "stage": "reload",
+          "heapMiB": 1105.7089881896973,
+          "rendererRssMiB": 2237.609375,
+          "electronTotalRssMiB": 2772.578125
+        },
+        {
+          "stage": "reload-after-gc",
+          "heapMiB": 473.353515625,
+          "rendererRssMiB": 1273.59375,
+          "electronTotalRssMiB": 1812.84375
+        },
+        {
+          "stage": "final",
+          "heapMiB": 495.9010696411133,
+          "rendererRssMiB": 1295.484375,
+          "electronTotalRssMiB": 1829.09375
+        }
+      ],
+      "backend": [
+        {
+          "stage": "natural",
+          "rssMiB": 687.6875,
+          "heapMiB": 326.57505798339844,
+          "externalMiB": 131.4728126525879
+        },
+        {
+          "stage": "forced-gc",
+          "rssMiB": 464.453125,
+          "heapMiB": 82.9196891784668,
+          "externalMiB": 131.49970531463623
+        }
+      ]
+    },
+    "steady": {
+      "artifact": "output/tauri-comparison/compare-PnBUZ8.noindex",
+      "variant": "baseline",
+      "sourceHash": "2b743b4992ec6a63511e02bc6f1b4efdef37b6307d479b1e5957c95ba4aa2329",
+      "sourceUnchanged": true,
+      "state": {
+        "planId": "custom_mv37igji",
+        "furniture": 182,
+        "designs": 38,
+        "work": 9,
+        "storeBytes": 11591812,
+        "view": "2d",
+        "dom": 7352,
+        "assetScripts": 48,
+        "undo": 0,
+        "redo": 0
+      },
+      "errors": [],
+      "records": [
+        {
+          "stage": "ready",
+          "heapMiB": 747.9072647094727,
+          "rendererRssMiB": 1216.28125,
+          "electronTotalRssMiB": 1691.953125,
+          "decomposeCalls": 34788,
+          "solidCalls": 842,
+          "worldCacheHits": 651,
+          "localCacheHits": 66,
+          "buildCalls": 125,
+          "localCache": {
+            "entries": 32,
+            "vertices": 761370,
+            "parts": 4827
+          },
+          "worldCache": {
+            "entries": 128,
+            "vertices": 2483812,
+            "parts": 8366
+          }
+        },
+        {
+          "stage": "idle-5s",
+          "heapMiB": 748.2414779663086,
+          "rendererRssMiB": 1215.78125,
+          "electronTotalRssMiB": 1686.984375,
+          "decomposeCalls": 34788,
+          "solidCalls": 842,
+          "worldCacheHits": 651,
+          "localCacheHits": 66,
+          "buildCalls": 125,
+          "localCache": {
+            "entries": 32,
+            "vertices": 761370,
+            "parts": 4827
+          },
+          "worldCache": {
+            "entries": 128,
+            "vertices": 2483812,
+            "parts": 8366
+          }
+        },
+        {
+          "stage": "idle-30s",
+          "heapMiB": 562.7037658691406,
+          "rendererRssMiB": 1019.046875,
+          "electronTotalRssMiB": 1380.140625,
+          "decomposeCalls": 34788,
+          "solidCalls": 842,
+          "worldCacheHits": 651,
+          "localCacheHits": 66,
+          "buildCalls": 125,
+          "localCache": {
+            "entries": 32,
+            "vertices": 761370,
+            "parts": 4827
+          },
+          "worldCache": {
+            "entries": 128,
+            "vertices": 2483812,
+            "parts": 8366
+          }
+        },
+        {
+          "stage": "idle-60s",
+          "heapMiB": 561.992015838623,
+          "rendererRssMiB": 954.578125,
+          "electronTotalRssMiB": 1338.546875,
+          "decomposeCalls": 34788,
+          "solidCalls": 842,
+          "worldCacheHits": 651,
+          "localCacheHits": 66,
+          "buildCalls": 125,
+          "localCache": {
+            "entries": 32,
+            "vertices": 761370,
+            "parts": 4827
+          },
+          "worldCache": {
+            "entries": 128,
+            "vertices": 2483812,
+            "parts": 8366
+          }
+        },
+        {
+          "stage": "after-renderer-gc",
+          "heapMiB": 478.0000762939453,
+          "rendererRssMiB": 858.9375,
+          "electronTotalRssMiB": 1242.953125,
+          "decomposeCalls": 34788,
+          "solidCalls": 842,
+          "worldCacheHits": 651,
+          "localCacheHits": 66,
+          "buildCalls": 125,
+          "localCache": {
+            "entries": 32,
+            "vertices": 761370,
+            "parts": 4827
+          },
+          "worldCache": {
+            "entries": 128,
+            "vertices": 2483812,
+            "parts": 8366
+          }
+        },
+        {
+          "stage": "final",
+          "heapMiB": 500.82215881347656,
+          "rendererRssMiB": 881.90625,
+          "electronTotalRssMiB": 1266.015625,
+          "decomposeCalls": 34788,
+          "solidCalls": 842,
+          "worldCacheHits": 651,
+          "localCacheHits": 66,
+          "buildCalls": 125,
+          "localCache": {
+            "entries": 32,
+            "vertices": 761370,
+            "parts": 4827
+          },
+          "worldCache": {
+            "entries": 128,
+            "vertices": 2483812,
+            "parts": 8366
+          }
+        }
+      ],
+      "backend": [
+        {
+          "stage": "natural",
+          "rssMiB": 664.890625,
+          "heapMiB": 322.94882583618164,
+          "externalMiB": 131.43349838256836
+        },
+        {
+          "stage": "natural",
+          "rssMiB": 322.765625,
+          "heapMiB": 78.13569641113281,
+          "externalMiB": 131.4284782409668
+        }
+      ]
+    },
+    "retention": {
+      "artifact": "output/tauri-comparison/compare-Su6PBx.noindex",
+      "variant": "baseline",
+      "sourceHash": "2b743b4992ec6a63511e02bc6f1b4efdef37b6307d479b1e5957c95ba4aa2329",
+      "sourceUnchanged": true,
+      "state": {
+        "planId": "custom_mv37igji",
+        "furniture": 182,
+        "designs": 38,
+        "work": 9,
+        "storeBytes": 11591812,
+        "view": "2d",
+        "dom": 7352,
+        "assetScripts": 48,
+        "undo": 0,
+        "redo": 0
+      },
+      "errors": [],
+      "records": [
+        {
+          "stage": "ready",
+          "heapMiB": 755.9815406799316,
+          "rendererRssMiB": 1157.796875,
+          "electronTotalRssMiB": 1647,
+          "decomposeCalls": 34788,
+          "solidCalls": 842,
+          "worldCacheHits": 651,
+          "localCacheHits": 66,
+          "buildCalls": 125,
+          "localCache": {
+            "entries": 32,
+            "vertices": 761370,
+            "parts": 4827
+          },
+          "worldCache": {
+            "entries": 128,
+            "vertices": 2483812,
+            "parts": 8366
+          }
+        },
+        {
+          "stage": "idle-5s",
+          "heapMiB": 756.3157424926758,
+          "rendererRssMiB": 1158.4375,
+          "electronTotalRssMiB": 1643.9375,
+          "decomposeCalls": 34788,
+          "solidCalls": 842,
+          "worldCacheHits": 651,
+          "localCacheHits": 66,
+          "buildCalls": 125,
+          "localCache": {
+            "entries": 32,
+            "vertices": 761370,
+            "parts": 4827
+          },
+          "worldCache": {
+            "entries": 128,
+            "vertices": 2483812,
+            "parts": 8366
+          }
+        },
+        {
+          "stage": "after-renderer-gc",
+          "heapMiB": 477.74361419677734,
+          "rendererRssMiB": 838.53125,
+          "electronTotalRssMiB": 1324.0625,
+          "decomposeCalls": 34788,
+          "solidCalls": 842,
+          "worldCacheHits": 651,
+          "localCacheHits": 66,
+          "buildCalls": 125,
+          "localCache": {
+            "entries": 32,
+            "vertices": 761370,
+            "parts": 4827
+          },
+          "worldCache": {
+            "entries": 128,
+            "vertices": 2483812,
+            "parts": 8366
+          }
+        },
+        {
+          "stage": "after-drop-solid-caches",
+          "heapMiB": 158.88210678100586,
+          "rendererRssMiB": 500.59375,
+          "electronTotalRssMiB": 986.125,
+          "decomposeCalls": 34788,
+          "solidCalls": 842,
+          "worldCacheHits": 651,
+          "localCacheHits": 66,
+          "buildCalls": 125,
+          "localCache": {
+            "entries": 0,
+            "vertices": 0,
+            "parts": 0
+          },
+          "worldCache": {
+            "entries": 0,
+            "vertices": 0,
+            "parts": 0
+          }
+        },
+        {
+          "stage": "after-drop-asset-globals",
+          "heapMiB": 58.65317153930664,
+          "rendererRssMiB": 432.25,
+          "electronTotalRssMiB": 917.796875,
+          "decomposeCalls": 34788,
+          "solidCalls": 842,
+          "worldCacheHits": 651,
+          "localCacheHits": 66,
+          "buildCalls": 125,
+          "localCache": {
+            "entries": 0,
+            "vertices": 0,
+            "parts": 0
+          },
+          "worldCache": {
+            "entries": 0,
+            "vertices": 0,
+            "parts": 0
+          }
+        },
+        {
+          "stage": "final",
+          "heapMiB": 81.03098678588867,
+          "rendererRssMiB": 454.734375,
+          "electronTotalRssMiB": 940.3125,
+          "decomposeCalls": 34788,
+          "solidCalls": 842,
+          "worldCacheHits": 651,
+          "localCacheHits": 66,
+          "buildCalls": 125,
+          "localCache": {
+            "entries": 0,
+            "vertices": 0,
+            "parts": 0
+          },
+          "worldCache": {
+            "entries": 0,
+            "vertices": 0,
+            "parts": 0
+          }
+        }
+      ],
+      "backend": [
+        {
+          "stage": "natural",
+          "rssMiB": 683.953125,
+          "heapMiB": 322.2281188964844,
+          "externalMiB": 131.43349838256836
+        },
+        {
+          "stage": "natural",
+          "rssMiB": 490.34375,
+          "heapMiB": 322.3293914794922,
+          "externalMiB": 131.43353652954102
+        }
+      ]
+    }
+  },
+  "allocationSampling": {
+    "totalEstimatedMiB": 13223.064380645752,
+    "method": "32768-byte sampling, includes objects collected by major/minor GC; cumulative estimates, not simultaneously retained bytes. Native frames attributed to nearest JS caller.",
+    "topSources": [
+      {
+        "file": "/src/core/furniture-solids.js",
+        "estimatedMiB": 2546.8156547546387
+      },
+      {
+        "file": "/src/core/zone-geometry.js",
+        "estimatedMiB": 2449.8817176818848
+      },
+      {
+        "file": "/src/core/cabinet-motion.js",
+        "estimatedMiB": 1403.7375030517578
+      },
+      {
+        "file": "/src/core/model-solid-recorder.js",
+        "estimatedMiB": 1325.6494827270508
+      },
+      {
+        "file": "/src/core/project-core.js",
+        "estimatedMiB": 908.9932708740234
+      },
+      {
+        "file": "/src/render/static-asset-model.js",
+        "estimatedMiB": 822.2570533752441
+      },
+      {
+        "file": "/src/core/ceiling-core.js",
+        "estimatedMiB": 709.7014350891113
+      },
+      {
+        "file": "/src/core/repository-core.js",
+        "estimatedMiB": 565.7590103149414
+      },
+      {
+        "file": "/src/core/floorplan-core.js",
+        "estimatedMiB": 343.22689056396484
+      },
+      {
+        "file": "/src/core/layout-geometry.js",
+        "estimatedMiB": 295.1292953491211
+      },
+      {
+        "file": "/src/core/cabinet-builder-core.js",
+        "estimatedMiB": 230.42770385742188
+      },
+      {
+        "file": "/src/core/cabinet-core.js",
+        "estimatedMiB": 171.18059539794922
+      }
+    ]
+  }
+}
