@@ -86,7 +86,7 @@ result.push({boardIndex:result.length,poly:poly.map(([x,z])=>[(x+offset[0])*1000
    for(const poly of z.decompose([board.poly],p=>z.inside(p,board.poly))){
     const piece={...board,poly},points=board.motion?B.vertices(piece,board.phase||0):[board.bottom,board.top].flatMap(y=>poly.map(([x,q])=>[x,y,q]));
     const vertices=points.map(([x,y,q])=>{const p=transform([x,q]);return [p[0],y+base,p[1]];});
-    records.push({vertices,boardKey:prefix+'board:'+board.boardIndex,boardName:part,actualBoard:true});
+    records.push({vertices,boardKey:prefix+'board:'+board.boardIndex,boardName:part,actualBoard:true,...(data.cabinetBuilder?{componentId:data.cabinetBuilder.componentId,boxId:data.cabinetBuilder.boxId}:{}),...(data.cabinetFoldDoor?{foldDoor:true,leaf:data.cabinetPart?.leaf}:{})});
    }
   };
   const primitive=(poly,bottom,top,name,prefix)=>add({poly,bottom,top,boardIndex:prefix,metadata:{},phase:0},identity,0,name+':');
