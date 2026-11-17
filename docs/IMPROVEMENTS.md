@@ -3644,3 +3644,10 @@ macOS 的 test-artifacts 新建运行目录追加 `.noindex`，保留失败证�
 共享 test-artifacts 在正常结束的成功／失败验证后清理明确登记的 disposable 副本；失败报告与 generated 现场保留，整目录夹具仍仅成功时删除。登记的 profile／profile-* 只清列明的可再生成缓存，保留 Local Storage、IndexedDB 等持久存储。verify:tauri 在子进程结束并写入证据后恢复同一归属标记执行清理，交互式 prepare 不提前删除待用副本。显式 .keep／环境保留、运行及中断锁、所有权与符号链接保护保持；不扫描历史目录。AGENTS 增加后续验证收尾约定，适用范围及专用流程保留例外见 [TEST-ARTIFACTS.md](TEST-ARTIFACTS.md)。
 
 增量通过 test-test-artifacts、test-tauri（隔离工作区／清理链）、test-desktop-macos（布局夹具）、test-desktop-executable 及改动脚本语法检查。未执行原生桌面／Tauri GUI 验收或全量测试；本次不清理已有历史产物。
+
+
+## 2026-11-17：第二轮已结束测试产物清理
+
+按用户授权，对 desktop-verification、tauri-comparison、playwright、presentation-verification 中归属明确、状态 passed／failed 且无运行锁的历史测试执行清理；删除登记的源码／资产副本、独立应用包与列明的图形／网络缓存，共732个目标。output 占用由30797956 KiB降至13854184 KiB，减少约16.16 GiB（APFS实际释放量可能不同）。正式 Applications 链接与其应用包保持原位，不修改正式项目或 .local。
+
+7个未结束目录、2个带运行锁目录和1个无归属标记目录整体跳过，不清理或重置锁。保留测试方案、浏览器持久存储、截图／日志／报告；清理前后复核4379个保留文件 SHA-256，无差异。清单、跳过原因及保留哈希在本机 output/cleanup-20261117-round2.noindex/manifest.json（不入库）。进程检查只发现正式包运行，无测试目录进程。验证仅覆盖清理目标边界、保留文件哈希、正式应用入口及Git差异；未执行应用功能回归或全量测试。
