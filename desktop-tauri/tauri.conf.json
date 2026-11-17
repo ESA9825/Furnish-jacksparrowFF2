@@ -1,0 +1,21 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Furnish Tauri Compare",
+  "version": "0.1.0",
+  "identifier": "local.furnish.tauri.compare",
+  "build": {
+    "frontendDist": "assets"
+  },
+  "app": {
+    "windows": [],
+    "security": {
+      "capabilities": []
+    }
+  },
+  "bundle": {
+    "active": false,
+    "icon": [
+      "../assets/icons/icon-512.png"
+    ]
+  }
+}

@@ -737,3 +737,7 @@ product-rules 集中派生 kind，保留 type 为模型／数据兼容 ID；name
 2026-10-30（紧凑视角面板）：底部视角表单默认仅保留尺寸、眼距、FOV和自动／手动按钮，其余字段及说明统一收进高级设置，重新打开先折叠。沿原表单提交校准，手动按钮只关闭当前模式校准；无效字段展开定位，标尺提交先展开再读取真实宽度。原偏好／项目／加载接口保持，见[相机设置](CAMERA-CALIBRATION.md)。
 
 2026-11-04（宽视角）：navigation-input手动水平范围扩展至40–120°、垂直上限120°，默认60°及原本机键保持；视角滑块同步范围并继续显示实际水平角，竖屏按投影上限收窄。物理校准公式／范围、相机位姿和项目链路保持，无新字段或加载变化。见[视角校准](CAMERA-CALIBRATION.md)。
+
+## 2026-11-17：Tauri 并行对照
+
+`desktop-tauri` 为可选 Rust／系统 WebView 壳，`scripts/tauri-launch.cjs` 只在带标记的隔离工作区运行；共用原 `desktop/backend.cjs`、HTTP 页面及保存／撤销链。Electron 正式入口不变，没有新增前端构建和持久字段。两壳缓存独立、同副本端口稳定、禁止同时编辑；Tauri 本机依赖 Node，暂非便携发布。WebKit XPC 进程与 RSS 统计边界及功能差异见 [Tauri 对照](TAURI.md)。

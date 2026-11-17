@@ -1,0 +1,4 @@
+[[permission]]
+identifier = "host-lifecycle"
+description = "Acknowledge a completed production save, and return comparison diagnostics. No filesystem or shell access."
+commands.allow = ["finish_close", "request_close", "probe_result"]

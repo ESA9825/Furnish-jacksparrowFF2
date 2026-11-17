@@ -15,7 +15,12 @@
     "verify:codex-blender:gui": "node scripts/verify/verify-codex-blender.cjs --gui",
     "verify:codex-blender:registration": "node scripts/verify/verify-codex-blender-registration.cjs",
     "test:codex-blender:autostart": "node tests/test-codex-blender-autostart.cjs",
-    "verify:codex-blender:autostart": "node scripts/verify/verify-codex-blender-autostart.cjs"
+    "verify:codex-blender:autostart": "node scripts/verify/verify-codex-blender-autostart.cjs",
+    "tauri": "node scripts/tauri-launch.cjs",
+    "tauri:build": "node scripts/tauri-build.cjs",
+    "tauri:electron": "node scripts/tauri-launch.cjs --engine electron",
+    "tauri:memory": "node scripts/tauri-memory.cjs",
+    "verify:tauri": "node scripts/verify-tauri.cjs"
   },
   "devDependencies": {
     "electron": "45.0.0",

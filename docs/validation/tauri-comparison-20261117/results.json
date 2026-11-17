@@ -1,0 +1,95 @@
+{
+  "date": "2026-11-17",
+  "method": "Single sequential pass; sum of process RSS including owned Node backend, desktop host and OS-attributed WebKit XPC. Shared pages may be counted more than once; not peak, physical footprint or dedicated GPU memory.",
+  "results": [
+    {
+      "engine": "electron",
+      "artifact": "output/tauri-comparison/compare-s7TUwL.noindex",
+      "sourceHash": "8828def09c28c2a3113a4769436ff68ebad49d088348525372f9b921b4e2d4aa",
+      "sourceUnchanged": true,
+      "viewport": [
+        1440,
+        928
+      ],
+      "normalExit": true,
+      "stages": [
+        {
+          "stage": "2d",
+          "rssMiB": 4520.359375,
+          "webkitServices": 0
+        },
+        {
+          "stage": "3d-smooth",
+          "rssMiB": 3737.984375,
+          "webkitServices": 0
+        },
+        {
+          "stage": "3d-detail",
+          "rssMiB": 3117.921875,
+          "webkitServices": 0,
+          "status": "渐进高清 · 已收敛",
+          "converged": true,
+          "elapsedMs": 49749.19999998808
+        },
+        {
+          "stage": "return-2d",
+          "rssMiB": 2194.5625,
+          "webkitServices": 0
+        }
+      ]
+    },
+    {
+      "engine": "tauri",
+      "artifact": "output/tauri-comparison/compare-DBLtqy.noindex",
+      "sourceHash": "8828def09c28c2a3113a4769436ff68ebad49d088348525372f9b921b4e2d4aa",
+      "sourceUnchanged": true,
+      "viewport": [
+        1440,
+        928
+      ],
+      "normalExit": true,
+      "stages": [
+        {
+          "stage": "2d",
+          "rssMiB": 5364.359375,
+          "webkitServices": 3
+        },
+        {
+          "stage": "3d-smooth",
+          "rssMiB": 5131.015625,
+          "webkitServices": 3
+        },
+        {
+          "stage": "3d-detail",
+          "rssMiB": 5514.984375,
+          "webkitServices": 3,
+          "status": "渐进高清 · 已收敛",
+          "converged": true,
+          "elapsedMs": 57265
+        },
+        {
+          "stage": "return-2d",
+          "rssMiB": 4849.5625,
+          "webkitServices": 3
+        }
+      ]
+    }
+  ],
+  "environment": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "node": "v24.22.3",
+    "os": "27.2.0",
+    "totalMemory": 25769803776
+  },
+  "frontend": {
+    "electron": {
+      "sha256": "73184a3f4f499c4033b4f4a461d807c8e4c67dd854be165f23e7d7d627c3f269",
+      "files": 1609
+    },
+    "tauri": {
+      "sha256": "73184a3f4f499c4033b4f4a461d807c8e4c67dd854be165f23e7d7d627c3f269",
+      "files": 1609
+    }
+  }
+}
