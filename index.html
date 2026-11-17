@@ -770,9 +770,9 @@ function init(){
   sceneMeasure=FurnishSceneMeasure.create({THREE,stage,canvas:cv,camera,tr,invalidate,
     navigationHeld:()=>spaceDown,
     available:()=>active&&!anim&&opt.mode==='orbit'&&!globalThis.FurnishTilePresetUI?.inspecting(),
-    onStart:()=>{clearTimeout(cabinetTap);cancelElevationGesture();selectionTransform?.update(false);fly=null;},hitAt:measurementHit});
+    onStart:()=>{cancelElevationGesture();selectionTransform?.update(false);fly=null;},hitAt:measurementHit});
   cv.addEventListener('pointerdown',()=>{orbit.mouseButtons.LEFT=spaceDown?THREE.MOUSE.PAN:THREE.MOUSE.ROTATE;},true);
-  let downAt = null, tapMoved = false, look = null, cabinetTap = null;
+  let downAt = null, tapMoved = false, look = null;
   cv.addEventListener('pointerdown', e => {
     downAt = e.isPrimary===false?null:[e.clientX,e.clientY,e.pointerId,e.button];tapMoved=false; window.closeDrawers();
     if (touchWalk && !look){ look = {id:e.pointerId, x:e.clientX, y:e.clientY}; cv.setPointerCapture(e.pointerId); }
@@ -831,7 +831,7 @@ function init(){
     const h = pick(e);
     if(h?.teaBarDoor&&!e.shiftKey&&toggleTeaBarDoor(h.fid,h.teaBarDoor))return;
     if(h?.fid&&!e.shiftKey&&cycleFoldingTable(h.fid))return;
-    if (h?.cabinetPart){ const plan=PLAN.id;clearTimeout(cabinetTap);cabinetTap=setTimeout(()=>{if(PLAN.id===plan&&$('#dlg').hidden)window.FurnishCabinetBuilderUI.toggleScene(h.fid,h.cabinetPart);},350);window.selectIds([h.fid]); }
+    if (h?.cabinetPart){ window.selectIds([h.fid]);if($('#dlg').hidden)window.FurnishCabinetBuilderUI.toggleScene(h.fid,h.cabinetPart); }
     else if (h?.door){ if(!h.fid||!furnitureLocked(getF(h.fid)))toggleSlidingDoor(h); if(h.fid)window.selectIds([h.fid]); }
     else if (h?.fid) e.shiftKey ? window.toggleSel(h.fid) : window.selectIds([h.fid]);
     else if (h?.ceiling) window.FurnishCeilingUI.selectObject(h.ceiling);
@@ -839,7 +839,7 @@ function init(){
     else if (h?.room) window.select({kind:'room', id:h.room});
     else window.select(null);
   });
-  cv.addEventListener('dblclick', e => { clearTimeout(cabinetTap); if(opt.mode!=='orbit'||anim)return;const hit=pick(e);if(hit?.ceiling)return window.FurnishCeilingUI.selectObject(hit.ceiling,true);const id=hit?.fid||(ui.sel?.kind==='furn'?ui.sel.id:null);if(id)window.FurnishCabinetBuilderUI.open(id); });
+  cv.addEventListener('dblclick', e => { if(opt.mode!=='orbit'||anim)return;const hit=pick(e);if(hit?.ceiling)return window.FurnishCeilingUI.selectObject(hit.ceiling,true); });
   new ResizeObserver(() => {
     renderer.setSize(SW(), SH()); labelRenderer.setSize(SW(), SH());
     refreshCameraProjection(!!FurnishNavigation.cameraCalibration()?.orbitEnabled);

@@ -4,6 +4,8 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 const V=require('../lib/browser-verification.cjs'),root=V.projectRoot,out=path.join(root,'output/playwright/cabinet-toggle');
 (async()=>{
  fs.mkdirSync(out,{recursive:true});const inputIndex=process.argv.indexOf('--workspace'),input=inputIndex<0?path.join(root,'projects/workspace.furnish.json'):path.resolve(process.argv[inputIndex+1]),source=fs.readFileSync(input),workspace=JSON.parse(source).workspace;
+ // Keep the current design in the fresh browser cache; unrelated plans can exceed its quota.
+ workspace.work={[workspace.planId]:workspace.work[workspace.planId]};workspace.designs=[];workspace.customPlans=(workspace.customPlans||[]).filter(p=>p.id===workspace.planId);
  const iterations=process.argv.includes('--smoke')?2:4;
  const baselineIndex=process.argv.indexOf('--baseline-ref'),baselineRef=baselineIndex<0?null:process.argv[baselineIndex+1];
  if(baselineIndex>=0&&(!baselineRef||baselineRef.startsWith('-')))throw Error('--baseline-ref requires a Git revision');
@@ -22,7 +24,7 @@ const V=require('../lib/browser-verification.cjs'),root=V.projectRoot,out=path.j
   const context=await browser.newContext({viewport:{width:1500,height:1000},offline:mode==='file'}),page=await context.newPage(),errors=[];
   if(legacy)await page.route('**/src/core/ceiling-core.js',route=>route.fulfill({body:baseline,contentType:'text/javascript'}));
   if(legacy)await page.route('**/src/core/project-core.js',route=>route.fulfill({body:baselineProject,contentType:'text/javascript'}));
-  page.on('pageerror',e=>errors.push(e.message));await context.addInitScript(ws=>localStorage.setItem('huxing-design-v23',JSON.stringify(ws)),workspace);
+  page.on('pageerror',e=>errors.push(e.message));await context.addInitScript(ws=>{if(!localStorage.getItem('toggle-fixture-loaded')){localStorage.setItem('huxing-design-v'+ws.v,JSON.stringify(ws));localStorage.setItem('toggle-fixture-loaded','1');}},workspace);
   await page.goto(mode==='file'?pathToFileURL(path.join(root,'index.html')).href:server.baseURL);await page.locator('#repository-loading').waitFor({state:'hidden'});
   await page.getByRole('button',{name:'3D 场景',exact:true}).click();await page.waitForFunction(()=>is3D()&&!switching,{},{timeout:90000});await page.waitForTimeout(1500);
   const session=await context.newCDPSession(page);await session.send('Profiler.enable');await session.send('Profiler.start');
@@ -43,6 +45,8 @@ const V=require('../lib/browser-verification.cjs'),root=V.projectRoot,out=path.j
    const issues=FurnishProject.spaceCheck(FurnishProject.effectivePlan(PLAN,state),state.furniture,{scanPassages:false});
    return {plan:PLAN.name,count:state.furniture.length,rows,undoRedo:true,roundtrip:true,issues,expected:opened};
   },iterations);
+  // A double click with a cabinet selected must never open structural editing.
+  await page.evaluate(()=>{const original=FurnishCabinetBuilderUI.open;let opened=0;FurnishCabinetBuilderUI.open=()=>opened++;try{const canvas=document.querySelector('#stage canvas');if(!canvas)throw Error('missing scene canvas');canvas.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,clientX:0,clientY:0}));if(opened)throw Error('double click opened cabinet editor');}finally{FurnishCabinetBuilderUI.open=original;}});
   const {profile}=await session.send('Profiler.stop');fs.writeFileSync(path.join(out,mode+'-profile.json'),JSON.stringify(profile));
   await V.configuration().waitForCache(page);await page.reload();await page.locator('#repository-loading').waitFor({state:'hidden'});const restored=await page.evaluate(()=>snap());
   fs.writeFileSync(path.join(out,mode+'-restore.json'),JSON.stringify({before:JSON.parse(result.expected),after:JSON.parse(restored)}));

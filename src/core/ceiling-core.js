@@ -461,7 +461,7 @@ function fitCeilingPanel(plan,f,furniture=[]){
  }
  fail('区域内没有可替换的完整空闲300×600铝扣板；裁切板、收边或已安装筒灯／整板设备的格子不能替换');
 }
-function checks(plan,bodies){
+function checks(plan,bodies,{focusIds=null}={}){
  const out=(plan.ceilings?.pending||[]).map(p=>({kind:'ceiling',id:p.id,ceilingId:p.id,name:'吊顶',pending:true,message:p.message}));
  const apertures=new Map((plan.ceilings?.items||[]).map(c=>[c.id,downlightHoles(c,bodies)])),replacements=new Map((plan.ceilings?.items||[]).map(c=>[c.id,panelReplacements(c,bodies)]));
  const P=root.FurnishProducts||require('./product-rules.js'),seenDevices=new Set();for(const {f}of bodies)if(!f.obj&&P.definition(f)?.ceilingPanel&&!seenDevices.has(f.id)){seenDevices.add(f.id);if(![...replacements.values()].some(slots=>slots.some(s=>s.fid===f.id)))out.push({kind:'ceiling',id:f.id,ceilingId:'panel-installation',name:f.name,pending:true,at:[f.cx,f.cy],message:f.name+'未替换完整铝扣板：请使用整板安装，核对300×600尺寸、方向、标高及格内筒灯／整板设备占用'});}
@@ -478,6 +478,7 @@ function checks(plan,bodies){
  const caps=c.kind==='flat'?[]:endCaps(c).plates.map(plate=>({...plate,box:bounds(plate.footprint),bottom:c.height-Math.max(...plate.section.map(p=>p[1])),top:c.height-Math.min(...plate.section.map(p=>p[1]))}));
  const flatBox=c.kind==='flat'?bounds(c.polygon):null,flatConvex=c.kind==='flat'&&convex(c.polygon);
  for(const {f,p,vertical} of bodies){
+  if(focusIds&&!focusIds.has(f.id))continue;
   const box=bounds(p),separated=(bottom,top,tolerance=eps())=>vertical&&Math.min(vertical.top,top)-Math.max(vertical.bottom,bottom)<=tolerance;
   let hit=false;
   if(c.kind==='flat'){

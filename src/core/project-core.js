@@ -370,7 +370,7 @@
   const rigidBodies=furniture.filter(f=>!['rug','plant','curtain'].includes(f.type)&&!design().products().definition(f)?.covering?.soft).flatMap(f=>(root.FurnishGeometry||require('./layout-geometry.js')).bodyParts(f,plan,furniture).map(part=>({f,...part})));
   const openingBox=p=>[Math.min(...p.map(v=>v[0])),Math.min(...p.map(v=>v[1])),Math.max(...p.map(v=>v[0])),Math.max(...p.map(v=>v[1]))];
   const openingObstacles=rigidBodies.map(b=>({...b,box:openingBox(b.p)}));
-  broken.push(...ceilings().checks(plan,rigidBodies).filter(i=>!targets||targets.has(i.id)));
+  broken.push(...ceilings().checks(plan,rigidBodies,{focusIds:targets}).filter(i=>!targets||targets.has(i.id)));
   const beams=(plan.beams||[]).map(beam=>{const vertical=core().beamVertical(beam,ceilingHeight(plan));return {beam,vertical:vertical?.assumed?null:vertical};});
   const S=root.FurnishServices||(typeof require==='function'?require('./service-core.js'):null),pipes=S.pipes(plan);
   const G=root.FurnishGeometry||(typeof require==='function'?require('./layout-geometry.js'):null);
