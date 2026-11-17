@@ -1,0 +1,75 @@
+/* Classic script, loaded after app.js. No additional persistence channel. */
+globalThis.FurnishElectricalUI=(()=>{
+ const height=v=>v===null?'待核对':Number(v.toFixed(1));
+ const E=FurnishElectrical,NS='http://www.w3.org/2000/svg';
+ let adding=false,poseHost=null;
+ const active=()=>ui.planMode==='electrical';
+ const physicalLocked=f=>!!f&&(!!f.locked||FurnishLayers.locked(state,'furniture:'+f.id));
+ const blocked=f=>active()&&!E.panel(f);
+ function assertEditable(before,after){if(active())E.assertEditable(before,after);}
+ function setMode(mode){
+  if(!['furniture','ceiling','electrical'].includes(mode))return;
+  endDrag(true);closeFabEditor(false);closeDialog();adding=false;poseHost=null;ui.sceneMove=false;ui.sel=null;ui.tool='select';ui.planMode=mode;saveUI();renderAll();applyView();
+ }
+ function selection(sel){
+  if(!active())return sel;
+  if(sel?.kind!=='furn')return null;
+  const ids=(sel.ids||[sel.id]).filter(id=>E.panel(getF(id))),id=ids.includes(sel.id)?sel.id:ids[0];
+  if(!ids.length){poseHost=sel.id;return null;}
+  poseHost=null;return {...sel,id,ids};
+ }
+ function geometry(){return E.surfaces(canvasEffectivePlan(),state,selItems()[0]);}
+ function draw(root=svg,{exporting=false,visibleLayers=true}={}){
+  let g=root.querySelector('#gElectrical');
+  if(!active()){g?.remove();return;}
+  if(!g){g=document.createElementNS(NS,'g');g.id='gElectrical';root.querySelector('#gSel')?.before(g);if(!g.parentNode)root.append(g);}
+  g.setAttribute('transform',`rotate(${drawingRotation()})`);
+  const scale=exporting ? .075 : view.s,k=1/scale,rows=E.points(state,canvasEffectivePlan()).filter(r=>!visibleLayers||FurnishLayers.visible(state,'furniture:'+r.id));
+  g.innerHTML=rows.map(r=>{const f=getF(r.id),selected=selIds().includes(f.id),rotation=-drawingRotation();return `<g data-electrical-symbol="${esc(f.id)}" ${exporting?'':`data-fid="${esc(f.id)}"`} transform="translate(${f.cx} ${f.cy}) rotate(${rotation})" style="cursor:move"><title>${esc(r.number+' · '+f.name+' · '+r.variant.label)} · 底部 ${height(r.finishedBottom)} mm（完成地面）</title><circle r="${11*k}" fill="${selected?'#a64d31':'#fffaf4'}" stroke="#a64d31" stroke-width="2" vector-effect="non-scaling-stroke"/><text text-anchor="middle" dominant-baseline="central" font-size="${9*k}" font-weight="bold" fill="${selected?'white':'#783a28'}" pointer-events="none">${r.number}</text><text x="${16*k}" y="${-5*k}" font-size="${11*k}" fill="#783a28" stroke="#fffaf4" stroke-width="${3*k}" paint-order="stroke" pointer-events="none">${esc(r.variant.label)}</text><text x="${16*k}" y="${10*k}" font-size="${10*k}" fill="#783a28" stroke="#fffaf4" stroke-width="${3*k}" paint-order="stroke" pointer-events="none">底 ${height(r.finishedBottom)} / 中 ${height(r.finishedCenter)} mm</text></g>`;}).join('');
+  const chosen=selItems().length===1&&selItems()[0];
+  if(chosen&&E.panel(chosen)){const hit=E.nearest(chosen,E.surfaces(canvasEffectivePlan(),state,chosen),1);if(hit){const s=hit.surface,n=s.normal,a=s.a,b=[s.a[0]+(s.b[0]-s.a[0])*hit.offset/s.length,s.a[1]+(s.b[1]-s.a[1])*hit.offset/s.length],d=35*k,u=[a[0]+n[0]*d,a[1]+n[1]*d],v=[b[0]+n[0]*d,b[1]+n[1]*d],mid=[(u[0]+v[0])/2,(u[1]+v[1])/2];g.insertAdjacentHTML('beforeend',`<g pointer-events="none" data-electrical-dimension><path d="M${a}L${u}L${v}L${b}" fill="none" stroke="#a64d31" stroke-width="1" vector-effect="non-scaling-stroke"/><text transform="translate(${mid}) rotate(${-drawingRotation()})" text-anchor="middle" font-size="${11*k}" fill="#783a28" stroke="#fffaf4" stroke-width="${3*k}" paint-order="stroke">中心距面起点 ${Number(hit.offset.toFixed(1))} mm</text></g>`);}}
+  for(const node of root.querySelectorAll('#gFurn > [data-fid]')){const ref=!E.panel(getF(node.dataset.fid));if(ref){node.setAttribute('opacity','.28');node.setAttribute('pointer-events','none');}else node.setAttribute('pointer-events','none');}
+  if(!exporting){const note=document.querySelector('#plan-display-note');if(note)note.textContent=adding?'点击画布放置面板；按 Esc 取消':'家具底图只读 · 柜门可在右栏或三维中开合 · 底／中按完成地面计；未知保留待核对';}
+ }
+ function afterRender(){
+  document.body.classList.toggle('electrical-mode',active());
+  document.querySelectorAll('[data-plan-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.planMode===ui.planMode)));
+  if(active())draw();else {document.querySelector('#gElectrical')?.remove();for(const n of document.querySelectorAll('#gFurn > [data-fid]'))n.removeAttribute('pointer-events');}
+ }
+ function pointer(e){
+  if(!active()||!adding||e.button!==0||spaceDown)return false;
+  const p=toMM(e),item=LIB.flatMap(c=>c.items).find(i=>E.panel({type:i[0]}));if(!item)return false;
+  adding=false;addItem(item,p.x,p.y);return true;
+ }
+ function panel(p){
+  if(!active())return false;
+  const f=selItems().length===1&&selItems()[0],rows=E.points(state,canvasEffectivePlan()),locked=f&&physicalLocked(f);
+  p.innerHTML=`<section class="electrical-panel"><h3>插座布置 <span class="muted">${rows.length} 个点位</span></h3><p class="muted">家具、墙体和柜体结构只读。开合柜门可查看柜内点位；面板可贴墙或贴柜体板面。</p><div class="actions"><button class="btn primary" id="electrical-add">${adding?'取消放置':'＋ 添加面板'}</button><button class="btn" id="electrical-exit">返回家具布局</button></div>${f?editor(f,rows.find(r=>r.id===f.id),locked):'<p>点选图中编号编辑面板，或从下方列表选择。</p>'}<details ${poseHost?'open':''}><summary>柜门／抽屉开合</summary><label>选择柜体<select id="electrical-host"><option value="">请选择</option>${state.furniture.filter(f=>(f.cabinet||f.kitchen)&&FurnishLayers.visible(state,'furniture:'+f.id)).map(f=>`<option value="${esc(f.id)}" ${poseHost===f.id?'selected':''}>${esc(f.name)}</option>`).join('')}</select></label><div class="actions"><button class="btn" id="electrical-open">全部打开</button><button class="btn" id="electrical-close">全部关闭</button><button class="btn" id="electrical-3d">三维逐扇开合</button></div><small>仅改变开启状态；柜体尺寸、位置和结构保持。原来锁定的柜体仍受保护。</small></details><details ${f?'':'open'}><summary>面板清单 · 编号随方案内顺序生成</summary>${rows.map(r=>`<button class="btn electrical-row" data-electrical-id="${esc(r.id)}"><b>${r.number}</b> ${esc(r.name)}<small>${esc(r.variant.label)} · 底 ${height(r.finishedBottom)} mm</small></button>`).join('')}</details><p id="electrical-error" class="project-error" role="alert"></p></section>`;
+  p.querySelector('#electrical-add').onclick=()=>{adding=!adding;renderPanel();afterRender();};p.querySelector('#electrical-exit').onclick=()=>setMode('furniture');
+  p.querySelectorAll('[data-electrical-id]').forEach(b=>b.onclick=()=>focusItem(b.dataset.electricalId));
+  p.querySelector('#electrical-host').onchange=e=>{poseHost=e.target.value;};
+  const report=fn=>{try{fn();}catch(e){p.querySelector('#electrical-error').textContent=e.message;}};
+  p.querySelector('#electrical-open').onclick=()=>report(()=>opening(true));p.querySelector('#electrical-close').onclick=()=>report(()=>opening(false));
+  p.querySelector('#electrical-3d').onclick=()=>{setView('3d');if(poseHost)window.View3D?.flyToRoom(roomAt(getF(poseHost).cx,getF(poseHost).cy)?.id);};
+  if(f)bindEditor(p,f,report);return true;
+ }
+ function editor(f,r,locked){
+  const dis=locked?'disabled':'',options=Object.entries(FurnishProducts.panelOptions),surfaces=geometry();
+  return `<form id="electrical-form"><h3>${r.number} · 面板属性</h3><div class="form"><label class="full">用途／名称<input name="name" maxlength="160" value="${esc(f.name)}" ${dis}></label><label class="full">面板款式<select name="variant" ${dis}>${[...new Set(options.map(([,v])=>v.group))].map(group=>`<optgroup label="${esc(group)}">${options.filter(([,v])=>v.group===group).map(([key,v])=>`<option value="${key}" ${FurnishProducts.value(f,'panelVariant')===key?'selected':''}>${esc(v.label)}</option>`).join('')}</optgroup>`).join('')}</select></label><label>输入底高（方案基准）mm<input name="bottom" type="number" min="0" max="20000" step="any" value="${r.bottom}" ${dis}></label><label>完成地面中心高 mm<input readonly value="${height(r.finishedCenter)}"></label><label>中心 X mm<input name="cx" type="number" step="any" value="${f.cx}" ${dis}></label><label>中心 Y mm<input name="cy" type="number" step="any" value="${f.cy}" ${dis}></label><label>朝向 °<input name="rot" type="number" step="any" value="${f.rot}" ${dis}></label></div><p class="muted">完成地面底高 ${height(r.finishedBottom)} mm；输入沿方案原安装基准，保留旧方案语义。</p><button class="btn primary" type="submit" ${dis}>应用面板属性</button></form><details><summary>贴墙／柜体侧面定位</summary><p class="muted">先应用高度，再选择该高度实际存在的板面。起点距离按面板中心计；放置后可继续独立调整。</p><label>安装面<select id="electrical-surface" ${dis}><option value="">请选择安装面</option>${surfaces.map((s,i)=>`<option value="${esc(s.key)}">${esc(s.label)} · 面${i+1} · ${Number(s.length.toFixed(1))} mm</option>`).join('')}</select></label><label>沿面中心距起点 mm<input id="electrical-offset" type="number" step="any" ${dis}></label><p id="electrical-surface-info" class="muted"></p><button class="btn" id="electrical-place" ${dis}>贴此面放置</button></details><div class="actions"><button class="btn" data-act="dup" ${dis}>复制面板</button><button class="btn danger" data-act="del" ${dis}>删除面板</button></div>`;
+ }
+ function bindEditor(p,f,report){
+  const form=p.querySelector('#electrical-form');form.onsubmit=e=>{e.preventDefault();report(()=>{if(physicalLocked(getF(f.id)))throw Error('面板已锁定，请返回家具布局解锁');const data=new FormData(form),number=k=>{if(!String(data.get(k)).trim()||!Number.isFinite(Number(data.get(k))))throw Error('请输入有效数值');return Number(data.get(k));},name=String(data.get('name')).trim();if(!name)throw Error('请输入用途／名称');const next={...FurnishProducts.editPanelVariant(getF(f.id),String(data.get('variant'))),name,cx:number('cx'),cy:number('cy'),rot:norm(number('rot')),mountHeight:FurnishProducts.validateField(f,'mountHeight',number('bottom'))};mutate(()=>Object.assign(getF(f.id),next));});};
+  const input=p.querySelector('#electrical-surface'),offset=p.querySelector('#electrical-offset');input.onchange=()=>{const s=geometry().find(s=>s.key===input.value);if(!s)return;offset.value=String(Number((s.length/2).toFixed(2)));p.querySelector('#electrical-surface-info').textContent=`起点 (${s.a.map(v=>Number(v.toFixed(1))).join(', ')}) → 终点 (${s.b.map(v=>Number(v.toFixed(1))).join(', ')})；中心距起点 ${f.w/2}～${Number((s.length-f.w/2).toFixed(1))} mm`;};
+  p.querySelector('#electrical-place').onclick=()=>report(()=>{if(physicalLocked(getF(f.id)))throw Error('面板已锁定');const s=geometry().find(s=>s.key===input.value);if(!s)throw Error('请选择有效安装面');if(!offset.value.trim())throw Error('请输入中心距起点');const next=E.place(getF(f.id),s,Number(offset.value));mutate(()=>Object.assign(getF(f.id),next));});
+ }
+ function opening(open){
+  const f=getF(poseHost);if(!f)throw Error('请先选择柜体');if(physicalLocked(f))throw Error('柜体已锁定，请返回家具布局解锁');
+  const C=FurnishCabinet,B=FurnishCabinetBuilder;
+  if(f.cabinet?.version===2){const next=B.setOpening(f,open);mutate(()=>Object.assign(getF(f.id),next),{sceneFirst:true});return;}
+  if(f.cabinet?.version===3){const next=FurnishCornerCabinet.setOpening(f,open);mutate(()=>Object.assign(getF(f.id),next),{sceneFirst:true});return;}
+  throw Error('此组合柜请使用三维逐扇开合');
+ }
+ window.addEventListener('load',()=>{document.querySelectorAll('[data-plan-mode]').forEach(b=>b.onclick=()=>setMode(b.dataset.planMode));afterRender();if(active())renderPanel();});
+ document.addEventListener('keydown',e=>{if(active()&&e.key==='Escape'&&adding){adding=false;renderPanel();afterRender();}},true);
+ return {active,blocked,physicalLocked,assertEditable,setMode,selection,draw,afterRender,pointer,panel};
+})();

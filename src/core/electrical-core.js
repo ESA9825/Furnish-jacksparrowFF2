@@ -1,0 +1,54 @@
+/* Electrical planning uses ordinary furniture records and the existing history. */
+(function(root){
+'use strict';
+const P=()=>root.FurnishProducts||require('./product-rules.js');
+const panel=f=>!!f&&!f.obj&&P().family(f,'wall-panel');
+const equal=(a,b)=>JSON.stringify(canonical(a))===JSON.stringify(canonical(b));
+function canonical(v){return Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;}
+// Only production opening state is permitted on the reference furniture.
+const poseKeys=new Set(['open','doorOpen','doorAngle','doorLeaves','doorSections','topOpen','displayOpen','displayAngle','angle','extension','progress','states','drawerOpen','drawerExtensions']);
+function structure(v){return Array.isArray(v)?v.map(structure):v&&typeof v==='object'?Object.fromEntries(Object.entries(v).filter(([k])=>!poseKeys.has(k)).map(([k,v])=>[k,structure(v)])):v;}
+function reference(f){const out={...f};if(f.cabinet)out.cabinet=structure(f.cabinet);if(f.kitchen)out.kitchen=structure(f.kitchen);return out;}
+function assertEditable(before,after){
+ const old=new Map(before.furniture.map(f=>[f.id,f])),next=new Map(after.furniture.map(f=>[f.id,f]));
+ if(next.size!==after.furniture.length)throw Error('面板编号重复');
+ for(const f of before.furniture){const n=next.get(f.id);if(!panel(f)&&(!n||!equal(reference(f),reference(n))))throw Error('插座布置视图中家具位置和结构只读；仅允许柜门／抽屉开合');if(panel(f)&&n&&(!panel(n)||f.groupId!==n.groupId))throw Error('请在家具布局视图中更改面板分组或类型');}
+ for(const f of after.furniture)if(!old.has(f.id)&&!panel(f))throw Error('插座布置视图只能新增开关插座面板');
+ if(!equal(before.furniture.filter(f=>!panel(f)).map(f=>f.id),after.furniture.filter(f=>!panel(f)).map(f=>f.id)))throw Error('插座布置视图中家具顺序只读');
+ const rest=w=>{const out={...w};delete out.furniture;delete out.scene3d;if(out.objectLayers){out.objectLayers=structuredClone(out.objectLayers);for(const f of [...before.furniture,...after.furniture].filter(panel))delete out.objectLayers.assignments?.['furniture:'+f.id];}return out;};
+ if(!equal(rest(before),rest(after)))throw Error('插座布置视图中建筑、装修及其他方案资料只读');
+}
+function points(work,plan){return work.furniture.filter(panel).map((f,i)=>{const bottom=P().bottomHeight(f),height=P().height(f),m=plan?(root.FurnishDesign||require('./design-core.js')).furnitureHeightMeasurements(f,plan,work.furniture):{bottom};return {id:f.id,number:'E'+String(i+1).padStart(2,'0'),name:f.name,variant:P().panelSpec(f),bottom,center:bottom+height/2,finishedBottom:m.bottom,finishedCenter:m.bottom===null?null:m.bottom+height/2};});}
+const surfaceCache=new Map();
+function surfaces(plan,work,f){
+ const G=root.FurnishGeometry||require('./layout-geometry.js'),M=root.FurnishCabinetMotion||require('./cabinet-motion.js'),out=[];
+ const floor=P().floorBase(plan,f,work.furniture),key=JSON.stringify([plan.walls,plan.furnitureDatum,plan.floorFinish,plan.rooms,plan.markers,plan.ceilingHeight,work.furniture.filter(v=>!panel(v)),{...f,cx:0,cy:0,rot:0},floor]);
+ if(surfaceCache.has(key))return surfaceCache.get(key);
+ const bottom=G.bodyParts(f,plan,work.furniture).flatMap(p=>p.vertices||[]).map(v=>v[1]),range=bottom.length?{bottom:Math.min(...bottom),top:Math.max(...bottom)}:null;
+ if(!range)return out;
+ function edges(poly,meta,parts=[]){
+  const area=poly.reduce((s,a,i)=>{const b=poly[(i+1)%poly.length];return s+a[0]*b[1]-b[0]*a[1];},0),sign=area>=0?1:-1;
+  for(let i=0;i<poly.length;i++){const a=poly[i],b=poly[(i+1)%poly.length],dx=b[0]-a[0],dy=b[1]-a[1],length=Math.hypot(dx,dy);if(length<f.w-1e-6)continue;const normal=[sign*dy/length,-sign*dx/length],mid=[(a[0]+b[0])/2+normal[0]*.1,(a[1]+b[1])/2+normal[1]*.1];
+   if(parts.some(p=>G.inPoly(mid[0],mid[1],p)))continue;
+   out.push({...meta,key:meta.key+':'+i,a,b,normal,length});
+  }
+ }
+ for(const [i,r]of (plan.walls||[]).entries())edges([[r[0],r[1]],[r[2],r[1]],[r[2],r[3]],[r[0],r[3]]],{key:'wall:'+i,label:'墙 '+(i+1),kind:'wall'});
+ for(const host of work.furniture.filter(v=>floor.known&&!panel(v)&&(v.cabinet||v.kitchen)&&P().floorBase(plan,v,work.furniture).known)){
+  const parts=G.bodyParts(host,plan,work.furniture).filter(p=>p.actualBoard&&p.vertical?.bottom<=range.bottom+1e-6&&p.vertical?.top>=range.top-1e-6),polys=parts.map(p=>M.section(p,range));
+  parts.forEach((part,i)=>edges(polys[i],{key:'cabinet:'+host.id+':'+i,label:host.name+' · '+part.boardName,kind:'cabinet',hostId:host.id},polys));
+ }
+ surfaceCache.set(key,out);if(surfaceCache.size>4)surfaceCache.delete(surfaceCache.keys().next().value);return out;
+}
+function place(f,surface,offset){
+ if(!Number.isFinite(offset)||offset<f.w/2-1e-6||offset>surface.length-f.w/2+1e-6)throw Error('面板须完整落在所选面内；中心距起点应在 '+(f.w/2)+'～'+Number((surface.length-f.w/2).toFixed(1))+' mm');
+ const t=offset/surface.length,n=surface.normal;
+ return {...f,cx:surface.a[0]+(surface.b[0]-surface.a[0])*t+n[0]*f.d/2,cy:surface.a[1]+(surface.b[1]-surface.a[1])*t+n[1]*f.d/2,rot:(Math.atan2(-n[0],n[1])*180/Math.PI+360)%360};
+}
+function nearest(f,faces,limit=Infinity){
+ const a=(f.rot||0)*Math.PI/180,n=[-Math.sin(a),Math.cos(a)];let best=null;
+ for(const s of faces){if(n[0]*s.normal[0]+n[1]*s.normal[1]<.99999)continue;const offset=((f.cx-s.a[0])*(s.b[0]-s.a[0])+(f.cy-s.a[1])*(s.b[1]-s.a[1]))/s.length;if(offset<f.w/2||offset>s.length-f.w/2)continue;const position=place(f,s,offset),distance=Math.hypot(position.cx-f.cx,position.cy-f.cy);if(distance<=limit&&(!best||distance<best.distance))best={surface:s,offset,position,distance};}
+ return best;
+}
+const api={panel,assertEditable,points,surfaces,place,nearest};root.FurnishElectrical=api;if(typeof module==='object'&&module.exports)module.exports=api;
+})(typeof globalThis!=='undefined'?globalThis:this);

@@ -66,7 +66,9 @@ function snapCanvasMove(f,cx,cy,skip,disabled=false,axis,anchor){
     wallSnap:ui.layers.wallSnap,guides:ui.layers.guides,
     rects:ui.layers.wallSnap?snapRects(target):[],furniture:ui.layers.furn?state.furniture:[],skip,
     moving:skip?state.furniture.filter(o=>skip.has(o.id)):[f],disabled,axis,anchor});
-  ui.guides=result.guides;return result.position;
+  ui.guides=result.guides;
+  if(globalThis.FurnishElectricalUI?.active()&&FurnishElectrical.panel(f)&&!disabled&&!axis&&(!skip||skip.size===1)&&ui.layers.wallSnap){const next={...f,cx:result.position[0],cy:result.position[1]},hit=FurnishElectrical.nearest(next,FurnishElectrical.surfaces(canvasEffectivePlan(),state,next),12/view.s);if(hit)return [hit.position.cx,hit.position.cy];}
+  return result.position;
 }
 function snapPoint(p,shift){
   const result=FurnishSnapping.measurePoint(p,{scale:view.s,...measurementScene(),anchor:shift?ui.mA:null});
@@ -159,7 +161,7 @@ function endDrag(cancel){
     const m = ui.marq; ui.marq = null;
     if (cancel || !d.moved || !m){ if (!cancel && !d.add) select(null); else renderSel(); return; }
     const x0 = Math.min(m[0].x, m[1].x), x1 = Math.max(m[0].x, m[1].x), y0 = Math.min(m[0].y, m[1].y), y1 = Math.max(m[0].y, m[1].y);
-    const hit = ui.layers.furn ? state.furniture.filter(f => { const {hw, hh} = aabb(f); return f.cx+hw > x0 && f.cx-hw < x1 && f.cy+hh > y0 && f.cy-hh < y1; }).map(f => f.id) : [];
+    const hit = ui.layers.furn ? state.furniture.filter(f => { if(globalThis.FurnishElectricalUI?.active()&&!FurnishElectrical.panel(f))return false;const {hw, hh} = aabb(f); return f.cx+hw > x0 && f.cx-hw < x1 && f.cy+hh > y0 && f.cy-hh < y1; }).map(f => f.id) : [];
     selectIds(d.add ? [...d.base, ...hit] : hit);
     return;
   }
@@ -317,6 +319,7 @@ svg.addEventListener('pointerdown', e => {
     }
   }
   if (pinch) return;
+  if(globalThis.FurnishElectricalUI?.pointer(e))return;
   const p = toMM(e), t = e.target, base = {sx:e.clientX, sy:e.clientY, moved:false};
   // 中键或按住空格：任何工具下都直接平移画面
   if (e.button === 1 || spaceDown){ e.preventDefault(); drag = {kind:'pan', ...base, x0:view.x0, y0:view.y0, quiet:true}; svg.setPointerCapture(e.pointerId); return; }

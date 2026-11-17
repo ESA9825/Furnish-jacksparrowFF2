@@ -123,7 +123,7 @@ function planOpacity(node,value){
  if(!displayOpacity.has(node))displayOpacity.set(node,node.getAttribute('opacity'));
  const next=value??displayOpacity.get(node);if(next===null)node.removeAttribute('opacity');else node.setAttribute('opacity',next);
 }
-function planMode(){return ui.planMode==='ceiling'?'ceiling':'furniture';}
+function planMode(){return ['ceiling','electrical'].includes(ui.planMode)?ui.planMode:'furniture';}
 function ceilingPoints(c){return (c.kind==='profile'?C.footprint(c):c.polygon).map(p=>p.join(',')).join(' ');}
 function selectionChanged(){
  applyMode();refreshLevels();

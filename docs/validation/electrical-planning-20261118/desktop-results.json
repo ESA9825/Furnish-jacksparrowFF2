@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "originalHash": "0aec9dae4aee75e99f19585cd3433be105d8465920b5766c46b67b5f8ed77113",
+  "originalUnchanged": true,
+  "checks": [
+    "enter electrical view leaves the entire 1601 work unchanged",
+    "real pointer drag and click-to-add panel preserve every reference furniture record",
+    "panel height edit and original undo/redo preserve reference furniture",
+    "commit rollback protects moves, resize, deletion and architectural notes; select all selects panels only",
+    "cabinet opening and inner/outer side-face placement with actual production boards and origin dimension",
+    "original repository save and refresh restore position, height, variant and electrical view",
+    "390px window with accessible electrical controls",
+    "3D production scene builds without model errors and original per-leaf opening works despite reference read-only",
+    "offline file:// and HTTP entry load new classic modules"
+  ],
+  "errors": [],
+  "scope": "Packaged macOS Furnish, isolated copy of saved 1601; no formal window reload or edit"
+}

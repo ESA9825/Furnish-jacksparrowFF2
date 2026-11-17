@@ -1,0 +1,22 @@
+{
+  "passed": true,
+  "css": {
+    "fg": "rgb(255, 255, 255)",
+    "bg": "rgb(184, 76, 18)"
+  },
+  "exported": {
+    "symbols": 1,
+    "dimensions": 1,
+    "handles": 0
+  },
+  "checks": [
+    "final CSS visible primary button",
+    "selected socket has no furniture resize controls",
+    "SVG keeps number and positioning dimension",
+    "locked panel respects physical lock",
+    "view lighting remains available",
+    "leaving view leaves saved work unchanged",
+    "Direct commit without editable flag also rejects furniture position edits"
+  ],
+  "errors": []
+}

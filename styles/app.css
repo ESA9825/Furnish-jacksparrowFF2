@@ -1068,3 +1068,17 @@ button.replacement-product:focus-visible{outline:2px solid var(--accent);outline
 .scene-label-layer{z-index:2}#progressive-controls{position:absolute;top:12px;left:12px;z-index:5;display:flex;align-items:center;gap:8px;max-width:calc(100% - 24px);padding:6px 9px;border-radius:10px;background:var(--panel);color:var(--ink);border:1px solid var(--line);font-size:12px;pointer-events:auto}#progressive-controls select{padding:4px;max-width:175px}#progressive-controls [hidden]{display:none!important}#progressive-status{max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#progressive-retry{padding:3px 7px;font-size:12px}#progressive-controls[data-state="fallback"] #progressive-status{max-width:180px}@media(max-width:600px){#progressive-controls{gap:5px;flex-wrap:wrap}#progressive-status{max-width:160px}}
 
 @media(max-width:1100px){main.drawer-panel #progressive-controls{visibility:hidden}}
+
+/* Electrical mode protects the shared plan without changing object locks. */
+.electrical-mode #lib .item:not([data-type="panel_bull_g12"]) { opacity:.55; }
+.electrical-mode [data-tool="demolish"],.electrical-mode [data-tool="note"] { display:none; }
+.electrical-panel h3 { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.electrical-panel details { margin-top:16px; padding-top:10px; border-top:1px solid var(--line); }
+.electrical-panel summary { cursor:pointer; margin-bottom:10px; }
+.electrical-panel select,.electrical-panel input { width:100%; min-width:0; }
+.electrical-panel form { margin-top:16px; }
+.electrical-panel .actions { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+.electrical-row { display:block; width:100%; text-align:left; margin:5px 0; white-space:normal; }
+.electrical-row small { display:block; opacity:.7; }
+@media(max-width:600px){.plan-display-buttons { flex-wrap:wrap; }.electrical-panel .form { grid-template-columns:repeat(2,minmax(0,1fr)); }}
+#panel .electrical-panel .actions .btn.primary{background:var(--action-bg);color:var(--on-action);border-color:transparent}

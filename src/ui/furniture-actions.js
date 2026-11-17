@@ -6,20 +6,21 @@ const selIds = () => ui.sel?.kind === 'furn' ? (ui.sel.ids || [ui.sel.id]) : [];
 const selItems = () => selIds().map(getF).filter(Boolean);
 const selectedRooms = () => ui.sel?.kind==='room'?ROOMS.filter(r=>(ui.sel.roomIds||[ui.sel.id]).includes(r.id)):[];
 function toggleRoom(id){const ids=selectedRooms().map(r=>r.id),next=ids.includes(id)?ids.filter(v=>v!==id):[...ids,id];select(next.length?{kind:'room',id:next[next.length-1],roomIds:next}:null);}
-function select(sel){ if(sel?.kind==='furn')sel={...sel,ids:FurnishDesign.expandGroups(state.furniture,sel.ids||[sel.id])};if(JSON.stringify([sel?.kind,sel?.ids||sel?.id])!==JSON.stringify([ui.sel?.kind,ui.sel?.ids||ui.sel?.id]))ui.sceneMove=false;ui.panelScope='object';ui.sel = sel; closeCtx(); renderSel(); renderMeasure(); renderPanel(); if(globalThis.FurnishDrawing)refreshFurnitureLabels(); refreshHobOpenings(); updateHeader(); globalThis.FurnishCurrentFurniture?.selectionChanged(); globalThis.FurnishCatalog?.selectionChanged(); }
+function select(sel){ if(globalThis.FurnishElectricalUI?.active())sel=FurnishElectricalUI.selection(sel);else if(sel?.kind==='furn')sel={...sel,ids:FurnishDesign.expandGroups(state.furniture,sel.ids||[sel.id])};if(JSON.stringify([sel?.kind,sel?.ids||sel?.id])!==JSON.stringify([ui.sel?.kind,ui.sel?.ids||ui.sel?.id]))ui.sceneMove=false;ui.panelScope='object';ui.sel = sel; closeCtx(); renderSel(); renderMeasure(); renderPanel(); if(globalThis.FurnishDrawing)refreshFurnitureLabels(); refreshHobOpenings(); updateHeader(); globalThis.FurnishCurrentFurniture?.selectionChanged(); globalThis.FurnishCatalog?.selectionChanged(); }
 function selectIds(ids, primary){
   ids = [...new Set(ids)].filter(id => getF(id));
   select(ids.length ? {kind:'furn', id:ids.includes(primary) ? primary : ids[ids.length-1], ids} : null);
 }
 function toggleSel(id){ const ids = selIds(),members=new Set(FurnishDesign.expandGroups(state.furniture,[id])); selectIds(ids.includes(id) ? ids.filter(x => !members.has(x)) : [...ids, ...members]); }
 function groupSel(){
+ if(globalThis.FurnishElectricalUI?.active())return toast('请在家具布局视图中更改分组');
  if(selItems().some(furnitureLocked))return toast(tr('请先解锁家具及所在图层','Unlock the items and their layers first'));
  const ids=selIds();if(ids.length<2)return toast(tr('请先选择至少 2 件家具','Select at least 2 items first'));
  let groupId;do{groupId=uid();}while(state.furniture.some(f=>f.groupId===groupId));
  mutate(()=>state.furniture=FurnishDesign.groupFurniture(state.furniture,ids,groupId));selectIds(ids,ui.sel?.id);
  toast(tr('已打组：点击任一成员可移动整组','Grouped: select any member to move the group'));
 }
-function ungroupSel(){if(selItems().some(furnitureLocked))return toast(tr('请先解锁家具及所在图层','Unlock the items and their layers first'));const ids=selIds();if(!selItems().some(f=>f.groupId))return;mutate(()=>state.furniture=FurnishDesign.ungroupFurniture(state.furniture,ids));selectIds(ids,ui.sel?.id);toast(tr('已解组','Ungrouped'));}
+function ungroupSel(){if(globalThis.FurnishElectricalUI?.active())return toast('请在家具布局视图中更改分组');if(selItems().some(furnitureLocked))return toast(tr('请先解锁家具及所在图层','Unlock the items and their layers first'));const ids=selIds();if(!selItems().some(f=>f.groupId))return;mutate(()=>state.furniture=FurnishDesign.ungroupFurniture(state.furniture,ids));selectIds(ids,ui.sel?.id);toast(tr('已解组','Ungrouped'));}
 function selectAll(){ selectIds(state.furniture.map(f => f.id)); }
 // 锁定的家具不参与移动 / 旋转 / 删除等操作
 function movable(items){
@@ -108,6 +109,7 @@ function copySel(cut, quiet){
   if(cut){const ids=new Set(items.map(f=>f.id));ui.sel=null;mutate(()=>{state.furniture=state.furniture.filter(f=>!ids.has(f.id));if(state.objectLayers)for(const id of ids)delete state.objectLayers.assignments['furniture:'+id];});}else if (!quiet) toast(tr(`已复制 ${items.length} 件 · Ctrl+V 粘贴`, `Copied ${items.length} · Ctrl+V to paste`));
 }
 function paste(at){
+  if(globalThis.FurnishElectricalUI?.active()&&clip?.items.some(f=>!FurnishElectrical.panel(f)))return toast('插座布置视图只能粘贴面板');
   if (!clip) return toast(tr('剪贴板为空：先选中家具按 Ctrl+C', 'Clipboard is empty — select items and press Ctrl+C'));
   const step=(clip.pastes||0)+1,p=at||{x:clip.cx+300*step,y:clip.cy+300*step};
   let result;try{result=FurnishDesign.pasteFurniture(clip,p,BOUNDS,uid,2000-state.furniture.length,state.furniture.map(f=>f.id),state.furniture.map(f=>f.groupId).filter(Boolean));}catch(e){return toast(e.message);}
@@ -160,6 +162,7 @@ function rescueOutside(ids){
 // 放下 / 拖完的家具若压在墙 / 窗上，沿位移最小的方向推出，刚好贴墙。
 // 只在家具中心原本所在的房间内推移，推不开（如家具比房间还大）就保持原位——宁可压墙，也不能被推到墙外「消失」
 function pushOut(f,axis){
+  if(globalThis.FurnishElectricalUI?.active()&&FurnishElectrical.panel(f))return false;
   if(FurnishProducts.definition(f)?.wallRecess)return false;
   // Kitchen auto-avoid keeps the chosen position and fits individual bodies
   // and stone in commit(). Its L envelope includes the courtyard and flue
@@ -199,6 +202,7 @@ function createCatalogFurniture(it,x,y){
   return [FurnishKitchen.isLaundry(f)?FurnishCabinetAssembly.editableKitchen(f):f];
 }
 function addItem(it, x, y){
+  if(globalThis.FurnishElectricalUI?.active()&&!FurnishElectrical.panel({type:it[0]}))return toast('插座布置视图只能新增面板');
   if(it[9]==='builder'){window.FurnishCabinetBuilderUI.open(null,{position:{x,y}});return;}
   if(it[7]&&store.custom?.find(c=>c.id===it[7])?.cabinet?.reusable){window.FurnishCabinetBuilderUI.open();toast('请先放入柜箱，再从组件库拖入已保存组件');return;}
   if(window.FurnishCatalog?.active()){window.FurnishCatalog.choose(it);return;}

@@ -1,3 +1,5 @@
+2026-11-17（插座布置视图）：electrical-core在原mutate／commit及撤销入口保护家具布局，仅允许面板编辑和柜体开合；electrical-planning在原平面增加编号、完成地面高度与实际板面定位。面板沿原家具记录与项目保存，无新持久字段／版本；详见[ELECTRICAL-PLANNING.md](ELECTRICAL-PLANNING.md)。
+
 2026-11-17（导出只读复用与预览CPU释放）：blender-export公有snapshot保持独立深复制，encode复用同步读取的属性并按完整字节共享重复几何；生产部件身份／矩阵不合并。lighting-preview保持Worker输入所有权，在原收敛图与GPU退出后释放孤立iframe的CPU缓冲，无主场景或持久格式变化。见[契约与同场景验证](validation/scene-memory-20261117/README.md)。
 
 2026-11-17（方案讲解与交付）：presentation-core提供可选讲解文档、来源／内容指纹与过期判定；presentation-ui复用原mutate、生产画布及相机，design-ui同源生成分阅读对象的多图成果。项目／工作区／缓存94兼容旧缺失，人工确认与原空间核对独立；MCP增加读取及原子配置讲解，共35项工具。见[讲解契约](PRESENTATION.md)。

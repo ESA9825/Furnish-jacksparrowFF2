@@ -30,7 +30,7 @@ function renderPanelContent(object=true){
     const c=state.ceilings?.items.find(c=>c.id===ui.sel.id),r=state.ceilings?.regions?.find(r=>r.id===c?.regionId);
     if(c){const plan=canvasEffectivePlan(),items=(plan.ceilings?.items||[]).filter(v=>c.regionId?v.regionId===c.regionId:v.id===c.id),poly=r?.polygon||(c.kind==='flat'?c.polygon:FurnishCeiling.footprint(c)),m=FurnishCeiling.heightMeasurements(plan,poly,items.map(v=>v.kind==='flat'?v.height:v.height-Math.max(...FurnishCeiling.sectionPoints(v.section).map(p=>p.d)))),fmt=v=>v?Number(v.min.toFixed(1))+(v.max-v.min>.1?'～'+Number(v.max.toFixed(1)):'')+' mm':tr('待核对','Unknown'),p=$('#panel');p.innerHTML=`<section><h3>${esc(r?.name||c.name)}</h3><dl class="ceiling-height-summary"><div><dt>${tr('底部距地砖完成面','Above finished floor')}</dt><dd>${fmt(m.aboveFloor)}</dd></div><div><dt>${tr('底部距房顶','Underside to roof')}</dt><dd>${fmt(m.roofGap)}</dd></div></dl><p>${r?tr('独立吊顶区域','Independent ceiling area')+' · '+Math.abs(FurnishCeiling.area(r.polygon)/1e6).toFixed(2)+' m²':tr('旧吊顶构件','Existing ceiling element')}</p><p class="muted">${tr('点击浮动栏「编辑吊顶」，进入吊顶设计页面。','Use Edit ceiling in the floating toolbar to open the ceiling workspace.')}</p></section>`;return;}
   }
-  const p = $('#panel'), ids = object?selIds():[];delete p.dataset.bayId;
+  const p = $('#panel'), ids = object?selIds():[];if(window.FurnishElectricalUI?.panel(p))return;delete p.dataset.bayId;
   if (ids.length > 1){ p.innerHTML = multiPanel(selItems()); bindDirectionalMeasurementPanel();bindInventoryArrayPanel(); const laundry=laundryGroupHost(selItems());if(laundry)bindKitchenPanel(laundry);return; }
   if (object && ui.sel?.kind === 'furn'){ const f = getF(ui.sel.id); if (f){ if(furnitureError(f)){renderBrokenFurniturePanel(f,p);return;}try{p.innerHTML = furnPanel(f)+(window.FurnishFloorFinishUI?.furniturePanel(f)||'');const wallDetails=p.querySelector('.wall-distance-panel');if(wallDetails&&wallDetails.dataset.wallDistanceOwner===wallDistanceOpen)wallDetails.open=true;bindFurnPanel(f);}catch(e){furnitureRenderErrors.set(f.id,e.message||String(e));renderBrokenFurniturePanel(f,p);}return; } }
   if (object && ui.sel?.kind === 'wall' && window.FurnishWorkspace){ window.FurnishWorkspace.wallPanel(ui.sel.id,p); window.FurnishWorkflowTools?.afterPanel(); return; }
@@ -59,6 +59,7 @@ function renderBrokenFurniturePanel(f,p){
 function renderFab(){
   const fab = $('#fab'), ids = selIds(), f = ids.length === 1 && getF(ids[0]), r = ui.sel?.kind === 'room' && selectedRooms().length===1 && ROOMS.find(r => r.id === ui.sel.id);
   closeFabEditor(false);
+  if(globalThis.FurnishElectricalUI?.active()){fab.classList.remove('show');fab.innerHTML='';return;}
   fab.removeAttribute('style');
   fab.setAttribute('role','toolbar');fab.setAttribute('aria-label',tr('选中对象快捷调整','Selection quick adjustments'));
   if(ui.sel?.kind==='measure'&&state.measures[ui.sel.id]){fab.innerHTML=`<span class="name">${tr('测量线','Measurement')}</span><button class="btn danger" data-act="del">${tr('删除测量线','Delete measurement')}</button><button class="btn" data-act="done">${tr('完成','Done')}</button>`;fab.classList.add('show');queueFabPosition();return;}

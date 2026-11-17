@@ -172,7 +172,7 @@ function renderFurn(){
     const clash = ui.layers.collide && clashIds.has(f.id)
       ? `<rect data-edit-overlay="clash" x="${-f.w/2}" y="${-f.d/2}" width="${f.w}" height="${f.d}" fill="url(#clash)" stroke="#d64532" stroke-width="1.5" vector-effect="non-scaling-stroke" pointer-events="none"/>` : '';
     // 锁定标记：固定 150mm 的小锁，随家具一起摆放但保持正向
-    const lock = furnitureLocked(f) ? `<g data-edit-overlay="lock" transform="translate(${f.w/2-110} ${-f.d/2+110}) rotate(${-f.rot})" pointer-events="none"><circle r="95" fill="${PAL.halo}" stroke="${PAL.ink}" stroke-width="1" vector-effect="non-scaling-stroke"/>
+    const lock = (f.locked||FurnishLayers.locked(state,'furniture:'+f.id)) ? `<g data-edit-overlay="lock" transform="translate(${f.w/2-110} ${-f.d/2+110}) rotate(${-f.rot})" pointer-events="none"><circle r="95" fill="${PAL.halo}" stroke="${PAL.ink}" stroke-width="1" vector-effect="non-scaling-stroke"/>
       <rect x="-45" y="-12" width="90" height="62" rx="12" fill="${PAL.ink}"/><path d="M-28 -12v-18a28 28 0 0 1 56 0v18" fill="none" stroke="${PAL.ink}" stroke-width="16"/></g>` : '';
     return `<g class="furn${furnitureLocked(f) ? ' locked' : ''}" data-fid="${f.id}"${furnitureError(f)?' data-model-error="true"':''} transform="${furnT(f)}"${f.type === 'pendant' ? ' opacity=".6"' : ''}><title>${esc(nm(f.name))} · ${Number(FurnishProducts.dimensions(f).w.toFixed(2))} × ${Number(FurnishProducts.dimensions(f).d.toFixed(2))} mm</title>${flip}${clash}${label}${lock}</g>`;
     }catch(e){const message=e.message||String(e);furnitureRenderErrors.set(f.id,message);return `<g class="furn" data-fid="${esc(f.id)}" data-model-error="true" transform="${furnT(f)}">${furnitureFallbackSVG(f,message)}</g>`;}
@@ -386,6 +386,7 @@ function furnitureDirectionsSVG(){
 }
 function renderSel(){
   window.FurnishCeilingUI?.selectionChanged();
+  if(globalThis.FurnishElectricalUI?.active()){$('#gSel').innerHTML='';FurnishElectricalUI.draw();return;}
   if(globalThis.FurnishObservationLayers&&selIds().some(id=>!FurnishObservationLayers.visible(getF(id))))ui.sel=null;
   const preview=window.FurnishWorkspace?.openingPreviewPlan?.();if(!preview)return renderSelectedGeometry();
   const actual=[WALLS,WINS,DOORS,SLIDES,ROOMS];try{({walls:WALLS,wins:WINS,doors:DOORS,slides:SLIDES,rooms:ROOMS}=preview);renderSelectedGeometry();}finally{[WALLS,WINS,DOORS,SLIDES,ROOMS]=actual;}
@@ -615,4 +616,5 @@ function renderAll({sceneFirst=false,replan=false}={}){
   window.FurnishCeilingUI?.afterRender();
   window.FurnishCurrentFurniture?.afterRender();
   window.FurnishCatalog?.afterRender();
+  window.FurnishElectricalUI?.afterRender();
 }

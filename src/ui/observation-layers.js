@@ -1,5 +1,5 @@
 /* Named layers use the existing mutate / history / project path. */
-function furnitureLocked(f){return !!f&&(!!f.locked||FurnishLayers.locked(typeof state==='undefined'?{}:state,FurnishLayers.furnitureKey(f)));}
+function furnitureLocked(f){return !!f&&(!!globalThis.FurnishElectricalUI?.blocked(f)||!!f.locked||FurnishLayers.locked(typeof state==='undefined'?{}:state,FurnishLayers.furnitureKey(f)));}
 globalThis.FurnishObservationLayers=(()=>{
  const original=new WeakMap();let rangeAnchor=null,layerScope=null,selectedLayer='0',query='',objectType='all',checked=new Set(),renameId=null,renameDraft='',owner=null;
  const key=f=>FurnishLayers.furnitureKey(f),visible=f=>!!f&&FurnishLayers.visible(state,key(f));
