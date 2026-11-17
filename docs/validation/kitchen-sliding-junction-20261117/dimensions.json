@@ -1,0 +1,137 @@
+{
+  "source": {
+    "design": {
+      "id": "dmwkt3rfp",
+      "name": "1601 · 客餐厅连续高顶 · 柜顶局部封闭"
+    },
+    "revision": "0e22d4d7498e930967229a1141a4b14ed8c0c1d32858b4cc9198913fb559f2ec"
+  },
+  "units": "mm",
+  "door": {
+    "id": "fmvrfnigk1",
+    "rail": {
+      "x0": 6728,
+      "x1": 8616,
+      "y0": 8346,
+      "y1": 8446
+    },
+    "leafWidth": 625.667,
+    "leafThickness": 40,
+    "closed": [
+      {
+        "x0": 7371.667,
+        "x1": 7997.333,
+        "y0": 8406,
+        "y1": 8446
+      },
+      {
+        "x0": 7981.333,
+        "x1": 8607,
+        "y0": 8346,
+        "y1": 8386
+      }
+    ],
+    "opened": [
+      {
+        "x0": 6737,
+        "x1": 7362.667,
+        "y0": 8406,
+        "y1": 8446
+      },
+      {
+        "x0": 6737,
+        "x1": 7362.667,
+        "y0": 8346,
+        "y1": 8386
+      }
+    ]
+  },
+  "window": {
+    "id": "fmwjewxfw1",
+    "rail": {
+      "x0": 8516,
+      "x1": 8616,
+      "y0": 8446,
+      "y1": 9745
+    },
+    "leafWidth": 437.667,
+    "leafThickness": 17.5,
+    "closed": [
+      {
+        "x0": 8529.75,
+        "x1": 8547.25,
+        "y0": 9298.333,
+        "y1": 9736
+      },
+      {
+        "x0": 8557.25,
+        "x1": 8574.75,
+        "y0": 8876.667,
+        "y1": 9314.333
+      },
+      {
+        "x0": 8584.75,
+        "x1": 8604.25,
+        "y0": 8455,
+        "y1": 8892.667
+      }
+    ],
+    "opened": [
+      {
+        "x0": 8529.75,
+        "x1": 8547.25,
+        "y0": 9298.333,
+        "y1": 9736
+      },
+      {
+        "x0": 8557.25,
+        "x1": 8574.75,
+        "y0": 9298.333,
+        "y1": 9736
+      },
+      {
+        "x0": 8584.75,
+        "x1": 8604.25,
+        "y0": 9298.333,
+        "y1": 9736
+      }
+    ]
+  },
+  "fridgeCabinetEnvelope": {
+    "x0": 6728,
+    "x1": 7358,
+    "y0": 6486,
+    "y1": 8346
+  },
+  "counter": {
+    "sampleY": 9000,
+    "insideX": 8196,
+    "outsideX": 8616,
+    "totalDepth": 420,
+    "cabinetBoxDepth": 400,
+    "frontOverhang": 20,
+    "windowEnvelopeDepth": 100,
+    "clearDepthBeforeInstallationAllowance": 320
+  },
+  "parking": {
+    "leafLength": 625.667,
+    "fromRailEndToParkedLeafEnd": 634.667,
+    "cabinetConcealmentLength": 630,
+    "leafProtrusionBeyondCabinetFront": 4.667,
+    "channelDepth": 100,
+    "modelDoorDepth": 100,
+    "extraDepthBudget": 0
+  },
+  "corner": {
+    "doorEndY": 8446,
+    "windowStartY": 8446,
+    "derivedAutomaticJoint": null,
+    "windowEligibleForAutomaticJoint": false,
+    "status": "two independent jambs; shared seal not modeled"
+  },
+  "limitations": [
+    "Dimensions describe captured production geometry, not factory installation requirements.",
+    "Door/window seal compression, hardware, load support and installation tolerances remain unselected.",
+    "Fridge door/cabinet opening warnings from live check are retained."
+  ]
+}

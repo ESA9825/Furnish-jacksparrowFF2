@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1080" viewBox="0 0 1500 1080"><rect width="1500" height="1080" fill="#faf8f3"/><style>text{font-family:Arial,"PingFang SC",sans-serif;fill:#292d2c;font-size:19px}.small{font-size:16px;fill:#5f6561}.head{font-size:25px;font-weight:600}.dim{stroke:#5f6561;stroke-width:1;fill:none}.label{fill:#9b4c29}</style>
+<text x="45" y="48" class="head">1601 厨房门窗衔接 · 尺寸核对与收口建议</text>
+<text x="45" y="80" class="small">左：当前生产几何，mm；右：节点意向，非加工图。所有选型余量均需厂家截面确认。</text>
+<text x="45" y="125" class="head">① 现状平面：门收冰箱侧，窗叠向远端</text>
+<rect x="89.18" y="170.0" width="195.3" height="138.26" fill="#e6dfd2" stroke="#737b74" stroke-width="1.5" stroke-dasharray=""/>
+<text x="96.0" y="219.6" class="">冰箱侧柜（局部）</text>
+<text x="96.0" y="250.6" class="small">端面 Y=8346</text>
+<rect x="544.26" y="339.26" width="130.2" height="402.69" fill="#e8e1d6" stroke="#737b74" stroke-width="1.5" stroke-dasharray=""/>
+<rect x="643.46" y="339.26" width="31.0" height="402.69" fill="#c9deda" stroke="#737b74" stroke-width="1.5" stroke-dasharray=""/>
+<rect x="89.18" y="308.26" width="585.28" height="31.0" fill="#d5ddd9" stroke="#737b74" stroke-width="1.5" stroke-dasharray=""/>
+<rect x="91.97" y="308.26" width="193.95677" height="12.4" fill="#bd8f6e" stroke="#737b74" stroke-width="1.5" stroke-dasharray=""/>
+<rect x="91.97" y="326.86" width="193.95677" height="12.4" fill="#bd8f6e" stroke="#737b74" stroke-width="1.5" stroke-dasharray=""/>
+<rect x="288.7167700000001" y="326.86" width="193.95677" height="12.4" fill="none" stroke="#4f827b" stroke-width="1.5" stroke-dasharray="6 4"/>
+<rect x="477.7132299999999" y="308.26" width="193.95677" height="12.4" fill="none" stroke="#4f827b" stroke-width="1.5" stroke-dasharray="6 4"/>
+<rect x="647.7225" y="603.4832300000002" width="22.475" height="135.67677" fill="#92b4ad" stroke="#737b74" stroke-width="1.5" stroke-dasharray=""/>
+<text x="65" y="820" class="small">实色：收门位置；虚线：入口门关闭位置</text>
+<text x="65" y="855" class="small">窗向远离入口的一端叠合；转角处保留关闭边</text>
+<line x1="89.18" y1="294.0" x2="285.92677000000015" y2="294.0" stroke="#737b74" stroke-width="1.5" stroke-dasharray=""/>
+<line x1="85.18" y1="289.0" x2="93.18" y2="299.0" stroke="#737b74" stroke-width="1.5" stroke-dasharray=""/>
+<line x1="281.92677000000015" y1="289.0" x2="289.92677000000015" y2="299.0" stroke="#737b74" stroke-width="1.5" stroke-dasharray=""/>
+<text x="157.55338500000008" y="285.0" class="small">约635</text>
+<text x="65" y="885" class="label">柜侧可遮挡630；门片端部约露出5（未计五金）</text>
+<line x1="674.46" y1="339.26" x2="735" y2="380" stroke="#9b4c29" stroke-width="1.5" stroke-dasharray=""/>
+<text x="490" y="366" class="label">现状两个独立侧框相接</text>
+<text x="490" y="392" class="small">尚无共用密封节点</text>
+<line x1="550.46" y1="418.0" x2="430" y2="510" stroke="#737b74" stroke-width="1.5" stroke-dasharray=""/>
+<text x="85" y="510" class="small">400深柜箱＋20台面出挑</text>
+<line x1="544.26" y1="540.45" x2="643.46" y2="540.45" stroke="#737b74" stroke-width="1.5" stroke-dasharray=""/>
+<line x1="540.26" y1="535.45" x2="548.26" y2="545.45" stroke="#737b74" stroke-width="1.5" stroke-dasharray=""/>
+<line x1="639.46" y1="535.45" x2="647.46" y2="545.45" stroke="#737b74" stroke-width="1.5" stroke-dasharray=""/>
+<text x="563.86" y="531.45" class="small">320</text>
+<text x="450" y="590" class="small">100窗组占位</text>
+<text x="490" y="680" class="small">玄关侧</text>
+<text x="400" y="730" class="small">厨房侧</text>
+<text x="65" y="945" class="label">收门通道：现状100深 = 模型门组100深</text>
+<text x="65" y="977" class="small">额外安装深度预算为0；建议按110–120做选型协调目标</text>
+<text x="65" y="1008" class="small">收门长度先按650–670协调，均非厂家最小要求</text>
+<text x="800" y="125" class="head">② 台面占深：按整组运动包络核对</text>
+<rect x="810" y="195" width="624" height="80" fill="#e8e1d6" stroke="#737b74" stroke-width="1.5" stroke-dasharray=""/>
+<rect x="840" y="275" width="594" height="45" fill="#d6c9b6" stroke="#737b74" stroke-width="1.5" stroke-dasharray=""/>
+<rect x="1285.43" y="195" width="148.57" height="80" fill="#c9deda" stroke="#737b74" stroke-width="1.5" stroke-dasharray=""/>
+<text x="930" y="244" class="">厨房侧可用约320</text>
+<text x="1305" y="244" class="">100</text>
+<line x1="810" y1="174" x2="1434" y2="174" stroke="#737b74" stroke-width="1.5" stroke-dasharray=""/>
+<line x1="806" y1="169" x2="814" y2="179" stroke="#737b74" stroke-width="1.5" stroke-dasharray=""/>
+<line x1="1430" y1="169" x2="1438" y2="179" stroke="#737b74" stroke-width="1.5" stroke-dasharray=""/>
+<text x="1092.0" y="165.0" class="small">总台面420</text>
+<text x="810" y="353" class="small">柜箱400，台面向厨房出挑20；窗轨保留玄关侧外缘</text>
+<text x="810" y="386" class="small">100是目前选型包络；不等于100宽连续下轨</text>
+<text x="810" y="419" class="small">94上轨 / 121轨高（Häfele例）不能直接当台面下框</text>
+<text x="800" y="480" class="head">③ 转角立面展开意向：共用一个关闭边</text>
+<rect x="810" y="525" width="230" height="385" fill="#f5faf8" stroke="#737b74" stroke-width="1.5" stroke-dasharray=""/>
+<rect x="1065" y="525" width="335" height="250" fill="#dcece8" stroke="#737b74" stroke-width="1.5" stroke-dasharray=""/>
+<rect x="1065" y="775" width="335" height="135" fill="#e6dfd2" stroke="#737b74" stroke-width="1.5" stroke-dasharray=""/>
+<rect x="1040" y="525" width="25" height="385" fill="#4c5c56" stroke="#737b74" stroke-width="1.5" stroke-dasharray=""/>
+<line x1="1065" y1="775" x2="1420" y2="775" stroke="#9b4c29" stroke-width="1.5" stroke-dasharray=""/>
+<text x="825" y="650" class="">入口推拉门</text>
+<text x="1100" y="635" class="">上部三联动窗</text>
+<text x="1100" y="840" class="">下部矮柜＋石材</text>
+<text x="1100" y="760" class="small">台面850</text>
+<text x="850" y="938" class="small">折展开示意，实际两面垂直90°</text>
+<line x1="1053" y1="550" x2="1150" y2="507" stroke="#737b74" stroke-width="1.5" stroke-dasharray=""/>
+<text x="1160" y="511" class="label">共用L形收口</text>
+<text x="810" y="978" class="small">上段接窗框，下段接柜端：连续门挡＋可更换密封条</text>
+<text x="810" y="1010" class="small">可视宽先控制30–40；型材进深、连接及承重待厂家定</text>
+</svg>

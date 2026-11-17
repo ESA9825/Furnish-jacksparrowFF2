@@ -1,0 +1,201 @@
+{
+  "date": "2026-11-17",
+  "planId": "custom_mv37igji",
+  "design": {
+    "id": "dmwkt3rfp",
+    "name": "1601 · 客餐厅连续高顶 · 柜顶局部封闭"
+  },
+  "revision": "0e22d4d7498e930967229a1141a4b14ed8c0c1d32858b4cc9198913fb559f2ec",
+  "units": "mm",
+  "furniture": [
+    {
+      "color": "#f1f0ed",
+      "cx": 7056,
+      "cy": 7910.5,
+      "d": 595,
+      "h": 1910,
+      "id": "fmv5a1yhn1",
+      "name": "纯平四门冰箱（双抽屉）",
+      "rot": 270,
+      "type": "fridge_french_drawer",
+      "w": 833
+    },
+    {
+      "cabinet": {
+        "backThickness": 27,
+        "columns": [
+          {
+            "displayOpen": false,
+            "door": "double",
+            "doorAngle": 90,
+            "doorOpen": false,
+            "drawerColumns": 2,
+            "drawers": [],
+            "fridgeBay": true,
+            "handle": "none",
+            "shelves": [],
+            "width": 835
+          },
+          {
+            "displayAngle": 90,
+            "displayOpen": false,
+            "door": "double",
+            "doorAngle": 90,
+            "doorOpen": false,
+            "doorSections": {
+              "lower": {
+                "angle": 90,
+                "open": false
+              },
+              "upper": {
+                "angle": 90,
+                "open": false
+              }
+            },
+            "drawerColumns": 2,
+            "drawers": [
+              {
+                "extension": 1,
+                "height": 169,
+                "lanes": [
+                  {
+                    "extension": 1,
+                    "open": false
+                  },
+                  {
+                    "extension": 1,
+                    "open": false
+                  }
+                ],
+                "open": false
+              }
+            ],
+            "handle": "none",
+            "shelves": [
+              343
+            ],
+            "width": 971
+          }
+        ],
+        "doorMaxAngle": 90,
+        "doorOverlay": "full",
+        "plinth": 50,
+        "sideboard": {
+          "baseHeight": 958,
+          "counterThickness": 18,
+          "displayHeight": 252,
+          "fridgeDepth": 630,
+          "fridgeHeight": 1920,
+          "lowerDepth": 450,
+          "nicheHeight": 505,
+          "upperDepth": 350
+        },
+        "template": "sideboard-fridge",
+        "thickness": 18,
+        "topClosure": {
+          "doorGap": 10,
+          "height": 50
+        },
+        "version": 1
+      },
+      "color": "#f3f1ec",
+      "cx": 7043,
+      "cy": 7416,
+      "d": 630,
+      "h": 2420,
+      "id": "fmv62bwbp1",
+      "name": "餐边柜 · 冰箱位与玻璃展示柜",
+      "rot": 270,
+      "type": "cabinet",
+      "w": 1860
+    },
+    {
+      "color": "#41474b",
+      "cx": 7989.333333333364,
+      "cy": 8396,
+      "d": 100,
+      "floorTrack": true,
+      "h": 2420,
+      "id": "fmvrfnigk1",
+      "name": "2+0 同向联动门 · 超白玻璃",
+      "rot": 0,
+      "slidingOpen": false,
+      "slidingTrackOrder": "leading-back",
+      "type": "telescopicdoor20",
+      "w": 1253.3333333333644
+    },
+    {
+      "brand": "",
+      "color": "#41474b",
+      "cx": 8566,
+      "cy": 9095.5,
+      "d": 100,
+      "floorTrack": true,
+      "frontClearance": 600,
+      "h": 1570,
+      "id": "fmwjewxfw1",
+      "model": "",
+      "mountHeight": 850,
+      "name": "玄关侧三联动窗 · 超白玻璃 · 100深选型占位",
+      "priceDate": "",
+      "purchaseNote": "",
+      "purchaseStatus": "planned",
+      "rot": 270,
+      "sourceUrl": "",
+      "type": "tripleslidingwindow",
+      "w": 1299
+    }
+  ],
+  "counter": {
+    "id": "fmv9dos7j1",
+    "cx": 7333,
+    "cy": 9297.999999999998,
+    "rot": 180,
+    "w": 2566,
+    "d": 1704,
+    "worktop": {
+      "outline": [
+        [
+          -1283,
+          -447
+        ],
+        [
+          -703,
+          -447
+        ],
+        [
+          -703,
+          -852
+        ],
+        [
+          1283,
+          -852
+        ],
+        [
+          1283,
+          852
+        ],
+        [
+          663,
+          852
+        ],
+        [
+          663,
+          -232
+        ],
+        [
+          -863,
+          -232
+        ],
+        [
+          -863,
+          852
+        ],
+        [
+          -1283,
+          852
+        ]
+      ]
+    }
+  }
+}
