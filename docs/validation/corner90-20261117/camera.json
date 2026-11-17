@@ -1,0 +1,29 @@
+{
+  "revision": "3a0aeb81b700d4b253812a0faffa0f619994b92d6896f1a3e074981c02fc4d95",
+  "camera": {
+    "mode": "orbit",
+    "position": {
+      "x": 7400,
+      "y": 8900,
+      "z": 1450
+    },
+    "target": {
+      "x": 8380,
+      "y": 9510,
+      "z": 450
+    },
+    "horizontalFov": 59.99999999999999,
+    "verticalFov": 44.27933409850488,
+    "aspect": 1.4190231362467867,
+    "unit": "mm",
+    "coordinateSystem": "x/y 为户型模型坐标，z 为绝对离地高度",
+    "cut": 2.8,
+    "focusIds": [],
+    "temporaryFocusClipping": false
+  },
+  "save": {
+    "mode": "saved",
+    "message": "设计已保存到本地正式文件\n保存位置：/Users/makinami/Documents/FurnishData/1601/workspace.furnish.json\n最后成功保存：2026/11/17 18:44:30",
+    "pending": false
+  }
+}

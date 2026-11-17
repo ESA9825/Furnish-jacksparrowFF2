@@ -1,0 +1,118 @@
+{
+  "checks": [
+    {
+      "progress": 0,
+      "drawers": false,
+      "hits": []
+    },
+    {
+      "progress": 0,
+      "drawers": true,
+      "hits": []
+    },
+    {
+      "progress": 0.001,
+      "drawers": false,
+      "hits": []
+    },
+    {
+      "progress": 0.001,
+      "drawers": true,
+      "hits": []
+    },
+    {
+      "progress": 0.01,
+      "drawers": false,
+      "hits": []
+    },
+    {
+      "progress": 0.01,
+      "drawers": true,
+      "hits": []
+    },
+    {
+      "progress": 0.05,
+      "drawers": false,
+      "hits": []
+    },
+    {
+      "progress": 0.05,
+      "drawers": true,
+      "hits": []
+    },
+    {
+      "progress": 0.25,
+      "drawers": false,
+      "hits": []
+    },
+    {
+      "progress": 0.25,
+      "drawers": true,
+      "hits": []
+    },
+    {
+      "progress": 0.251,
+      "drawers": false,
+      "hits": []
+    },
+    {
+      "progress": 0.251,
+      "drawers": true,
+      "hits": []
+    },
+    {
+      "progress": 0.5,
+      "drawers": false,
+      "hits": []
+    },
+    {
+      "progress": 0.5,
+      "drawers": true,
+      "hits": [
+        "module:2/board:96",
+        "module:2/board:94",
+        "module:2/board:95"
+      ]
+    },
+    {
+      "progress": 0.75,
+      "drawers": false,
+      "hits": []
+    },
+    {
+      "progress": 0.75,
+      "drawers": true,
+      "hits": []
+    },
+    {
+      "progress": 1,
+      "drawers": false,
+      "hits": []
+    },
+    {
+      "progress": 1,
+      "drawers": true,
+      "hits": []
+    }
+  ],
+  "issues": [
+    {
+      "kind": "cabinetdoor",
+      "id": "fmv9dos7j1",
+      "name": "厨房B深化 · L形双轴联动门 · 先折后开",
+      "column": 0,
+      "section": "laundry:cabinet2",
+      "boxId": "corner90",
+      "componentId": "corner-fold",
+      "leaf": 0,
+      "otherColumn": 2,
+      "interaction": true,
+      "interactionKey": "[\"laundry:cabinet2\",0,\"corner90\",\"corner-fold\",null,2,\"service-B\",\"bowls-B\"]",
+      "at": [
+        8005.30175097563,
+        9040.262607437186
+      ],
+      "message": "L形联动门与分区 3 抽屉的完整行程重叠，需错开使用（不表示两者端态必然相撞）"
+    }
+  ]
+}

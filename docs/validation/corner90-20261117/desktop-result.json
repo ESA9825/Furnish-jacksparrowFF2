@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "desktop": true,
+  "target": {
+    "id": "fmv9dos7j1",
+    "key": "cabinet2",
+    "depth": 225
+  },
+  "errors": [],
+  "sourceUnchanged": true
+}

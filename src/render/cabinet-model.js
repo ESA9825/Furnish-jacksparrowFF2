@@ -75,6 +75,7 @@ const syncIdentity=root.FurnishPartIdentity||(typeof require==='function'?requir
  }
 
  function buildRaw(THREE,f,box,options={}){
+  const Corner=root.FurnishCornerCabinet||(typeof require==='function'?require('../core/corner-cabinet-core.js'):null);if(Corner?.is(f))return buildRaw(THREE,Corner.derived(f),box,options);
   if(f.cabinet?.version===2){
    const B=root.FurnishCabinetBuilder||require('../core/cabinet-builder-core.js'),g=new THREE.Group();
    for(const p of B.derived(f)){

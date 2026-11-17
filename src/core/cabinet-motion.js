@@ -4,7 +4,8 @@
  const C=()=>root.FurnishCabinet||require('./cabinet-core.js');
  const Z=()=>root.FurnishZoneGeometry||require('./zone-geometry.js');
  class Position{constructor(){this.x=0;this.y=0;this.z=0;}set(x,y,z){Object.assign(this,{x,y,z});}}
- class Node{constructor(geometry=null){this.geometry=geometry;this.isMesh=!!geometry;this.isGroup=!geometry;this.children=[];this.userData={};this.position=new Position();this.rotation=new Position();this.material={clone:()=>({})};}add(...nodes){for(const n of nodes){n.parent=this;this.children.push(n);}}traverse(fn){fn(this);for(const n of this.children)n.traverse(fn);}}
+ class Material{constructor(){this.color={set(){}};}clone(){return new Material();}}
+ class Node{constructor(geometry=null){this.geometry=geometry;this.isMesh=!!geometry;this.isGroup=!geometry;this.children=[];this.userData={};this.position=new Position();this.rotation=new Position();this.material=new Material();}add(...nodes){for(const n of nodes){n.parent=this;this.children.push(n);}}traverse(fn){fn(this);for(const n of this.children)n.traverse(fn);}}
  class Shape{constructor(){this.points=[];this.holes=[];}moveTo(x,y){this.points.push([x,y]);}lineTo(x,y){this.points.push([x,y]);}closePath(){}absarc(){}}
  class Geometry{constructor(shape,options){this.shape=shape;this.depth=options?.depth;this.angle=0;}dispose(){}rotateX(angle){this.angle=angle;}}
  const recorder={Group:Node,Shape,Path:Shape,ExtrudeGeometry:Geometry,SphereGeometry:class{dispose(){}},Color:class{}};
@@ -39,7 +40,7 @@ result.push({boardIndex:result.length,poly:poly.map(([x,z])=>[(x+offset[0])*1000
  }
  const cache=new Map();
  function prepare(f,pipes){
-  const key=JSON.stringify([f.type,f.w,f.d,f.h,C().config(f),pipes.map(p=>[p.at,p.radius,p.vertical.top])]);if(cache.has(key))return cache.get(key);
+  const key=JSON.stringify([f.type,f.w,f.d,f.h,f.cabinet?.version===3?f.cabinet:C().config(f),pipes.map(p=>[p.at,p.radius,p.vertical.top])]);if(cache.has(key))return cache.get(key);
   const z=Z(),parts=[];
   for(const board of boards(f)){
    const minX=Math.min(...board.poly.map(p=>p[0])),maxX=Math.max(...board.poly.map(p=>p[0])),minZ=Math.min(...board.poly.map(p=>p[1])),maxZ=Math.max(...board.poly.map(p=>p[1]));

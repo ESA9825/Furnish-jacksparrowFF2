@@ -246,7 +246,7 @@ const retiredItems=[
     ['counter','洗衣机柜 · 左洗衣机／右水槽',1340,630,'#f3f1ec',undefined,undefined,null,null,null,'laundry-left'],
     ['counter','洗衣机柜 · 水槽与设备空位',1340,630,'#f3f1ec',undefined,undefined,null,null,null,'laundry'],
 
- ...cabinets.templates.filter(t=>t[0]!=='storage').map(t=>['cabinet',t[1],t[2],t[3],'#f3f1ec',['tv-floor','entry-pegboard','entry-console','sideboard-wall','sideboard-fridge'].includes(t[0])?undefined:Math.round(t[2]*t[4]/1000),t[4],null,null,t[0]]),
+ ...cabinets.templates.filter(t=>t[0]!=='storage').map(t=>['cabinet',t[1],t[2],t[3],'#f3f1ec',['corner90','tv-floor','entry-pegboard','entry-console','sideboard-wall','sideboard-fridge'].includes(t[0])?undefined:Math.round(t[2]*t[4]/1000),t[4],null,null,t[0]]),
  ['wardrobe','衣柜 2.4m',2400,600,'#efe6d8',5400],
  ['wardrobe','小衣柜',1200,550,'#efe6d8',2200],
  ['shoecab','玄关柜',1400,380,'#e6dccc',2600],

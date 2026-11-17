@@ -755,3 +755,7 @@ FurnitureSolids保留完整顶点／索引及原缓存键，只在不可变记�
 ## 2026-11-17：源码指纹与静态流
 
 server-runtime.watch跨轮只保留依赖路径、stat签名和摘要，原始字节仅供本次哈希；无require字节的文件不做依赖扫描解码，仍参与原SHA协议和更新预检。serve静态资源采用有背压读流，打开／stat后发送原MIME与no-store头，关闭／错误释放流；API、存档、owner和前端加载入口不变。整组RSS／physical footprint的区别及范围见[验收](validation/runtime-memory-20261117/README.md)。
+
+### 参数化90°转角柜
+
+`src/core/corner-cabinet-core.js`维护cabinet v3/corner90参数，派生临时v2生产板件与foldDoor，沿共享构造器／实体／扫掠输出；不保存派生boxes。`src/ui/corner-cabinet.js`提供独立及宿主共用参数控件；组合厨房按两个实际朝向派生正视。最低项目v93、旧v1/v2保留，几何和工艺边界见[CABINET-CORNER90.md](CABINET-CORNER90.md)。
