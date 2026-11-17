@@ -4,6 +4,17 @@
  const clone=v=>JSON.parse(JSON.stringify(v)),fail=m=>{throw new Error(m);},num=v=>typeof v==='number'&&Number.isFinite(v);
  const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().filter(k=>v[k]!==undefined).map(k=>[k,canonical(v[k])])):v;
  const core=()=>root.FurnishDraft || require('./floorplan-core.js');
+ // Reuse derived plans only within a synchronous validation transaction. Every
+ // input still passes upgrade/validation, and each caller receives an isolated copy.
+ let validationDraftCache=null;
+ function withDraftCache(action){if(validationDraftCache)return action();validationDraftCache=new Map();try{return action();}finally{validationDraftCache=null;}}
+ function buildDraft(input){
+  if(!validationDraftCache)return core().build(input);
+  const draft=core().validate(core().upgrade(input)),key=JSON.stringify(draft);
+  let plan=validationDraftCache.get(key);
+  if(!plan){plan=core().build(draft);if(validationDraftCache.size>=8)validationDraftCache.delete(validationDraftCache.keys().next().value);validationDraftCache.set(key,plan);}
+  return clone(plan);
+ }
  const bays=()=>root.FurnishBayWindows || require('./bay-window-core.js');
  const geometry=()=>root.FurnishGeometry || require('./layout-geometry.js');
  const design=()=>root.FurnishDesign || require('./design-core.js');
@@ -19,9 +30,9 @@
   const a=clone(input);for(const key of ['draft','baseline'])if(a[key])a[key]=core().upgrade(a[key]);if(a.originalRevisions)a.originalRevisions=a.originalRevisions.map(d=>core().upgrade(d));return a;
  }
  function architecture(input){
-  const a=upgradeArchitecture(input);core().build(a.draft);if(a.originalRevisions)a.originalRevisions.forEach(d=>core().build(d));
+  const a=upgradeArchitecture(input);buildDraft(a.draft);if(a.originalRevisions)a.originalRevisions.forEach(d=>buildDraft(d));
   a.phase=a.phase==='survey'?'survey':'design';
-  if(a.phase==='design'){a.baseline=a.baseline||clone(a.draft);core().build(a.baseline);if(a.baseline.id!==a.draft.id)fail('Original structure identity mismatch');assertStructure(a.baseline,a.draft);}
+  if(a.phase==='design'){a.baseline=a.baseline||clone(a.draft);buildDraft(a.baseline);if(a.baseline.id!==a.draft.id)fail('Original structure identity mismatch');assertStructure(a.baseline,a.draft);}
   else delete a.baseline;
   return a;
  }
@@ -114,7 +125,7 @@
  // Read a version without inheriting the currently rendered opening overrides.
  function effectivePlan(base,work){
   let plan;
-  if(work.architecture){const draft=work.architecture.draft,sourceDXF=draft.sourceDXF,key=JSON.stringify({...draft,sourceDXF:undefined});if(effectiveDraftCache?.key!==key||effectiveDraftCache.sourceDXF!==sourceDXF)effectiveDraftCache={key,sourceDXF,plan:core().build(draft)};const cached=effectiveDraftCache.plan;plan=clone({...cached,customDraft:{...cached.customDraft,sourceDXF:undefined}});if(sourceDXF!==undefined)plan.customDraft.sourceDXF=sourceDXF;}else plan=clone(base);
+  if(work.architecture){const draft=work.architecture.draft,sourceDXF=draft.sourceDXF,key=JSON.stringify({...draft,sourceDXF:undefined});if(effectiveDraftCache?.key!==key||effectiveDraftCache.sourceDXF!==sourceDXF)effectiveDraftCache={key,sourceDXF,plan:buildDraft(draft)};const cached=effectiveDraftCache.plan;plan=clone({...cached,customDraft:{...cached.customDraft,sourceDXF:undefined}});if(sourceDXF!==undefined)plan.customDraft.sourceDXF=sourceDXF;}else plan=clone(base);
   plan.ceilingHeight=ceilingHeight(work);
   plan.furnitureDatum=work.furnitureDatum;plan.furniture=work.furniture;
   if(work.tileGrout)plan.tileGrout=clone(work.tileGrout);else delete plan.tileGrout;
@@ -129,7 +140,7 @@
   const finished=floors().derive(finishes().derive(plan,work),work),tiled=work.wallTiling?wallTiles().derive(finished,work):finished;return ceilings().derive(tiled,work);
  }
  function validatePlanWork(base,work){
-  const plan=work.architecture?core().build(work.architecture.draft):base;if(!plan)fail('文件引用了不存在的户型');
+  const plan=work.architecture?buildDraft(work.architecture.draft):base;if(!plan)fail('文件引用了不存在的户型');
   for(const id of work.demolished||[])if(Number(id.slice(1))>=plan.walls.length)fail('拆墙编号 '+id+' 不存在于此方案');
   for(const [kind,list] of [['d',plan.doors||[]],['w',plan.wins||[]],['s',plan.slides||[]]])for(const [index,value] of Object.entries(work.open?.[kind]||{})){
    if(Number(index)>=list.length)fail((kind==='d'?'门':kind==='s'?'推拉门':'窗')+'编号 '+index+' 不存在于此方案');
@@ -522,6 +533,6 @@
   const catalogIds=new Set();for(const c of data.catalog){if(c?.id!==undefined){if(typeof c.id!=='string'||!c.id||c.id.length>200||catalogIds.has(c.id))fail('家具库编号无效或重复');catalogIds.add(c.id);}if(!c||typeof c.name!=='string'||c.name.length>80||![c.w,c.d,c.h,c.price].every(num)||c.w<design().products().catalogMinimum(c,'w')||c.d<design().products().catalogMinimum(c,'d')||c.w>20000||c.d>20000||c.h<=0||c.h>20000||c.price<0)fail('家具库数据无效');validateWork({furniture:[{...c,id:'model',cx:0,cy:0,rot:0}]});}return data;
  }
  root.FurnishProject={dishwasherChecks,roomCeilingHeight,ceilingAt,ceilingHeight,validateBeamCeiling,readiness,pricing,materialQuantity,furniturePriceBasis,priceBasis,estimate,architecture,assertStructure,protectOriginal,changes,quantities,effectivePlan,validatePlanWork,previewPlan,checkFingerprint,review,openingSchedule,purchaseStates,purchaseMoney,procurement,updatePurchaseGroup,csv,historyEntries,recoveryEntry,mergeDesigns,mergeCatalog,extraCosts,remapRooms,remapOpenings,spaceCheck,parseOBJ,formatVersion,pack,unpack,validateWork,copyProject,area,polygon,fitsInRooms,intersects};
- Object.assign(root.FurnishProject,{materialBreakdown,explainIssue});
+ Object.assign(root.FurnishProject,{materialBreakdown,explainIssue,withDraftCache});
  if(typeof module!=='undefined')module.exports=root.FurnishProject;
 })(typeof window==='undefined'?globalThis:window);

@@ -1,0 +1,12 @@
+/* Compare against the immutable pre-optimization core, without writing user data. */
+'use strict';
+const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),crypto=require('node:crypto'),{execFileSync}=require('node:child_process'),{createRequire}=require('node:module'),assert=require('node:assert/strict');
+const root=path.resolve(__dirname,'../..'),revision='a3761704';
+function previous(name,extra={}){const file=path.join(root,'src/core',name),scope={module:{exports:{}},require:createRequire(file),...extra};vm.runInNewContext(execFileSync('git',['show',revision+':src/core/'+name],{cwd:root,maxBuffer:2000000}).toString(),scope);return scope.module.exports;}
+const oldP=previous('project-core.js'),oldC=previous('repository-core.js',{FurnishProject:oldP}),oldS=previous('furniture-solids.js'),C=require('../../src/core/repository-core.js'),S=require('../../src/core/furniture-solids.js');
+const file=require('../workspace-files.cjs').create(root).info({inspect:false}).file,raw=fs.readFileSync(file),sha=x=>crypto.createHash('sha256').update(x).digest('hex'),input=JSON.parse(raw);
+const before=oldC.parse(input),after=C.parse(input);assert.equal(oldC.text(before),C.text(after),'whole workspace canonical output and version must remain exact');
+const work=after.work[after.planId],rows=[];let vertices=0;
+for(const f of work.furniture){if(!S.supported(f))continue;const a=oldS.parts(f,{furniture:work.furniture}),b=S.parts(f,{furniture:work.furniture});assert.equal(a.length,b.length,f.type+' part count');const h1=crypto.createHash('sha256'),h2=crypto.createHash('sha256');for(let i=0;i<a.length;i++){h1.update(JSON.stringify(a[i]));h2.update(JSON.stringify(b[i]));vertices+=a[i].vertices.length;}assert.equal(h1.digest('hex'),h2.digest('hex'),f.type+' every vertex, index, role, bounds and section');rows.push({id:f.id,type:f.type,parts:a.length});}
+assert.equal(sha(fs.readFileSync(file)),sha(raw),'formal source unchanged');
+const out=path.join(root,'output/memory-equivalence.noindex');fs.mkdirSync(out,{recursive:true});const result={baseline:revision,sourceHash:sha(raw),sourceUnchanged:true,furniture:rows.length,vertices,canonicalWorkspaceExact:true,completeNumericPartsExact:true,rows};fs.writeFileSync(path.join(out,'result.json'),JSON.stringify(result,null,2));console.log('PASS canonical full workspace; '+rows.length+' furniture / '+vertices+' vertices with exact numeric part serialization; source unchanged');

@@ -22,7 +22,7 @@
    const model=root[r.global]||(typeof require==='function'?require('../render/'+r.module+'-model.js'):null);if(!model)throw Error('家具实体模型未加载：'+r.global);
    const {T,Box,Rounded,transform}=adapter(),built=model.build(T,products.elevationSource(f),r.sliding?{corner}:r.rounded?Rounded:Box);records=[];
    built.traverse(node=>{
-    const g=node.geometry;if(!g)return;const data=g.attributes.position.array;if([0,1,2].some(axis=>Math.max(...data.filter((_,i)=>i%3===axis))-Math.min(...data.filter((_,i)=>i%3===axis))<1e-10))return;const a=data,toWorld=transform(node),vertices=Array.from({length:a.length/3},(_,i)=>toWorld(a.slice(i*3,i*3+3)).map(v=>v*1000)),name=Object.entries(node.userData).find(([key,v])=>key.endsWith('Part')&&typeof v==='string')?.[1]||'结构';
+    const g=node.geometry;if(!g)return;const data=g.attributes.position.array,min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];for(let i=0;i<data.length;i++){const axis=i%3;min[axis]=Math.min(min[axis],data[i]);max[axis]=Math.max(max[axis],data[i]);}if(min.some((v,i)=>max[i]-v<1e-10))return;const a=data,toWorld=transform(node),pool=new Map(),vertices=Array.from({length:a.length/3},(_,i)=>{const point=a.slice(i*3,i*3+3),key=point.map(v=>Object.is(v,-0)?'-0':String(v)).join(',');let vertex=pool.get(key);if(!vertex){vertex=toWorld(point).map(v=>v*1000);pool.set(key,vertex);}return vertex;}),name=Object.entries(node.userData).find(([key,v])=>key.endsWith('Part')&&typeof v==='string')?.[1]||'结构';
     const add=(vs,faces)=>records.push({vertices:vs,faces,boardName:labels[name]||'结构件',partRole:name,actualBoard:true});
     if(g.userData.bentBoard){
      // Separate the inward bend into narrow convex strips, preserving the void.
@@ -38,7 +38,10 @@
   // records. Use the production key plus every world transform input.
   const M=root.FurnishCabinetMotion||require('./cabinet-motion.js'),angle=(f.rot||0)*Math.PI/180,c=Math.cos(angle),s=Math.sin(angle);
   const base=(r.base==='mountHeight'?products.value(f,'mountHeight'):0)+products.elevationDelta(f);
-  const result=records.map((r,i)=>{const vertices=r.vertices.map(([x,y,z])=>{x*=f.flip?-1:1;return [(f.cx||0)+x*c-z*s,y+base,(f.cy||0)+x*s+z*c];});return {...r,vertices,boardKey:'furniture:'+i,p:M.section({vertices,faces:r.faces},null),vertical:{bottom:Math.min(...vertices.map(v=>v[1])),top:Math.max(...vertices.map(v=>v[1])),source:'production-mesh'}};});
+  // Records are immutable. Share repeated triples without changing vertex order,
+  // face indices, double precision or the public arrays' cardinality.
+  const transformed=new WeakMap();
+  const result=records.map((r,i)=>{let bottom=Infinity,top=-Infinity;const vertices=r.vertices.map(point=>{let vertex=transformed.get(point);if(!vertex){let [x,y,z]=point;x*=f.flip?-1:1;vertex=[(f.cx||0)+x*c-z*s,y+base,(f.cy||0)+x*s+z*c];transformed.set(point,vertex);}bottom=Math.min(bottom,vertex[1]);top=Math.max(top,vertex[1]);return vertex;});return {...r,vertices,boardKey:'furniture:'+i,p:M.section({vertices,faces:r.faces},null),vertical:{bottom,top,source:'production-mesh'}};});
   worldCache.set(worldKey,result);if(worldCache.size>128)worldCache.delete(worldCache.keys().next().value);return result;
  }
  const api={supported,parts};root.FurnishFurnitureSolids=api;if(typeof module==='object'&&module.exports)module.exports=api;

@@ -1,0 +1,172 @@
+{
+  "baseline": "a3761704",
+  "method": "Same isolated 1601 input and packaged Electron. Compare live JS heap after explicit diagnostic GC, not total physical memory. Allocation sampling includes collected objects and is an estimate. No diagnostic GC added to production.",
+  "runs": {
+    "before": {
+      "artifact": "output/tauri-comparison/compare-Pv46CR.noindex",
+      "revision": "a3761704",
+      "sourceHash": "2b743b4992ec6a63511e02bc6f1b4efdef37b6307d479b1e5957c95ba4aa2329",
+      "sourceUnchanged": true,
+      "errors": [],
+      "allocationGiB": 12.975710846483707,
+      "records": [
+        {
+          "stage": "ready",
+          "heapMiB": 862.8469200134277,
+          "rendererRssMiB": 1652.453125,
+          "decomposeCalls": 34788
+        },
+        {
+          "stage": "idle-5s",
+          "heapMiB": 863.1811294555664,
+          "rendererRssMiB": 1651.90625,
+          "decomposeCalls": 34788
+        },
+        {
+          "stage": "after-renderer-gc",
+          "heapMiB": 477.72257232666016,
+          "rendererRssMiB": 1177.765625,
+          "decomposeCalls": 34788
+        },
+        {
+          "stage": "reload",
+          "heapMiB": 1042.0653343200684,
+          "rendererRssMiB": 2208.703125,
+          "decomposeCalls": 40878
+        },
+        {
+          "stage": "reload-after-gc",
+          "heapMiB": 473.2539482116699,
+          "rendererRssMiB": 1364.28125,
+          "decomposeCalls": 40878
+        },
+        {
+          "stage": "final",
+          "heapMiB": 496.099365234375,
+          "rendererRssMiB": 1386.28125,
+          "decomposeCalls": 40878
+        }
+      ]
+    },
+    "afterFirst": {
+      "artifact": "output/tauri-comparison/compare-a2ajWA.noindex",
+      "revision": "working-tree",
+      "sourceHash": "2b743b4992ec6a63511e02bc6f1b4efdef37b6307d479b1e5957c95ba4aa2329",
+      "sourceUnchanged": true,
+      "errors": [],
+      "allocationGiB": 10.618342865258455,
+      "records": [
+        {
+          "stage": "ready",
+          "heapMiB": 621.3918800354004,
+          "rendererRssMiB": 1443.609375,
+          "decomposeCalls": 27867
+        },
+        {
+          "stage": "idle-5s",
+          "heapMiB": 621.7290573120117,
+          "rendererRssMiB": 1442.890625,
+          "decomposeCalls": 27867
+        },
+        {
+          "stage": "after-renderer-gc",
+          "heapMiB": 369.7446060180664,
+          "rendererRssMiB": 1058.4375,
+          "decomposeCalls": 27867
+        },
+        {
+          "stage": "reload",
+          "heapMiB": 881.5824737548828,
+          "rendererRssMiB": 2049.015625,
+          "decomposeCalls": 34173
+        },
+        {
+          "stage": "reload-after-gc",
+          "heapMiB": 365.08126068115234,
+          "rendererRssMiB": 1202.5625,
+          "decomposeCalls": 34173
+        },
+        {
+          "stage": "final",
+          "heapMiB": 387.89721298217773,
+          "rendererRssMiB": 1224.96875,
+          "decomposeCalls": 34173
+        }
+      ]
+    },
+    "afterRepeat": {
+      "artifact": "output/tauri-comparison/compare-ZSrAkM.noindex",
+      "revision": "working-tree",
+      "sourceHash": "2b743b4992ec6a63511e02bc6f1b4efdef37b6307d479b1e5957c95ba4aa2329",
+      "sourceUnchanged": true,
+      "errors": [],
+      "allocationGiB": 10.616640731692314,
+      "records": [
+        {
+          "stage": "ready",
+          "heapMiB": 592.3475875854492,
+          "rendererRssMiB": 1468.65625,
+          "decomposeCalls": 27867
+        },
+        {
+          "stage": "idle-5s",
+          "heapMiB": 592.706958770752,
+          "rendererRssMiB": 1468.015625,
+          "decomposeCalls": 27867
+        },
+        {
+          "stage": "after-renderer-gc",
+          "heapMiB": 369.7225570678711,
+          "rendererRssMiB": 1028.578125,
+          "decomposeCalls": 27867
+        },
+        {
+          "stage": "reload",
+          "heapMiB": 860.6617050170898,
+          "rendererRssMiB": 1990.703125,
+          "decomposeCalls": 34001
+        },
+        {
+          "stage": "reload-after-gc",
+          "heapMiB": 365.11784744262695,
+          "rendererRssMiB": 1194.34375,
+          "decomposeCalls": 34001
+        },
+        {
+          "stage": "final",
+          "heapMiB": 387.9379768371582,
+          "rendererRssMiB": 1216.6875,
+          "decomposeCalls": 34001
+        }
+      ]
+    }
+  },
+  "equivalence": {
+    "baseline": "a3761704",
+    "sourceHash": "2b743b4992ec6a63511e02bc6f1b4efdef37b6307d479b1e5957c95ba4aa2329",
+    "sourceUnchanged": true,
+    "furniture": 129,
+    "vertices": 2501100,
+    "canonicalWorkspaceExact": true,
+    "completeNumericPartsExact": true
+  },
+  "desktop": {
+    "artifact": "output/desktop-verification/verification-Qtg9z5.noindex",
+    "checks": [
+      "existing workspace loaded with original plan, work slots and furniture",
+      "sandboxed renderer without Node integration",
+      "production mutate, undo/redo, file save and refresh",
+      "native download exports existing editable project",
+      "file input reimports exported plan with edited furniture intact",
+      "390px desktop viewport without document overflow",
+      "production WebGL 3D and original Blender status interface",
+      "Chromium print-to-PDF renders existing page",
+      "HTTP browser shares desktop workspace",
+      "direct file:// 2D and offline Three.js 3D",
+      "window exit stops owned backend; restart restores saved edit",
+      "original user workspace unchanged; no renderer exceptions"
+    ],
+    "errors": [],
+    "originalWorkspaceUnchanged": true
+  }
+}
