@@ -453,7 +453,7 @@ function cornerPlinth(f,blocks=cornerLayout(f)){const p=plinth(f);if(!p)return [
 function elevationAssembly(f,row,run,indices){if(!f.kitchen.assembly)return row;const originals=cabinetLayout(f).filter(m=>m.run===run),sample=originals[0];if(!sample)return row;const angle=sample.rot*Math.PI/180,axis=[Math.cos(angle),Math.sin(angle)],display=cabinetLayout(row),pairs=originals.map(m=>({source:m,target:display.find(d=>(d.index>=indices.length?f.kitchen.modules.length+run:indices[d.index])===m.index)})).filter(p=>p.target),first=pairs[0];if(!first)return row;const second=pairs.find(p=>Math.abs((p.source.x-first.source.x)*axis[0]+(p.source.y-first.source.y)*axis[1])>1),slope=second?Math.sign((second.target.x-first.target.x)/((second.source.x-first.source.x)*axis[0]+(second.source.y-first.source.y)*axis[1])):(!!f.flip!==!!row.flip?-1:1);row.kitchen.assembly=Object.fromEntries(Object.entries(f.kitchen.assembly).filter(([,p])=>((p.rot??0)-sample.rot+360)%360===0).map(([key,p])=>{const dx=(p.x??0)-first.source.x,dy=(p.y??0)-first.source.y;return [key,{...clone(p),x:first.target.x+slope*(dx*axis[0]+dy*axis[1]),y:first.target.y-dx*axis[1]+dy*axis[0],rot:0}];}));
  if(f.kitchen.worktop){const A=root.FurnishCabinetAssembly||require('./cabinet-assembly-core.js'),Z=zones(),projected=outline(f).map(([x,y])=>{const dx=x-first.source.x,dy=y-first.source.y;return [first.target.x+slope*(dx*axis[0]+dy*axis[1]),first.target.y-dx*axis[1]+dy*axis[0]];}),mask=[outline(row),...A.worktopSupports(row).map(p=>p.poly)],pieces=Z.decompose([projected,...mask],p=>Z.inside(p,projected)&&mask.some(r=>Z.inside(p,r))),rings=Z.outline(pieces).rings;if(rings.length===1)row.kitchen.worktop={outline:rings[0]};}
  return row;}
-function elevationRuns(f){
+function nativeElevationRuns(f){
  validate(f);
  if(f.kitchen.shape==='U')return runs(f).map(run=>{
   const k=f.kitchen,all=layout(f),sample=all.find(m=>m.run===run),angle=sample.rot*Math.PI/180,axis=[Math.cos(angle),Math.sin(angle)],project=p=>(p.x*axis[0]+p.y*axis[1])*(f.flip?-1:1);
@@ -476,6 +476,26 @@ function elevationRuns(f){
   const nominal=cornerBlocks(f)[0],fit=cornerLayout(f)[0],sample=layout(f).find(m=>m.run===run),angle=sample.rot*Math.PI/180,project=p=>(p.x*Math.cos(angle)+p.y*Math.sin(angle))*(f.flip?-1:1),depth=run===0?fit.d:fit.w;
   return {run,title:run===0?'主边正视':'转角边正视',indices:slots.map(s=>s.index),endIndex:f.kitchen.modules.length+run,mirror:reverse!==flip,blind:{x:bounds[at].x+(project(fit)-project(nominal))*(flip?-1:1),y:bounds[at].y+(k.depth-depth)/2,width:run===0?fit.w:fit.d,depth,shelves:cornerShelves(f,0)},furniture:elevationAssembly(f,row,run,slots.map(s=>s.index))};
  });
+}
+// Additional Lego cabinets may face a side not present in the original L/U recipe.
+// Derive temporary views from their actual transforms, without changing that recipe.
+function elevationRuns(f){
+ const rows=nativeElevationRuns(f),angleOf=p=>((p.rot??0)%360+360)%360,near=(a,b)=>Math.abs(((a-b+540)%360)-180)<.001;
+ const nativeAngles=runs(f).map(run=>layout(f).find(m=>m.run===run)?.rot??0),parts=laundryParts(f).filter(p=>p.key!=='sink'),extra=[];
+ for(const {key} of parts){const angle=angleOf(assemblyConfig(f)[key]);if(!nativeAngles.some(a=>near(a,angle))&&!extra.some(a=>near(a,angle)))extra.push(angle);}
+ if(!extra.length)return rows;
+ if(!rows.length){const row=clone(f);row.cx=row.cy=row.rot=0;delete row.kitchen.assembly;rows.push({run:0,title:runName(f,0)+'正视',indices:f.kitchen.modules.map((_,i)=>i),endIndex:f.kitchen.modules.length,mirror:false,furniture:elevationAssembly(f,row,0,f.kitchen.modules.map((_,i)=>i))});}
+ for(const angle of extra){
+  const a=angle*Math.PI/180,c=Math.cos(a),s=Math.sin(a),entries=parts.filter(p=>near(angleOf(assemblyConfig(f)[p.key]),angle)).map(({key})=>{const p=assemblyConfig(f)[key];return {key,p,x:(p.x??0)*c+(p.y??0)*s,z:-(p.x??0)*s+(p.y??0)*c};}),left=Math.min(...entries.map(v=>v.x-v.p.w/2)),right=Math.max(...entries.map(v=>v.x+v.p.w/2)),back=Math.min(...entries.map(v=>v.z-v.p.d/2)),front=Math.max(...entries.map(v=>v.z+v.p.d/2)),cx=(left+right)/2,cz=(back+front)/2,w=right-left,d=front-back;
+  const row={...clone(f),cx:0,cy:0,rot:0,flip:false,w,d:Math.max(d,150),kitchen:{...clone(f.kitchen),shape:'straight',depth:Math.max(150,Math.min(1200,d)),counterDepth:Math.max(150,Math.min(1240,d)),modules:[{run:0,width:w,role:'empty'}],assembly:Object.fromEntries(entries.map(v=>[v.key,{...clone(v.p),x:v.x-cx,y:v.z-cz,rot:0}]))}};
+  delete row.kitchen.runDepths;delete row.kitchen.endExtensions;delete row.kitchen.obstacleFit;delete row.kitchen.laundry;delete row.kitchen.worktop;
+  const A=root.FurnishCabinetAssembly||require('./cabinet-assembly-core.js'),Z=zones(),projected=hasCountertop(f)?topGeometry(f).polys.map(poly=>poly.map(([x,y])=>[x*c+y*s-cx,-x*s+y*c-cz])):[],mask=A.worktopSupports(row).map(v=>v.poly),pieces=Z.decompose([...projected,...mask],p=>projected.some(r=>Z.inside(p,r))&&mask.some(r=>Z.inside(p,r))),previewSurface=Z.outline(pieces);
+  const project=([x,y])=>[x*c+y*s-cx,-x*s+y*c-cz];
+  previewSurface.frontEdges=frontEdges(f).map(e=>({...e,a:project(e.a),b:project(e.b),normal:[e.normal[0]*c+e.normal[1]*s,-e.normal[0]*s+e.normal[1]*c]}));
+  previewSurface.edges=edgeParts(f).flatMap(e=>{const poly=rectPoly(e).map(project),clipped=Z.decompose([poly,...mask],p=>Z.inside(p,poly)&&mask.some(r=>Z.inside(p,r)));return clipped.map((poly,i)=>{const xs=poly.map(p=>p[0]),ys=poly.map(p=>p[1]),l=Math.min(...xs),r=Math.max(...xs),b=Math.min(...ys),t=Math.max(...ys);return {...e,partId:e.partId+':clip:'+i,x:(l+r)/2,y:(b+t)/2,w:r-l,d:t-b};});});
+  rows.push({run:'assembly:'+angle,assemblyOnly:true,previewSurface,title:'新增柜边正视 · '+angle+'°',indices:[null],endIndex:null,mirror:false,furniture:row});
+ }
+ return rows;
 }
 function slabs(f){
  if(f.kitchen.shape==='U'){

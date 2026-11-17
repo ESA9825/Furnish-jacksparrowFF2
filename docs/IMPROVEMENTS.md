@@ -3616,3 +3616,4 @@ macOS 的 test-artifacts 新建运行目录追加 `.noindex`，保留失败证�
 正式 Applications 链接及其 output/desktop/Furnish-darwin-arm64/Furnish.app 目标保持原位；projects、.local、测试方案、浏览器 Local Storage／IndexedDB、日志、截图及验收报告保留。清理前后逐文件 SHA-256 核对 10459 个保留文件，无差异。两处仍标记 running／带锁的 progressive-scheduling-YU0A3C、progressive-scheduling-jepNeX 整体保留；未按历史 PID 推断其已结束。进程检查未发现测试目录中的运行程序。清单与哈希在本机 output/cleanup-20261117.noindex/manifest.json（不入库）。
 
 验证仅覆盖清理范围、保留文件哈希、正式入口与 Git 差异；未执行应用功能回归或全量测试。清理后的历史测试源码和缓存需重新生成，截图／报告与方案仍可检查。
+2026-11-17（厨房转角露缝／遗漏正视图）：1601 厨房 B 深化副本改用连续背侧板，保留原浅柜生产板件材质和地脚，实际消除 18mm 断口。共享厨房核心按启用附属柜的真实朝向补足正视图，既有模块索引、柜体身份与草稿保存机制保持；补充台面沿实际承托裁切，空交集／小面积不生成虚构台面。无新持久字段或加载脚本。36组核心、96组原台面、72组联动门、现有组合／位置／厨房与 HTTP/file 界面增量验证通过；未执行全量检查。边界和参数见 [柜体编辑器](CABINET-ASSEMBLY-EDITOR.md)与[厨房设计](KITCHEN-DESIGN.md)。

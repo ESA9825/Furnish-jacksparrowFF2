@@ -4,8 +4,8 @@
 // Stable authoring-site labels: keep existing labels when moving code; allocate new labels for new sites.
 const syncIdentity=root.FurnishPartIdentity||(typeof require==='function'?require('../core/part-identity.js'):null);
 
-function slabShape(T,f,furniture,recess=false){
- const K=root.FurnishKitchen,geometry=K.slabGeometry(f,furniture,recess);
+function slabShape(T,f,furniture,recess=false,previewSurface){
+ const K=root.FurnishKitchen,geometry=previewSurface??K.slabGeometry(f,furniture,recess);
  const shapes=[];for(const ring of geometry.rings){if(K.ringArea(ring)<=0)continue;const shape=new T.Shape();ring.forEach(([x,y],i)=>i?shape.lineTo(x/1000,y/1000):shape.moveTo(x/1000,y/1000));shape.closePath();for(const holeRing of geometry.rings.filter(r=>K.ringArea(r)<0&&K.ringInside(r[0],ring))){const hole=new T.Path();holeRing.forEach(([x,y],i)=>i?hole.lineTo(x/1000,y/1000):hole.moveTo(x/1000,y/1000));hole.closePath();shape.holes.push(hole);}shapes.push(shape);}return shapes;
 }
 function countertop(T,f,material,furniture=[]){
@@ -26,7 +26,7 @@ function cutLaundryNotch(T,g,f){
  cutter.translate((cut[0][0]+n.width/2)/1000,K.bodyHeight(f)/2000,(cut[0][1]+n.depth/2)/1000);g.updateMatrixWorld(true);
  g.traverse(o=>{if(!o.isMesh||o.userData.kitchenSlab)return;const geometry=S.subtract(T,o.geometry,o.matrixWorld,cutter);o.geometry.dispose();o.geometry=geometry;});cutter.dispose();
 }
-function build(THREE,f,box,{furniture=[],plan,previewBlind=null,previewMirror=false,doors, outlines=false,removableHints=false}={}){
+function build(THREE,f,box,{furniture=[],plan,previewBlind=null,previewMirror=false,previewSurface,doors, outlines=false,removableHints=false}={}){
  const K=root.FurnishKitchen,C=root.FurnishCabinet,k=f.kitchen,previewBlinds=previewBlind?(Array.isArray(previewBlind)?previewBlind:[previewBlind]):[],g=new THREE.Group(),stone=new THREE.MeshStandardMaterial({color:'#dcd7cf',roughness:.25});stone.userData.kitchen=true;
  for(const m of syncIdentity.records("kitchen:modules",K.cabinetLayout(f))){
   if(m.role==='empty')continue;
@@ -41,22 +41,22 @@ function build(THREE,f,box,{furniture=[],plan,previewBlind=null,previewMirror=fa
   // Keep plinths at the root for the existing picking and geometry contract.
   for(const b of syncIdentity.records("kitchen-model.js:generator-2",K.cornerPlinth(f))){const mesh=syncIdentity.produce("kitchen-model:site-3",()=>box(b.w/1000,(b.top-b.bottom)/1000,b.d/1000,C.palette.body,b.x/1000,b.bottom/1000,b.y/1000));mesh.userData.kitchenCornerPlinth=true;mesh.userData.kitchenCornerIndex=b.cornerIndex;g.add(mesh);}syncIdentity.produce("kitchen-model.js:generator-call-3",()=>addBoards(K.cornerBoards(f),[]));
  }else for(const blind of syncIdentity.records("kitchen-model.js:generator-3",previewBlinds,(_,slot)=>"blind-corner:"+slot)){const temp={...f,kitchen:{...k,shape:'L',corner:blind.x>0?'right':'left'}},blocks=[{x:blind.x,y:blind.y,w:blind.width,d:blind.depth??k.depth,shelves:blind.shelves??[]}];syncIdentity.produce("kitchen-model.js:generator-call-4",()=>addBoards(K.cornerBoards(temp,blocks),K.cornerPlinth(temp,blocks),blind));}
- if(K.hasCountertop(f)){
-  const shape=slabShape(THREE,f,furniture),recess=K.deviceOpenings(f,furniture).some(({device})=>K.arrowSink(device)&&K.sinkMode(device)==='flush')?.8:0;
+ if(K.hasCountertop(f)&&(!previewSurface||previewSurface.rings.length)){
+  const shape=slabShape(THREE,f,furniture,false,previewSurface),recess=K.deviceOpenings(f,furniture).some(({device})=>K.arrowSink(device)&&K.sinkMode(device)==='flush')?.8:0;
   const bevel=K.edgeStyle(f)==='bevel',cut=bevel?Math.min(k.thickness,20):k.thickness;
   if(bevel&&k.thickness-cut>recess){const upper=new THREE.ExtrudeGeometry(shape,{depth:(k.thickness-cut-recess)/1000,bevelEnabled:false});upper.rotateX(Math.PI/2);upper.translate(0,(k.baseHeight+k.thickness-recess)/1000,0);const mesh=syncIdentity.produce("kitchen-model:site-4",()=>new THREE.Mesh(upper,stone));mesh.userData.kitchenSlab=true;mesh.userData.cabinetOwnMaterial=true;g.add(mesh);}
   const lowerRecess=bevel?Math.max(0,recess-(k.thickness-cut)):recess;
   const geometry=new THREE.ExtrudeGeometry(shape,{depth:(cut-lowerRecess)/1000,bevelEnabled:false});geometry.rotateX(Math.PI/2);geometry.translate(0,(k.baseHeight+cut-lowerRecess)/1000,0);
-  if(recess){const cap=new THREE.ExtrudeGeometry(slabShape(THREE,f,furniture,true),{depth:recess/1000,bevelEnabled:false});cap.rotateX(Math.PI/2);cap.translate(0,(k.baseHeight+k.thickness)/1000,0);const mesh=syncIdentity.produce("kitchen-model:site-5",()=>new THREE.Mesh(cap,stone));mesh.userData.kitchenSlab=true;mesh.userData.cabinetOwnMaterial=true;g.add(mesh);}
+  if(recess){const cap=new THREE.ExtrudeGeometry(slabShape(THREE,f,furniture,true,previewSurface),{depth:recess/1000,bevelEnabled:false});cap.rotateX(Math.PI/2);cap.translate(0,(k.baseHeight+k.thickness)/1000,0);const mesh=syncIdentity.produce("kitchen-model:site-5",()=>new THREE.Mesh(cap,stone));mesh.userData.kitchenSlab=true;mesh.userData.cabinetOwnMaterial=true;g.add(mesh);}
   if(K.edgeStyle(f)==='bevel'){
-   const positions=geometry.attributes.position,edges=K.frontEdges(f),cut=Math.min(k.thickness,20)/1000;
+   const positions=geometry.attributes.position,edges=previewSurface?.frontEdges??K.frontEdges(f),cut=Math.min(k.thickness,20)/1000;
    for(let i=0;i<positions.count;i++)if(Math.abs(positions.getY(i)-k.baseHeight/1000)<1e-6){const x=positions.getX(i),z=positions.getZ(i);let dx=0,dz=0;for(const e of edges){const a=e.a.map(v=>v/1000),b=e.b.map(v=>v/1000);if(x>=Math.min(a[0],b[0])-1e-6&&x<=Math.max(a[0],b[0])+1e-6&&z>=Math.min(a[1],b[1])-1e-6&&z<=Math.max(a[1],b[1])+1e-6&&Math.abs((x-a[0])*e.normal[0]+(z-a[1])*e.normal[1])<1e-6){dx-=e.normal[0]*cut;dz-=e.normal[1]*cut;}}positions.setXYZ(i,x+dx,k.baseHeight/1000,z+dz);}
    positions.needsUpdate=true;geometry.computeVertexNormals();
   }
   // rotateX maps the shape's Y to world Z and extrusion downward.
   const mesh=syncIdentity.produce("kitchen-model:site-6",()=>new THREE.Mesh(geometry,stone));mesh.userData.kitchenSlab=true;mesh.userData.cabinetOwnMaterial=true;mesh.castShadow=true;mesh.receiveShadow=true;g.add(mesh);
  }
- for(const edge of syncIdentity.records("kitchen-model.js:generator-4",K.edgeParts(f))){const mesh=syncIdentity.produce("kitchen-model:site-7",()=>box(edge.w/1000,(edge.top-edge.bottom)/1000,edge.d/1000,'#dcd7cf',edge.x/1000,edge.bottom/1000,edge.y/1000));mesh.material=stone;mesh.userData.kitchenEdge=true;mesh.userData.cabinetOwnMaterial=true;g.add(mesh);}
+ for(const edge of syncIdentity.records("kitchen-model.js:generator-4",(previewSurface?.edges??K.edgeParts(f)))){const mesh=syncIdentity.produce("kitchen-model:site-7",()=>box(edge.w/1000,(edge.top-edge.bottom)/1000,edge.d/1000,'#dcd7cf',edge.x/1000,edge.bottom/1000,edge.y/1000));mesh.material=stone;mesh.userData.kitchenEdge=true;mesh.userData.cabinetOwnMaterial=true;g.add(mesh);}
  for(const b of syncIdentity.records("kitchen-model.js:generator-5",K.laundrySideBoards(f))){const mesh=syncIdentity.produce("kitchen-model:site-8",()=>box(b.w/1000,(b.top-b.bottom)/1000,b.d/1000,f.color||C.palette.front,b.x/1000,b.bottom/1000,b.y/1000));mesh.userData.laundrySidePanel=b.side;g.add(mesh);}
  cutLaundryNotch(THREE,g,f);
  for(const b of syncIdentity.records("kitchen-model.js:generator-6",K.laundryNotchBoards(f))){const mesh=syncIdentity.produce("kitchen-model:site-9",()=>box(b.w/1000,(b.top-b.bottom)/1000,b.d/1000,C.palette.body,b.x/1000,b.bottom/1000,b.y/1000));mesh.userData.laundryNotchBoard=true;g.add(mesh);}
