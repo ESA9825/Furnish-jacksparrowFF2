@@ -22,6 +22,7 @@
     }
     // Preserve the caller's work object and extra project fields, as before.
     function restore(work, plan){
+      if(work.presentation!==undefined)(root.FurnishPresentation||require('./presentation-core.js')).validate(work.presentation);
       (root.FurnishLayers||require('./layers-core.js')).validate(work.objectLayers);
       design.products().validateDatum(work);
       if(work.tilePresets!==undefined)(root.FurnishTilePresets||require('./tile-preset-core.js')).validate(work.tilePresets);

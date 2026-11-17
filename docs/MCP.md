@@ -2,7 +2,7 @@
 
 # Furnish 专用 MCP
 
-2026-11-17：现有33项工具。新增资料归档／采购、组件编辑、净距、文件导出、建筑及方案管理的完整契约见 [MCP-CAPABILITIES.md](MCP-CAPABILITIES.md)；旧版本数量与验收日期保留为历史。
+2026-11-17：现有35项工具（含方案讲解读取／配置，见[PRESENTATION.md](PRESENTATION.md)）。新增资料归档／采购、组件编辑、净距、文件导出、建筑及方案管理的完整契约见 [MCP-CAPABILITIES.md](MCP-CAPABILITIES.md)；旧版本数量与验收日期保留为历史。
 
 MCP 连接正在运行的 Furnish 桌面主窗口。它读取的是当前画布和保存状态，包括尚在保存中的编辑，不是重新解析一份磁盘项目来代替桌面状态。默认连接本仓库；桌面快捷方式的 `furnish-desktop.json` 须指向相同工作目录。
 
@@ -77,11 +77,11 @@ node scripts/register-codex-mcp.cjs --no-automatic
 
 工具会从 PATH 和本机 Codex 安装目录发现 CLI；特殊位置可用 `FURNISH_CODEX_CLI` 或 `--codex` 指定实际程序，桌面程序可用 `--desktop` 指定，工作目录可用 `--root` 指定。已有同目录注册直接保留命令、超时、工具限制和禁用设置，不重复注册；同名 `furnish` 指向其它目录时拒绝覆盖。首次写入前备份现有 Codex 配置到被 Git 忽略的 `.local/codex-mcp-backups`，实际写入交给 `codex mcp add`，不自行重写 TOML，也不把全局配置纳入仓库。
 
-菜单“检查 Codex 注册与工具”及 CLI `--status` 为只读注册检查，验证的是**新 stdio 连接**。注册／启动不等于刷新当前 Codex 聊天：已经加载的旧进程仍可能只显示4工具，需由 Codex 重载 MCP。新服务应返回33工具；若已有 `enabled_tools/disabled_tools` 限制，另报有效数量并保留原限制。自动检查失败只记录诊断，不妨碍 Furnish 编辑；可随时再次点击连接入口。`FURNISH_MCP_DISABLE=1` 继续禁止桌面端点和一键启动。
+菜单“检查 Codex 注册与工具”及 CLI `--status` 为只读注册检查，验证的是**新 stdio 连接**。注册／启动不等于刷新当前 Codex 聊天：已经加载的旧进程仍可能只显示4工具，需由 Codex 重载 MCP。新服务应返回35工具；若已有 `enabled_tools/disabled_tools` 限制，另报有效数量并保留原限制。自动检查失败只记录诊断，不妨碍 Furnish 编辑；可随时再次点击连接入口。`FURNISH_MCP_DISABLE=1` 继续禁止桌面端点和一键启动。
 
 ## 连接与本机配置
 
-入口为 `node scripts/furnish-mcp.cjs`，或 `npm run mcp`。它使用 MCP 2025-11-25 的 stdio 生命周期和换行 JSON-RPC，协商兼容 2025-06-18、2025-03-26、2024-11-05；宣告当前33个工具，不提供脚本执行、任意文件或远程网络访问工具。无新增 npm 依赖。
+入口为 `node scripts/furnish-mcp.cjs`，或 `npm run mcp`。它使用 MCP 2025-11-25 的 stdio 生命周期和换行 JSON-RPC，协商兼容 2025-06-18、2025-03-26、2024-11-05；宣告当前35个工具，不提供脚本执行、任意文件或远程网络访问工具。无新增 npm 依赖。
 
 在 Codex 配置中添加 stdio 服务，例如从本仓库运行：
 

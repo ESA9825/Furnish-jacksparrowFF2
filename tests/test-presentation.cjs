@@ -1,0 +1,24 @@
+'use strict';
+const assert=require('node:assert/strict'),C=require('../src/core/presentation-core.js'),P=require('../src/core/project-core.js'),R=require('../src/core/repository-core.js'),W=require('../src/core/work-state.js'),Cache=require('../src/io/workspace-cache.js');
+const clone=v=>JSON.parse(JSON.stringify(v)),plan={id:'p1',name:'测试',rooms:[],walls:[],windows:[],doors:[],bounds:{x:0,y:0,w:4000,h:3000}},work={furniture:[],rooms:{},notes:[],measures:[],open:{}};
+const page=C.page('page-1');page.title='设计 <script>不是可执行内容</script>';
+work.presentation={...C.empty(),title:'V1',pages:[page],issues:[]};
+const key=C.sourceKey(plan,work),captured={kind:'2d',image:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+afo8AAAAASUVORK5CYII=',sourceKey:key,createdAt:'2026-11-17T10:00:00.000Z'};page.capture=captured;
+C.validate(work.presentation);assert.equal(C.pageState(page,plan,work).stale,false);
+const original=clone(work);work.presentation.overview='只编辑讲解文字';assert.equal(C.sourceKey(plan,work),key);assert.notEqual(C.documentKey(plan,work),C.documentKey(plan,original));
+work.scene3d={night:true};assert.equal(C.sourceKey(plan,work),key);delete work.scene3d;
+work.notes.push({id:'n',x:0,y:0,text:'变更现场说明'});assert.equal(C.pageState(page,plan,work).stale,true);work.notes=[];
+page.furnitureIds=['removed'];assert.deepEqual(C.pageState(page,plan,work).missing,['关联家具已不存在：removed']);assert.equal(C.pageState(page,plan,work).stale,true);page.furnitureIds=[];
+page.roomId='removed';assert.equal(C.pageState(page,plan,work).missing.length,1);page.roomId='';
+const issue={id:'issue-1',text:'核对门洞',assignee:'装修公司',basis:'现场复尺记录',status:'confirmed',reviewKey:key};work.presentation.issues=[issue];assert.equal(C.issueState(issue,plan,work),'已确认');assert.match(C.issueState(issue,plan,{...work,pricing:{paintPrice:20}}),/重新确认/);
+work.presentation.release={label:'V1',createdAt:captured.createdAt,sourceKey:C.documentKey(plan,work)};assert.equal(C.releaseState(plan,work),'与记录版本一致');
+work.presentation.pages[0].approach='调整动线';assert.match(C.releaseState(plan,work),/变更/);
+const packed=P.pack({planId:plan.id,current:work,designs:[{id:'d',name:'副本',editable:true,work:clone(work)}],catalog:[]});assert.equal(packed.version,94);assert.deepEqual(P.unpack(packed).current,work);assert.deepEqual(P.unpack(packed).designs[0].work.presentation,work.presentation);
+assert.equal(P.formatVersion([{furniture:[]}]),1);assert.equal(P.validateWork({furniture:[]}).presentation,undefined);
+const workspace={v:94,planId:plan.id,work:{[plan.id]:work},designs:[],custom:[]};assert.deepEqual(R.parse(JSON.parse(R.text(workspace))).work[plan.id].presentation,work.presentation);
+assert.equal(Cache.load({read:k=>k==='huxing-design-v94'?JSON.stringify(workspace):null,firstPlan:plan,key:'huxing-design-v94'}).v,94);
+assert.equal(Cache.candidates({read:k=>k==='huxing-design-v93'?JSON.stringify({...workspace,v:93}):null,key:'huxing-design-v94'})[0].v,93);
+const restore=W.create({makeId:()=> 'id',colorFor:()=> '#fff',materials:{}}),restored=restore.restore(clone(work),{...plan,defaults:[]});assert.deepEqual(restored.presentation,work.presentation);assert.deepEqual(restore.restore(clone(restored),{...plan,defaults:[]}),restored);
+for(const mutate of [p=>p.pages.push(clone(p.pages[0])),p=>p.pages[0].capture.image='https://evil.invalid/image.png',p=>p.pages[0].capture.image='data:image/svg+xml;base64,YWJj',p=>p.issues[0].basis='',p=>p.release.sourceKey='bad',p=>p.pages[0].unknown=true,p=>p.pages[0].capture.sourceKey='bad',p=>p.pages[0].capture.createdAt='unknown',p=>p.pages[0].capture.image='data:image/jpeg;base64,'+'a'.repeat(C.limits.image)]){const bad=clone(work);mutate(bad.presentation);assert.throws(()=>P.validateWork(bad),/方案讲解/);assert.throws(()=>restore.restore(bad,{...plan,defaults:[]}),/方案讲解/);}
+const three=clone(work);three.presentation.pages[0].capture={...captured,kind:'3d',camera:{mode:'orbit',position:{x:0,y:0,z:3000},target:{x:0,y:3000,z:0},horizontalFov:60,focusIds:[]},scene:{hour:12,cut:2.8,furn:true,labels:false,night:false}};C.validate(three.presentation);three.presentation.pages[0].capture.camera.position.z=Infinity;assert.throws(()=>C.validate(three.presentation),/视角/);
+console.log('PASS presentation validation, image restrictions, live reference loss, source/document versions, stale confirmations, v94 project/design/repository/cache round trips, old defaults and repeated restoration');

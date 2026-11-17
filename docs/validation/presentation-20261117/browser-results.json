@@ -1,0 +1,37 @@
+{
+  "results": [
+    {
+      "mode": "http",
+      "passed": true,
+      "editing": true,
+      "real2D3DCapture": true,
+      "viewRecall": true,
+      "reorderDeleteUndo": true,
+      "saveReload": true,
+      "portableProject": true,
+      "ownerContractor": true,
+      "staleImageOmitted": true,
+      "confirmationInvalidation": true,
+      "narrow": true,
+      "mcp": false,
+      "errors": []
+    },
+    {
+      "mode": "file",
+      "passed": true,
+      "editing": true,
+      "real2D3DCapture": true,
+      "viewRecall": true,
+      "reorderDeleteUndo": true,
+      "saveReload": true,
+      "portableProject": true,
+      "ownerContractor": true,
+      "staleImageOmitted": true,
+      "confirmationInvalidation": true,
+      "narrow": true,
+      "mcp": false,
+      "errors": []
+    }
+  ],
+  "originalWorkspaceUnchanged": true
+}

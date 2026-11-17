@@ -403,6 +403,7 @@
 <script src="src/core/service-core.js"></script>
 <script src="src/core/bay-window-core.js"></script>
 <script src="src/render/bay-window-model.js"></script>
+<script src="src/core/presentation-core.js"></script>
 <script src="src/core/project-core.js"></script>
 <script src="src/core/cabinet-builder-core.js"></script>
 <script src="src/core/cabinet-component-profiles.js"></script>
@@ -585,6 +586,7 @@
 <script src="src/ui/tile-workspace.js"></script>
 <script src="src/ui/finish-guide.js"></script>
 <script src="src/ui/design-ui.js"></script>
+<script src="src/ui/presentation-ui.js"></script>
 <script src="src/ui/procurement-ui.js"></script>
 <script src="src/ui/catalog-ui.js"></script>
 <script src="src/ui/current-furniture.js"></script>
@@ -2140,18 +2142,18 @@ async function automationCamera(options){
   await automationReady();
   const mode=options.mode||((options.preset||options.focusIds||options.roomId)?'orbit':opt.mode);
   if(options.preset&&mode!=='orbit')throw Error('预设取景需要 orbit 模式');
-  if(options.position&&mode==='orbit'&&Math.hypot(options.position.x-options.target.x,options.position.y-options.target.y,options.position.z-options.target.z)<1500)throw Error('鸟瞰相机距离至少1500mm');
+  if(options.position&&mode==='orbit'&&Math.hypot(options.position.x-options.target.x,options.position.y-options.target.y,options.position.z-options.target.z)<1500-1e-6)throw Error('鸟瞰相机距离至少1500mm');
   if(mode!==opt.mode)setMode(mode);
   if(options.horizontalFov!==undefined){const calibration=FurnishNavigation.cameraCalibration();if(calibration)FurnishNavigation.setCameraCalibration({...calibration,[mode==='orbit'?'orbitEnabled':'enabled']:false});horizontalFov=FurnishNavigation.setCameraFov(options.horizontalFov);updateProjection();}
+  if(options.focusIds){selectIds(options.focusIds);focusSelection();if(options.position)await automationReady();}
+  if(options.roomId)flyToRoom(options.roomId);
   if(options.position||options.preset){
-   fly=null;clearObservation();
+   fly=null;if(!options.position||!options.focusIds?.length)clearObservation();
    const damping=orbit.enableDamping;orbit.enableDamping=false;orbit.update();
    const point=p=>new THREE.Vector3(wx(p.x),M(p.z),wz(p.y));
    setPose(options.position?pose(point(options.target),point(options.position)):options.preset==='top'?topWhole():isoWhole());
    if(mode==='orbit')orbit.update();orbit.enableDamping=damping;invalidate(true);
   }
-  if(options.focusIds){selectIds(options.focusIds);focusSelection();}
-  if(options.roomId)flyToRoom(options.roomId);
   await automationReady();
  }
  const point=p=>({x:p.x*1000+OX,y:p.z*1000+OY,z:p.y*1000}),target=opt.mode==='orbit'?orbit.target:camera.position.clone().add(camera.getWorldDirection(new THREE.Vector3()));

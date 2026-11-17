@@ -1,3 +1,5 @@
+2026-11-17（方案讲解与交付）：presentation-core提供可选讲解文档、来源／内容指纹与过期判定；presentation-ui复用原mutate、生产画布及相机，design-ui同源生成分阅读对象的多图成果。项目／工作区／缓存94兼容旧缺失，人工确认与原空间核对独立；MCP增加读取及原子配置讲解，共35项工具。见[讲解契约](PRESENTATION.md)。
+
 2026-11-17（收敛工作集释放）：progressive-view沿原生产快照和主View3D碰撞／拾取，原精度收敛画布无损转到轻量二维画布后显式销毁WebGPU工作集；短时导航仍复用，空闲释放后相机／投影／场景变化重建，原生画质预算、模型和持久链不变。见[生命周期与实测](validation/progressive-memory-20261117/README.md)。
 
 2026-11-17（L形柜门）：组件柜foldDoor沿原构造器派生刚性双轴门片；二维、三维、实体与完整分段扫掠共用cabinet-builder核心。原mutate/撤销/保存及v92项目、仓库、缓存保持单通道；同宿主板件及抽屉交互加入适用核对，不改变旧门组。见[CABINET-FOLD-DOOR.md](CABINET-FOLD-DOOR.md)。

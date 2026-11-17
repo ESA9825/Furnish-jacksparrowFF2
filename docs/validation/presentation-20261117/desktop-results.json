@@ -1,0 +1,21 @@
+{
+  "results": [
+    {
+      "mode": "desktop",
+      "passed": true,
+      "editing": true,
+      "real2D3DCapture": true,
+      "viewRecall": true,
+      "reorderDeleteUndo": true,
+      "saveReload": true,
+      "portableProject": true,
+      "ownerContractor": true,
+      "staleImageOmitted": true,
+      "confirmationInvalidation": true,
+      "narrow": true,
+      "mcp": true,
+      "errors": []
+    }
+  ],
+  "originalWorkspaceUnchanged": true
+}

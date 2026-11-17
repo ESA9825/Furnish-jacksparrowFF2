@@ -60,12 +60,17 @@
   if(name==='get_ceilings'){const source=revisionSource();return {revision:await revision(source),...ceilings()};}
   if(name==='list_catalog')return {items:catalog().filter(c=>!args.query||[...c.it,c.category].join(' ').toLowerCase().includes(args.query.toLowerCase())).map(({it,...c})=>({...c,type:it[0],name:it[1],w:it[2],d:it[3],h:FurnishCatalogData.itemHeight(it)??null,kind:FurnishProducts.kind(it[0]),assembly:FurnishKitchen.isLaundryAreaItem(it)}))};
   if(name==='get_furniture_parameters'){const source=revisionSource(),result=parameters(args.id);return {revision:await revision(source),...result};}
+  if(name==='get_presentation'){
+   const source=revisionSource(),plan=FurnishProject.effectivePlan(PLAN,state),presentation=FurnishPresentation.data(state),captures=[];
+   for(const page of presentation.pages)if(page.capture){const {image,...metadata}=page.capture;captures.push({pageId:page.id,...metadata,...FurnishPresentation.pageState(page,plan,state)});delete page.capture;}
+   return {revision:await revision(source),presentation,captures,sourceKey:FurnishPresentation.sourceKey(plan,state),releaseState:FurnishPresentation.releaseState(plan,state),limit:'pages中省略capture保留已有图片，null显式移除；采图使用capturePageId。已确认事项须有明确依据及当前sourceKey作为reviewKey；不自动确认。'};
+  }
   if(name==='get_camera')return {revision:await revision(),...await camera()};
   if(name==='take_screenshot'){visualReady();if(is3D())await window.View3D.automationReady();const source=revisionSource();await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));if(source!==revisionSource())throw Error('截图期间方案变化，请重试');return {revision:await revision(source),...await camera(),save:saving(),screenshotTarget:args.target||'viewport'};}
   if(name==='check_space'){const source=revisionSource(),result=space(args);return {revision:await revision(source),...result,save:saving()};}
   await assertRevision(args);
   if(name==='export_artifact')return exportArtifact(args);
-  if(['configure_product_info','configure_procurement','configure_cabinet_components','configure_building','rename_design','history_action'].includes(name))visualReady();
+  if(['configure_presentation','configure_product_info','configure_procurement','configure_cabinet_components','configure_building','rename_design','history_action'].includes(name))visualReady();
   if(name==='set_camera'){visualReady();if(args.focusIds?.some(id=>!getF(id)))throw Error('取景家具不存在');if(args.roomId&&!ROOMS.some(r=>r.id===args.roomId))throw Error('取景房间不存在');await setView(args.view);await assertRevision(args);if((is3D()?'3d':'2d')!==args.view)throw Error('视图切换失败');if(is3D())await window.View3D.automationCamera(args);return {viewChanged:true,undoable:false,revision:await revision(),...await camera()};}
   if(name==='switch_design')visualReady();
   await autosave.flush();await repositoryClient.flush();ready(true);
@@ -79,6 +84,21 @@
    FurnishProject.validateWork(target.work);
    designChanged=FurnishDesign.activeDesign(store,PLAN.id)?.id!==args.designId;
    if(designChanged&&!switchDesign(args.designId,{throwOnError:true}))throw Error('方案切换未完成，请重新读取当前状态');
+  }
+  else if(name==='configure_presentation'){
+   if(args.presentation===undefined&&!args.capturePageId&&!args.releaseLabel)throw Error('没有指定讲解修改、采图或版本动作');
+   const previous=FurnishPresentation.data(state),next=args.presentation===undefined?previous:clone(args.presentation);
+   if(args.presentation!==undefined){
+    if(!Array.isArray(next.pages))throw Error('讲解页须为数组');
+    for(const page of next.pages){if(!page||typeof page!=='object')throw Error('讲解页无效');if(page.capture===null)delete page.capture;else if(page.capture!==undefined)throw Error('不能通过讲解内容注入图片，请使用capturePageId');else{const captured=previous.pages.find(p=>p.id===page.id)?.capture;if(captured)page.capture=clone(captured);}}
+    // A release records this application's content, rather than caller-supplied fingerprints.
+    if(next.release!==undefined&&FurnishPresentation.fingerprint(next.release)!==FurnishPresentation.fingerprint(previous.release))throw Error('请使用releaseLabel记录版本');
+    if(previous.release)next.release=clone(previous.release);
+   }
+   FurnishPresentation.validate(next);
+   if(args.capturePageId){const page=next.pages.find(p=>p.id===args.capturePageId);if(!page)throw Error('采图讲解页不存在');page.capture=await FurnishPresentationUI.capture();await assertRevision(args);}
+   if(args.releaseLabel)next.release={label:args.releaseLabel,createdAt:new Date().toISOString(),sourceKey:FurnishPresentation.documentKey(FurnishProject.effectivePlan(PLAN,state),{...state,presentation:next})};
+   FurnishPresentation.validate(next);mutate(()=>state.presentation=next);
   }
   else if(name==='copy_design')FurnishDesignUI.createDesign(args.name);
   else if(name==='rename_design'){const target=store.designs.find(d=>d.id===args.designId&&d.planId===PLAN.id&&d.editable);if(!target)throw Error('目标须为当前户型已有可编辑方案');FurnishDesignUI.renameDesign(args.designId,args.name);}

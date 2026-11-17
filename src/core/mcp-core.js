@@ -18,6 +18,8 @@
   {name:'check_space',description:'对当前桌面方案运行与工作台相同的空间核对，包括家具实体、开启空间和通道；返回问题与未知信息，不移动家具或标记已确认。',inputSchema:schema({focusIds:{type:'array',minItems:1,maxItems:100,items:string}}),annotations:{readOnlyHint:true}}
  ];
  tools.push(
+  command('get_presentation','读取方案讲解文字、关联对象、待确认事项、版本及采图状态；图片单独保存在方案中，默认不返回大块图像。',{}),
+  command('configure_presentation','更新完整讲解内容、采集指定页的当前正式画布或记录交付版本。沿原mutate一次撤销保存；先get_presentation保留页ID。presentation.pages的capture缺省保留原图、null显式移除，不接受外部图片；不自动编造设计意图或确认结论。',{...write,presentation:{type:'object',additionalProperties:true},capturePageId:string,releaseLabel:{type:'string',minLength:1,maxLength:80}},['planId','revision','requestId'],true),
   command('get_connection_status','只读检查stdio源码与活动桌面工具清单／保存状态是否一致，以及Blender精修工程是否登记；不打开或重启窗口。',{}),
   command('get_product_dossier','读取仓库已有产品asset.json档案及资料版本；不读取任意文件或联网。',{productId:{type:'string',pattern:'^[a-z0-9][a-z0-9-]{0,99}$'}},['productId']),
   command('archive_product_reference','将调用者已采集的完整来源链接、日期、备注和可选PNG/JPEG/WebP原图归档到已有产品档案，保留哈希／未知状态；不自动证明尺寸，不修改正式方案。须先读取dossierRevision，重试沿用requestId。',{productId:{type:'string',pattern:'^[a-z0-9][a-z0-9-]{0,99}$'},dossierRevision:{type:'string',pattern:'^[a-f0-9]{64}$'},requestId:string,sourceUrl:text(4000),capturedOn:text(10),note:text(10000),imageBase64:{type:'string',minLength:1,maxLength:2700000},imageType:{type:'string',enum:['png','jpeg','webp']}},['productId','dossierRevision','requestId'],true),

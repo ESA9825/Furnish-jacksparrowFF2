@@ -1,6 +1,6 @@
 # MCP 资料、采购、结构与成果工作流
 
-2026-11-17 按资料归档 → 采购 → 柜体 → 净距 → 成果 → 建筑 → 方案管理顺序补齐接口。当前 Furnish stdio 服务共 **33** 项工具；本轮新增16项。桌面、网页脚本和 stdio 都须使用同一版本；工具发现不代表当前聊天已重载。
+2026-11-17 按资料归档 → 采购 → 柜体 → 净距 → 成果 → 建筑 → 方案管理顺序补齐接口。该批补齐后为33项；加入[方案讲解与交付](PRESENTATION.md)的读取／配置后，当前共 **35** 项工具。桌面、网页脚本和 stdio 都须使用同一版本；工具发现不代表当前聊天已重载。
 
 ## 资料采集与归档
 
@@ -43,7 +43,7 @@
 | project | 原pack/unpack/previewPlan；包含本户型当前布置、方案／历史与家具库 |
 | quote_csv | 界面共用quoteRows，包含家具、地面、涂料和工程费用及价格依据 |
 | plan_svg / plan_png | 原preparePlanSVG清理编辑叠层、尺寸与标注；PNG沿原rasterSize限制 |
-| report_html | 原FurnishDesignUI.reportHTML；离线成果与可编辑项目，不自动附三维图 |
+| report_html | 原FurnishDesignUI.reportHTML；离线成果、有效已采集讲解图片与可编辑项目，不自动采集新三维图 |
 | scene_glb | 原View3D.blenderScene生产场景；可includeCeilings，无Cycles调用 |
 
 二维图导出前须在2D；GLB前先用set_camera切到3D并等待生产端态。导出前后核对revision；出现变化拒绝。桌面主进程只在固定 `.local/mcp-exports/` 写入，名称由请求ID／内容哈希和格式生成；返回文件路径、字节数、SHA256，不向工具回执塞大块base64。相同内容重试不覆盖不同文件，调用者不能选择任意写入路径。项目／文本成果最多30 MB，生产GLB独立上限256 MiB，避免把项目JSON限制误套到全屋几何；二进制编码采用线性规范化校验，避免大文件正则栈溢出。
