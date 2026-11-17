@@ -63,5 +63,19 @@ function setup(options={}){
   let writes=0,drops=0;const statuses=[];
   const retry=create({writeCache:()=>{if(++writes===1)throw Error('quota');},dropHistoryCache:()=>drops++,writeStore:()=>Promise.reject(Error('offline')),isCurrent:()=>true,onChange:s=>statuses.push(s),onFailure:()=>assert.fail('cached save should not warn'),now:()=>7});
   await retry.save({updatedAt:1});assert.equal(writes,2);assert.equal(drops,1);assert.equal(statuses.at(-1).error,false);
+  // Motion edits coalesce before serialization; closing/manual save flushes synchronously.
+  const q=setup(),queued=q.saver.save(q.active,{defer:true});
+  assert.equal(q.cacheWrites,0);assert.equal(q.statuses.at(-1).pending,true);
+  q.active.updatedAt=2;q.active.work.name='latest';
+  const queued2=q.saver.save(q.active,{defer:true});assert.equal(queued2,queued);
+  q.saver.flush();assert.equal(q.cacheWrites,1);assert.equal(q.snapshots[0].work.name,'latest');
+  q.tasks[0].resolve();assert.deepEqual(await queued,{cached:true,durable:true});
+  const manual=setup(),scheduled=manual.saver.save(manual.active,{defer:true});
+  const direct=manual.saver.save(manual.active);assert.equal(manual.cacheWrites,1);
+  manual.tasks[0].resolve();await direct;await scheduled;assert.equal(manual.cacheWrites,1);
+  const erasedQueue=setup(),discarded=erasedQueue.saver.save(erasedQueue.active,{defer:true});
+  erasedQueue.saver.invalidate();await discarded;erasedQueue.saver.flush();assert.equal(erasedQueue.cacheWrites,0);
+  const replacedQueue=setup(),obsoleteQueue=replacedQueue.saver.save(replacedQueue.active,{defer:true});
+  replacedQueue.active={updatedAt:1};replacedQueue.saver.flush();await obsoleteQueue;assert.equal(replacedQueue.cacheWrites,0);
   console.log('PASS autosave fallback, snapshots, obsolete callbacks and invalidation');
 })().catch(error=>{console.error(error);process.exitCode=1;});

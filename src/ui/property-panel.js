@@ -72,6 +72,7 @@ function renderFab(){
     ? `<div class="fab-primary"><span class="name">${f ? esc(nm(f.name)) : tr(`已选 ${ids.length} 件`, `${ids.length} selected`)}</span>`
       + (f?`<button class="btn fab-size" data-fab-edit="size" aria-haspopup="dialog" aria-expanded="false" ${furnitureLocked(f)||furnitureError(f)?'disabled':''} title="${furnitureUsesDetailedDesign(f)?tr('打开柜体详细设计','Open cabinet designer'):tr('调整尺寸与离地高度','Edit dimensions and elevation')}"><b>${Number(FurnishProducts.dimensions(f).w.toFixed(2))} × ${Number(FurnishProducts.dimensions(f).d.toFixed(2))}${FurnishProducts.definition(f)?.wallRecess?' × '+Number(FurnishProducts.height(f).toFixed(2)):''}</b><small>mm · ${furnitureUsesDetailedDesign(f)?tr('详细设计','Design'):tr('尺寸','Size')}</small></button>`:'')
       + `<button class="btn" data-fab-edit="distance" aria-haspopup="dialog" aria-expanded="false" ${selItems().some(v=>furnitureError(v))?'disabled':''}>${tr('四向净距','Clearances')}</button></div><div class="fab-actions">`
+      + (is3D()?`<button class="btn ${ui.sceneMove?'on':''}" data-scene-move aria-pressed="${!!ui.sceneMove}">${ui.sceneMove?tr('结束移动','Finish moving'):tr('移动','Move')}</button>`:'')
       + b('rotL', 'rotL', tr('逆时针 90°', 'Rotate left')) + b('rotR', 'rotR', tr('顺时针 90°', 'Rotate right')) + b('flip', 'flip', tr('镜像', 'Mirror'))
       + (ids.length>1?`<button class="btn" data-act="${selItems().every(f=>f.groupId&&f.groupId===selItems()[0].groupId)?'ungroup':'group'}">${selItems().every(f=>f.groupId&&f.groupId===selItems()[0].groupId)?tr('解组','Ungroup'):tr('打组','Group')}</button>`:'')
       + b('lock', selItems().every(x => furnitureLocked(x)) ? 'lock' : 'unlock', tr('锁定 / 解锁', 'Lock / unlock')) + b('dup', 'copy', tr('复制一份', 'Duplicate')) + b('del', 'trash', tr('删除', 'Delete'), 'danger')
@@ -79,6 +80,7 @@ function renderFab(){
       + `<span class="sep"></span><button class="btn" data-act="prop">${tr('属性','Properties')}</button><button class="btn" data-act="done">${tr('完成','Done')}</button></div>`
     : `<div class="fab-primary"><span class="name">${esc(nm(state.rooms[r.id].name))}</span>${r.counted!==false?'<button class="btn" data-tiling-open aria-haspopup="dialog">铺砖</button>':''}</div><div class="fab-actions"><button class="btn" data-act="roomFurn">${tr('选中房间内家具','Select its furniture')}</button><button class="btn narrow-only" data-act="prop">${tr('地面 / 属性','Floor / Properties')}</button><button class="btn" data-act="done">${tr('完成','Done')}</button></div>`;
   fab.classList.add('show');
+  const move=fab.querySelector('[data-scene-move]');if(move)move.onclick=()=>{ui.sceneMove=!ui.sceneMove;window.View3D?.sync();renderFab();};
   fab.querySelectorAll('[data-fab-edit]').forEach(b=>b.onclick=()=>openFabEditor(b.dataset.fabEdit));
   queueFabPosition();
 }

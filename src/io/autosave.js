@@ -5,9 +5,21 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function(){
   'use strict';
   function create({writeCache, dropHistoryCache, writeStore, isCurrent, onChange, onFailure, now = Date.now}){
-    let generation = 0;
-    function invalidate(){ generation++; }
-    function save(value){
+    // Motion edits may yield to the scene first. Keep one latest workspace,
+    // while normal saves and lifecycle flushes still serialize synchronously.
+    let generation = 0, queued = null, timer = null;
+    function cancelQueued(){clearTimeout(timer);timer=null;const job=queued;queued=null;return job;}
+    function flush(){const job=cancelQueued();if(!job)return; if(!isCurrent(job.value,job.version)){job.resolve({cached:false,durable:false});return;}const task=save(job.value);task.then(job.resolve);return task;}
+    function invalidate(){ generation++;const job=cancelQueued();job?.resolve({cached:false,durable:false}); }
+    function save(value,{defer=false}={}){
+      if(defer){
+        ++generation;
+        if(!queued){let resolve;const promise=new Promise(r=>resolve=r);queued={promise,resolve};}
+        Object.assign(queued,{value,version:value.updatedAt});
+        onChange({error:false,pending:true,savedAt:0});
+        clearTimeout(timer);timer=setTimeout(flush,120);return queued.promise;
+      }
+      const waiting=cancelQueued();
       const token = ++generation, version = value.updatedAt;
       const json = JSON.stringify(value), savedAt = now();
       let cached = false;
@@ -25,7 +37,7 @@
       let task;
       try { task = writeStore(value); }
       catch(e) { task = Promise.reject(e); }
-      return Promise.resolve(task).then(() => {
+      const result = Promise.resolve(task).then(() => {
         publish(false, false);
         return {cached, durable:true};
       }, error => {
@@ -33,8 +45,10 @@
         if(!cached && current()) onFailure(error);
         return {cached, durable:false};
       });
+      if(waiting)result.then(waiting.resolve);
+      return result;
     }
-    return {save, invalidate};
+    return {save, invalidate, flush};
   }
   return {create};
 });

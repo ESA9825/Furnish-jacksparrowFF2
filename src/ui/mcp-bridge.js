@@ -68,7 +68,7 @@
   if(['configure_product_info','configure_procurement','configure_cabinet_components','configure_building','rename_design','history_action'].includes(name))visualReady();
   if(name==='set_camera'){visualReady();if(args.focusIds?.some(id=>!getF(id)))throw Error('取景家具不存在');if(args.roomId&&!ROOMS.some(r=>r.id===args.roomId))throw Error('取景房间不存在');await setView(args.view);await assertRevision(args);if((is3D()?'3d':'2d')!==args.view)throw Error('视图切换失败');if(is3D())await window.View3D.automationCamera(args);return {viewChanged:true,undoable:false,revision:await revision(),...await camera()};}
   if(name==='switch_design')visualReady();
-  await repositoryClient.flush();ready(true);
+  await autosave.flush();await repositoryClient.flush();ready(true);
   await assertRevision(args);ready(true);
   let addedIds,designChanged;
   if(['add_furniture','add_furniture_batch'].includes(name)&&FurnishLayers.list(state).some(l=>l.id==='0'&&l.locked))throw Error('默认图层已锁定，请先解锁');
@@ -132,7 +132,7 @@
    const preview=clone(state);for(const next of candidates)Object.assign(preview.furniture.find(f=>f.id===next.id),next);normalizeFurnitureEdit(preview,state);FurnishLayers.assertEditable(state,preview);FurnishProject.validateWork(preview);FurnishProject.validatePlanWork(PLAN,preview);
    mutate(()=>{for(const next of candidates)Object.assign(getF(next.id),next);});
   }
-  let saveError=null;try{await repositoryClient.flush();}catch(e){saveError=e.message;}
+  let saveError=null;try{await autosave.flush();await repositoryClient.flush();}catch(e){saveError=e.message;}
   const result={applied:name==='switch_design'?designChanged:true,persisted:!saveError&&!repositoryClient.blocked&&repositoryClient.status.mode==='saved',...(saveError?{saveError}:{}),...(addedIds?{addedIds}:{}),...(['copy_design','switch_design','rename_design'].includes(name)?{undoable:false}:{}),...(name==='switch_design'?{designChanged}:{}),...await read()};
   toast(name==='copy_design'?'MCP 已复制当前方案':name==='switch_design'?(designChanged?'MCP 已切换方案':'MCP 当前已是目标方案'):'MCP 已应用调整，可使用撤销');return result;
  }

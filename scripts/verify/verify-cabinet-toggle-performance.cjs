@@ -9,8 +9,8 @@ const V=require('../lib/browser-verification.cjs'),root=V.projectRoot,out=path.j
  const iterations=process.argv.includes('--smoke')?2:4;
  const baselineIndex=process.argv.indexOf('--baseline-ref'),baselineRef=baselineIndex<0?null:process.argv[baselineIndex+1];
  if(baselineIndex>=0&&(!baselineRef||baselineRef.startsWith('-')))throw Error('--baseline-ref requires a Git revision');
- const baseline=baselineRef?require('node:child_process').execFileSync('git',['show',baselineRef+':src/core/ceiling-core.js'],{cwd:root,encoding:'utf8'}):null;
- const baselineProject=baselineRef?require('node:child_process').execFileSync('git',['show',baselineRef+':src/core/project-core.js'],{cwd:root,encoding:'utf8'}):null;
+ const baseline=baselineRef?require('node:child_process').execFileSync('git',['show',baselineRef+':src/core/ceiling-core.js'],{cwd:root,encoding:'utf8',maxBuffer:32*1024*1024}):null;
+ const baselineProject=baselineRef?require('node:child_process').execFileSync('git',['show',baselineRef+':src/core/project-core.js'],{cwd:root,encoding:'utf8',maxBuffer:32*1024*1024}):null;
  if(process.argv.includes('--core-only')){
   if(!baseline)throw Error('--core-only requires --baseline-ref');
   const Module=require('node:module'),filename=path.join(root,'src/core/ceiling-baseline.cjs'),mod=new Module(filename,module);mod.filename=filename;mod.paths=module.paths;mod._compile(baseline,filename);
@@ -24,6 +24,7 @@ const V=require('../lib/browser-verification.cjs'),root=V.projectRoot,out=path.j
   const context=await browser.newContext({viewport:{width:1500,height:1000},offline:mode==='file'}),page=await context.newPage(),errors=[];
   if(legacy)await page.route('**/src/core/ceiling-core.js',route=>route.fulfill({body:baseline,contentType:'text/javascript'}));
   if(legacy)await page.route('**/src/core/project-core.js',route=>route.fulfill({body:baselineProject,contentType:'text/javascript'}));
+  if(legacy&&process.argv.includes('--interaction-baseline')){for(const file of ['src/app.js','src/io/autosave.js','src/render/plan-renderer.js','src/ui/cabinet-builder.js','src/ui/furniture-actions.js','src/ui/property-panel.js']){const body=require('node:child_process').execFileSync('git',['show',baselineRef+':'+file],{cwd:root,encoding:'utf8',maxBuffer:32*1024*1024});await page.route('**/'+file,route=>route.fulfill({body,contentType:'text/javascript'}));}const body=require('node:child_process').execFileSync('git',['show',baselineRef+':index.html'],{cwd:root,encoding:'utf8',maxBuffer:32*1024*1024});await page.route(server.baseURL,route=>route.fulfill({body,contentType:'text/html'}));}
   page.on('pageerror',e=>errors.push(e.message));await context.addInitScript(ws=>{if(!localStorage.getItem('toggle-fixture-loaded')){localStorage.setItem('huxing-design-v'+ws.v,JSON.stringify(ws));localStorage.setItem('toggle-fixture-loaded','1');}},workspace);
   await page.goto(mode==='file'?pathToFileURL(path.join(root,'index.html')).href:server.baseURL);await page.locator('#repository-loading').waitFor({state:'hidden'});
   await page.getByRole('button',{name:'3D 场景',exact:true}).click();await page.waitForFunction(()=>is3D()&&!switching,{},{timeout:90000});await page.waitForTimeout(1500);
@@ -47,6 +48,28 @@ const V=require('../lib/browser-verification.cjs'),root=V.projectRoot,out=path.j
   },iterations);
   // A double click with a cabinet selected must never open structural editing.
   await page.evaluate(()=>{const original=FurnishCabinetBuilderUI.open;let opened=0;FurnishCabinetBuilderUI.open=()=>opened++;try{const canvas=document.querySelector('#stage canvas');if(!canvas)throw Error('missing scene canvas');canvas.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,clientX:0,clientY:0}));if(opened)throw Error('double click opened cabinet editor');}finally{FurnishCabinetBuilderUI.open=original;}});
+  if(!legacy&&process.argv.includes('--interaction-check')){
+   await page.evaluate(id=>{ui.sceneMove=false;selectIds([id]);},result.rows[0].id);
+   await page.waitForTimeout(50);
+   assert(await page.evaluate(()=>!ui.sceneMove&&!document.querySelector('.scene-transform:not([hidden])')),'selection must not enable move handles');
+   const fixedSelection=await page.evaluate(()=>snap());await page.keyboard.press('ArrowUp');assert.equal(await page.evaluate(()=>snap()),fixedSelection,'keyboard must not move before manual mode');
+   await page.locator('[data-scene-move]').click();
+   await page.waitForFunction(()=>ui.sceneMove&&!!document.querySelector('.scene-transform:not([hidden])'));
+   await page.screenshot({path:path.join(out,mode+'-manual-move.png')});
+   const beforeMove=await page.evaluate(()=>snap());
+   await page.locator('[data-transform-axis="x"]').press('ArrowUp');
+   assert.notEqual(await page.evaluate(()=>snap()),beforeMove,'manual move must change position');
+   await page.evaluate(()=>undo());assert.equal(await page.evaluate(()=>snap()),beforeMove,'manual move undo');
+   if(await page.evaluate(()=>!!ui.sceneMove))await page.locator('[data-scene-move]').click();
+   await page.waitForFunction(()=>!ui.sceneMove&&!document.querySelector('.scene-transform:not([hidden])'));
+   await page.evaluate(()=>{
+    const f=state.furniture.find(f=>f.kitchen?.modules.some(m=>m.role==='drawer')&&!furnitureLocked(f))||state.furniture.find(f=>f.cabinet?.columns?.some(c=>c.drawers?.length)&&!furnitureLocked(f));
+    if(!f)throw Error('missing drawer fixture');const before=snap(),column=f.kitchen?f.kitchen.modules.findIndex(m=>m.role==='drawer'):f.cabinet.columns.findIndex(c=>c.drawers?.length);
+    FurnishCabinetBuilderUI.toggleScene(f.id,{column,drawer:0});if(snap()===before)throw Error('drawer did not open');undo();if(snap()!==before)throw Error('drawer immediate undo mismatch');
+   });
+   await page.evaluate(()=>{const before=snap();const f=selItems()[0],part={column:f.cabinet.columns.findIndex(c=>c.door!=='none')};FurnishCabinetBuilderUI.toggleScene(f.id,part);if(snap()===before)throw Error('toggle failed');if(!savePending)throw Error('motion save should be queued');dispatchEvent(new Event('pagehide'));if(JSON.stringify(JSON.parse(localStorage.getItem(STORE)).work[PLAN.id].furniture)!==JSON.stringify(state.furniture))throw Error('pagehide did not flush current furniture');undo();if(snap()!==before)throw Error('immediate undo failed');autosave.flush();});
+   await V.configuration().waitForCache(page);
+  }
   const {profile}=await session.send('Profiler.stop');fs.writeFileSync(path.join(out,mode+'-profile.json'),JSON.stringify(profile));
   await V.configuration().waitForCache(page);await page.reload();await page.locator('#repository-loading').waitFor({state:'hidden'});const restored=await page.evaluate(()=>snap());
   fs.writeFileSync(path.join(out,mode+'-restore.json'),JSON.stringify({before:JSON.parse(result.expected),after:JSON.parse(restored)}));

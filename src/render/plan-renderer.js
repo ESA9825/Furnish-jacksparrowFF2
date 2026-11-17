@@ -586,7 +586,16 @@ function renderArchitecturePreview(plan,dimension){
   try{({walls:WALLS,wins:WINS,doors:DOORS,slides:SLIDES,rooms:ROOMS}=plan);renderWalls();renderRooms();renderOpenings();renderSel();$('#gOpen').insertAdjacentHTML('beforeend',openingDimensionSVG(dimension));}
   finally{[WALLS,WINS,DOORS,SLIDES,ROOMS]=actual;}
 }
-function renderAll(){
+let deferredRenderFrame=null,deferredRenderTimer=null;
+function renderAll({sceneFirst=false}={}){
+  cancelAnimationFrame(deferredRenderFrame);clearTimeout(deferredRenderTimer);
+  // Present the production pose before expensive panel checks; bursts share
+  // one derived UI refresh. Ordinary edits/undo cancel this pending refresh.
+  if(sceneFirst&&is3D()){
+    window.View3D?.sync();
+    deferredRenderFrame=requestAnimationFrame(()=>{deferredRenderTimer=setTimeout(()=>renderAll(),120);});
+    return;
+  }
   window.FurnishWorkspace?.clearOpeningPreview(false);
   window.FurnishDesignUI?.clearPlacementGuide();
   syncCustomArchitecture();

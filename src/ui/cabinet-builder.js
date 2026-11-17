@@ -164,6 +164,6 @@ host.querySelector('[data-builder-zone-parent]')?.addEventListener('click',()=>c
   }});
  }
  function upgrade(id){try{const original=getF(id),draft=FurnishCabinetBuilder.upgrade(original,{referencePrice:priceOf(original)});open(id,{draft});}catch(e){toast(e.message);}}
- function toggleScene(id,part){const f=getF(id);if(!f||furnitureLocked(f))return;try{const next=f.kitchen?FurnishKitchen.toggle(f,part.column,part.drawer,undefined,part.leaf,part.bay,part.lid,part.lane,part.section,part.componentId,part.sourceSection):FurnishCabinet.toggle(f,part.column,part.drawer,part.lid,part.lane,part.section,part.leaf,part.tier,part.componentId);mutate(()=>Object.assign(f,next));}catch(e){toast(e.message);}}
+ function toggleScene(id,part){const f=getF(id);if(!f||furnitureLocked(f))return;try{const next=f.kitchen?FurnishKitchen.toggle(f,part.column,part.drawer,undefined,part.leaf,part.bay,part.lid,part.lane,part.section,part.componentId,part.sourceSection):FurnishCabinet.toggle(f,part.column,part.drawer,part.lid,part.lane,part.section,part.leaf,part.tier,part.componentId);mutate(()=>Object.assign(f,next),{sceneFirst:true});}catch(e){toast(e.message);}}
  root.FurnishCabinetBuilderUI={open,upgrade,toggleScene,mountShell,focusInspector,disclosures,restoreDisclosures,libraryItems,placement,componentInspector,componentTree,workspaceTools,previewDoors};
 })(typeof globalThis!=='undefined'?globalThis:this);

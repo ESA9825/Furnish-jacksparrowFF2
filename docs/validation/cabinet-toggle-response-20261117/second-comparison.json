@@ -1,0 +1,35 @@
+{
+  "baselineRef": "HEAD",
+  "workspaceSha256": "9265a499a4389241b6594ce4cbac3563cc7237b52f0edd69e1102eaa3292ca6b",
+  "exactSpaceCheckParity": true,
+  "comparison": [
+    {
+      "id": "fmv3w4m2a4",
+      "name": "主卧衣柜 · 活动区东侧",
+      "beforeMedian": 417.15000000596046,
+      "afterMedian": 209.89999999850988,
+      "fileMedian": 200.85000000149012
+    },
+    {
+      "id": "fmv3wzkb515",
+      "name": "次卧衣柜 · 双柜挂衣与明抽",
+      "beforeMedian": 370.70000000298023,
+      "afterMedian": 178.20000000298023,
+      "fileMedian": 175.95000000298023
+    },
+    {
+      "id": "fmv5b76h91",
+      "name": "玄关柜 · 洞洞板换鞋区",
+      "beforeMedian": 431.15000000596046,
+      "afterMedian": 243.59999999403954,
+      "fileMedian": 233.75
+    },
+    {
+      "id": "fmv9dos7j1",
+      "name": "橱柜台面",
+      "beforeMedian": 378.3500000014901,
+      "afterMedian": 200.60000000149012,
+      "fileMedian": 199.25000000745058
+    }
+  ]
+}

@@ -60,7 +60,7 @@
    const info=await request('/storage');
    openDialog({title:'保存位置与历史备份',wide:true,body:`<p>正式文件：<strong style="overflow-wrap:anywhere">${esc(info.file)}</strong></p><p>最后成功写入：${info.savedAt?esc(new Date(info.savedAt).toLocaleString()):'尚无正式文件'}</p><p>修改位置会复制正式文件、历史备份与恢复副本，原目录保留。目标有不同项目时停止迁移。</p><label>保存文件夹（完整路径）<input id="storage-directory" style="width:100%;box-sizing:border-box" value="${esc(info.directory)}"></label><p>自动保留${esc(info.retention)}。同盘历史用于找回旧版，请另行备份到其他磁盘。</p><p id="storage-feedback" role="status"></p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="storage-move">保存到此位置</button><button class="btn" id="storage-retry">重试文件保存</button></div><h3>自动历史备份</h3><p>恢复会替换整个工作区（含全部户型和命名方案），当前正式文件会先自动备份。</p><div id="storage-backups"></div>`,actions:[{label:'关闭'}]});
    const feedback=$('#storage-feedback');
-   async function flush(){if(!repositoryClient?.flush)throw Error('文件保存尚未就绪，请重启服务后刷新');await repositoryClient.flush();if(repositoryClient.blocked)throw Error('文件有冲突，请刷新后处理恢复副本');}
+   async function flush(){if(!repositoryClient?.flush)throw Error('文件保存尚未就绪，请重启服务后刷新');await autosave.flush();await repositoryClient.flush();if(repositoryClient.blocked)throw Error('文件有冲突，请刷新后处理恢复副本');}
    $('#storage-retry').onclick=async()=>{try{if(!repositoryClient?.retry)throw Error('请重启本地服务后刷新');await repositoryClient.retry();feedback.textContent='正式文件保存成功。';}catch(e){feedback.textContent=e.message;}};
    $('#storage-move').onclick=async()=>{
     const button=$('#storage-move');button.disabled=true;
@@ -89,7 +89,7 @@
    const next=await repositoryClient.initialize([repositoryInitialCache,saved,...FurnishWorkspaceCache.candidates({read:key=>localStorage.getItem(key),key:STORE})]);
    if(next){applyWorkspace(next);if(store.v>=7)store.v=Math.max(store.v,9);store._repository={revision:repositoryClient.revision,clean:await fingerprint(store)};await cache(store);}
    else{store._repository={revision:null};repositoryClient.schedule(store);}
-   window.FurnishRepository={flush:()=>repositoryClient.flush(),openRecoveries,openStorage};
+   window.FurnishRepository={flush:async()=>{await autosave.flush();return repositoryClient.flush();},openRecoveries,openStorage};
   }catch(e){
    // Do not mark a disconnected file store as saved, or overwrite any cache.
    if(C.workspaceVersions.includes(saved?.v)&&(saved.updatedAt||0)>(store.updatedAt||0))try{applyWorkspace(saved);}catch{/* Leave invalid data untouched for manual recovery. */}

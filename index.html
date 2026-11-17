@@ -789,7 +789,7 @@ function init(){
   let fdrag = null;
   // 多选时按住其中任一件可整组移动；锁定的家具不能拖
   host.addEventListener('pointerdown', e => {
-    if (sceneMeasure?.active() || e.target !== cv || !e.isPrimary || anim || opt.mode !== 'orbit' || e.shiftKey || spaceDown || e.button!==0) return;
+    if (!ui.sceneMove || sceneMeasure?.active() || e.target !== cv || !e.isPrimary || anim || opt.mode !== 'orbit' || e.shiftKey || spaceDown || e.button!==0) return;
     const ids = selIds(), h = pick(e), f = h?.fid && ids.includes(h.fid) && getF(h.fid), g = f && groundAt(e.clientX, e.clientY);
     if (!g) return;
     const items = selItems();
@@ -831,7 +831,7 @@ function init(){
     const h = pick(e);
     if(h?.teaBarDoor&&!e.shiftKey&&toggleTeaBarDoor(h.fid,h.teaBarDoor))return;
     if(h?.fid&&!e.shiftKey&&cycleFoldingTable(h.fid))return;
-    if (h?.cabinetPart){ window.selectIds([h.fid]);if($('#dlg').hidden)window.FurnishCabinetBuilderUI.toggleScene(h.fid,h.cabinetPart); }
+    if (h?.cabinetPart){ if($('#dlg').hidden)window.FurnishCabinetBuilderUI.toggleScene(h.fid,h.cabinetPart); }
     else if (h?.door){ if(!h.fid||!furnitureLocked(getF(h.fid)))toggleSlidingDoor(h); if(h.fid)window.selectIds([h.fid]); }
     else if (h?.fid) e.shiftKey ? window.toggleSel(h.fid) : window.selectIds([h.fid]);
     else if (h?.ceiling) window.FurnishCeilingUI.selectObject(h.ceiling);
@@ -1654,6 +1654,7 @@ async function enter(){
   globalThis.FurnishProgressiveView?.enter();
 }
 async function exit(){
+  ui.sceneMove=false;
   globalThis.FurnishProgressiveView?.exit();
   sceneMeasure?.set(false);
   cancelElevationGesture();
@@ -1743,7 +1744,7 @@ function furnitureScreenPoint(f){
  return at.z>=-1&&at.z<=1?{x:r.left+(at.x+1)*r.width/2,y:r.top+(1-at.y)*r.height/2}:null;
 }
 function updateSel(){
-  const replacing=!!globalThis.FurnishCatalog?.active(),ids = replacing?[]:selIds(),selection=JSON.stringify(ui.sel),key=selection+':'+replacing;
+  const replacing=!!globalThis.FurnishCatalog?.active(),ids = replacing?[]:selIds(),selection=JSON.stringify(ui.sel),key=selection+':'+replacing+':'+!!ui.sceneMove;
   if (key === selKey) return;
   selKey = key;
   if(sceneIssue&&sceneIssue.selection!==selection)clearSceneIssue();
@@ -1787,7 +1788,7 @@ function buildSelectionElevation(ids){
   const label=annotationLabel(elevationG,'',wx(at[0]),M(Math.min(...bottoms)),wz(at[1]),'scene-elevation scene-height-card scene-ceiling-height'),el=label.element,heading=document.createElement('small');heading.textContent=tr('吊顶 · 地砖完成面基准','Ceiling · finished floor datum');el.append(heading);
   for(const [name,value] of [[tr('底部距地砖','Above finished floor'),m.aboveFloor],[tr('底部距房顶','Underside to roof'),m.roofGap]]){const row=document.createElement('div'),text=document.createElement('span'),number=document.createElement('b');row.className='scene-height-row';text.textContent=name;number.textContent=format(value);row.append(text,number);el.append(row);}return;
  }
- if(ids.length)getSelectionTransform().setSelection(ids);
+ if(ids.length&&ui.sceneMove)getSelectionTransform().setSelection(ids);
 }
 
 function clearSceneIssue(){clearTimeout(issueTimer);sceneIssue=null;clearAnnotations(issueG);invalidate();}
@@ -2079,7 +2080,7 @@ function loop(){
   applyObservationLayers();
   labelRenderer.render(scene, camera);
   fitSceneAnnotationLabels();
-  selectionTransform?.update(active&&opt.furn&&!sceneMeasure?.active()&&!globalThis.FurnishTilePresetUI?.inspecting()&&opt.mode==='orbit'&&!anim);
+  selectionTransform?.update(!!ui.sceneMove&&active&&opt.furn&&!sceneMeasure?.active()&&!globalThis.FurnishTilePresetUI?.inspecting()&&opt.mode==='orbit'&&!anim);
   sceneMeasure?.update();
 }
 
@@ -2162,6 +2163,7 @@ function image(){if(globalThis.FurnishCatalog?.active())return null;if(globalThi
 function relang(){ syncWalkTexts(); if (inited){updateProjection();buildLabels();buildHeaterClearances();} }
 // 户型切换后：重算中心、清空缓存签名，进入时强制重建
 function replan(){
+  ui.sceneMove=false;
   clearObservation();
   clearSceneIssue();clearAnnotations(elevationG);selKey=null;
   capturedImage=null;capturedState='';
