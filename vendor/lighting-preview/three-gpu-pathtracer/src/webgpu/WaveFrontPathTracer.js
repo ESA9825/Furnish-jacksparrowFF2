@@ -508,8 +508,10 @@ export class WaveFrontPathTracer extends PathTracerBackend {
 				// Copy latest data to a new outputTarget to keep the appearance
 				// TODO: this full resolution copy runs every frame - remove it by writing terminated
 				// samples to both targets or gating the swap on devices that support read_write
-				renderer.copyTextureToTexture( this.outputTarget, this.prevOutputTarget );
+				if(!globalThis.FurnishPathTracerFeatures?.inPlaceOutput){
+				 renderer.copyTextureToTexture( this.outputTarget, this.prevOutputTarget );
 				[ this.outputTarget, this.prevOutputTarget ] = [ this.prevOutputTarget, this.outputTarget ];
+				}
 				logicKernel.prevOutputTarget = this.prevOutputTarget;
 				logicKernel.outputTarget = this.outputTarget;
 				logicKernel.sampleCountTarget = this.sampleCountTarget;
@@ -581,6 +583,7 @@ export class WaveFrontPathTracer extends PathTracerBackend {
 				traceShadowRayKernel.shadowRayIntersectionsStorage = shadowRayIntersectionsStorage;
 				this.dispatch( traceShadowRayKernel, shadowDispatchConverter.outputDispatch );
 
+				if(!globalThis.FurnishPathTracerFeatures?.noScatter){
 				// Step 5: walk the paths inside media for a capped number of steps
 				queueMediumWalksKernel.rayDataStorage = rayDataStorage;
 				queueMediumWalksKernel.mediumQueue = mediumQueue;
@@ -598,6 +601,7 @@ export class WaveFrontPathTracer extends PathTracerBackend {
 				mediumKernel.maxSubsurfaceBounces = this.maxSubsurfaceBounces;
 				mediumKernel.stepsPerPass = this.mediumStepsPerPass;
 				this.dispatch( mediumKernel, mediumDispatchConverter.outputDispatch );
+				}
 
 			}
 

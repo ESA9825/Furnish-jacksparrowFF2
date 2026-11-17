@@ -19,6 +19,9 @@ import { isAuxSurfaceFn } from '../../nodes/furnish-aux.wgsl.js';
 // Pure material evaluation and ray generation: terminated slots pull a recycled pixel and emit a
 // fresh camera ray; live slots evaluate the surface staged by LogicKernel, sample the bsdf, and
 // enqueue the next bounce ray plus the NEE shadow ray toward the light LogicKernel selected.
+
+function sceneKernelTag(strings,...values){const flags=globalThis.FurnishPathTracerFeatures?.features;const parts=Array.from(strings,s=>flags?.dispersion?.used===false?s.replace(/\bmaterialInfo\.dispersion\b/g,'0.0'):s);parts.raw=parts;return wgslTagFn(parts,...values);}
+
 export class MaterialKernel extends ComputeKernel {
 
 	constructor( ) {
@@ -53,7 +56,8 @@ export class MaterialKernel extends ComputeKernel {
 		const materialsStorage = contextProxy( 'bvhData.storage.materials' );
 		const transformsStorage = contextProxy( 'bvhData.storage.transforms' );
 
-		const fn = wgslTagFn/* wgsl */`
+		const furnishMediumTag=(strings,...values)=>{if(globalThis.FurnishPathTracerFeatures?.noScatter){const parts=Array.from(strings,s=>{s=s.replaceAll("let segmentInMedium = medium.inside;","let segmentInMedium = false;");s=s.replaceAll("input.walkPending == 0u","true");s=s.replaceAll("if ( scatterRec.isTransmissive && ! surface.thinWall && input.side > 0.0 )","if ( false )");s=s.replaceAll("if ( segmentInMedium || medium.inside )","if ( false )");s=s.replaceAll("if ( ! isTerminated && medium.inside )","if ( false )");return s.replaceAll('input.subsurfaceBounces','0u');});parts.raw=parts;return sceneKernelTag(parts,...values);}return sceneKernelTag(strings,...values);};
+		const fn = furnishMediumTag/* wgsl */`
 
 			fn compute(
 				seed: u32,

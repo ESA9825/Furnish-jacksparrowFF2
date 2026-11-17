@@ -6,7 +6,8 @@
     "three-mesh-bvh": "0.9.17",
     "oidn-webgpu": "0.6.0"
   },
-  "policy": "Pinned local ESM graph; import paths rewritten to local relative paths, including module workers. No runtime CDN.",
+  "patchSet": 1,
+  "policy": "Pinned local ESM graph; local imports and reproducible guarded Furnish kernel adaptations. No runtime CDN.",
   "weightsSource": "https://raw.githubusercontent.com/pissang/oidn-webgpu/main/weights/rt_hdr_alb_nrm_small.tza",
   "files": [
     {
@@ -141,7 +142,7 @@
     },
     {
       "path": "three-gpu-pathtracer/src/webgpu/WaveFrontPathTracer.js",
-      "sha256": "00fcddce80cc66c3542490f66ffb40bcaea98df40635d4de08a1f771b5979bd3",
+      "sha256": "7da6249ea2027237aa552bb7e627c3548c7fb0b5e21ef926208e85cf0cb81f92",
       "sourceSha256": "d759a30e197aad830f2691f3401d047ae34ebb876d12b98e1d1c95ea180a6007"
     },
     {
@@ -181,7 +182,7 @@
     },
     {
       "path": "three-gpu-pathtracer/src/webgpu/materials/GltfCompliantMaterial.js",
-      "sha256": "72377067a481c2e4ead1370a7daef63366eddd08f08c7d29961117921a92f561",
+      "sha256": "c66d503b2a6e984d6ab9c25ed84040b7c91aababa0a95c4d6c1ecb0d691f600f",
       "sourceSha256": "7d7205f1387f9af0da5674c3ae46db915283639f92d7096fb624800f6e9aebd4"
     },
     {
@@ -456,7 +457,7 @@
     },
     {
       "path": "three-gpu-pathtracer/src/webgpu/nodes/material.wgsl.js",
-      "sha256": "bd9e7ba9eaf3f2427b1929e63e4a77df482a704c008d4f417e96e776c5457690",
+      "sha256": "46e56c8baceae86d2809fc5e545371d2909aa96e0748636b27f2b83625e6cbdc",
       "sourceSha256": "5ced2b626f63bd8e883e22d377284642673bc04673595db0d00b36cfd8af1dfd"
     },
     {
@@ -471,12 +472,12 @@
     },
     {
       "path": "three-gpu-pathtracer/src/webgpu/compute/wavefront/LogicKernel.js",
-      "sha256": "bb87eaaaca84ac1537389db33bdf65afb0a80b72ca6fa3fb2cb87f7406825c9d",
+      "sha256": "8d1395374c67f20c9875aa302ce0c2d5871e8a8f7513cbf7137cf7911ea7d254",
       "sourceSha256": "b38d458f63d96dfea9ba67ddf97315b5bd29c46a6bb239ab938efd1634e9727a"
     },
     {
       "path": "three-gpu-pathtracer/src/webgpu/compute/wavefront/MaterialKernel.js",
-      "sha256": "011daf1e05476f78c3624ae058d0b06fd433b9292f5ef44ad0e3b91d452f26af",
+      "sha256": "f86edb9fabce7960f7b7900649804a4f3b346f39a819b7a78c8e91092bbc48e7",
       "sourceSha256": "793dec9514254c217e6d2f467a9432b6e813c41a5f0ccc13539d43f036efc63c"
     },
     {

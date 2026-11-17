@@ -31,7 +31,7 @@ export class LogicKernel extends ComputeKernel {
 
 			// targets
 			prevOutputTarget: textureStore( createOutputTarget() ).toReadOnly(),
-			outputTarget: textureStore( createOutputTarget() ).toWriteOnly(),
+			outputTarget: globalThis.FurnishPathTracerFeatures?.inPlaceOutput ? textureStore( createOutputTarget() ).toReadWrite() : textureStore( createOutputTarget() ).toWriteOnly(),
 			sampleCountTarget: textureStore( createSampleCountTarget() ).toReadWrite(),
 
 			// the per pixel first hit albedo and normal, as running means like the color
@@ -71,7 +71,9 @@ export class LogicKernel extends ComputeKernel {
 		const selectLightFn = proxyFn( 'lightsInfo.value.selectLight', params );
 		const isLightVisibleToCameraFn = proxyFn( 'lightsInfo.value.isLightVisibleToCamera', params );
 
-		const fn = wgslTagFn/* wgsl */`
+		const furnishMediumTag=(strings,...values)=>{if(globalThis.FurnishPathTracerFeatures?.noScatter){const parts=Array.from(strings,s=>{s=s.replaceAll("let isWalking = ! isTerminated && input.walkPending != 0u;","let isWalking = false;");s=s.replaceAll("input.mediumScattered == 0u","true");return s.replaceAll('input.subsurfaceBounces','0u');});parts.raw=parts;return wgslTagFn(parts,...values);}return wgslTagFn(strings,...values);};
+		const accumulationTarget=globalThis.FurnishPathTracerFeatures?.inPlaceOutput?params.outputTarget:params.prevOutputTarget;
+		const fn = furnishMediumTag/* wgsl */`
 
 			fn compute(
 				// settings
@@ -376,7 +378,7 @@ export class LogicKernel extends ComputeKernel {
 
 					// blend the finished sample into the output and free the slot for a new camera ray
 					let sampleCount = storedSamples + 1;
-					let prevColor = textureLoad( ${ params.prevOutputTarget }, colorIndex );
+					let prevColor = textureLoad( ${ accumulationTarget }, colorIndex );
 					let blendedColor = ${ weightedAlphaBlendFn }( prevColor, resultColor, 1.0 / f32( sampleCount ) );
 					textureStore( ${ params.sampleCountTarget }, indexUV, vec4( ${ SAMPLE_DISPATCHED_FLAG }u | sampleCount ) );
 					textureStore( ${ params.outputTarget }, colorIndex, blendedColor );

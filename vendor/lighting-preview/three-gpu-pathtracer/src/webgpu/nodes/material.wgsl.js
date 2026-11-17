@@ -133,7 +133,18 @@ const ensureValidViewNormal = wgslTagFn/* wgsl */`
 // clamps to zero for any path pdf when the inverted filter value is this large.
 export const FILTER_GLOSSY_DISABLED = 3.402823466e38;
 
-export const getSurfaceRecordFunc = ( sampleTexel, getUvFromChannel, getColor ) => wgslFn( /* wgsl */ `
+
+function sceneSurfaceFn(code,...includes){
+ const features=globalThis.FurnishPathTracerFeatures?.features;
+ const maps={sheen:['sheenColorMap','sheenRoughnessMap'],iridescence:['iridescenceMap','iridescenceThicknessMap'],anisotropy:['anisotropyMap'],clearcoat:['clearcoatMap','clearcoatNormalMap','clearcoatRoughnessMap'],transmission:['transmissionMap']};
+ if(features)for(const [key,fields] of Object.entries(maps))if(features[key]?.used===false){code=code.replace(new RegExp('\\bmaterial\\.'+key+'\\b','g'),'0.0');for(const field of fields)code=code.replace(new RegExp('\\bmaterial\\.'+field+'\\b','g'),'-1');}
+ if(true)for(const [key,info] of Object.entries(globalThis.FurnishPathTracerFeatures?.textures||{}))if(info.used===false)code=code.replace(new RegExp('\\bmaterial\\.'+key+'\\b','g'),'-1');
+ if(features?.anisotropy?.used===false)code=code.replace(/\bmaterial\.anisotropyRotation\b/g,'0.0');
+ return wgslFn(code,...includes);
+}
+function sceneTransmissionTag(strings,...values){const flags=globalThis.FurnishPathTracerFeatures?.features;const parts=Array.from(strings,s=>flags?.iridescence?.used===false?s.replace(/\bsurf\.iridescence\b/g,'0.0'):s);parts.raw=parts;return wgslTagFn(parts,...values);}
+
+export const getSurfaceRecordFunc = ( sampleTexel, getUvFromChannel, getColor ) => sceneSurfaceFn( /* wgsl */ `
 
 	fn getSurfaceRecord(
 		material: Material,
@@ -794,7 +805,7 @@ export const iridescentFresnelFunc = wgslFn( /* wgsl */ `
 // Reflection and transmission coefficients for the transmissive dielectric layer. The scalar
 // branch probability follows Cycles: choose between the two colored coefficients by their mean
 // energy while retaining the full RGB coefficient in the path throughput.
-export const transmissionFresnelFunc = ( iridescentFresnel = iridescentFresnelFunc ) => wgslTagFn/* wgsl */ `
+export const transmissionFresnelFunc = ( iridescentFresnel = iridescentFresnelFunc ) => sceneTransmissionTag/* wgsl */ `
 
 	fn transmissionFresnel( cosTheta: f32, surf: ${ surfaceRecordStruct } ) -> ${ transmissionFresnelStruct } {
 
@@ -885,7 +896,7 @@ export const fresnelCoatFunc = wgslFn( /* wgsl */ `
 // GGX Multibounce compensation using Turquin's method. Bakes the directional albedo of the
 // reflection lobe, optionally fresnel-weighted, and optionally including the refraction lobe
 // for the full transmissive bsdf. "eta" is the incident over transmitted ior ratio.
-export const turquinIntegralFn = outputTarget => wgslTagFn/* wgsl */ `
+export const turquinIntegralFn = outputTarget => sceneTransmissionTag/* wgsl */ `
 
 	fn albedo(
 		eta: f32,

@@ -42,6 +42,9 @@ async function run(data){
   });for(const o of remove)o.removeFromParent();
   for(const r of data.lighting.rects){const light=new T.RectAreaLight(new T.Color().fromArray(r.color),r.radiance,r.width,r.height);light.position.fromArray(r.position);light.quaternion.setFromRotationMatrix(new T.Matrix4().makeBasis(new T.Vector3().fromArray(r.u),new T.Vector3().fromArray(r.v),new T.Vector3().fromArray(r.normal).negate()));light.visibleToCameraRays=true;scene.add(light);}
   for(const r of data.lighting.spots){const light=new T.SpotLight(new T.Color().fromArray(r.color),r.intensity,r.distance,r.angle,r.penumbra,2);light.position.fromArray(r.position);light.target.position.fromArray(r.target);scene.add(light,light.target);}
+  // This iframe owns one immutable scene. Recompute features for each new
+  // snapshot; camera/size updates do not change its actual materials.
+  globalThis.FurnishPathTracerFeatures={...globalThis.FurnishProgressivePolicy.materialFeatures(scene),inPlaceOutput:navigator.gpu.wgslLanguageFeatures?.has('readonly_and_readwrite_storage_textures')===true};
   tracer=new WebGPUPathTracer(renderer);tracer.maxBounces=8;tracer.maxTransparentBounces=16;tracer.maxSamples=samples;tracer.minSamples=1;tracer.renderDelay=0;tracer.fadeDuration=0;tracer.asyncCompile=true;
   // Spend more work per settled-view submission, keeping all sampling and optical settings intact.
   tracer.frameBudget=1000000;tracer.targetFrameTime=32;

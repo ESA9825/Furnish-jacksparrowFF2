@@ -14,6 +14,12 @@ import { iorToF0Func, schlickFresnelFunc, schlickFresnelVecFunc, dielectricFresn
 const CLEARCOAT_IOR = float( 1.5 );
 const SINGULAR_EVENT_SCALE = float( 1e6 );
 
+
+function sceneWgsl(strings,...values){
+ const flags=globalThis.FurnishPathTracerFeatures?.features;
+ const parts=Array.from(strings,s=>{if(flags)for(const key of ['clearcoat','sheen','iridescence','anisotropy','transmission'])if(flags[key]?.used===false)s=s.replace(new RegExp('\\bsurf\\.'+key+'\\b','g'),'0.0');return s;});parts.raw=parts;return wgslTagFn(parts,...values);
+}
+
 export class GltfCompliantMaterial extends PathtracingMaterial {
 
 	constructor( options = {} ) {
@@ -50,7 +56,7 @@ export class GltfCompliantMaterial extends PathtracingMaterial {
 
 	getBsdfNode() {
 
-		this._bsdfEvalFunc = wgslTagFn/* wgsl */`
+		this._bsdfEvalFunc = sceneWgsl/* wgsl */`
 
 			// The material is organized as one scoped block per lobe in cascade order - clearcoat,
 			// sheen, transmission, specular, diffuse - each accumulating into a shared result and
@@ -478,7 +484,7 @@ export class GltfCompliantMaterial extends PathtracingMaterial {
 
 		const bsdfEvalFunc = this._bsdfEvalFunc;
 
-		this._bsdfEvalPdfNode = wgslTagFn/* wgsl */`
+		this._bsdfEvalPdfNode = sceneWgsl/* wgsl */`
 
 			fn bsdfEvalPdf( worldWo: vec3f, worldWi: vec3f, surf: ${ surfaceRecordStruct } ) -> ${ scatterRecordStruct } {
 

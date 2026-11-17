@@ -6,10 +6,21 @@ is required by the distributed application.
 
 Pinned versions, original/rewritten SHA-256 hashes and the OIDN weights source are
 in `manifest.json`. Package licenses and the weights' Apache 2.0 license are
-included. JavaScript changes are restricted to local relative import paths,
-including the BVH module worker; the Windows reserved basename `aux.wgsl.js` is
-published as `furnish-aux.wgsl.js` with matching imports. Application adaptations live in
-`src/render/lighting-preview.js`, outside the vendor source.
+included. Imports, including the BVH worker, use local relative paths; the Windows
+reserved basename `aux.wgsl.js` is published as `furnish-aux.wgsl.js`.
+
+Patch set 1 adds guarded Furnish kernel adaptations in five WebGPU modules.
+`scripts/lib/lighting-preview-patches.cjs` verifies the pinned rewritten source
+hashes before applying them, and the existing vendor script reproduces the output.
+The manifest retains original package hashes and records the adapted file hashes.
+Each isolated preview audits all actual materials before constructing its tracer:
+unused features and absent map slots become compile-time constants, while active
+or unknown features retain the generic implementation. Empty medium walks are
+skipped only when no material requests scattering. Read/write FP32 accumulation
+avoids a full-image copy per iteration only when the WGSL feature is available;
+other devices retain the two-texture path. The pixel pool owns at most one active
+path per pixel. Sampling, glass attenuation, clearcoat, physical parameters and
+OIDN are unchanged. See the [validation](../../docs/validation/progressive-kernel-20261117/README.md).
 
 To reproduce, use a separate directory with the exact package versions in the
 manifest, and run `node scripts/vendor-lighting-preview.cjs <node_modules>

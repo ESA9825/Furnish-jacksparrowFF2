@@ -5,13 +5,13 @@ module.exports=async(p,V)=>{
  const errors=[];p.on('pageerror',e=>errors.push(e.message));
  const call=(name,args={})=>p.evaluate(({name,args})=>FurnishMcp.execute(name,args),{name,args});
  const c=await call('get_current_plan');
- await call('configure_scene',{planId:c.plan.id,revision:c.revision,requestId:'schedule-night-'+Date.now(),settings:{night:true,lamps:true,cut:2.8,labels:false,wallNumbers:false,clearances:false}});
+ await call('configure_scene',{planId:c.plan.id,revision:c.revision,requestId:'schedule-night-'+Date.now(),settings:V.benchmark?.sceneSettings||{night:true,lamps:true,cut:2.8,labels:false,wallNumbers:false,clearances:false}});
  await p.setViewportSize({width:1640,height:1060});await p.locator('#tgLib').click();await p.locator('#tgPanel').click();
  await p.evaluate(()=>setView('3d'));await p.evaluate(()=>View3D.automationReady());
  await p.evaluate(camera=>View3D.automationCamera(camera),V.benchmark?.camera||{mode:'orbit',horizontalFov:70,position:{x:8410,y:6270,z:1660},target:{x:8410,y:3400,z:1880}});
  await p.evaluate(()=>View3D.automationReady());
  const snapshotMs=await p.evaluate(async()=>{FurnishProgressiveView.exit();const t=performance.now(),data=await View3D.progressiveScene();window.scheduleScene={...data,camera:View3D.progressiveState().camera};return performance.now()-t;});
- if(V.benchmark?.resolution)await p.evaluate(({width,height})=>{const c=scheduleScene.camera;c.aspect=width/height;c.projectionMatrix[0]=c.projectionMatrix[5]/c.aspect;scheduleScene.aspect=c.aspect;},V.benchmark.resolution);
+ if(V.benchmark?.resolution)await p.evaluate(({width,height,horizontalFov})=>{const c=scheduleScene.camera;c.aspect=width/height;if(horizontalFov!==undefined)c.projectionMatrix[5]=c.aspect/Math.tan(horizontalFov*Math.PI/360);c.projectionMatrix[0]=c.projectionMatrix[5]/c.aspect;scheduleScene.aspect=c.aspect;},V.benchmark.resolution);
  const candidate=fs.readFileSync(path.resolve(__dirname,'../../src/render/lighting-preview.js'),'utf8');
  const baseline=process.env.FURNISH_PROGRESSIVE_BASELINE?fs.readFileSync(process.env.FURNISH_PROGRESSIVE_BASELINE,'utf8'):candidate.replace('tracer.frameBudget=1000000;tracer.targetFrameTime=32;','');
  const reports=[];let source=baseline,labelNow='before';
@@ -47,7 +47,7 @@ module.exports=async(p,V)=>{
   // Compare final decoded pixels in-browser, without a lossy screenshot or a new imaging dependency.
   if(!await p.evaluate(()=>!!window.scheduleReference))await p.evaluate(png=>{window.scheduleReference=png;},pixels.png);
   else {
-   const diff=await p.evaluate(async png=>{async function read(url){const i=new Image();i.src=url;await i.decode();const c=document.createElement('canvas');c.width=i.width;c.height=i.height;const x=c.getContext('2d');x.drawImage(i,0,0);return x.getImageData(0,0,c.width,c.height).data;}const a=await read(scheduleReference),b=await read(png);let max=0,sum=0,changed=0;for(let i=0;i<a.length;i++){const d=Math.abs(a[i]-b[i]);sum+=d;max=Math.max(max,d);if(d)changed++;}return {max,mean:sum/a.length,changed,total:a.length};},pixels.png);
+   const diff=await p.evaluate(async({png,regions,width,height})=>{async function read(url){const i=new Image();i.src=url;await i.decode();const c=document.createElement('canvas');c.width=i.width;c.height=i.height;const x=c.getContext('2d');x.drawImage(i,0,0);return x.getImageData(0,0,c.width,c.height).data;}const a=await read(scheduleReference),b=await read(png);let max=0,sum=0,changed=0;for(let i=0;i<a.length;i++){const d=Math.abs(a[i]-b[i]);sum+=d;max=Math.max(max,d);if(d)changed++;}const result={max,mean:sum/a.length,changed,total:a.length};if(regions.length)result.regions=regions.map(r=>{const [x0,y0,x1,y1]=r.box.map((v,i)=>Math.max(0,Math.min(i%2?height:width,Math.round(v*(i%2?height:width)))));let sum=0,count=0,max=0;for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++)for(let c=0;c<3;c++){const d=Math.abs(a[(y*width+x)*4+c]-b[(y*width+x)*4+c]);sum+=d;count++;max=Math.max(max,d);}return {...r,mean:count?sum/count:0,max,pixels:count/3};});return result;},{png:pixels.png,regions:profile?.materialRegions||[],width:pixels.width,height:pixels.height});
    reports.at(-1).pixelDifference=diff;console.log('PIXELS '+JSON.stringify(diff));
   }
   await p.evaluate(()=>document.querySelector('#schedule-film').remove());
