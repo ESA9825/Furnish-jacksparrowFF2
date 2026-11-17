@@ -8,11 +8,15 @@ function switchDesign(id,{throwOnError=false}={}){
     const next=fixWork(JSON.parse(JSON.stringify(d.work)),PLAN);
     if(state.architecture)next.architecture=FurnishProject.protectOriginal(state.architecture,next.architecture);
     FurnishProject.validatePlanWork(PLAN,next);
-    FurnishDesign.preserveCurrentDesign(store,PLAN.id,fixWork(JSON.parse(snap()),PLAN));
-    save();snapshot(true,state,'切换方案前');
+    // Keep the outgoing design independent, then persist both works and the
+    // new binding together instead of serializing the whole workspace twice.
+    if(!FurnishDesign.activeDesign(store,PLAN.id))FurnishDesign.preserveCurrentDesign(store,PLAN.id,fixWork(JSON.parse(snap()),PLAN));
+    FurnishDesign.saveActiveDesign(store,PLAN.id,state);
+    snapshot(true,state,'切换方案前');
     (store.activeDesigns||={})[PLAN.id]=id;state=next;
     undoStack.length=redoStack.length=0;ui.sel=null;ui.mA=null;ui.mCur=null;hoverRoom='';
-    save();renderAll();renderDesigns();window.View3D?.replan();$('#fileMenu').open=false;
+    renderDesignBar();
+    save();renderAll({replan:true});renderHist();$('#fileMenu').open=false;
     toast(tr(`已切换到「${d.name}」`,`Switched to "${d.name}"`));
     return true;
   }catch(e){if(throwOnError)throw e;toast(e.message);}
@@ -20,10 +24,13 @@ function switchDesign(id,{throwOnError=false}={}){
 function renderDesignBar(){
   const host=$('#designBar');if(!host)return;
   const active=FurnishDesign.activeDesign(store,PLAN.id),rows=store.designs.filter(d=>d.planId===PLAN.id&&d.editable===true);
-  const key=JSON.stringify([PLAN.id,active?.id,rows.map(d=>[d.id,d.name]),LANG,repositoryBooting]);
+  // Preserve the native select while its popup closes (notably on macOS).
+  // The active value changes independently from the list of choices.
+  const key=JSON.stringify([PLAN.id,!!active,rows.map(d=>[d.id,d.name]),LANG,repositoryBooting]);
+  const select=host.querySelector('#design-select');if(select)select.value=active?.id||'';
   if(host.dataset.renderKey===key)return;host.dataset.renderKey=key;
   host.innerHTML=`<label class="design-picker"><span>${tr('方案','Design')} · ${rows.length}</span><select id="design-select" aria-label="${tr('切换方案','Switch design')}" ${repositoryBooting?'disabled':''}>${!active?`<option value="">${tr('当前布置','Current layout')}</option>`:''}${rows.map(d=>`<option value="${esc(d.id)}" ${d.id===active?.id?'selected':''}>${esc(d.name)}</option>`).join('')}</select></label><button class="btn" id="bar-create-design" ${repositoryBooting?'disabled':''}>${tr('＋ 新方案','＋ New')}</button><button class="btn" id="bar-manage-designs" ${repositoryBooting?'disabled':''}>${tr('管理','Manage')}</button>`;
-  $('#design-select').onchange=e=>{const id=e.target.value;e.target.value=active?.id||'';if(id)switchDesign(id);};
+  $('#design-select').onchange=e=>{const id=e.target.value;try{if(id)switchDesign(id);}finally{renderDesignBar();}};
   $('#bar-create-design').onclick=()=>window.FurnishDesignUI.editDesign('create',undefined,true);
   $('#bar-manage-designs').onclick=()=>window.FurnishDesignUI.designs();
 }

@@ -1,0 +1,106 @@
+{
+  "unit": "ms",
+  "measurement": "synchronous select change handler; excludes GPU progressive convergence and formal disk flush",
+  "baseline": [
+    {
+      "mode": "2d",
+      "ms": 248.90000000596046,
+      "saves": 2,
+      "replans": 2,
+      "retained": false
+    },
+    {
+      "mode": "2d",
+      "ms": 233.59999999403954,
+      "saves": 2,
+      "replans": 2,
+      "retained": false
+    },
+    {
+      "mode": "2d",
+      "ms": 238.30000001192093,
+      "saves": 2,
+      "replans": 2,
+      "retained": false
+    },
+    {
+      "mode": "2d",
+      "ms": 251.7999999821186,
+      "saves": 2,
+      "replans": 2,
+      "retained": false
+    },
+    {
+      "mode": "3d",
+      "ms": 644.5,
+      "saves": 2,
+      "replans": 2,
+      "retained": false
+    },
+    {
+      "mode": "3d",
+      "ms": 632,
+      "saves": 2,
+      "replans": 2,
+      "retained": false
+    },
+    {
+      "mode": "narrow",
+      "ms": 288.69999998807907,
+      "saves": 2,
+      "replans": 2,
+      "retained": false
+    }
+  ],
+  "optimized": [
+    {
+      "mode": "2d",
+      "ms": 130.19999998807907,
+      "saves": 1,
+      "replans": 1,
+      "retained": true
+    },
+    {
+      "mode": "2d",
+      "ms": 131.19999998807907,
+      "saves": 1,
+      "replans": 1,
+      "retained": true
+    },
+    {
+      "mode": "2d",
+      "ms": 130.2999999821186,
+      "saves": 1,
+      "replans": 1,
+      "retained": true
+    },
+    {
+      "mode": "2d",
+      "ms": 137.19999998807907,
+      "saves": 1,
+      "replans": 1,
+      "retained": true
+    },
+    {
+      "mode": "3d",
+      "ms": 302.19999998807907,
+      "saves": 1,
+      "replans": 1,
+      "retained": true
+    },
+    {
+      "mode": "3d",
+      "ms": 282.19999998807907,
+      "saves": 1,
+      "replans": 1,
+      "retained": true
+    },
+    {
+      "mode": "narrow",
+      "ms": 142.09999999403954,
+      "saves": 1,
+      "replans": 1,
+      "retained": true
+    }
+  ]
+}

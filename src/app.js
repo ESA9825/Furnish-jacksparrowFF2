@@ -70,7 +70,7 @@ store.customPlans = (Array.isArray(store.customPlans) ? store.customPlans : []).
   catch(e) { console.warn('Skipped invalid custom plan', e.message); return false; }
 });
 let customArchDraft = null, customArchPlanId = '';
-function syncCustomArchitecture(){
+function syncCustomArchitecture({replan=true}={}){
   if (!state.architecture) return;
   if (state.architecture.draft === customArchDraft && PLAN.id === customArchPlanId) return;
   const p = FurnishDraft.build(state.architecture.draft);
@@ -80,7 +80,7 @@ function syncCustomArchitecture(){
   const hiddenParents=(state.architecture.draft.zones||[]).map(z=>z.parent).filter(id=>!p.rooms.some(r=>r.id===id)&&state.rooms[id]);
   state.rooms = Object.fromEntries([...hiddenParents.map(id=>[id,state.rooms[id]]),...p.rooms.map(r => [r.id, state.rooms[r.id] || {name:r.name, mat:r.mat}])]);
   customArchDraft = state.architecture.draft; customArchPlanId = PLAN.id;
-  renderOpenings(); renderDims(); window.View3D?.replan();
+  renderOpenings(); renderDims(); if(replan)window.View3D?.replan();
 }
 function registerCustomWork(work){
   if (!work.architecture) return;

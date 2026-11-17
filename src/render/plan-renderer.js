@@ -587,25 +587,25 @@ function renderArchitecturePreview(plan,dimension){
   finally{[WALLS,WINS,DOORS,SLIDES,ROOMS]=actual;}
 }
 let deferredRenderFrame=null,deferredRenderTimer=null;
-function renderAll({sceneFirst=false}={}){
+function renderAll({sceneFirst=false,replan=false}={}){
   cancelAnimationFrame(deferredRenderFrame);clearTimeout(deferredRenderTimer);
   // Present the production pose before expensive panel checks; bursts share
   // one derived UI refresh. Ordinary edits/undo cancel this pending refresh.
-  if(sceneFirst&&is3D()){
+  if(sceneFirst&&!replan&&is3D()){
     window.View3D?.sync();
     deferredRenderFrame=requestAnimationFrame(()=>{deferredRenderTimer=setTimeout(()=>renderAll(),120);});
     return;
   }
   window.FurnishWorkspace?.clearOpeningPreview(false);
   window.FurnishDesignUI?.clearPlacementGuide();
-  syncCustomArchitecture();
+  syncCustomArchitecture({replan:!replan});
   applyOpeningOverrides(); renderOpenings(); ui.guides = null;
   // These layers only read the design; share one derivation within this draw.
   withCanvasPlan(()=>{
     renderGrid(); renderRooms(); renderFurn(); renderWalls(); renderLabels(); renderDims(); renderMeasure(); renderNotes(); renderSel();
     renderPanel(); updateHeader(); renderDesignBar();
   });
-  window.View3D?.sync();
+  if(replan)window.View3D?.replan();else window.View3D?.sync();
   window.FurnishWorkspace?.afterRender();
   window.FurnishWorkflowTools?.afterRender();
   window.FurnishDrawingUI?.afterRender();
