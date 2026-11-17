@@ -1,0 +1,1500 @@
+{
+  "inputSha256": "764a1d8ef2e67aa1112ff1f697453e6decec8d8a690d6addcd0f7fe8715ed283",
+  "camera": {
+    "mode": "orbit",
+    "position": {
+      "x": -558.5706385012991,
+      "y": 2151.0602257331584,
+      "z": 7489.457843910341
+    },
+    "target": {
+      "x": 10160.361590789227,
+      "y": 8831.374495413875,
+      "z": 127.63569380055961
+    },
+    "horizontalFov": 64.99999999999999
+  },
+  "rows": [
+    {
+      "label": "baseline",
+      "ms": 27522.80000001192,
+      "width": 1200,
+      "height": 846,
+      "samples": 256,
+      "snapshotMs": 699.7999999821186,
+      "pixelDifference": null,
+      "evidence": "progressive-deep-gpu-AGznus.noindex",
+      "traversalDepth": null,
+      "stackCapacity": null,
+      "kernels": {
+        "ResetSlotsKernel": {
+          "cpuMs": 73.40000000596046,
+          "calls": 1,
+          "gpuMs": 0.786432,
+          "measured": 1
+        },
+        "ZeroOutBufferKernel": {
+          "cpuMs": 26.600000083446503,
+          "calls": 6582,
+          "gpuMs": 15.26988799999998,
+          "measured": 1623
+        },
+        "PopulatePixelIndicesKernel": {
+          "cpuMs": 0.5999999940395355,
+          "calls": 2,
+          "gpuMs": 1.245184,
+          "measured": 1
+        },
+        "LogicKernel": {
+          "cpuMs": 63.600000113248825,
+          "calls": 3290,
+          "gpuMs": 2509.176831999984,
+          "measured": 811
+        },
+        "MaterialKernel": {
+          "cpuMs": 36.19999995827675,
+          "calls": 3290,
+          "gpuMs": 1824.8499199999912,
+          "measured": 811
+        },
+        "QueueLengthToDispatchKernel": {
+          "cpuMs": 26.399999856948853,
+          "calls": 6580,
+          "gpuMs": 3.866623999999996,
+          "measured": 1622
+        },
+        "TraceRayKernel": {
+          "cpuMs": 16.700000077486038,
+          "calls": 3290,
+          "gpuMs": 1377.8288639999978,
+          "measured": 811
+        },
+        "TraceShadowRayKernel": {
+          "cpuMs": 16.399999856948853,
+          "calls": 3290,
+          "gpuMs": 415.62931200000196,
+          "measured": 811
+        }
+      },
+      "cpuRenderMs": 401.09999960660934,
+      "denoiseMs": 165,
+      "scene": {
+        "glbBytes": 154346984,
+        "meshes": 5221,
+        "rects": 24,
+        "spots": 3
+      }
+    },
+    {
+      "label": "pool64",
+      "ms": 26276.19999998808,
+      "width": 1200,
+      "height": 846,
+      "samples": 256,
+      "snapshotMs": 699.7999999821186,
+      "pixelDifference": {
+        "max": 16,
+        "mean": 0.06102442868400315,
+        "changed": 239946,
+        "total": 4060800
+      },
+      "evidence": "progressive-deep-gpu-AGznus.noindex",
+      "traversalDepth": null,
+      "stackCapacity": null,
+      "kernels": {
+        "ResetSlotsKernel": {
+          "cpuMs": 8.800000011920929,
+          "calls": 1,
+          "gpuMs": 0.786432,
+          "measured": 1
+        },
+        "ZeroOutBufferKernel": {
+          "cpuMs": 32.899999886751175,
+          "calls": 9094,
+          "gpuMs": 16.77721599999998,
+          "measured": 2289
+        },
+        "PopulatePixelIndicesKernel": {
+          "cpuMs": 0.5,
+          "calls": 2,
+          "gpuMs": 0.851968,
+          "measured": 1
+        },
+        "LogicKernel": {
+          "cpuMs": 56.79999962449074,
+          "calls": 4546,
+          "gpuMs": 2447.048704000016,
+          "measured": 1144
+        },
+        "MaterialKernel": {
+          "cpuMs": 29.399999856948853,
+          "calls": 4546,
+          "gpuMs": 1616.6420480000031,
+          "measured": 1144
+        },
+        "QueueLengthToDispatchKernel": {
+          "cpuMs": 30.09999978542328,
+          "calls": 9092,
+          "gpuMs": 7.340031999999992,
+          "measured": 2288
+        },
+        "TraceRayKernel": {
+          "cpuMs": 20.69999986886978,
+          "calls": 4546,
+          "gpuMs": 1443.2993280000028,
+          "measured": 1144
+        },
+        "TraceShadowRayKernel": {
+          "cpuMs": 17.499999850988388,
+          "calls": 4546,
+          "gpuMs": 455.933952000007,
+          "measured": 1144
+        }
+      },
+      "cpuRenderMs": 326.49999955296516,
+      "denoiseMs": 130.19999998807907,
+      "scene": {
+        "glbBytes": 154346984,
+        "meshes": 5221,
+        "rects": 24,
+        "spots": 3
+      }
+    },
+    {
+      "label": "pool256",
+      "ms": 30499.79999998212,
+      "width": 1200,
+      "height": 846,
+      "samples": 256,
+      "snapshotMs": 699.7999999821186,
+      "pixelDifference": {
+        "max": 16,
+        "mean": 0.05050236406619385,
+        "changed": 199660,
+        "total": 4060800
+      },
+      "evidence": "progressive-deep-gpu-AGznus.noindex",
+      "traversalDepth": null,
+      "stackCapacity": null,
+      "kernels": {
+        "ResetSlotsKernel": {
+          "cpuMs": 27.599999994039536,
+          "calls": 1,
+          "gpuMs": 0.917504,
+          "measured": 1
+        },
+        "ZeroOutBufferKernel": {
+          "cpuMs": 22.80000039935112,
+          "calls": 5252,
+          "gpuMs": 18.48115200000002,
+          "measured": 1267
+        },
+        "PopulatePixelIndicesKernel": {
+          "cpuMs": 0.30000001192092896,
+          "calls": 2,
+          "gpuMs": 1.114112,
+          "measured": 1
+        },
+        "LogicKernel": {
+          "cpuMs": 81.40000042319298,
+          "calls": 2625,
+          "gpuMs": 2731.9992320000147,
+          "measured": 633
+        },
+        "MaterialKernel": {
+          "cpuMs": 28.100000083446503,
+          "calls": 2625,
+          "gpuMs": 2341.797887999982,
+          "measured": 633
+        },
+        "QueueLengthToDispatchKernel": {
+          "cpuMs": 19.99999988079071,
+          "calls": 5250,
+          "gpuMs": 3.276799999999997,
+          "measured": 1266
+        },
+        "TraceRayKernel": {
+          "cpuMs": 13.799999922513962,
+          "calls": 2625,
+          "gpuMs": 1348.4687359999996,
+          "measured": 633
+        },
+        "TraceShadowRayKernel": {
+          "cpuMs": 14.300000220537186,
+          "calls": 2625,
+          "gpuMs": 399.7040640000023,
+          "measured": 633
+        }
+      },
+      "cpuRenderMs": 350.8000012040138,
+      "denoiseMs": 197.59999999403954,
+      "scene": {
+        "glbBytes": 154346984,
+        "meshes": 5221,
+        "rects": 24,
+        "spots": 3
+      }
+    },
+    {
+      "label": "fixed-pool",
+      "ms": 27283.40000000596,
+      "width": 1200,
+      "height": 846,
+      "samples": 256,
+      "snapshotMs": 699.7999999821186,
+      "pixelDifference": {
+        "max": 17,
+        "mean": 0.05248473207249803,
+        "changed": 210528,
+        "total": 4060800
+      },
+      "evidence": "progressive-deep-gpu-AGznus.noindex",
+      "traversalDepth": null,
+      "stackCapacity": null,
+      "kernels": {
+        "ResetSlotsKernel": {
+          "cpuMs": 13.199999988079071,
+          "calls": 1,
+          "gpuMs": 0.786432,
+          "measured": 1
+        },
+        "ZeroOutBufferKernel": {
+          "cpuMs": 30.599999755620956,
+          "calls": 6528,
+          "gpuMs": 14.090239999999978,
+          "measured": 1595
+        },
+        "PopulatePixelIndicesKernel": {
+          "cpuMs": 0.7999999821186066,
+          "calls": 2,
+          "gpuMs": 1.245184,
+          "measured": 1
+        },
+        "LogicKernel": {
+          "cpuMs": 64.60000017285347,
+          "calls": 3263,
+          "gpuMs": 2522.0218879999893,
+          "measured": 797
+        },
+        "MaterialKernel": {
+          "cpuMs": 25.50000023841858,
+          "calls": 3263,
+          "gpuMs": 1817.1166719999928,
+          "measured": 797
+        },
+        "QueueLengthToDispatchKernel": {
+          "cpuMs": 22.900000005960464,
+          "calls": 6526,
+          "gpuMs": 5.767167999999997,
+          "measured": 1594
+        },
+        "TraceRayKernel": {
+          "cpuMs": 17.69999986886978,
+          "calls": 3263,
+          "gpuMs": 1381.8265599999977,
+          "measured": 797
+        },
+        "TraceShadowRayKernel": {
+          "cpuMs": 19.799999713897705,
+          "calls": 3263,
+          "gpuMs": 419.8891520000022,
+          "measured": 797
+        }
+      },
+      "cpuRenderMs": 335.39999932050705,
+      "denoiseMs": 166.09999999403954,
+      "scene": {
+        "glbBytes": 154346984,
+        "meshes": 5221,
+        "rects": 24,
+        "spots": 3
+      }
+    },
+    {
+      "label": "retry4",
+      "ms": 27208.30000001192,
+      "width": 1200,
+      "height": 846,
+      "samples": 256,
+      "snapshotMs": 699.7999999821186,
+      "pixelDifference": {
+        "max": 16,
+        "mean": 0.060737046887312844,
+        "changed": 235832,
+        "total": 4060800
+      },
+      "evidence": "progressive-deep-gpu-AGznus.noindex",
+      "traversalDepth": null,
+      "stackCapacity": null,
+      "kernels": {
+        "ResetSlotsKernel": {
+          "cpuMs": 15,
+          "calls": 1,
+          "gpuMs": 0.786432,
+          "measured": 1
+        },
+        "ZeroOutBufferKernel": {
+          "cpuMs": 27.899999767541885,
+          "calls": 5956,
+          "gpuMs": 16.44953599999999,
+          "measured": 1451
+        },
+        "PopulatePixelIndicesKernel": {
+          "cpuMs": 0.19999998807907104,
+          "calls": 2,
+          "gpuMs": 0.98304,
+          "measured": 1
+        },
+        "LogicKernel": {
+          "cpuMs": 59.79999989271164,
+          "calls": 2977,
+          "gpuMs": 2470.3795199999863,
+          "measured": 725
+        },
+        "MaterialKernel": {
+          "cpuMs": 25.400000005960464,
+          "calls": 2977,
+          "gpuMs": 1776.7464959999986,
+          "measured": 725
+        },
+        "QueueLengthToDispatchKernel": {
+          "cpuMs": 22.69999971985817,
+          "calls": 5954,
+          "gpuMs": 4.325375999999995,
+          "measured": 1450
+        },
+        "TraceRayKernel": {
+          "cpuMs": 15.699999928474426,
+          "calls": 2977,
+          "gpuMs": 1385.9553280000005,
+          "measured": 725
+        },
+        "TraceShadowRayKernel": {
+          "cpuMs": 16.700000435113907,
+          "calls": 2977,
+          "gpuMs": 412.0248320000035,
+          "measured": 725
+        }
+      },
+      "cpuRenderMs": 320.30000084638596,
+      "denoiseMs": 130,
+      "scene": {
+        "glbBytes": 154346984,
+        "meshes": 5221,
+        "rects": 24,
+        "spots": 3
+      }
+    },
+    {
+      "label": "baseline",
+      "ms": 26978.09999999404,
+      "width": 1200,
+      "height": 846,
+      "samples": 256,
+      "snapshotMs": 699.7999999821186,
+      "pixelDifference": {
+        "max": 9,
+        "mean": 0.04619853230890465,
+        "changed": 183936,
+        "total": 4060800
+      },
+      "evidence": "progressive-deep-gpu-AGznus.noindex",
+      "traversalDepth": null,
+      "stackCapacity": null,
+      "kernels": {
+        "ResetSlotsKernel": {
+          "cpuMs": 17.200000017881393,
+          "calls": 1,
+          "gpuMs": 0.786432,
+          "measured": 1
+        },
+        "ZeroOutBufferKernel": {
+          "cpuMs": 25.799999713897705,
+          "calls": 6298,
+          "gpuMs": 13.56595199999998,
+          "measured": 1515
+        },
+        "PopulatePixelIndicesKernel": {
+          "cpuMs": 0.5999999940395355,
+          "calls": 2,
+          "gpuMs": 1.245184,
+          "measured": 1
+        },
+        "LogicKernel": {
+          "cpuMs": 59.99999976158142,
+          "calls": 3148,
+          "gpuMs": 2483.683327999993,
+          "measured": 757
+        },
+        "MaterialKernel": {
+          "cpuMs": 28.899999409914017,
+          "calls": 3148,
+          "gpuMs": 1757.8065919999965,
+          "measured": 757
+        },
+        "QueueLengthToDispatchKernel": {
+          "cpuMs": 24.299999743700027,
+          "calls": 6296,
+          "gpuMs": 5.439487999999996,
+          "measured": 1514
+        },
+        "TraceRayKernel": {
+          "cpuMs": 17.49999976158142,
+          "calls": 3148,
+          "gpuMs": 1373.3724159999965,
+          "measured": 757
+        },
+        "TraceShadowRayKernel": {
+          "cpuMs": 15.000000298023224,
+          "calls": 3148,
+          "gpuMs": 415.89145600000194,
+          "measured": 757
+        }
+      },
+      "cpuRenderMs": 319.8999983370304,
+      "denoiseMs": 165.40000000596046,
+      "scene": {
+        "glbBytes": 154346984,
+        "meshes": 5221,
+        "rects": 24,
+        "spots": 3
+      }
+    },
+    {
+      "label": "baseline",
+      "ms": 27626,
+      "width": 1200,
+      "height": 846,
+      "samples": 256,
+      "snapshotMs": 672.2000000178814,
+      "pixelDifference": null,
+      "evidence": "progressive-deep-gpu-kveVS9.noindex",
+      "traversalDepth": 36,
+      "stackCapacity": 60,
+      "kernels": {
+        "ResetSlotsKernel": {
+          "cpuMs": 54,
+          "calls": 1,
+          "gpuMs": 0.786432,
+          "measured": 1
+        },
+        "ZeroOutBufferKernel": {
+          "cpuMs": 29.699999421834946,
+          "calls": 6470,
+          "gpuMs": 21.36473600000004,
+          "measured": 1605
+        },
+        "PopulatePixelIndicesKernel": {
+          "cpuMs": 0.7999999821186066,
+          "calls": 2,
+          "gpuMs": 0.851968,
+          "measured": 1
+        },
+        "LogicKernel": {
+          "cpuMs": 74.09999939799309,
+          "calls": 3234,
+          "gpuMs": 2580.9387519999873,
+          "measured": 802
+        },
+        "MaterialKernel": {
+          "cpuMs": 34.599999725818634,
+          "calls": 3234,
+          "gpuMs": 1835.3356799999951,
+          "measured": 802
+        },
+        "QueueLengthToDispatchKernel": {
+          "cpuMs": 26.5,
+          "calls": 6468,
+          "gpuMs": 7.012351999999995,
+          "measured": 1604
+        },
+        "TraceRayKernel": {
+          "cpuMs": 16.499999940395355,
+          "calls": 3234,
+          "gpuMs": 1406.8613119999977,
+          "measured": 802
+        },
+        "TraceShadowRayKernel": {
+          "cpuMs": 13.800000041723251,
+          "calls": 3234,
+          "gpuMs": 423.95238400000204,
+          "measured": 802
+        }
+      },
+      "cpuRenderMs": 407.0999988913536,
+      "denoiseMs": 152,
+      "scene": {
+        "glbBytes": 154346984,
+        "meshes": 5221,
+        "rects": 24,
+        "spots": 3
+      }
+    },
+    {
+      "label": "positions",
+      "ms": 27411.5,
+      "width": 1200,
+      "height": 846,
+      "samples": 256,
+      "snapshotMs": 672.2000000178814,
+      "pixelDifference": {
+        "max": 13,
+        "mean": 0.04467223207249803,
+        "changed": 180186,
+        "total": 4060800
+      },
+      "evidence": "progressive-deep-gpu-kveVS9.noindex",
+      "traversalDepth": 36,
+      "stackCapacity": 60,
+      "kernels": {
+        "ResetSlotsKernel": {
+          "cpuMs": 13.199999988079071,
+          "calls": 1,
+          "gpuMs": 1.179648,
+          "measured": 1
+        },
+        "ZeroOutBufferKernel": {
+          "cpuMs": 25.800000071525574,
+          "calls": 6362,
+          "gpuMs": 16.056319999999975,
+          "measured": 1551
+        },
+        "PopulatePixelIndicesKernel": {
+          "cpuMs": 0.699999988079071,
+          "calls": 2,
+          "gpuMs": 0.786432,
+          "measured": 1
+        },
+        "LogicKernel": {
+          "cpuMs": 64.20000007748604,
+          "calls": 3180,
+          "gpuMs": 2515.99257599999,
+          "measured": 775
+        },
+        "MaterialKernel": {
+          "cpuMs": 26.900000274181366,
+          "calls": 3180,
+          "gpuMs": 1800.0117759999996,
+          "measured": 775
+        },
+        "QueueLengthToDispatchKernel": {
+          "cpuMs": 27.800000250339508,
+          "calls": 6360,
+          "gpuMs": 7.667711999999993,
+          "measured": 1550
+        },
+        "TraceRayKernel": {
+          "cpuMs": 16.000000178813934,
+          "calls": 3180,
+          "gpuMs": 1316.6182400000002,
+          "measured": 775
+        },
+        "TraceShadowRayKernel": {
+          "cpuMs": 16.40000030398369,
+          "calls": 3180,
+          "gpuMs": 403.7672960000009,
+          "measured": 775
+        }
+      },
+      "cpuRenderMs": 335.5000010728836,
+      "denoiseMs": 145.5,
+      "scene": {
+        "glbBytes": 154346984,
+        "meshes": 5221,
+        "rects": 24,
+        "spots": 3
+      }
+    },
+    {
+      "label": "shadow-leaf",
+      "ms": 27568,
+      "width": 1200,
+      "height": 846,
+      "samples": 256,
+      "snapshotMs": 672.2000000178814,
+      "pixelDifference": {
+        "max": 13,
+        "mean": 0.043498817966903074,
+        "changed": 176069,
+        "total": 4060800
+      },
+      "evidence": "progressive-deep-gpu-kveVS9.noindex",
+      "traversalDepth": 36,
+      "stackCapacity": 60,
+      "kernels": {
+        "ResetSlotsKernel": {
+          "cpuMs": 14.099999994039536,
+          "calls": 1,
+          "gpuMs": 0.720896,
+          "measured": 1
+        },
+        "ZeroOutBufferKernel": {
+          "cpuMs": 27.39999970793724,
+          "calls": 6378,
+          "gpuMs": 20.119552000000045,
+          "measured": 1547
+        },
+        "PopulatePixelIndicesKernel": {
+          "cpuMs": 0.30000001192092896,
+          "calls": 2,
+          "gpuMs": 0.786432,
+          "measured": 1
+        },
+        "LogicKernel": {
+          "cpuMs": 62.39999935030937,
+          "calls": 3188,
+          "gpuMs": 2512.1259519999853,
+          "measured": 773
+        },
+        "MaterialKernel": {
+          "cpuMs": 24.699999660253525,
+          "calls": 3188,
+          "gpuMs": 1789.001727999993,
+          "measured": 773
+        },
+        "QueueLengthToDispatchKernel": {
+          "cpuMs": 25.100000083446503,
+          "calls": 6376,
+          "gpuMs": 9.895935999999992,
+          "measured": 1546
+        },
+        "TraceRayKernel": {
+          "cpuMs": 15.499999731779099,
+          "calls": 3188,
+          "gpuMs": 1417.936895999999,
+          "measured": 773
+        },
+        "TraceShadowRayKernel": {
+          "cpuMs": 14.5,
+          "calls": 3188,
+          "gpuMs": 408.9446400000011,
+          "measured": 773
+        }
+      },
+      "cpuRenderMs": 319.89999839663506,
+      "denoiseMs": 166.59999999403954,
+      "scene": {
+        "glbBytes": 154346984,
+        "meshes": 5221,
+        "rects": 24,
+        "spots": 3
+      }
+    },
+    {
+      "label": "stack",
+      "ms": 27756.59999999404,
+      "width": 1200,
+      "height": 846,
+      "samples": 256,
+      "snapshotMs": 672.2000000178814,
+      "pixelDifference": {
+        "max": 13,
+        "mean": 0.06110298463356974,
+        "changed": 237811,
+        "total": 4060800
+      },
+      "evidence": "progressive-deep-gpu-kveVS9.noindex",
+      "traversalDepth": 36,
+      "stackCapacity": 36,
+      "kernels": {
+        "ResetSlotsKernel": {
+          "cpuMs": 16.299999982118607,
+          "calls": 1,
+          "gpuMs": 0.851968,
+          "measured": 1
+        },
+        "ZeroOutBufferKernel": {
+          "cpuMs": 27.700000256299973,
+          "calls": 6420,
+          "gpuMs": 17.03935999999999,
+          "measured": 1545
+        },
+        "PopulatePixelIndicesKernel": {
+          "cpuMs": 0.5999999940395355,
+          "calls": 2,
+          "gpuMs": 0.786432,
+          "measured": 1
+        },
+        "LogicKernel": {
+          "cpuMs": 58.700000405311584,
+          "calls": 3209,
+          "gpuMs": 2545.418239999986,
+          "measured": 772
+        },
+        "MaterialKernel": {
+          "cpuMs": 25.799999624490738,
+          "calls": 3209,
+          "gpuMs": 1791.7542399999957,
+          "measured": 772
+        },
+        "QueueLengthToDispatchKernel": {
+          "cpuMs": 25.90000006556511,
+          "calls": 6418,
+          "gpuMs": 7.733247999999993,
+          "measured": 1544
+        },
+        "TraceRayKernel": {
+          "cpuMs": 18.199999809265137,
+          "calls": 3209,
+          "gpuMs": 1391.7880319999979,
+          "measured": 772
+        },
+        "TraceShadowRayKernel": {
+          "cpuMs": 16.39999994635582,
+          "calls": 3209,
+          "gpuMs": 422.7727360000022,
+          "measured": 772
+        }
+      },
+      "cpuRenderMs": 321.79999953508377,
+      "denoiseMs": 144,
+      "scene": {
+        "glbBytes": 154346984,
+        "meshes": 5221,
+        "rects": 24,
+        "spots": 3
+      }
+    },
+    {
+      "label": "baseline",
+      "ms": 27487.80000001192,
+      "width": 1200,
+      "height": 846,
+      "samples": 256,
+      "snapshotMs": 672.2000000178814,
+      "pixelDifference": {
+        "max": 9,
+        "mean": 0.057242661544523246,
+        "changed": 225426,
+        "total": 4060800
+      },
+      "evidence": "progressive-deep-gpu-kveVS9.noindex",
+      "traversalDepth": 36,
+      "stackCapacity": 60,
+      "kernels": {
+        "ResetSlotsKernel": {
+          "cpuMs": 16.099999994039536,
+          "calls": 1,
+          "gpuMs": 0.786432,
+          "measured": 1
+        },
+        "ZeroOutBufferKernel": {
+          "cpuMs": 26.500000089406967,
+          "calls": 6250,
+          "gpuMs": 19.005440000000004,
+          "measured": 1523
+        },
+        "PopulatePixelIndicesKernel": {
+          "cpuMs": 0.5999999940395355,
+          "calls": 2,
+          "gpuMs": 1.245184,
+          "measured": 1
+        },
+        "LogicKernel": {
+          "cpuMs": 68.40000057220459,
+          "calls": 3124,
+          "gpuMs": 2520.1868799999893,
+          "measured": 761
+        },
+        "MaterialKernel": {
+          "cpuMs": 44.70000013709068,
+          "calls": 3124,
+          "gpuMs": 1773.5352319999934,
+          "measured": 761
+        },
+        "QueueLengthToDispatchKernel": {
+          "cpuMs": 22.700000315904617,
+          "calls": 6248,
+          "gpuMs": 5.832703999999995,
+          "measured": 1522
+        },
+        "TraceRayKernel": {
+          "cpuMs": 16.500000029802322,
+          "calls": 3124,
+          "gpuMs": 1382.7440639999977,
+          "measured": 761
+        },
+        "TraceShadowRayKernel": {
+          "cpuMs": 15.800000041723251,
+          "calls": 3124,
+          "gpuMs": 417.0711040000017,
+          "measured": 761
+        }
+      },
+      "cpuRenderMs": 349.40000173449516,
+      "denoiseMs": 171.30000001192093,
+      "scene": {
+        "glbBytes": 154346984,
+        "meshes": 5221,
+        "rects": 24,
+        "spots": 3
+      }
+    },
+    {
+      "label": "baseline",
+      "ms": 27231.59999999404,
+      "width": 1200,
+      "height": 846,
+      "samples": 256,
+      "snapshotMs": 666.2000000178814,
+      "pixelDifference": null,
+      "evidence": "progressive-deep-gpu-leYtaj.noindex",
+      "traversalDepth": 36,
+      "stackCapacity": 60,
+      "kernels": {
+        "ResetSlotsKernel": {
+          "cpuMs": 21.599999994039536,
+          "calls": 1,
+          "gpuMs": 0.786432,
+          "measured": 1
+        },
+        "ZeroOutBufferKernel": {
+          "cpuMs": 28.600000381469727,
+          "calls": 6266,
+          "gpuMs": 17.104896000000007,
+          "measured": 1557
+        },
+        "PopulatePixelIndicesKernel": {
+          "cpuMs": 0.29999998211860657,
+          "calls": 2,
+          "gpuMs": 0.851968,
+          "measured": 1
+        },
+        "LogicKernel": {
+          "cpuMs": 58.10000067949295,
+          "calls": 3132,
+          "gpuMs": 2503.7373439999915,
+          "measured": 778
+        },
+        "MaterialKernel": {
+          "cpuMs": 30.60000017285347,
+          "calls": 3132,
+          "gpuMs": 1816.3302399999914,
+          "measured": 778
+        },
+        "QueueLengthToDispatchKernel": {
+          "cpuMs": 24.999999910593033,
+          "calls": 6264,
+          "gpuMs": 5.111807999999993,
+          "measured": 1556
+        },
+        "TraceRayKernel": {
+          "cpuMs": 17.600000232458115,
+          "calls": 3132,
+          "gpuMs": 1378.8774399999995,
+          "measured": 778
+        },
+        "TraceShadowRayKernel": {
+          "cpuMs": 14,
+          "calls": 3132,
+          "gpuMs": 418.3162880000021,
+          "measured": 778
+        }
+      },
+      "cpuRenderMs": 334.30000108480453,
+      "denoiseMs": 172.7999999821186,
+      "scene": {
+        "glbBytes": 154346984,
+        "meshes": 5221,
+        "rects": 24,
+        "spots": 3
+      }
+    },
+    {
+      "label": "pool64",
+      "ms": 26214.80000001192,
+      "width": 1200,
+      "height": 846,
+      "samples": 256,
+      "snapshotMs": 666.2000000178814,
+      "pixelDifference": {
+        "max": 16,
+        "mean": 0.06250221631205674,
+        "changed": 242923,
+        "total": 4060800
+      },
+      "evidence": "progressive-deep-gpu-leYtaj.noindex",
+      "traversalDepth": 36,
+      "stackCapacity": 60,
+      "kernels": {
+        "ResetSlotsKernel": {
+          "cpuMs": 6.5999999940395355,
+          "calls": 1,
+          "gpuMs": 0.917504,
+          "measured": 1
+        },
+        "ZeroOutBufferKernel": {
+          "cpuMs": 36.70000043511391,
+          "calls": 9248,
+          "gpuMs": 17.367040000000003,
+          "measured": 2353
+        },
+        "PopulatePixelIndicesKernel": {
+          "cpuMs": 1.5,
+          "calls": 2,
+          "gpuMs": 1.114112,
+          "measured": 1
+        },
+        "LogicKernel": {
+          "cpuMs": 60.699999660253525,
+          "calls": 4623,
+          "gpuMs": 2422.407168000027,
+          "measured": 1176
+        },
+        "MaterialKernel": {
+          "cpuMs": 32.49999976158142,
+          "calls": 4623,
+          "gpuMs": 1598.160896000006,
+          "measured": 1176
+        },
+        "QueueLengthToDispatchKernel": {
+          "cpuMs": 31.499999821186066,
+          "calls": 9246,
+          "gpuMs": 8.585215999999992,
+          "measured": 2352
+        },
+        "TraceRayKernel": {
+          "cpuMs": 19.59999990463257,
+          "calls": 4623,
+          "gpuMs": 1443.1027200000076,
+          "measured": 1176
+        },
+        "TraceShadowRayKernel": {
+          "cpuMs": 21.200000196695328,
+          "calls": 4623,
+          "gpuMs": 458.6209280000071,
+          "measured": 1176
+        }
+      },
+      "cpuRenderMs": 343.6000000536442,
+      "denoiseMs": 118.19999998807907,
+      "scene": {
+        "glbBytes": 154346984,
+        "meshes": 5221,
+        "rects": 24,
+        "spots": 3
+      }
+    },
+    {
+      "label": "pool64",
+      "ms": 26105.20000001788,
+      "width": 1200,
+      "height": 846,
+      "samples": 256,
+      "snapshotMs": 666.2000000178814,
+      "pixelDifference": {
+        "max": 16,
+        "mean": 0.0428408195429472,
+        "changed": 172500,
+        "total": 4060800
+      },
+      "evidence": "progressive-deep-gpu-leYtaj.noindex",
+      "traversalDepth": 36,
+      "stackCapacity": 60,
+      "kernels": {
+        "ResetSlotsKernel": {
+          "cpuMs": 7.699999988079071,
+          "calls": 1,
+          "gpuMs": 0.786432,
+          "measured": 1
+        },
+        "ZeroOutBufferKernel": {
+          "cpuMs": 33,
+          "calls": 9252,
+          "gpuMs": 24.444928000000022,
+          "measured": 2311
+        },
+        "PopulatePixelIndicesKernel": {
+          "cpuMs": 1.199999988079071,
+          "calls": 2,
+          "gpuMs": 0.851968,
+          "measured": 1
+        },
+        "LogicKernel": {
+          "cpuMs": 58.90000042319298,
+          "calls": 4625,
+          "gpuMs": 2416.6400000000276,
+          "measured": 1155
+        },
+        "MaterialKernel": {
+          "cpuMs": 32.29999980330467,
+          "calls": 4625,
+          "gpuMs": 1569.7182720000062,
+          "measured": 1155
+        },
+        "QueueLengthToDispatchKernel": {
+          "cpuMs": 32.70000001788139,
+          "calls": 9250,
+          "gpuMs": 8.978431999999993,
+          "measured": 2310
+        },
+        "TraceRayKernel": {
+          "cpuMs": 22.399999976158142,
+          "calls": 4625,
+          "gpuMs": 1435.7626880000055,
+          "measured": 1155
+        },
+        "TraceShadowRayKernel": {
+          "cpuMs": 19.000000059604645,
+          "calls": 4625,
+          "gpuMs": 455.93395200000697,
+          "measured": 1155
+        }
+      },
+      "cpuRenderMs": 339.7999999821186,
+      "denoiseMs": 133,
+      "scene": {
+        "glbBytes": 154346984,
+        "meshes": 5221,
+        "rects": 24,
+        "spots": 3
+      }
+    },
+    {
+      "label": "baseline",
+      "ms": 27151,
+      "width": 1200,
+      "height": 846,
+      "samples": 256,
+      "snapshotMs": 666.2000000178814,
+      "pixelDifference": {
+        "max": 16,
+        "mean": 0.052764972419227736,
+        "changed": 211678,
+        "total": 4060800
+      },
+      "evidence": "progressive-deep-gpu-leYtaj.noindex",
+      "traversalDepth": 36,
+      "stackCapacity": 60,
+      "kernels": {
+        "ResetSlotsKernel": {
+          "cpuMs": 14.5,
+          "calls": 1,
+          "gpuMs": 0.786432,
+          "measured": 1
+        },
+        "ZeroOutBufferKernel": {
+          "cpuMs": 25.40000030398369,
+          "calls": 6294,
+          "gpuMs": 19.26758400000002,
+          "measured": 1553
+        },
+        "PopulatePixelIndicesKernel": {
+          "cpuMs": 0.4000000059604645,
+          "calls": 2,
+          "gpuMs": 1.376256,
+          "measured": 1
+        },
+        "LogicKernel": {
+          "cpuMs": 66.30000016093254,
+          "calls": 3146,
+          "gpuMs": 2534.0149759999886,
+          "measured": 776
+        },
+        "MaterialKernel": {
+          "cpuMs": 31.699999898672104,
+          "calls": 3146,
+          "gpuMs": 1784.2831359999893,
+          "measured": 776
+        },
+        "QueueLengthToDispatchKernel": {
+          "cpuMs": 21.600000083446503,
+          "calls": 6292,
+          "gpuMs": 3.604479999999997,
+          "measured": 1552
+        },
+        "TraceRayKernel": {
+          "cpuMs": 17.10000005364418,
+          "calls": 3146,
+          "gpuMs": 1386.3485439999986,
+          "measured": 776
+        },
+        "TraceShadowRayKernel": {
+          "cpuMs": 16.30000013113022,
+          "calls": 3146,
+          "gpuMs": 423.82131200000214,
+          "measured": 776
+        }
+      },
+      "cpuRenderMs": 339.0000005662441,
+      "denoiseMs": 150.30000001192093,
+      "scene": {
+        "glbBytes": 154346984,
+        "meshes": 5221,
+        "rects": 24,
+        "spots": 3
+      }
+    },
+    {
+      "label": "baseline",
+      "ms": 27441.40000000596,
+      "width": 1200,
+      "height": 846,
+      "samples": 256,
+      "snapshotMs": 697.7999999821186,
+      "pixelDifference": null,
+      "evidence": "progressive-deep-gpu-bIJnwK.noindex",
+      "traversalDepth": 36,
+      "stackCapacity": 60,
+      "kernels": {
+        "ResetSlotsKernel": {
+          "cpuMs": 20.80000001192093,
+          "calls": 1,
+          "gpuMs": 0.786432,
+          "measured": 1
+        },
+        "ZeroOutBufferKernel": {
+          "cpuMs": 26.69999983906746,
+          "calls": 6216,
+          "gpuMs": 23.98617600000003,
+          "measured": 1517
+        },
+        "PopulatePixelIndicesKernel": {
+          "cpuMs": 0.800000011920929,
+          "calls": 2,
+          "gpuMs": 1.245184,
+          "measured": 1
+        },
+        "LogicKernel": {
+          "cpuMs": 81.50000023841858,
+          "calls": 3107,
+          "gpuMs": 2506.4898559999897,
+          "measured": 758
+        },
+        "MaterialKernel": {
+          "cpuMs": 32.19999995827675,
+          "calls": 3107,
+          "gpuMs": 1802.960895999991,
+          "measured": 758
+        },
+        "QueueLengthToDispatchKernel": {
+          "cpuMs": 24.60000017285347,
+          "calls": 6214,
+          "gpuMs": 5.636095999999993,
+          "measured": 1516
+        },
+        "TraceRayKernel": {
+          "cpuMs": 17.000000149011612,
+          "calls": 3107,
+          "gpuMs": 1385.234431999998,
+          "measured": 758
+        },
+        "TraceShadowRayKernel": {
+          "cpuMs": 14.29999977350235,
+          "calls": 3107,
+          "gpuMs": 418.316288000002,
+          "measured": 758
+        }
+      },
+      "cpuRenderMs": 373.699999332428,
+      "denoiseMs": 175.40000000596046,
+      "scene": {
+        "glbBytes": 154346984,
+        "meshes": 5221,
+        "rects": 24,
+        "spots": 3
+      }
+    },
+    {
+      "label": "pool16",
+      "ms": 27221.5,
+      "width": 1200,
+      "height": 846,
+      "samples": 256,
+      "snapshotMs": 697.7999999821186,
+      "pixelDifference": {
+        "max": 16,
+        "mean": 0.03907087273443657,
+        "changed": 157557,
+        "total": 4060800
+      },
+      "evidence": "progressive-deep-gpu-bIJnwK.noindex",
+      "traversalDepth": 36,
+      "stackCapacity": 60,
+      "kernels": {
+        "ResetSlotsKernel": {
+          "cpuMs": 2.0999999940395355,
+          "calls": 1,
+          "gpuMs": 0.131072,
+          "measured": 1
+        },
+        "ZeroOutBufferKernel": {
+          "cpuMs": 79.49999961256981,
+          "calls": 27902,
+          "gpuMs": 38.92838400000029,
+          "measured": 7705
+        },
+        "PopulatePixelIndicesKernel": {
+          "cpuMs": 0.4999999701976776,
+          "calls": 2,
+          "gpuMs": 0.131072,
+          "measured": 1
+        },
+        "LogicKernel": {
+          "cpuMs": 94.09999948740005,
+          "calls": 13950,
+          "gpuMs": 2434.596864000095,
+          "measured": 3852
+        },
+        "MaterialKernel": {
+          "cpuMs": 67.40000069141388,
+          "calls": 13950,
+          "gpuMs": 1398.9314560000405,
+          "measured": 3852
+        },
+        "QueueLengthToDispatchKernel": {
+          "cpuMs": 74.40000009536743,
+          "calls": 27900,
+          "gpuMs": 23.461888000000112,
+          "measured": 7704
+        },
+        "TraceRayKernel": {
+          "cpuMs": 58.400000274181366,
+          "calls": 13950,
+          "gpuMs": 1686.5689600000298,
+          "measured": 3852
+        },
+        "TraceShadowRayKernel": {
+          "cpuMs": 55.400000125169754,
+          "calls": 13950,
+          "gpuMs": 678.7563520000027,
+          "measured": 3852
+        }
+      },
+      "cpuRenderMs": 630.2000002861023,
+      "denoiseMs": 98.5,
+      "scene": {
+        "glbBytes": 154346984,
+        "meshes": 5221,
+        "rects": 24,
+        "spots": 3
+      }
+    },
+    {
+      "label": "pool32",
+      "ms": 26704.59999999404,
+      "width": 1200,
+      "height": 846,
+      "samples": 256,
+      "snapshotMs": 697.7999999821186,
+      "pixelDifference": {
+        "max": 11,
+        "mean": 0.05836460795902285,
+        "changed": 231395,
+        "total": 4060800
+      },
+      "evidence": "progressive-deep-gpu-bIJnwK.noindex",
+      "traversalDepth": 36,
+      "stackCapacity": 60,
+      "kernels": {
+        "ResetSlotsKernel": {
+          "cpuMs": 5.300000011920929,
+          "calls": 1,
+          "gpuMs": 0.393216,
+          "measured": 1
+        },
+        "ZeroOutBufferKernel": {
+          "cpuMs": 48.60000038146973,
+          "calls": 16166,
+          "gpuMs": 30.605312000000186,
+          "measured": 4285
+        },
+        "PopulatePixelIndicesKernel": {
+          "cpuMs": 0.4000000059604645,
+          "calls": 2,
+          "gpuMs": 0.524288,
+          "measured": 1
+        },
+        "LogicKernel": {
+          "cpuMs": 72.20000022649765,
+          "calls": 8082,
+          "gpuMs": 2459.5005440000373,
+          "measured": 2142
+        },
+        "MaterialKernel": {
+          "cpuMs": 43.59999969601631,
+          "calls": 8082,
+          "gpuMs": 1537.933312000018,
+          "measured": 2142
+        },
+        "QueueLengthToDispatchKernel": {
+          "cpuMs": 47.29999986290932,
+          "calls": 16164,
+          "gpuMs": 12.582911999999975,
+          "measured": 4284
+        },
+        "TraceRayKernel": {
+          "cpuMs": 30.99999964237213,
+          "calls": 8082,
+          "gpuMs": 1528.496128000008,
+          "measured": 2142
+        },
+        "TraceShadowRayKernel": {
+          "cpuMs": 32.0999998152256,
+          "calls": 8082,
+          "gpuMs": 534.3150079999817,
+          "measured": 2142
+        }
+      },
+      "cpuRenderMs": 463.5000002384186,
+      "denoiseMs": 147.7000000178814,
+      "scene": {
+        "glbBytes": 154346984,
+        "meshes": 5221,
+        "rects": 24,
+        "spots": 3
+      }
+    },
+    {
+      "label": "pool8",
+      "ms": 28801.29999998212,
+      "width": 1200,
+      "height": 846,
+      "samples": 256,
+      "snapshotMs": 697.7999999821186,
+      "pixelDifference": {
+        "max": 16,
+        "mean": 0.06602344365642238,
+        "changed": 255924,
+        "total": 4060800
+      },
+      "evidence": "progressive-deep-gpu-bIJnwK.noindex",
+      "traversalDepth": 36,
+      "stackCapacity": 60,
+      "kernels": {
+        "ResetSlotsKernel": {
+          "cpuMs": 1.300000011920929,
+          "calls": 1,
+          "gpuMs": 0,
+          "measured": 1
+        },
+        "ZeroOutBufferKernel": {
+          "cpuMs": 149.19999977946281,
+          "calls": 53848,
+          "gpuMs": 86.24537599999938,
+          "measured": 9255
+        },
+        "PopulatePixelIndicesKernel": {
+          "cpuMs": 0.6000000238418579,
+          "calls": 2,
+          "gpuMs": 0.065536,
+          "measured": 1
+        },
+        "LogicKernel": {
+          "cpuMs": 148.19999980926514,
+          "calls": 26923,
+          "gpuMs": 1530.5277440000139,
+          "measured": 4627
+        },
+        "MaterialKernel": {
+          "cpuMs": 124.20000007748604,
+          "calls": 26923,
+          "gpuMs": 712.5073919999988,
+          "measured": 4627
+        },
+        "QueueLengthToDispatchKernel": {
+          "cpuMs": 150.59999936819077,
+          "calls": 53846,
+          "gpuMs": 23.855104000000107,
+          "measured": 9254
+        },
+        "TraceRayKernel": {
+          "cpuMs": 100.59999969601631,
+          "calls": 26923,
+          "gpuMs": 1252.1963520000404,
+          "measured": 4627
+        },
+        "TraceShadowRayKernel": {
+          "cpuMs": 98.80000045895576,
+          "calls": 26923,
+          "gpuMs": 560.8570880000226,
+          "measured": 4627
+        }
+      },
+      "cpuRenderMs": 987.3999998867512,
+      "denoiseMs": 120.30000001192093,
+      "scene": {
+        "glbBytes": 154346984,
+        "meshes": 5221,
+        "rects": 24,
+        "spots": 3
+      }
+    },
+    {
+      "label": "baseline",
+      "ms": 27785,
+      "width": 1200,
+      "height": 846,
+      "samples": 256,
+      "snapshotMs": 697.7999999821186,
+      "pixelDifference": {
+        "max": 6,
+        "mean": 0.0403479609929078,
+        "changed": 163472,
+        "total": 4060800
+      },
+      "evidence": "progressive-deep-gpu-bIJnwK.noindex",
+      "traversalDepth": 36,
+      "stackCapacity": 60,
+      "kernels": {
+        "ResetSlotsKernel": {
+          "cpuMs": 23,
+          "calls": 1,
+          "gpuMs": 0.786432,
+          "measured": 1
+        },
+        "ZeroOutBufferKernel": {
+          "cpuMs": 27.599999994039536,
+          "calls": 6542,
+          "gpuMs": 15.728639999999979,
+          "measured": 1619
+        },
+        "PopulatePixelIndicesKernel": {
+          "cpuMs": 2.4000000059604645,
+          "calls": 2,
+          "gpuMs": 0.786432,
+          "measured": 1
+        },
+        "LogicKernel": {
+          "cpuMs": 70.60000011324883,
+          "calls": 3270,
+          "gpuMs": 2551.119871999989,
+          "measured": 809
+        },
+        "MaterialKernel": {
+          "cpuMs": 36.60000029206276,
+          "calls": 3270,
+          "gpuMs": 1870.2008319999895,
+          "measured": 809
+        },
+        "QueueLengthToDispatchKernel": {
+          "cpuMs": 25.500000089406967,
+          "calls": 6540,
+          "gpuMs": 5.046271999999995,
+          "measured": 1618
+        },
+        "TraceRayKernel": {
+          "cpuMs": 19.5,
+          "calls": 3270,
+          "gpuMs": 1386.7417599999967,
+          "measured": 809
+        },
+        "TraceShadowRayKernel": {
+          "cpuMs": 14.400000154972076,
+          "calls": 3270,
+          "gpuMs": 420.41344000000214,
+          "measured": 809
+        }
+      },
+      "cpuRenderMs": 360.30000069737434,
+      "denoiseMs": 151.59999999403954,
+      "scene": {
+        "glbBytes": 154346984,
+        "meshes": 5221,
+        "rects": 24,
+        "spots": 3
+      }
+    }
+  ],
+  "productionChanged": false
+}
