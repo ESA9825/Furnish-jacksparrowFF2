@@ -3584,3 +3584,10 @@ L 形详细设计新增「两边正视展开」，两份正交生产预览分别
 三维选中物品默认只选中，不显示变换手柄、不允许直接拖动物品或用方向键移动；浮动栏手动点击“移动”后启用拖动、XYZ与旋转手柄，点击“结束移动”关闭。更换选择、退出三维及重新载入户型后退出移动模式。二维原交互保持。结构编辑仍通过按钮进入。
 
 四类柜体的隔离Chrome同步开合中位数由约370–431 ms降至178–244 ms；这些是JS处理时间，不是GPU完成时间，不能称为零延迟。空间核对与保存移到首帧之后并合并，完整检查规则未删减。验证、边界及既有测试夹具失败见validation/cabinet-toggle-response-20261117/SECOND-PASS.md。
+
+
+## 2026-11-17：聚焦搜索中的测试应用副本
+
+macOS 的 test-artifacts 新建运行目录追加 `.noindex`，保留失败证据时也避免 Spotlight 收录测试应用；默认 Mac 打包目录改为 `output/desktop/Furnish-darwin-<arch>.noindex`。启动器优先新路径，兼容已有正式安装的旧路径。显式 `--out` 不改写调用方路径，Mac 测试／临时打包及备份必须放在 `.noindex` 目录内；只有正式安装入口供日常搜索。清理旧副本时先检查 Applications 链接真实目标与运行进程，只删除闲置应用包，保留项目、缓存、报告和回执。现有正式应用路径不迁移，以免改变缓存身份。Spotlight 旧结果消退取决于系统索引刷新，不以 mdfind 空结果宣称 UI 已验收。
+
+本机清理：正式入口为 `~/Applications/Furnish.app` 符号链接，实际包为旧 `output/desktop/Furnish-darwin-arm64/Furnish.app`，保持原位。已核对只有正式包在运行，删除 8 个闲置包及 1 个测试链接；这些包不含 workspace.furnish.json，外围项目／缓存／报告／备份回执保留。部分未注册包的 lsregister 注销返回 1，已注册测试包返回 0；不重建全局应用数据库。增量通过 `test-test-artifacts`、`test-desktop-macos`（布局模拟）、`test-desktop-executable`，未执行全量、重新原生打包或 Spotlight UI 目视验收。

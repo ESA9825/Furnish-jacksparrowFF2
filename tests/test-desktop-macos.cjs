@@ -43,6 +43,8 @@ try{
  assert.throws(()=>build({out,platform:'darwin',arch:'arm64',electronExecutable:executable}),/已存在/);
  const source=path.join(job.dir,'source');job.discard('source');const installed=path.join(source,'output/desktop/Furnish-darwin-arm64/Furnish.app/Contents/MacOS/Electron');fs.mkdirSync(path.dirname(installed),{recursive:true});fs.writeFileSync(installed,header);
  assert.equal(desktopExecutable(source,{env:{},platform:'darwin',arch:'arm64'}),installed);
+ const excluded=path.join(source,'output/desktop/Furnish-darwin-arm64.noindex/Furnish.app/Contents/MacOS/Electron');fs.mkdirSync(path.dirname(excluded),{recursive:true});fs.writeFileSync(excluded,header);
+ assert.equal(desktopExecutable(source,{env:{},platform:'darwin',arch:'arm64'}),excluded,'Prefer the new non-indexed build; retain legacy installed-path support');
  assert.throws(()=>desktopExecutable(source,{env:{},platform:'win32'}),/未找到/,'Must not launch another OS runtime');
  fs.writeFileSync(path.join(out,'furnish-desktop.json'),JSON.stringify({root:source}));
  assert.throws(()=>workspaceRoot({appRoot:out,config:{root:source}}),/不完整/,'An invalid configured root must not silently fall back');

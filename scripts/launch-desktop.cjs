@@ -5,7 +5,7 @@ function desktopExecutable(root,{executable,env=process.env,platform=process.pla
  const file=path.join(root,'.local/desktop-executable.json');
  const configured=executable||env.FURNISH_DESKTOP_EXE||(fs.existsSync(file)?JSON.parse(fs.readFileSync(file,'utf8')).executable:undefined);
  if(configured){if(typeof configured!=='string'||!path.isAbsolute(configured)||!fs.statSync(configured,{throwIfNoEntry:false})?.isFile())throw Error('配置的 Furnish 桌面程序不存在，请检查 .local/desktop-executable.json 或 FURNISH_DESKTOP_EXE。');return configured;}
- const names=platform==='darwin'?['Furnish.app/Contents/MacOS/Electron',`output/desktop/Furnish-darwin-${arch}/Furnish.app/Contents/MacOS/Electron`]:['Furnish.exe','output/desktop/Furnish-win32-x64/Furnish.exe'];
+ const names=platform==='darwin'?['Furnish.app/Contents/MacOS/Electron',`output/desktop/Furnish-darwin-${arch}.noindex/Furnish.app/Contents/MacOS/Electron`,`output/desktop/Furnish-darwin-${arch}/Furnish.app/Contents/MacOS/Electron`]:['Furnish.exe','output/desktop/Furnish-win32-x64/Furnish.exe'];
  const chosen=names.map(name=>path.join(root,name)).find(p=>fs.statSync(p,{throwIfNoEntry:false})?.isFile());
  if(!chosen)throw Error('未找到 Furnish 桌面程序，请先打包或配置本机程序路径。');return chosen;
 }

@@ -108,3 +108,8 @@ node scripts/package-desktop.cjs --portable --out output/desktop/Furnish-portabl
 当前交付为未签名的便携文件夹，未提供安装器、自动更新或文件关联。不能保证系统不会对未签名程序显示来源提示。只验证实际执行的流程；物理打印机、完整 Blender 渲染、所有模型编辑器和其他 Windows 架构不属于本次桌面专项的全量验证。
 
 2026-10-28 窗口生命周期专项：`node tests/test-desktop-lifecycle.cjs` 覆盖生产监听器的销毁／异步加载竞态；`node tests/test-desktop-native.cjs` 使用独立缓存与临时页面，以可控的后端延迟验证真实 Electron 单实例激活、关闭期间重复启动及原生 relaunch。后者需要本机 Electron 和回环连接；结果存于 `output/playwright/desktop-lifecycle-*/`。详见 [验收记录](validation/desktop-lifecycle-20261028/README.md)。
+
+
+## 2026-11-17：聚焦搜索中的测试应用副本
+
+macOS 的 test-artifacts 新建运行目录追加 `.noindex`，保留失败证据时也避免 Spotlight 收录测试应用；默认 Mac 打包目录改为 `output/desktop/Furnish-darwin-<arch>.noindex`。启动器优先新路径，兼容已有正式安装的旧路径。显式 `--out` 不改写调用方路径，Mac 测试／临时打包及备份必须放在 `.noindex` 目录内；只有正式安装入口供日常搜索。清理旧副本时先检查 Applications 链接真实目标与运行进程，只删除闲置应用包，保留项目、缓存、报告和回执。现有正式应用路径不迁移，以免改变缓存身份。Spotlight 旧结果消退取决于系统索引刷新，不以 mdfind 空结果宣称 UI 已验收。

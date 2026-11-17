@@ -72,7 +72,11 @@ function createRun({parent=path.join(outputRoot,'playwright'),prefix='verificati
  if(path.basename(prefix)!==prefix||!prefix)throw Error('Invalid test prefix');
  // Do not enumerate unrelated historical output trees.
  for(let p=parent;;p=path.dirname(p)){if(fs.existsSync(p)&&fs.lstatSync(p).isSymbolicLink())throw Error('Linked test parent: '+p);if(p===path.parse(p).root)break;}
- fs.mkdirSync(parent,{recursive:true});return openRun(fs.mkdtempSync(path.join(parent,prefix)),{root,...options});
+ fs.mkdirSync(parent,{recursive:true});
+ const temporary=fs.mkdtempSync(path.join(parent,prefix));
+ const directory=process.platform==='darwin'?temporary+'.noindex':temporary;
+ if(directory!==temporary)fs.renameSync(temporary,directory);
+ return openRun(directory,{root,...options});
 }
 const fixtures=[];let hooked=false,crashed=false;
 function temporaryDirectory(prefix){

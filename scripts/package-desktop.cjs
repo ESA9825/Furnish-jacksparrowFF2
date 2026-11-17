@@ -30,7 +30,7 @@ function macIdentity(out,{run=execFileSync}={}){
  run('/usr/bin/codesign',['--verify','--deep','--strict',bundle],{stdio:'pipe'});
 }
 function build({out,portable=false,platform=process.platform,arch=process.arch,electronExecutable,run=execFileSync}={}){
- out=out||path.join(root,`output/desktop/Furnish-${platform}-${arch}`);
+ out=out||path.join(root,`output/desktop/Furnish-${platform}-${arch}${platform==='darwin'?'.noindex':''}`);
  out=path.resolve(out);
  if(fs.existsSync(out))throw Error('输出目录已存在，可能包含用户设计；请用 --out 指定新的空目录：'+out);
  if(!(platform==='win32'&&arch==='x64'||platform==='darwin'&&['arm64','x64'].includes(arch)))throw Error('当前打包入口支持 Windows x64 和 macOS arm64/x64；请在目标系统原生打包。');

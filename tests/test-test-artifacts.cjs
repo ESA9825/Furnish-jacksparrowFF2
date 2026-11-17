@@ -8,7 +8,7 @@ const T=require('../scripts/lib/test-artifacts.cjs'),helper=require.resolve('../
  try{
   const source=path.join(root,'source');for(const dir of ['src','assets','scripts','projects','docs'])fs.mkdirSync(path.join(source,dir),{recursive:true});
   for(const file of ['src/app.js','assets/model.glb','scripts/test.cjs','index.html','projects/workspace.furnish.json','docs/baseline.md','docs/changed.md'])fs.writeFileSync(path.join(source,file),'source:'+file);
-  const job=make(),work=job.workspace('workspace',source,{directories:['src','assets','scripts','docs']}),out=path.join(work,'output');fs.mkdirSync(out);
+  const job=make();assert.equal(job.dir.endsWith('.noindex'),process.platform==='darwin','Mac test runs exclude Spotlight even when retained');const work=job.workspace('workspace',source,{directories:['src','assets','scripts','docs']}),out=path.join(work,'output');fs.mkdirSync(out);
   fs.writeFileSync(path.join(work,'docs/new-evidence.png'),'evidence');fs.writeFileSync(path.join(work,'docs/changed.md'),'new report');
   fs.writeFileSync(path.join(work,'src/app.js'),'private edit');assert.equal(fs.readFileSync(path.join(source,'src/app.js'),'utf8'),'source:src/app.js','workspace copies must not hard-link production inputs');
   fs.writeFileSync(path.join(out,'preview.html'),'generated');fs.writeFileSync(path.join(out,'snapshot.json'),'before');job.generated(out);
