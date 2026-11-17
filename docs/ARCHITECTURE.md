@@ -1,3 +1,5 @@
+2026-11-17（收敛工作集释放）：progressive-view沿原生产快照和主View3D碰撞／拾取，原精度收敛画布无损转到轻量二维画布后显式销毁WebGPU工作集；短时导航仍复用，空闲释放后相机／投影／场景变化重建，原生画质预算、模型和持久链不变。见[生命周期与实测](validation/progressive-memory-20261117/README.md)。
+
 2026-11-17（L形柜门）：组件柜foldDoor沿原构造器派生刚性双轴门片；二维、三维、实体与完整分段扫掠共用cabinet-builder核心。原mutate/撤销/保存及v92项目、仓库、缓存保持单通道；同宿主板件及抽屉交互加入适用核对，不改变旧门组。见[CABINET-FOLD-DOOR.md](CABINET-FOLD-DOOR.md)。
 
 2026-11-17（MCP工作流补齐）：mcp-core声明33项固定工具；renderer沿原商品／采购、组件柜、空间、建筑、方案与导出核心完成操作。stdio将产品档案操作限定到既有assets/models目录，桌面主进程将成果限定到.local/mcp-exports；不接受任意路径或脚本。复用原mutate／flush／revision／requestId与项目格式，新增诊断分别比较传输层／页面清单。见[MCP契约](MCP-CAPABILITIES.md)。

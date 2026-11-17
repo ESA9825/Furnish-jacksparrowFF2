@@ -14,9 +14,20 @@ function updateLiveCamera(data){if(!live||!tracer||!liveCamera)return;
  if(!c0||!valid(c0.matrixWorld)||!valid(c0.projectionMatrix)||!Number.isFinite(c0.aspect)||c0.aspect<.1||c0.aspect>10||!Number.isFinite(c0.near)||!Number.isFinite(c0.far))throw Error('相机数据无效');liveVersion++;viewKey=data.viewKey;const c=data.camera;aspect=c.aspect;liveCamera.aspect=c.aspect;liveCamera.matrixWorld.fromArray(c.matrixWorld);liveCamera.matrixWorld.decompose(liveCamera.position,liveCamera.quaternion,liveCamera.scale);liveCamera.updateMatrixWorld(true);liveProjection=c.projectionMatrix.slice();liveCamera.near=c.near;liveCamera.far=c.far;updateLiveProjection();resizeLive(edge);tracer.updateCamera();paused=false;tracer.pause=false;renderLoop();}
 const send=(type,values={})=>parent.postMessage({channel:'furnish-lighting-preview',token,type,...values},location.origin);
 const status=message=>send('status',{message});
+async function sendLiveImage(version=liveVersion){
+ const canvas=renderer?.domElement;if(!canvas)return;
+ const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+ if(!stopped&&version===liveVersion&&liveComplete&&blob)send('live-image',{viewKey,blob,width:canvas.width,height:canvas.height});
+}
 function stop(){stopped=true;renderer?.setAnimationLoop(null);}
 function fail(error){if(stopped)return;console.warn('Furnish HD preview:',error?.stack||error);stop();send('error',{message:String(error?.message||error).slice(0,350)});}
-window.addEventListener('pagehide',()=>{stop();tracer?.dispose();if(scene){const resources=new Set();scene.traverse(o=>{if(o.geometry)resources.add(o.geometry);for(const m of [o.material].flat().filter(Boolean)){resources.add(m);for(const v of Object.values(m))if(v?.isTexture)resources.add(v);}});for(const r of resources)r.dispose();}renderer?.dispose();});
+let disposal=null;
+function dispose(){if(disposal)return disposal;stop();disposal=(async()=>{
+ tracer?.dispose();tracer=null;
+ if(scene){const resources=new Set();scene.traverse(o=>{if(o.geometry)resources.add(o.geometry);for(const m of [o.material].flat().filter(Boolean)){resources.add(m);for(const v of Object.values(m))if(v?.isTexture)resources.add(v);}});for(const r of resources)r.dispose();scene.clear();scene=null;}
+ liveCamera=null;const ownedRenderer=renderer;renderer=null;await ownedRenderer?.dispose();
+})();return disposal;}
+window.addEventListener('pagehide',()=>{dispose().catch(console.warn);});
 async function run(data){
  token=data.token;live=data.mode==='live';viewKey=data.viewKey;aspect=data.aspect;edge=data.edge||1200;if(live)document.body.classList.add('live');const started=performance.now();
  try{
@@ -52,7 +63,10 @@ async function run(data){
   tracer.setBVHWorker(GenerateMeshBVHWorker);tracer.addEventListener('progress',e=>{if(!stopped&&e.stage==='building')status('正在准备场景 · '+Math.round(e.progress*100)+'%');});
   status('正在准备场景…');await tracer.setSceneAsync(scene,camera);if(stopped)return;if(live){updateLiveCamera({camera:data.camera,viewKey:data.viewKey});send('live-ready',{viewKey});}
   tracer.addEventListener('complete',async()=>{
-   if(stopped)return;if(live){const version=liveVersion;await renderer.backend.device.queue.onSubmittedWorkDone();if(stopped||version!==liveVersion)return;liveComplete=true;send('live-complete',{viewKey,samples,frameTime:tracer.frameTime});renderer.setAnimationLoop(null);return;}
+   if(stopped)return;if(live){const version=liveVersion;await renderer.backend.device.queue.onSubmittedWorkDone();if(stopped||version!==liveVersion)return;liveComplete=true;renderer.setAnimationLoop(null);send('live-complete',{viewKey,samples,frameTime:tracer.frameTime});
+    // Capture the already tone-mapped canvas losslessly. The editor can keep this
+    // exact settled image while releasing this iframe's CPU/GPU working set.
+    await sendLiveImage(version);return;}
    try{await renderer.backend.device.queue.onSubmittedWorkDone();
     const blob=await new Promise(resolve=>renderer.domElement.toBlob(resolve,'image/png'));if(stopped)return;if(!blob)throw Error('无法生成预览图片');
     stop();send('complete',{blob,width,height,samples,seconds:(performance.now()-started)/1000});
@@ -66,5 +80,5 @@ async function run(data){
  }catch(error){fail(error);}
 }
 window.addEventListener('message',e=>{if(e.source!==parent||e.origin!==location.origin||e.data?.channel!=='furnish-lighting-preview'||e.data.type!=='scene'||token!==null)return;run(e.data);});
-window.addEventListener('message',e=>{if(e.source!==parent||e.origin!==location.origin||e.data?.channel!=='furnish-lighting-preview'||e.data.token!==token||!live||stopped)return;const d=e.data;try{if(d.type==='pause'){paused=true;if(tracer)tracer.pause=true;renderer?.setAnimationLoop(null);}else if(d.type==='resume'){paused=false;if(tracer)tracer.pause=false;if(liveComplete)send('live-complete',{viewKey,samples:tracer.maxSamples,frameTime:tracer.frameTime});else renderLoop();}else if(d.type==='camera')updateLiveCamera(d);else if(d.type==='resize'&&tracer&&[640,800,1200].includes(d.edge)){liveVersion++;resizeLive(d.edge);paused=false;tracer.pause=false;renderLoop();}}catch(error){fail(error);}});
+window.addEventListener('message',e=>{if(e.source!==parent||e.origin!==location.origin||e.data?.channel!=='furnish-lighting-preview'||e.data.token!==token||!live||stopped)return;const d=e.data;if(d.type==='dispose'){dispose().then(()=>send('released')).catch(error=>{console.warn(error);send('released');});return;}try{if(d.type==='pause'){paused=true;if(tracer)tracer.pause=true;renderer?.setAnimationLoop(null);}else if(d.type==='resume'){paused=false;if(tracer)tracer.pause=false;if(liveComplete){send('live-complete',{viewKey,samples:tracer.maxSamples,frameTime:tracer.frameTime});sendLiveImage().catch(error=>console.warn(error));}else renderLoop();}else if(d.type==='camera')updateLiveCamera(d);else if(d.type==='resize'&&tracer&&[640,800,1200].includes(d.edge)){liveVersion++;resizeLive(d.edge);paused=false;tracer.pause=false;renderLoop();}}catch(error){fail(error);}});
 send('ready');

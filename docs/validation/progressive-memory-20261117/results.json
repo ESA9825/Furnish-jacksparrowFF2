@@ -1,0 +1,323 @@
+{
+  "metric": "macOS process-group physical footprint, natural GC",
+  "order": "ABBA",
+  "forcedGC": false,
+  "runs": [
+    {
+      "label": "before",
+      "artifact": "output/tauri-comparison/compare-6a1giu.noindex",
+      "physicalMiB": 6611.4367752075195,
+      "rssMiB": 3119.90625,
+      "state": {
+        "planId": "custom_mv37igji",
+        "furniture": 182,
+        "view": "3d",
+        "viewport": [
+          1440,
+          928
+        ],
+        "dpr": 1,
+        "progressiveStatus": "渐进高清 · 已收敛",
+        "settledImage": null,
+        "progressiveCanvases": [
+          [
+            1200,
+            1091
+          ]
+        ]
+      },
+      "sourceHash": "2b743b4992ec6a63511e02bc6f1b4efdef37b6307d479b1e5957c95ba4aa2329",
+      "codeHashes": {
+        "src/render/lighting-preview.js": "cecbc85b08e341ba503d07d9c7ba0ba7f4a729917884c94b04f11238c687e5be",
+        "src/ui/progressive-view.js": "2f299e816511efd5781da55b9b48d740ca91cef6409d5492522edb685e0530db",
+        "styles/app.css": "676c5140ee8f89465232c22685c48701d75466f8e3c1c0466bdc516739bdef6a"
+      },
+      "sceneAudit": {
+        "rawGlbHash": "1220eb284171842d876b594adacd11c6b3e5bc40d3bb002c2dde5f2089e1c495",
+        "bytes": 153958204,
+        "environment": {
+          "exposure": 1.05,
+          "ambient": 1.1,
+          "reflection": 1,
+          "sun": 2.9965742771817654,
+          "background": "#f5f2ea",
+          "world": [
+            0.35,
+            0.38,
+            0.44
+          ]
+        },
+        "lightingHash": "383c9c32cdf531093528233e81aff29e83df8f9f5702563e810b165261fd4d4c",
+        "rects": 24,
+        "spots": 3
+      },
+      "errors": [],
+      "sourceUnchanged": true,
+      "iframeGpuLiveMiB": 1059.6031532287598,
+      "iframeRetired": false
+    },
+    {
+      "label": "after",
+      "artifact": "output/tauri-comparison/compare-YhVbej.noindex",
+      "physicalMiB": 5029.38932800293,
+      "rssMiB": 5642.828125,
+      "state": {
+        "planId": "custom_mv37igji",
+        "furniture": 182,
+        "view": "3d",
+        "viewport": [
+          1440,
+          928
+        ],
+        "dpr": 1,
+        "progressiveStatus": "渐进高清 · 已收敛",
+        "settledImage": [
+          1200,
+          1091
+        ],
+        "progressiveCanvases": []
+      },
+      "sourceHash": "2b743b4992ec6a63511e02bc6f1b4efdef37b6307d479b1e5957c95ba4aa2329",
+      "codeHashes": {
+        "src/render/lighting-preview.js": "6dd0a7af13a3de14843f3d0139e78b1e23af96290e486e93e4a15dc8d78b0c3d",
+        "src/ui/progressive-view.js": "0c71c46f6d742fb26f5b69421c1c295746201a87a474a6c30c1c130fd6502773",
+        "styles/app.css": "966b0a7b0e70eeb11feccf50d51c62f8e2cde60af34dd2fe72c77be10db1ba25"
+      },
+      "sceneAudit": {
+        "rawGlbHash": "f46c619f265c7e26607cf80006510711ad131c62bec957b24e5b361c04dcfa36",
+        "bytes": 153958204,
+        "environment": {
+          "exposure": 1.05,
+          "ambient": 1.1,
+          "reflection": 1,
+          "sun": 2.9965742771817654,
+          "background": "#f5f2ea",
+          "world": [
+            0.35,
+            0.38,
+            0.44
+          ]
+        },
+        "lightingHash": "383c9c32cdf531093528233e81aff29e83df8f9f5702563e810b165261fd4d4c",
+        "rects": 24,
+        "spots": 3
+      },
+      "errors": [],
+      "sourceUnchanged": true,
+      "iframeGpuLiveMiB": null,
+      "iframeRetired": true
+    },
+    {
+      "label": "after",
+      "artifact": "output/tauri-comparison/compare-oJ1I9y.noindex",
+      "physicalMiB": 4827.420440673828,
+      "rssMiB": 3873.28125,
+      "state": {
+        "planId": "custom_mv37igji",
+        "furniture": 182,
+        "view": "3d",
+        "viewport": [
+          1440,
+          928
+        ],
+        "dpr": 1,
+        "progressiveStatus": "渐进高清 · 已收敛",
+        "settledImage": [
+          1200,
+          1091
+        ],
+        "progressiveCanvases": []
+      },
+      "sourceHash": "2b743b4992ec6a63511e02bc6f1b4efdef37b6307d479b1e5957c95ba4aa2329",
+      "codeHashes": {
+        "src/render/lighting-preview.js": "6dd0a7af13a3de14843f3d0139e78b1e23af96290e486e93e4a15dc8d78b0c3d",
+        "src/ui/progressive-view.js": "0c71c46f6d742fb26f5b69421c1c295746201a87a474a6c30c1c130fd6502773",
+        "styles/app.css": "966b0a7b0e70eeb11feccf50d51c62f8e2cde60af34dd2fe72c77be10db1ba25"
+      },
+      "sceneAudit": {
+        "rawGlbHash": "fde4c2d8e7f2dafe0ff7bd616b90de2f36d1ea5b0b97652d07d22e3d58a257e2",
+        "bytes": 153958204,
+        "environment": {
+          "exposure": 1.05,
+          "ambient": 1.1,
+          "reflection": 1,
+          "sun": 2.9965742771817654,
+          "background": "#f5f2ea",
+          "world": [
+            0.35,
+            0.38,
+            0.44
+          ]
+        },
+        "lightingHash": "383c9c32cdf531093528233e81aff29e83df8f9f5702563e810b165261fd4d4c",
+        "rects": 24,
+        "spots": 3
+      },
+      "errors": [],
+      "sourceUnchanged": true,
+      "iframeGpuLiveMiB": null,
+      "iframeRetired": true
+    },
+    {
+      "label": "before",
+      "artifact": "output/tauri-comparison/compare-Vji4qx.noindex",
+      "physicalMiB": 6486.108833312988,
+      "rssMiB": 6201.65625,
+      "state": {
+        "planId": "custom_mv37igji",
+        "furniture": 182,
+        "view": "3d",
+        "viewport": [
+          1440,
+          928
+        ],
+        "dpr": 1,
+        "progressiveStatus": "渐进高清 · 已收敛",
+        "settledImage": null,
+        "progressiveCanvases": [
+          [
+            1200,
+            1091
+          ]
+        ]
+      },
+      "sourceHash": "2b743b4992ec6a63511e02bc6f1b4efdef37b6307d479b1e5957c95ba4aa2329",
+      "codeHashes": {
+        "src/render/lighting-preview.js": "cecbc85b08e341ba503d07d9c7ba0ba7f4a729917884c94b04f11238c687e5be",
+        "src/ui/progressive-view.js": "2f299e816511efd5781da55b9b48d740ca91cef6409d5492522edb685e0530db",
+        "styles/app.css": "676c5140ee8f89465232c22685c48701d75466f8e3c1c0466bdc516739bdef6a"
+      },
+      "sceneAudit": {
+        "rawGlbHash": "48f89af03835da602fb0a1e65b244e9a4c0c2108ad467fbb7a4ef83631cf41e8",
+        "bytes": 153958204,
+        "environment": {
+          "exposure": 1.05,
+          "ambient": 1.1,
+          "reflection": 1,
+          "sun": 2.9965742771817654,
+          "background": "#f5f2ea",
+          "world": [
+            0.35,
+            0.38,
+            0.44
+          ]
+        },
+        "lightingHash": "383c9c32cdf531093528233e81aff29e83df8f9f5702563e810b165261fd4d4c",
+        "rects": 24,
+        "spots": 3
+      },
+      "errors": [],
+      "sourceUnchanged": true,
+      "iframeGpuLiveMiB": 1059.6031532287598,
+      "iframeRetired": false
+    }
+  ],
+  "beforeMeanMiB": 6548.772804260254,
+  "afterMeanMiB": 4928.404884338379,
+  "savedMiB": 1620.367919921875,
+  "percent": 24.743077342181685,
+  "nativeImages": [
+    {
+      "artifact": "compare-6a1giu.noindex/detail-native.png",
+      "width": 1200,
+      "height": 1091,
+      "mean": 0,
+      "max": 0,
+      "changed": 0
+    },
+    {
+      "artifact": "compare-YhVbej.noindex/detail-native.png",
+      "width": 1200,
+      "height": 1091,
+      "mean": 0.04909734952642835,
+      "max": 9,
+      "changed": 254198
+    },
+    {
+      "artifact": "compare-oJ1I9y.noindex/detail-native.png",
+      "width": 1200,
+      "height": 1091,
+      "mean": 0.06134395050412465,
+      "max": 19,
+      "changed": 311486
+    },
+    {
+      "artifact": "compare-Vji4qx.noindex/detail-native.png",
+      "width": 1200,
+      "height": 1091,
+      "mean": 0.06092613809960281,
+      "max": 18,
+      "changed": 310742
+    }
+  ],
+  "qualityLifecycle": {
+    "artifact": "output/desktop-verification/progressive-memory-Y7zxG8.noindex",
+    "errors": [],
+    "views": {
+      "first": {
+        "nativePixelsIdentical": true,
+        "dimensions": [
+          1200,
+          1178
+        ],
+        "compositor": {
+          "mean": 0.002450753973644885,
+          "max": 38,
+          "differing": 328,
+          "interiorDiffering": 0,
+          "interiorMax": 0
+        },
+        "releaseReceipts": 1,
+        "exports": 1
+      },
+      "second": {
+        "nativePixelsIdentical": true,
+        "dimensions": [
+          1200,
+          1178
+        ],
+        "compositor": {
+          "mean": 0.002450414345876919,
+          "max": 38,
+          "differing": 327,
+          "interiorDiffering": 0,
+          "interiorMax": 0
+        },
+        "releaseReceipts": 2,
+        "exports": 2
+      },
+      "third": {
+        "nativePixelsIdentical": true,
+        "dimensions": [
+          1200,
+          1197
+        ],
+        "compositor": {
+          "mean": 0.0027222830383749922,
+          "max": 39,
+          "differing": 300,
+          "interiorDiffering": 0,
+          "interiorMax": 0
+        },
+        "releaseReceipts": 3,
+        "exports": 3
+      },
+      "fourth": {
+        "nativePixelsIdentical": true,
+        "dimensions": [
+          1200,
+          1197
+        ],
+        "compositor": {
+          "mean": 0.0027222830383749922,
+          "max": 39,
+          "differing": 300,
+          "interiorDiffering": 0,
+          "interiorMax": 0
+        },
+        "releaseReceipts": 4,
+        "exports": 4
+      }
+    }
+  }
+}

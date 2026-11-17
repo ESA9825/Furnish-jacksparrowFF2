@@ -5,8 +5,31 @@ function enter(){if(current)return;const host=document.querySelector('#view3d');
  const bar=document.createElement('div');bar.id='progressive-controls';bar.innerHTML='<select aria-label="三维观察画质" id="progressive-mode"><option value="auto">自动 · 快速渐进</option><option value="detail">精细渐进</option><option value="smooth">流畅观察</option></select><span id="progressive-status" role="status"></span><button class="btn" id="progressive-retry" hidden>重试高清</button>';host.append(bar);
  const s={bar,host,frame:null,token:0,active:true,blocked:false,held:false,quiet:performance.now(),sceneKey:null,viewKey:null,sentView:null,building:false,ready:false,policy:FurnishProgressivePolicy.performancePolicy(mode),pause:false};current=s;
  const status=t=>bar.querySelector('#progressive-status').textContent=t,post=(type,body={})=>s.frame?.contentWindow.postMessage({channel:'furnish-lighting-preview',token:s.token,type,...body},location.origin);
- function hide(){if(s.frame)s.frame.hidden=true;}
- function dispose(){s.token++;s.frame?.remove();s.frame=null;s.ready=false;s.building=false;s.sceneKey=null;s.sentView=null;s.pending=null;clearTimeout(s.watchdog);}
+ function hide(){if(s.frame)s.frame.hidden=true;if(s.image)s.image.hidden=true;}
+ function cancelSettle(){clearTimeout(s.settleTimer);if(s.pendingImageUrl)URL.revokeObjectURL(s.pendingImageUrl);s.pendingImageUrl=null;}
+ function clearImage(){cancelSettle();s.image?.remove();s.image=null;if(s.imageUrl)URL.revokeObjectURL(s.imageUrl);s.imageUrl=null;}
+ async function settle(d){
+  if(!(d.blob instanceof Blob)||d.blob.type!=='image/png'||s.image)return;
+  const token=s.token,frame=s.frame,url=URL.createObjectURL(d.blob),decoded=new Image();decoded.src=url;
+  try{await decoded.decode();}catch{URL.revokeObjectURL(url);return;}
+  // Keep a canvas presentation layer so Chromium uses the same compositor
+  // filtering as the original WebGPU canvas, without a WebGPU context.
+  const image=document.createElement('canvas');image.id='progressive-image';image.setAttribute('aria-label','渐进高清观察');image.width=decoded.naturalWidth;image.height=decoded.naturalHeight;image.dataset.viewKey=d.viewKey;image.dataset.source=url;const ctx=image.getContext('2d');if(!ctx){URL.revokeObjectURL(url);return;}ctx.drawImage(decoded,0,0);
+  const valid=()=>{const state=root.View3D.progressiveState();return s.active&&s.token===token&&s.frame===frame&&state&&!state.editing&&state.sceneKey===s.sceneKey&&state.viewKey===d.viewKey&&!s.held&&performance.now()-s.quiet>=250;};
+  if(!valid()){URL.revokeObjectURL(url);return;}
+  // A short idle grace preserves BVH reuse during active navigation. An image
+  // never owns picking, editing, or collision data; those stay in View3D.
+  cancelSettle();s.pendingImageUrl=url;s.settleTimer=setTimeout(()=>{
+   s.pendingImageUrl=null;if(!valid()){URL.revokeObjectURL(url);return;}
+   clearImage();
+   // Match the iframe's actual CSS film, including its integer inner viewport.
+   // A percentage-sized overlay can otherwise shift edges by a fractional pixel.
+   const film=frame.contentDocument?.querySelector('canvas')?.getBoundingClientRect();if(film){image.style.width=film.width+'px';image.style.height=film.height+'px';}
+   s.image=image;s.imageUrl=url;s.host.prepend(image);s.ready=false;s.building=false;s.pause=false;post('dispose');s.retireTimer=setTimeout(()=>{if(s.frame===frame){frame.remove();s.frame=null;}},2000);
+  },2000);
+ }
+
+ function dispose(){clearTimeout(s.retireTimer);clearImage();s.token++;s.frame?.remove();s.frame=null;s.ready=false;s.building=false;s.sceneKey=null;s.sentView=null;s.pending=null;clearTimeout(s.watchdog);}
  function fallback(reason){dispose();s.blocked=true;bar.dataset.state='fallback';status('流畅观察 · '+reason);bar.querySelector('#progressive-retry').hidden=false;}
  function interact(e){if(e.type==='pointerdown')s.held=true;s.quiet=performance.now();hide();if(s.frame){s.pause=true;post('pause');}}
  function release(){s.held=false;s.quiet=performance.now();}
@@ -18,7 +41,7 @@ function enter(){if(current)return;const host=document.querySelector('#view3d');
    const frame=document.createElement('iframe');frame.id='progressive-frame';frame.title='渐进高清观察';frame.setAttribute('allow','webgpu');frame.src='src/render/lighting-preview.html';frame.hidden=true;s.frame=frame;s.pending={...data,mode:'live',quality:mode,token,viewKey:fresh.viewKey,camera:fresh.camera,edge:s.policy.sample({now:0,samples:0}).edge};s.pending.sceneKey=fresh.sceneKey;s.sentView=fresh.viewKey;s.viewKey=fresh.viewKey;host.prepend(frame);s.watchdog=setTimeout(()=>{if(s.token===token)fallback('初始化超时');},90000);
   }catch(error){if(s.token!==token||!s.active)return;const now=root.View3D.progressiveState();if(!now||now.sceneKey!==state.sceneKey){dispose();s.quiet=performance.now();}else fallback(error.message||'设备不可用');}
  }
- function receive(e){if(e.source!==s.frame?.contentWindow||e.origin!==location.origin||e.data?.channel!=='furnish-lighting-preview')return;const d=e.data;if(d.type==='ready'){const data=s.pending;if(!data)return;s.pending=null;s.frame.contentWindow.postMessage({channel:'furnish-lighting-preview',type:'scene',...data},location.origin,[data.buffer]);return;}if(d.token!==s.token)return;if(d.type==='error'){fallback(d.message||'设备不可用');return;}if(d.type==='live-ready'){s.ready=true;s.building=false;s.policy.reset();if(s.held||performance.now()-s.quiet<250){s.pause=true;post('pause');}}
+ function receive(e){if(e.source!==s.frame?.contentWindow||e.origin!==location.origin||e.data?.channel!=='furnish-lighting-preview')return;const d=e.data;if(d.type==='ready'){const data=s.pending;if(!data)return;s.pending=null;s.frame.contentWindow.postMessage({channel:'furnish-lighting-preview',type:'scene',...data},location.origin,[data.buffer]);return;}if(d.token!==s.token)return;if(d.type==='released'){clearTimeout(s.retireTimer);s.frame.remove();s.frame=null;return;}if(d.type==='live-image'){settle(d);return;}if(d.type==='error'){fallback(d.message||'设备不可用');return;}if(d.type==='live-ready'){s.ready=true;s.building=false;s.policy.reset();if(s.held||performance.now()-s.quiet<250){s.pause=true;post('pause');}}
   if(d.type==='status'&&!s.ready)status(d.message);
   if(d.type==='live-progress'||d.type==='live-complete'){
    const state=root.View3D.progressiveState();if(!state||state.editing||state.sceneKey!==s.sceneKey||state.viewKey!==d.viewKey||s.held||performance.now()-s.quiet<180)return;
@@ -27,14 +50,15 @@ function enter(){if(current)return;const host=document.querySelector('#view3d');
   }
  }
  window.addEventListener('message',receive);
- function tick(){if(!s.active)return;const light=document.querySelector('.scene-light'),a=bar.getBoundingClientRect(),b=light?.getClientRects().length?light.getBoundingClientRect():null,top=b&&a.left<b.right+8&&a.right>b.left-8?Math.max(12,b.bottom-host.getBoundingClientRect().top+8):12;if(bar.style.top!==top+'px')bar.style.top=top+'px';if(mode==='smooth'){if(s.frame||s.building)dispose();status('流畅观察');bar.dataset.state='smooth';return;}if(s.blocked)return;
+ function tick(){if(!s.active)return;const light=document.querySelector('.scene-light'),a=bar.getBoundingClientRect(),b=light?.getClientRects().length?light.getBoundingClientRect():null,top=b&&a.left<b.right+8&&a.right>b.left-8?Math.max(12,b.bottom-host.getBoundingClientRect().top+8):12;if(bar.style.top!==top+'px')bar.style.top=top+'px';if(mode==='smooth'){if(s.frame||s.building||s.image)dispose();status('流畅观察');bar.dataset.state='smooth';return;}if(s.blocked)return;
   if(location.protocol==='file:'){fallback('直接打开文件；桌面可启用高清');return;}if(!navigator.gpu){fallback('设备不支持 WebGPU');return;}
-  if(document.hidden||document.querySelector('#lighting-preview')){if(s.frame||s.building)dispose();status(document.hidden?'已暂停':'独立出图中');s.quiet=performance.now();return;}
+  if(document.hidden||document.querySelector('#lighting-preview')){if(s.frame||s.building||s.image)dispose();status(document.hidden?'已暂停':'独立出图中');s.quiet=performance.now();return;}
   const state=root.View3D.progressiveState();if(!state){hide();s.quiet=performance.now();if(s.frame){s.pause=true;post('pause');}return;}
   if(state.editing){hide();s.quiet=performance.now();if(s.frame){s.pause=true;post('pause');}status('编辑中 · 结束后自动高清');return;}
-  if(state.sceneKey!==s.sceneKey&&s.frame){dispose();s.quiet=performance.now();status('场景已更新，准备重采样…');}
+  if(state.sceneKey!==s.sceneKey&&(s.frame||s.image)){dispose();s.quiet=performance.now();status('场景已更新，准备重采样…');}
   if(s.viewKey!==state.viewKey){s.viewKey=state.viewKey;s.quiet=performance.now();hide();if(s.frame){s.pause=true;post('pause');}}
   if(s.held||performance.now()-s.quiet<250)return;
+  if(s.image){if(s.sentView===state.viewKey){s.image.hidden=false;bar.dataset.state='progressive';status('渐进高清 · 已收敛');return;}clearImage();}
   if(!s.frame&&!s.building){build(state);return;}
   if(s.ready&&s.sentView!==state.viewKey){s.sentView=state.viewKey;s.pause=false;s.policy.reset();post('camera',{camera:state.camera,viewKey:state.viewKey});status('渐进高清 · 重新采样…');}
   else if(s.ready&&s.pause){s.pause=false;post('resume');}
