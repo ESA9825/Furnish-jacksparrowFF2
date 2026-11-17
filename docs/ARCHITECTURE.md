@@ -763,3 +763,7 @@ server-runtime.watch跨轮只保留依赖路径、stat签名和摘要，原始�
 ### 参数化90°转角柜
 
 `src/core/corner-cabinet-core.js`维护cabinet v3/corner90参数，派生临时v2生产板件与foldDoor，沿共享构造器／实体／扫掠输出；不保存派生boxes。`src/ui/corner-cabinet.js`提供独立及宿主共用参数控件；组合厨房按两个实际朝向派生正视。最低项目v93、旧v1/v2保留，几何和工艺边界见[CABINET-CORNER90.md](CABINET-CORNER90.md)。
+
+## 2026-11-18：二维拖动延迟
+
+FurnitureSolids沿完整生产键为活家具弱引用保留当前局部／世界实体，固定LRU容量保持；厨房避让快照只复制会改写的厨房。移动无位姿／辅助线变化时跳过重绘，孔洞展示依真实输入失效，排序提前做原包络排除。松手复用原defer保存；project-core的reviewSteps/spaceCheckSteps统一同步核对与可取消分片自动核对，无新状态或持久格式。186件1601同包隔离实测、精度对照及剩余延迟见[验收](validation/drag-latency-20261118/README.md)。

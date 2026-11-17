@@ -272,12 +272,15 @@
   for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){
    const a=items[i],b=items[j],A=a.vertical,B=b.vertical;
    if(a.layer!==b.layer)continue;
+   // Every ordering edge requires footprint overlap. Reject distant pairs
+   // before inspecting tucked-seat relations and their production outlines.
+   if(Math.abs(a.f.cx-b.f.cx)>=a.box.hw+b.box.hw||Math.abs(a.f.cy-b.f.cy)>=a.box.hh+b.box.hh)continue;
    const heights=A&&B&&[A.bottom,A.top,B.bottom,B.top].every(Number.isFinite);
    // A kitchen's full envelope includes its cavity. Objects below the actual
    // slab still draw underneath it even though those envelopes overlap.
    const linked=a.f.counterLink?.hostId===b.f.id&&b.countertop!==null?b:b.f.counterLink?.hostId===a.f.id&&a.countertop!==null?a:null;
    const low=linked||(heights&&A.top<=B.bottom?a:heights&&B.top<=A.bottom?b:heights&&b.countertop!==null&&A.top<=b.countertop?a:heights&&a.countertop!==null&&B.top<=a.countertop?b:G.tuckedSeatUnder(a.f,b.f)?a:G.tuckedSeatUnder(b.f,a.f)?b:null);if(!low)continue;
-   if(Math.abs(a.f.cx-b.f.cx)>=a.box.hw+b.box.hw||Math.abs(a.f.cy-b.f.cy)>=a.box.hh+b.box.hh||!G.obbOverlap({...a.f,rot:a.f.rot||0},{...b.f,rot:b.f.rot||0}))continue;
+   if(!G.obbOverlap({...a.f,rot:a.f.rot||0},{...b.f,rot:b.f.rot||0}))continue;
    const high=low===a?b:a;low.after.push(high);high.incoming++;
   }
   const pending=items.sort((a,b)=>a.layer-b.layer||a.index-b.index),result=[];

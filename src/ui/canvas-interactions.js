@@ -182,7 +182,7 @@ function endDrag(cancel){
       if (f){ const ox = f.cx, oy = f.cy; pushOut(f,d.kind==='move'?d.axis:undefined); if (Math.hypot(f.cx-ox, f.cy-oy) > 60) toast(tr('已自动避开墙体', 'Moved off the wall automatically')); }
     }
     if(d.kind==='move'&&d.ids.length===1){const f=getF(d.id);if(f&&!f.obj&&FurnishProducts.definition(f)?.ceilingPanel){try{Object.assign(f,FurnishCeiling.fitCeilingPanel(FurnishProject.effectivePlan(PLAN,state),f,state.furniture));}catch(error){toast(error.message);}}}
-    try{commit(d.before,true);}catch(error){toast(error.message);} renderAll();
+    try{commit(d.before,true,{sceneFirst:true});}catch(error){toast(error.message);} renderAll({sceneFirst:true});
     if(['size','kitchen-run','kitchen-extension','kitchen-divider','assembly-size'].includes(d.kind)&&d.resizeError)toast(d.resizeError);
   }
 }
@@ -248,8 +248,12 @@ function processCanvasPointerMove(e){
     if(!e.shiftKey)delete drag.axis;
     else if(!drag.axis)drag.axis=Math.abs(x-anchor.x)>=Math.abs(y-anchor.y)?'x':'y';
     // 以按住的那件为基准吸附，整组按同一位移移动；限制在画布范围内，防止拖丢
+    const previousGuides=JSON.stringify(ui.guides);
     const b = BOUNDS, [sx, sy] = snapMove(f,x,y,new Set(drag.ids),e.altKey,drag.axis,anchor);
     const dx = drag.axis==='y'?0:Math.max(b.x, Math.min(b.x + b.w, sx)) - start[0], dy = drag.axis==='x'?0:Math.max(b.y, Math.min(b.y + b.h, sy)) - start[1];
+    // Snapping can hold many pointer events at the exact same pose. Only
+    // redraw when the pose or guides change; release still commits once.
+    if(drag.ids.every(id=>{const g=getF(id);return !g||g.cx===drag.start[id][0]+dx&&g.cy===drag.start[id][1]+dy;})&&previousGuides===JSON.stringify(ui.guides))return;
     // 拖动中只更新被拖家具的位姿，不重建全部家具
     drag.ids.forEach(id => { const g = getF(id); if (!g) return;
       g.cx = drag.start[id][0] + dx; g.cy = drag.start[id][1] + dy;

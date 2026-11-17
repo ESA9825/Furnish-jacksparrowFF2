@@ -159,10 +159,14 @@
  }
  function checkFingerprint(issue,plan,furniture,passage){return JSON.stringify({version:3,issue,context:checkContext(plan,furniture,passage)});}
  let lastReview=null;
- function review(plan,work){
-  const passage=work.spaceThreshold||800,context=JSON.stringify(checkContext(plan,work.furniture,passage)),key=context+JSON.stringify([work.spaceIgnored||[],work.furniture.map(f=>[f.name,design().products().modelError(f)]),plan.rooms.map(r=>r.name),(plan.doors||[]).map(d=>d.name),(plan.ceilings?.items||[]).map(c=>c.name)]);
+ function review(plan,work){return drain(reviewSteps(plan,work));}
+ // Iterators borrow live inputs. Async callers must abandon them on edits;
+ // only a completed review populates the shared cache. Sync callers drain.
+ function* reviewSteps(plan,work){
+  const names=[];for(const f of work.furniture){yield;names.push([f.name,design().products().modelError(f)]);}
+  const passage=work.spaceThreshold||800,context=JSON.stringify(checkContext(plan,work.furniture,passage)),key=context+JSON.stringify([work.spaceIgnored||[],names,plan.rooms.map(r=>r.name),(plan.doors||[]).map(d=>d.name),(plan.ceilings?.items||[]).map(c=>c.name)]);
   if(lastReview?.key===key)return clone(lastReview.issues);
-  const issues=spaceCheck(plan,work.furniture,{passage}),accepted=new Set();
+  const issues=yield* spaceCheckSteps(plan,work.furniture,{passage});const accepted=new Set();
   // Compare shared geometry once per saved confirmation, not once per finding.
   if(work.spaceIgnored?.length){for(const key of work.spaceIgnored){try{const saved=JSON.parse(key);if(saved?.version===3&&JSON.stringify(saved.context)===context)accepted.add(JSON.stringify(saved.issue));}catch{ /* Legacy malformed confirmation is simply inactive. */ }}}
   const result=issues.map(v=>({...v,ignored:accepted.has(JSON.stringify(v))}));lastReview={key,issues:clone(result)};return result;
@@ -364,30 +368,32 @@
   if(!base.known)for(const issue of checks){issue.ok=null;issue.pending=true;issue.message+='；家具基准地面标高未知，待核对';}
   return {checks,zones:{opening:openingWorld,vent:vent.map(world)},spec};
  }
- function spaceCheck(plan,furniture,{passage=800,focusId=null,focusIds=null,scanPassages=true,maxIssues=Infinity}={}){
+ function drain(steps){let step;do{step=steps.next();}while(!step.done);return step.value;}
+ function spaceCheck(plan,furniture,options){return drain(spaceCheckSteps(plan,furniture,options));}
+ function* spaceCheckSteps(plan,furniture,{passage=800,focusId=null,focusIds=null,scanPassages=true,maxIssues=Infinity}={}){
   plan=finishes().spatial(plan);
   if(!num(passage)||passage<300||passage>2000)fail('通道阈值须为 300–2000 mm');
   const targets=focusIds?new Set(focusIds):focusId?new Set([focusId]):null;
   const broken=[],products=design().products();
   for(const pending of plan.wallFinish?.pending||[]){const ids=targets?[...targets]:['wall-finish-'+pending.index];for(const id of ids)broken.push({kind:'wallfinish',id,wallId:pending.wallId,pending:true,name:'墙面饰面',message:pending.message});}
-  furniture=furniture.filter(f=>{const message=products.modelError(f);if(!message)return true;if(!targets||targets.has(f.id))broken.push({kind:'model',id:f.id,name:f.name,pending:true,message:'家具模型异常，空间核对待修复：'+message});return false;});
-  for(const f of furniture)if(!targets||targets.has(f.id))broken.push(...(root.FurnishCabinet||require('./cabinet-core.js')).pegboardAutoChecks(f,furniture,plan));
-  for(const f of furniture)if((!targets||targets.has(f.id))&&f.kitchen)broken.push(...(root.FurnishCabinetAssembly||require('./cabinet-assembly-core.js')).spatialIssues(f));
-  broken.push(...floors().checks(plan,furniture).filter(i=>!targets||targets.has(i.id)));
+  const valid=[];for(const f of furniture){yield;const message=products.modelError(f);if(!message)valid.push(f);else if(!targets||targets.has(f.id))broken.push({kind:'model',id:f.id,name:f.name,pending:true,message:'家具模型异常，空间核对待修复：'+message});}furniture=valid;
+  for(const f of furniture){yield;if(!targets||targets.has(f.id))broken.push(...(root.FurnishCabinet||require('./cabinet-core.js')).pegboardAutoChecks(f,furniture,plan));}
+  for(const f of furniture){yield;if((!targets||targets.has(f.id))&&f.kitchen)broken.push(...(root.FurnishCabinetAssembly||require('./cabinet-assembly-core.js')).spatialIssues(f));}
+  broken.push(...floors().checks(plan,furniture).filter(i=>!targets||targets.has(i.id)));yield;
   const ignored=new Set(['rug','pendant','acwall','wallart','curtain','mirror','tv','stove','ksink','plant']);
   const bodies=furniture.filter(f=>!ignored.has(f.type)&&!design().products().definition(f)?.covering?.soft&&!(root.FurnishProducts||(typeof require==='function'?require('./product-rules.js'):null))?.definition(f)?.embedded).map(f=>{const shapes=(root.FurnishGeometry||require('./layout-geometry.js')).footprints(f,{plan,furniture});return shapes.map(p=>({f,p,box:[Math.min(...p.map(v=>v[0])),Math.min(...p.map(v=>v[1])),Math.max(...p.map(v=>v[0])),Math.max(...p.map(v=>v[1]))]}));}).flat(),walls=plan.walls.map(rect),issues=broken;
   // Beam bodies and opening obstacles share the same rigid-object height envelopes.
   // Wall-mounted objects are exempt from floor-footprint checks, not overhead collisions.
-  const rigidBodies=furniture.filter(f=>!['rug','plant','curtain'].includes(f.type)&&!design().products().definition(f)?.covering?.soft).flatMap(f=>(root.FurnishGeometry||require('./layout-geometry.js')).bodyParts(f,plan,furniture).map(part=>({f,...part})));
+  const rigidBodies=[];for(const f of furniture){yield;if(!['rug','plant','curtain'].includes(f.type)&&!design().products().definition(f)?.covering?.soft)rigidBodies.push(...(root.FurnishGeometry||require('./layout-geometry.js')).bodyParts(f,plan,furniture).map(part=>({f,...part})));}
   const openingBox=p=>[Math.min(...p.map(v=>v[0])),Math.min(...p.map(v=>v[1])),Math.max(...p.map(v=>v[0])),Math.max(...p.map(v=>v[1]))];
   const openingObstacles=rigidBodies.map(b=>({...b,box:openingBox(b.p)}));
-  broken.push(...ceilings().checks(plan,rigidBodies,{focusIds:targets}).filter(i=>!targets||targets.has(i.id)));
+  yield;broken.push(...ceilings().checks(plan,rigidBodies,{focusIds:targets}).filter(i=>!targets||targets.has(i.id)));yield;
   const beams=(plan.beams||[]).map(beam=>{const vertical=core().beamVertical(beam,ceilingHeight(plan));return {beam,vertical:vertical?.assumed?null:vertical};});
   const S=root.FurnishServices||(typeof require==='function'?require('./service-core.js'):null),pipes=S.pipes(plan);
   const G=root.FurnishGeometry||(typeof require==='function'?require('./layout-geometry.js'):null);
-  for(const f of furniture){const result=dishwasherChecks(plan,f,{furniture,rigidBodies});if(result)for(const {ok,...issue} of result.checks)if(ok!==true)issues.push(issue);}
+  for(const f of furniture){yield;const result=dishwasherChecks(plan,f,{furniture,rigidBodies});if(result)for(const {ok,...issue} of result.checks)if(ok!==true)issues.push(issue);}
   const beamHits=new Set();
-  for(const {f,p,vertical} of rigidBodies){
+  for(const {f,p,vertical} of rigidBodies){yield;
    if(targets&&!targets.has(f.id))continue;
    if(targets&&issues.filter(v=>targets.has(v.id)||targets.has(v.otherId)).length>=maxIssues)break;
    for(const {beam,vertical:beamRange} of beams){
@@ -399,7 +405,7 @@
    }
   }
   const swings=[];
-  for(const {f,vertical} of rigidBodies){
+  for(const {f,vertical} of rigidBodies){yield;
    if(targets&&!targets.has(f.id))continue;
    for(const pipe of pipes){
     if(!S.bodyHit(f,pipe)||!G.verticalOverlap(f,null,[vertical,pipe.vertical]))continue;
@@ -409,7 +415,7 @@
   }
   (plan.doors||[]).forEach((d,index)=>{const zones=geometry().doorSwingPolygons(d);swings.push(zones);for(const {f,p} of bodies)if(zones.some(points=>intersects(points,p)))issues.push({kind:'door',doorIndex:index,id:f.id,name:f.name,message:'开门范围与家具冲突'});if(zones.some(points=>walls.some((w,i)=>intersects(points,w)&&(!plan.walls[i][5]||finishes().vertical(plan.walls[i],plan).bottom<2100))))issues.push({kind:'swingwall',doorIndex:index,name:d.name||'门 '+(index+1),message:'开门范围与墙体冲突'});});
   for(let i=0;i<swings.length;i++)for(let j=i+1;j<swings.length;j++)if(swings[i].some(a=>swings[j].some(b=>intersects(a,b))))issues.push({kind:'swings',doorIndex:i,name:(plan.doors[i].name||'门 '+(i+1))+' / '+(plan.doors[j].name||'门 '+(j+1)),message:'两扇门的开启范围重叠，请核对同时开门情况'});
-  for(const {f,p} of bodies){
+  for(const {f,p} of bodies){yield;
    if(targets&&!targets.has(f.id))continue;
    if(targets&&issues.filter(v=>targets.has(v.id)||targets.has(v.otherId)).length>=maxIssues)break;
    const recessed=products.definition(f)?.wallRecess&&!f.obj,recessCore=recessed?(root.FurnishElectricalBox||require('./electrical-box-core.js')):null,inWall=recessed&&recessCore.contained(f,plan);
@@ -420,7 +426,7 @@
    if(C?.supported(f)||f.kitchen||(products.family(f,'tea-bar')||products.definition(f)?.fridgeMotion||products.definition(f)?.hoodMotion||products.definition(f)?.washerMotion||(products.family(f,'side-table')||products.definition(f)?.sofaBedProfile||products.definition(f)?.feedingFrame))&&!f.obj){
     const base=products.floorBase(plan,f,furniture),localPipes=pipes.map(p=>({...p,vertical:p.vertical?{bottom:p.vertical.bottom-base.z,top:p.vertical.top-base.z}:null})),movingParts=pipes.length&&!f.kitchen&&C.supported(f)?S.prepareOpening(f,localPipes):[];
     for(const relativeOpening of (products.definition(f)?.feedingFrame?(root.FurnishPetFeedingCore||require('./pet-feeding-core.js')).openingZones(f,{passage}):products.definition(f)?.sofaBedProfile?(root.FurnishSofaBed||require('./sofa-bed-core.js')).openingZones(f):products.family(f,'side-table')?(root.FurnishSideTable||require('./side-table-core.js')).openingZones(f):products.definition(f)?.washerMotion?(root.FurnishWasherMotion||require('./washer-motion-core.js')).openingZones(f):products.definition(f)?.hoodMotion?(root.FurnishHoodMotion||require('./hood-motion-core.js')).openingZones(f):f.kitchen?(root.FurnishKitchen||require('./kitchen-core.js')).openingZones(f,{passage}):products.definition(f)?.fridgeMotion?(root.FurnishFridge||require('./fridge-core.js')).openingZones(f):products.family(f,'tea-bar')?products.teaBarOpeningZones(f):C.openingZones(f,{passage}))){
-     const opening=C.shiftOpening(relativeOpening,base.z);
+     yield;const opening=C.shiftOpening(relativeOpening,base.z);
      const K=root.FurnishKitchen||(typeof require==='function'?require('./kitchen-core.js'):null),movingFurniture=f.kitchen?(opening.section?.startsWith('laundry:')?K.laundryParts(f).find(p=>p.key===opening.section.slice(8)).furniture:K.moduleFurniture(f,K.cabinetLayout(f).find(m=>m.index===opening.column))):f,partOpening=f.kitchen?(opening.section?.startsWith('laundry:')?{...opening,section:opening.sourceSection}:{...opening,column:opening.bay??0}):opening,parts=f.kitchen&&pipes.length?S.prepareOpening(movingFurniture,localPipes):movingParts;
      const openingIntersector=opening.foldDoor?(a,b)=>G.polygonOverlap(a,b,products.cabinetBuilder.foldDoor.contactTolerance):intersects,hit=(poly,vertical)=>C.openingIntersects(opening,poly,vertical,openingIntersector),physical=opening.kind!=='cabinetpassage';
      const floorHit=physical&&floors().surfaces(plan).some(a=>Number.isFinite(a.finishedZ)&&(a.room.polys||[a.room.poly]).some(p=>hit(p,{bottom:-20000,top:a.finishedZ})));
@@ -458,14 +464,14 @@
    if(wallBlocked||itemBlocked||itemUnknown)issues.push({kind:'front',id:f.id,name:f.name,...(dishwasher?{pending:!wallBlocked&&!itemBlocked}:{}),message:dishwasher?`用户设置的正面 ${clearance} mm 额外使用空间${wallBlocked||itemBlocked?'不足':'内家具高度未知，待核对'}（独立于洗碗机开门／厂家安装预留）`:`正面 ${clearance} mm 使用空间不足（柜门／抽屉）`});
   }
   const pair=(a,b)=>{if(a.f.id===b.f.id)return;if(a.box[2]<=b.box[0]||b.box[2]<=a.box[0]||a.box[3]<=b.box[1]||b.box[3]<=a.box[1])return;const G=root.FurnishGeometry||(typeof require==='function'?require('./layout-geometry.js'):null);if(G&&(G.tuckedSeatPair(a.f,b.f)||!G.verticalOverlap(a.f,b.f,[design().furnitureVerticalBounds(a.f,plan,furniture),design().furnitureVerticalBounds(b.f,plan,furniture)])||((root.FurnishCabinetMotion||require('./cabinet-motion.js')).supportsSolids(a.f)||(root.FurnishCabinetMotion||require('./cabinet-motion.js')).supportsSolids(b.f)||design().products().family(a.f,'pipe-box')||design().products().family(b.f,'pipe-box'))&&!G.volumeOverlap(a.f,b.f,plan,furniture)))return;const C=root.FurnishCabinet||(typeof require==='function'?require('./cabinet-core.js'):null);const fit=C&&(C.fridgeBayFit(a.f,b.f)||C.fridgeBayFit(b.f,a.f)||C.hoodBayFit(a.f,b.f)||C.hoodBayFit(b.f,a.f));if(fit?.fits&&![a.f,b.f].some(f=>products.definition(f)?.hoodMotion&&products.value(f,'hoodPanelOpen'))&&!products.definition(a.f)?.fridgeMotion&&!products.definition(b.f)?.fridgeMotion&&products.floorBase(plan,a.f,furniture).known&&products.floorBase(plan,b.f,furniture).known&&Math.abs(products.floorBase(plan,a.f,furniture).z-products.floorBase(plan,b.f,furniture).z)<1e-6)return;if(intersects(a.p,b.p))issues.push({kind:'overlap',id:a.f.id,otherId:b.f.id,name:a.f.name+' / '+b.f.name,message:fit?.reasons.length?'设备嵌合位：'+fit.reasons.join('；'):'家具占地范围重叠，请核对实际摆放'});};
-  if(targets){const selectedIssues=issues.filter(v=>targets.has(v.id)||targets.has(v.otherId));if(selectedIssues.length>=maxIssues)return selectedIssues.slice(0,maxIssues);groupPairs:for(let i=0;i<bodies.length;i++)if(targets.has(bodies[i].f.id))for(let j=0;j<bodies.length;j++)if(i!==j&&(!targets.has(bodies[j].f.id)||i<j)){const count=issues.length;pair(bodies[i],bodies[j]);if(issues.length>count)selectedIssues.push(issues[issues.length-1]);if(selectedIssues.length>=maxIssues)break groupPairs;}}else for(let i=0;i<bodies.length;i++)for(let j=i+1;j<bodies.length;j++)pair(bodies[i],bodies[j]);
+  if(targets){const selectedIssues=issues.filter(v=>targets.has(v.id)||targets.has(v.otherId));if(selectedIssues.length>=maxIssues)return selectedIssues.slice(0,maxIssues);groupPairs:for(let i=0;i<bodies.length;i++)if(targets.has(bodies[i].f.id))for(let j=0;j<bodies.length;j++)if(i!==j&&(!targets.has(bodies[j].f.id)||i<j)){const count=issues.length;pair(bodies[i],bodies[j]);if(issues.length>count)selectedIssues.push(issues[issues.length-1]);if(selectedIssues.length>=maxIssues)break groupPairs;}}else for(let i=0;i<bodies.length;i++){yield;for(let j=i+1;j<bodies.length;j++)pair(bodies[i],bodies[j]);}
   // Raised platforms are excluded even when physical-room outlines retain the original facade.
   const raised=plan.rooms.filter(r=>r.counted===false);
   // Scan actual horizontal/vertical free intervals in rooms; these are candidate bottlenecks, not a pathfinding guarantee.
   // Suspended products can opt out of floor passage projection while retaining actual solid collision checks.
   const passageBodies=bodies.filter(b=>{const above=products.definition(b.f)?.floorPassageAbove;if(!num(above))return true;const bottom=products.bottomHeight(b.f);return !num(bottom)||bottom<above;});
   for(const room of scanPassages?(plan.physicalRooms||plan.rooms).filter(r=>r.counted!==false):[]){const xs=room.poly.map(p=>p[0]),ys=room.poly.map(p=>p[1]),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);let narrow=null;
-   for(const axis of [0,1]){const low=axis?x0:y0,high=axis?x1:y1;for(let fixed=low+200;fixed<high;fixed+=200){const other=1-axis,active=passageBodies.filter(b=>b.box[other]<=fixed&&b.box[other+2]>=fixed),cuts=[...(axis?ys:xs),...raised.flatMap(r=>r.poly.map(p=>p[axis]))];for(const {p} of active)for(let i=0;i<p.length;i++){const a=p[i],b=p[(i+1)%p.length];if((a[other]<=fixed&&b[other]>=fixed)||(b[other]<=fixed&&a[other]>=fixed)){if(a[other]!==b[other])cuts.push(a[axis]+(b[axis]-a[axis])*(fixed-a[other])/(b[other]-a[other]));}}const sorted=[...new Set(cuts)].sort((a,b)=>a-b);let run=0,start=0;for(let i=0;i<sorted.length-1;i++){const point=axis?[fixed,(sorted[i]+sorted[i+1])/2]:[(sorted[i]+sorted[i+1])/2,fixed];const free=inside(point,room.poly)&&!raised.some(r=>inside(point,r.poly))&&!active.some(b=>inside(point,b.p));if(free){if(!run)start=sorted[i];run+=sorted[i+1]-sorted[i];}if((!free||i===sorted.length-2)&&run){if(run>=100&&run<passage&&(!narrow||run<narrow.width))narrow={width:run,at:axis?[fixed,start+run/2]:[start+run/2,fixed]};run=0;}}}}
+   for(const axis of [0,1]){const low=axis?x0:y0,high=axis?x1:y1;for(let fixed=low+200;fixed<high;fixed+=200){yield;const other=1-axis,active=passageBodies.filter(b=>b.box[other]<=fixed&&b.box[other+2]>=fixed),cuts=[...(axis?ys:xs),...raised.flatMap(r=>r.poly.map(p=>p[axis]))];for(const {p} of active)for(let i=0;i<p.length;i++){const a=p[i],b=p[(i+1)%p.length];if((a[other]<=fixed&&b[other]>=fixed)||(b[other]<=fixed&&a[other]>=fixed)){if(a[other]!==b[other])cuts.push(a[axis]+(b[axis]-a[axis])*(fixed-a[other])/(b[other]-a[other]));}}const sorted=[...new Set(cuts)].sort((a,b)=>a-b);let run=0,start=0;for(let i=0;i<sorted.length-1;i++){const point=axis?[fixed,(sorted[i]+sorted[i+1])/2]:[(sorted[i]+sorted[i+1])/2,fixed];const free=inside(point,room.poly)&&!raised.some(r=>inside(point,r.poly))&&!active.some(b=>inside(point,b.p));if(free){if(!run)start=sorted[i];run+=sorted[i+1]-sorted[i];}if((!free||i===sorted.length-2)&&run){if(run>=100&&run<passage&&(!narrow||run<narrow.width))narrow={width:run,at:axis?[fixed,start+run/2]:[start+run/2,fixed]};run=0;}}}}
    if(narrow)issues.push({kind:'passage',id:room.id,name:room.name,message:`候选狭窄间隙约 ${Math.round(narrow.width)} mm，低于自设 ${passage} mm 阈值`,at:narrow.at});
   }
   const unique=[...new Map(issues.map(v=>[JSON.stringify([v.kind,v.id,v.otherId,v.ceilingId,v.beamId,v.markerId,v.column,v.section,v.kind.startsWith('cabinet')?v.at:undefined,v.message]),v])).values()];return targets?unique.filter(v=>targets.has(v.id)||targets.has(v.otherId)):unique;
@@ -544,7 +550,7 @@
   for(const [label,work] of [['当前方案',data.current],...data.designs.map(d=>['命名方案「'+d.name+'」',d.work])])if(work.plan!==undefined&&work.plan!==data.planId)fail(label+'：方案户型编号与项目不一致');
   const catalogIds=new Set();for(const c of data.catalog){if(c?.id!==undefined){if(typeof c.id!=='string'||!c.id||c.id.length>200||catalogIds.has(c.id))fail('家具库编号无效或重复');catalogIds.add(c.id);}if(!c||typeof c.name!=='string'||c.name.length>80||![c.w,c.d,c.h,c.price].every(num)||c.w<design().products().catalogMinimum(c,'w')||c.d<design().products().catalogMinimum(c,'d')||c.w>20000||c.d>20000||c.h<=0||c.h>20000||c.price<0)fail('家具库数据无效');validateWork({furniture:[{...c,id:'model',cx:0,cy:0,rot:0}]});}return data;
  }
- root.FurnishProject={dishwasherChecks,roomCeilingHeight,ceilingAt,ceilingHeight,validateBeamCeiling,readiness,pricing,materialQuantity,furniturePriceBasis,priceBasis,estimate,architecture,assertStructure,protectOriginal,changes,quantities,effectivePlan,validatePlanWork,previewPlan,checkFingerprint,review,openingSchedule,purchaseStates,purchaseMoney,procurement,updatePurchaseGroup,csv,historyEntries,recoveryEntry,mergeDesigns,mergeCatalog,extraCosts,remapRooms,remapOpenings,spaceCheck,parseOBJ,formatVersion,pack,unpack,validateWork,copyProject,area,polygon,fitsInRooms,intersects};
+ root.FurnishProject={dishwasherChecks,roomCeilingHeight,ceilingAt,ceilingHeight,validateBeamCeiling,readiness,pricing,materialQuantity,furniturePriceBasis,priceBasis,estimate,architecture,assertStructure,protectOriginal,changes,quantities,effectivePlan,validatePlanWork,previewPlan,checkFingerprint,review,openingSchedule,purchaseStates,purchaseMoney,procurement,updatePurchaseGroup,csv,historyEntries,recoveryEntry,mergeDesigns,mergeCatalog,extraCosts,remapRooms,remapOpenings,spaceCheck,reviewSteps,parseOBJ,formatVersion,pack,unpack,validateWork,copyProject,area,polygon,fitsInRooms,intersects};
  Object.assign(root.FurnishProject,{materialBreakdown,explainIssue,withDraftCache});
  if(typeof module!=='undefined')module.exports=root.FurnishProject;
 })(typeof window==='undefined'?globalThis:window);

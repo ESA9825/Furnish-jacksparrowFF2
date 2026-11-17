@@ -34,3 +34,18 @@ console.log('PASS production world cache: '+count+' fresh-builder comparisons, p
  assert.notDeepEqual(json(solids.parts(plant)),lower);plant.mountHeight=800;assert.deepEqual(json(solids.parts(plant)),lower);
  console.log('PASS world-first cache under 41 unique production shapes: no rebuild on hit; pose/installation changes and restore');
 }
+
+// A live scene may exceed both LRUs. Scanning it repeatedly must retain each
+// unchanged instance without increasing the global caches or losing geometry.
+{
+ const model=require('../src/render/balcony-garden-model.js');let builds=0;
+ const context={module:{exports:{}},require:createRequire(file),FurnishBalconyGardenModel:{...model,build(...args){builds++;return model.build(...args);}}};
+ vm.createContext(context);vm.runInContext(source,context);const solids=context.module.exports;
+ const scene=Array.from({length:140},(_,i)=>({id:'rack'+i,type:'balcony_plant_rack',w:1160+i,d:550,h:1600,cx:i*2000,cy:1480,rot:90}));
+ const first=scene.map(f=>solids.parts(f)),built=builds;
+ scene.forEach((f,i)=>assert.strictEqual(solids.parts(f),first[i]));assert.equal(builds,built,'live scene scan must not thrash bounded LRUs');
+ const f=scene[0];f.cx+=20;const moved=solids.parts(f);assert.equal(builds,built,'translation reuses retained local geometry');assert.deepEqual(json(moved),fresh(f));
+ f.w+=30;assert.deepEqual(json(solids.parts(f)),fresh(f),'in-place dimensions invalidate live instance');
+ assert.deepEqual(json(solids.parts({...f})),fresh(f),'restored identity uses current values');
+ console.log('PASS 140 live instances exceed both LRUs without rebuilds; movement, dimension edit and restore remain exact');
+}

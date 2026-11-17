@@ -42,6 +42,7 @@ function installLibraryResize(){
  new ResizeObserver(position).observe(lib);new MutationObserver(position).observe(app,{attributes:true,attributeFilter:['class']});
  addEventListener('resize',()=>{finish(false);position();});position();
 }
+let checkGeneration=0;
 let stylePreview=null,checkTimer=0,checkKey='',issues=[],checking=false,proposal=null;
 const effective=()=>P.effectivePlan(PLAN,state),kindName={confirmed:['已确认价','Confirmed'],reference:['参考价','Reference'],missing:['未填写','Missing']};
 function basisHTML(){
@@ -71,7 +72,7 @@ function materialSpecs(){
  function preview(){try{const m=P.materialBreakdown(effective(),{...state,pricing:read()},MATS,priceOf).find(v=>v.m===active),p=m?.procurement;$('#material-error').textContent='';$('#material-estimate').innerHTML=p?`<p>${t('净面积','Net area')} ${m.a.toFixed(2)} m² → ${t('含损耗','With waste')} ${p.required.toFixed(2)} m²${p.pieces!==undefined?` → ${p.pieces} ${t('片','pieces')}${p.packs!==null?` → ${p.packs} ${t('箱','packs')}`:''}`:''}</p><p>${t('预计采购面积','Purchase area')} ${p.purchased.toFixed(2)} m² · ${t('金额','Cost')} ${yen(m.c)}</p>${materialRoomHTML(m)}`:`<p>${t('此材料尚未用于当前方案，保存后在使用时计算。','This material is not used yet; quantities appear when used.')}</p>`;}catch(e){$('#material-error').textContent=e.message;$('#material-estimate').innerHTML='';}}
 }
 const checkSignature=plan=>P.checkFingerprint({},plan,state.furniture,state.spaceThreshold||800)+JSON.stringify([state.spaceIgnored||[],state.furniture.map(f=>[f.name,FurnishProducts.modelError(f)]),plan.rooms.map(r=>r.name),(plan.doors||[]).map(d=>d.name)]);
-function checkNow(plan=effective(),key=checkSignature(plan)){if(key!==checkKey){issues=P.review(plan,state);checkKey=key;}checking=false;syncBadge();return issues;}
+function checkNow(plan=effective(),key=checkSignature(plan)){++checkGeneration;clearTimeout(checkTimer);if(key!==checkKey){issues=P.review(plan,state);checkKey=key;}checking=false;syncBadge();return issues;}
 function issueExplanation(v){const e=P.explainIssue(v);return `<small class="issue-kind">${esc(e.category)} · ${esc(e.status)}</small><details><summary>${t('如何核对','How to review')}</summary><p>${esc(e.action)}</p></details>`;}
 function spaceCounts(){return {unresolved:issues.filter(v=>!v.ignored&&!v.pending).length,pending:issues.filter(v=>!v.ignored&&v.pending).length,accepted:issues.filter(v=>v.ignored).length};}
 function reviewSummary(){const c=spaceCounts();return `<h3>${t('方案待办','Design review')}</h3><div class="review-counts">${[['unresolved','需处理','To review'],['pending','信息不足','Missing info'],['accepted','已核对','Accepted']].map(([id,zh,en])=>`<button class="btn" data-review-filter="${id}"><b>${c[id]}</b><span>${t(zh,en)}</span></button>`).join('')}</div><p class="muted small">${t('含实体重叠、开启预留和候选通道间隙，按事项计数；信息不足不代表已通过。','Counts cover solid overlaps, opening clearances and candidate gaps; missing information does not mean a pass.')}</p>`;}
@@ -121,8 +122,23 @@ function disposeDialog(){disposePreview?.();disposePreview=null;proposal=null;$(
 function exportDXF(){openDialog({title:t('导出 DXF 布局图','Export DXF layout'),body:`<p>${t('单位 mm，CAD Y轴向上。按墙轮廓、门窗洞口、房间、家具外包、标注分层。用于布局交接；不含结构构造、立面、节点或施工图审核。','Millimetres, CAD Y up. Separate wall outlines, openings, rooms, furniture envelopes and annotations. For layout exchange; no construction details or drawing certification.')}</p><p>${t('洞口以独立图层标出；家具按旋转后的占地外包绘制。','Openings are on a separate layer; furniture uses its rotated footprint envelope.')}</p>`,actions:[{label:t('取消','Cancel')},{label:t('下载 DXF','Download DXF'),cls:'primary',fn:()=>{try{download(PLAN.name.replace(/[\\/:*?"<>|]/g,'_')+'-layout.dxf',new Blob([FurnishDXFExport.drawing(effective(),state)],{type:'application/dxf;charset=utf-8'}));return true;}catch(e){toast(e.message);return false;}}}]});}
 function afterRender(){
  styleId();clearTimeout(checkTimer);const plan=effective(),key=checkSignature(plan);checking=key!==checkKey;
- const update=()=>{try{checkNow(plan,key);if(!ui.sel&&ui.tab==='space')renderPanel();}catch(e){checking=false;$('#space-status').textContent=t('空间检查待修复','Space checks need repair');$('#space-status').title=e.message;}};
- if(!checking)syncBadge();else if(state.furniture.length<=200)update();else{$('#space-status').textContent=t('空间核对 · 更新中…','Space checks · Updating…');checkTimer=setTimeout(update,180);}
+ const generation=++checkGeneration;
+ const update=()=>{
+  if(generation!==checkGeneration)return;
+  if(typeof drag!=='undefined'&&(drag||pinch)){checkTimer=setTimeout(update,180);return;}
+  const steps=P.reviewSteps(plan,state);
+  const advance=()=>{
+   if(generation!==checkGeneration)return;
+   // A gesture changes live furniture in place before its commit/render. Drop
+   // this partial read; release schedules a fresh review of the final scene.
+   if(typeof drag!=='undefined'&&(drag||pinch)){checkTimer=setTimeout(update,180);return;}
+   try{const start=performance.now();let step;do{step=steps.next();}while(!step.done&&performance.now()-start<8);
+    if(!step.done){checkTimer=setTimeout(advance,0);return;}
+    issues=step.value;checkKey=key;checking=false;syncBadge();if(!ui.sel&&ui.tab==='space')renderPanel();
+   }catch(e){checking=false;$('#space-status').textContent=t('空间检查待修复','Space checks need repair');$('#space-status').title=e.message;}
+  };advance();
+ };
+ if(!checking)syncBadge();else{$('#space-status').textContent=t('空间核对 · 更新中…','Space checks · Updating…');checkTimer=setTimeout(update,180);}
  $('#gWallNet')?.remove();if(ui.sel?.kind==='wall')wallDimensions();
 }
 function initialize(){

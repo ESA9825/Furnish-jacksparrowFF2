@@ -700,7 +700,11 @@ function adaptObstacles(f,plan,list=[]){
  }
  if(depths.length||cuts.length||corners.length)k.obstacleFit={depths,cuts,...(corners.length?{corners}:{})};validate(next);return {furniture:next,notes};
 }
-function normalizeObstacles(list,plan){if(!list.some(f=>f.kitchen?.autoAvoid))return list;const source=clone(list);for(const f of list){if(!f.kitchen?.autoAvoid||f.locked)continue;try{f.kitchen=adaptObstacles(f,plan,source).furniture.kitchen;}catch{/* Broken models keep their existing record and review warning. */}}return list;}
+function normalizeObstacles(list,plan){
+ if(!list.some(f=>f.kitchen?.autoAvoid))return list;
+ // Only kitchens are changed below. Keep their snapshot, and preserve the
+ // read-only obstacle identities so production mesh caches survive a commit.
+ const source=list.map(f=>f.kitchen?clone(f):f);for(const f of list){if(!f.kitchen?.autoAvoid||f.locked)continue;try{f.kitchen=adaptObstacles(f,plan,source).furniture.kitchen;}catch{/* Broken models keep their existing record and review warning. */}}return list;}
 function bodyParts(f){const P=root.FurnishProducts||require('./product-rules.js');return P.elevatedParts(f,nativeBodyParts(P.elevationSource(f)));}
 function nativeBodyParts(f){return [...lowerBodyParts(f),...laundrySideBoards(f).map(b=>({p:rectPoly(b).map(p=>world(f,...p)),vertical:{bottom:b.bottom,top:b.top}})),...laundryParts(f).filter(p=>p.key!=='sink').flatMap(({furniture:p})=>cabinet().layout(p).map(()=>({p:rectPoly({x:0,y:0,w:p.w,d:p.d}).map(v=>world(p,...v)),vertical:{bottom:p.mountHeight,top:p.mountHeight+p.h}})).slice(0,1))];}
 function openingZones(f,options){const P=(root.FurnishProducts||require('./product-rules.js'));return P.elevatedZones(f,nativeOpeningZones(P.elevationSource(f),options));}

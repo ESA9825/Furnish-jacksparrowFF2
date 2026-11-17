@@ -7,7 +7,9 @@
  const labels={leg:'凳腿','seat-apron':'座框','seat-end':'端框','shelf-end':'层架端撑','shoe-rod':'鞋架横杆',cushion:'软包',piping:'包边',strap:'织带','strap-top':'上织带','top-substrate':'木台面','white-stone':'岩板','leg-wing':'弯曲腿板','side-inlay':'桌腿中脊','leg-inner-cleat':'内侧横撑','leg-mount-block':'固定块','leg-fastener':'连接件',shelf:'层板','drawer-front':'抽屉前板','drawer-back':'抽屉背板','drawer-bottom':'抽屉底板','drawer-side':'抽屉侧板','finger-rebate':'指扣','shelf-seam':'拼缝'};
  const rule=f=>(root.FurnishProducts||require('./product-rules.js')).definition(f)?.solidModel;
  const supported=f=>!!f&&!f.obj&&!!rule(f);
- const cache=new Map(),worldCache=new Map();
+ // Keep only the current shape/pose per live object beyond the bounded LRUs.
+ // Values, not identity alone, validate every hit; removed instances can collect.
+ const cache=new Map(),worldCache=new Map(),instanceCache=new WeakMap();
  function parts(f,{furniture=[],plan}={}){
   if(!supported(f))return null;
   if(f.pose3D){const R=root.FurnishProductPose||require('./product-pose.js');return R.parts(f,parts(R.source(f),{furniture,plan}));}
@@ -15,9 +17,11 @@
   // A world hit already contains the production vertices. Consult it before
   // rebuilding a local record evicted from the smaller geometry LRU.
   const worldKey=JSON.stringify([key,f.cx,f.cy,f.rot,f.flip]);
-  if(worldCache.has(worldKey)){const hit=worldCache.get(worldKey);worldCache.delete(worldKey);worldCache.set(worldKey,hit);return hit;}
-  let records=cache.get(key);
-  if(records){cache.delete(key);cache.set(key,records);}
+  const instance=instanceCache.get(f);
+  if(instance?.worldKey===worldKey)return instance.result;
+  if(worldCache.has(worldKey)){const hit=worldCache.get(worldKey);worldCache.delete(worldKey);worldCache.set(worldKey,hit);instanceCache.set(f,{key,records:instance?.key===key?instance.records:cache.get(key),worldKey,result:hit});return hit;}
+  let records=instance?.key===key?instance.records:cache.get(key);
+  if(records){cache.delete(key);cache.set(key,records);if(cache.size>32)cache.delete(cache.keys().next().value);}
   if(!records){
    const model=root[r.global]||(typeof require==='function'?require('../render/'+r.module+'-model.js'):null);if(!model)throw Error('家具实体模型未加载：'+r.global);
    const {T,Box,Rounded,transform}=adapter(),built=model.build(T,products.elevationSource(f),r.sliding?{corner}:r.rounded?Rounded:Box);records=[];
@@ -42,6 +46,7 @@
   // face indices, double precision or the public arrays' cardinality.
   const transformed=new WeakMap();
   const result=records.map((r,i)=>{let bottom=Infinity,top=-Infinity;const vertices=r.vertices.map(point=>{let vertex=transformed.get(point);if(!vertex){let [x,y,z]=point;x*=f.flip?-1:1;vertex=[(f.cx||0)+x*c-z*s,y+base,(f.cy||0)+x*s+z*c];transformed.set(point,vertex);}bottom=Math.min(bottom,vertex[1]);top=Math.max(top,vertex[1]);return vertex;});return {...r,vertices,boardKey:'furniture:'+i,p:M.section({vertices,faces:r.faces},null),vertical:{bottom,top,source:'production-mesh'}};});
+  instanceCache.set(f,{key,records,worldKey,result});
   worldCache.set(worldKey,result);if(worldCache.size>128)worldCache.delete(worldCache.keys().next().value);return result;
  }
  const api={supported,parts};root.FurnishFurnitureSolids=api;if(typeof module==='object'&&module.exports)module.exports=api;
