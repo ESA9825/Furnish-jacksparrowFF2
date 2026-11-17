@@ -16,9 +16,9 @@ function build(T,f){
  const width=m(q.innerWidth),depth=m(q.stripWidth),hw=width/2,hd=depth/2,plane=new T.BufferGeometry();
  plane.setAttribute('position',new T.Float32BufferAttribute([-hw,0,-hd,hw,0,hd,hw,0,-hd,-hw,0,-hd,-hw,0,hd,hw,0,hd],3));plane.computeVertexNormals();
  const radiance=L.panel(q.candela,width,depth),glow=new T.MeshStandardMaterial({color:'#fff9ee',emissive:q.color,emissiveIntensity:radiance,roughness:.65});
- Object.assign(glow.userData||=( {} ),{ceilingPanelEmitter:true,independentEmitter:true,emissionOn:radiance});add('emitting-face',plane,glow,0,q.emitterHeight+.01,q.emitterZ);
+ Object.assign(glow.userData||=( {} ),{ceilingPanelEmitter:true,emissionOn:radiance});add('emitting-face',plane,glow,0,q.emitterHeight+.01,q.emitterZ);
  g.userData.lightingRects=[{name:'upward-cob-strip',position:[0,m(q.base+q.emitterHeight+.02),m(q.emitterZ)],width,height:depth,u:[1,0,0],v:[0,0,1],normal:[0,1,0],radiance,color:q.color,material:glow}];
- if(T.SpotLight&&T.Object3D){const count=Math.max(1,Math.ceil(q.w/500));for(let i=0;i<count;i++){const lamp=new T.SpotLight(q.color,L.radiometric(q.candela/count),0,Math.PI/2,1,2),target=new T.Object3D();lamp.position.set(width*((i+.5)/count-.5),m(q.base+q.emitterHeight+.03),m(q.emitterZ));target.position.copy(lamp.position);target.position.y+=1;lamp.target=target;Object.assign(lamp.userData,{ceilingPanelLight:true,independentLight:true,areaSurrogate:true,radiometricLight:true});lamp.castShadow=true;lamp.shadow.mapSize.set(512,512);lamp.shadow.camera.near=.001;lamp.shadow.bias=-.00002;lamp.shadow.normalBias=.0002;g.add(lamp,target);}}
+ if(T.SpotLight&&T.Object3D){const count=Math.max(1,Math.ceil(q.w/500));for(let i=0;i<count;i++){const lamp=new T.SpotLight(q.color,L.radiometric(q.candela/count),0,Math.PI/2,1,2),target=new T.Object3D();lamp.position.set(width*((i+.5)/count-.5),m(q.base+q.emitterHeight+.03),m(q.emitterZ));target.position.copy(lamp.position);target.position.y+=1;lamp.target=target;Object.assign(lamp.userData,{ceilingPanelLight:true,areaSurrogate:true,radiometricLight:true});lamp.castShadow=true;lamp.shadow.mapSize.set(512,512);lamp.shadow.camera.near=.001;lamp.shadow.bias=-.00002;lamp.shadow.normalBias=.0002;g.add(lamp,target);}}
  return g;
 }
 const api={supported,build};root.FurnishCoveLightModel=api;if(typeof module==='object'&&module.exports)module.exports=api;
