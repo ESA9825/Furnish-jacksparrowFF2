@@ -1,0 +1,26 @@
+{
+  "baseline": {
+    "bytes": 153963388,
+    "nodes": 5179,
+    "geometryHash": "c3ae80062137ca3941f77a81dd87f61877fa4588eae29db5e7b9c5cd11bc1904",
+    "materialsHash": "ad8fdac11320588f7ddb956e87e37f691a4b8f291a7b9354b2d5362742a8f28d",
+    "lightingHash": "e12916a445db1f3df48e947ca98a7d8c0fea553115230f1dffb5e1abc5b1157f"
+  },
+  "candidate": {
+    "bytes": 96928524,
+    "nodes": 5179,
+    "geometryHash": "c3ae80062137ca3941f77a81dd87f61877fa4588eae29db5e7b9c5cd11bc1904",
+    "materialsHash": "ad8fdac11320588f7ddb956e87e37f691a4b8f291a7b9354b2d5362742a8f28d",
+    "lightingHash": "e12916a445db1f3df48e947ca98a7d8c0fea553115230f1dffb5e1abc5b1157f"
+  },
+  "repeated": {
+    "bytes": 153963388,
+    "nodes": 5179,
+    "geometryHash": "c3ae80062137ca3941f77a81dd87f61877fa4588eae29db5e7b9c5cd11bc1904",
+    "materialsHash": "ad8fdac11320588f7ddb956e87e37f691a4b8f291a7b9354b2d5362742a8f28d",
+    "lightingHash": "e12916a445db1f3df48e947ca98a7d8c0fea553115230f1dffb5e1abc5b1157f"
+  },
+  "collisionBefore": "153069acba3aaf8d2730a294ae1abb02c1760cc1bd5a651f3325da3af357457b",
+  "collisionAfter": "153069acba3aaf8d2730a294ae1abb02c1760cc1bd5a651f3325da3af357457b",
+  "artifact": "output/desktop-verification/progressive-scene-equivalence-89sMrH.noindex"
+}

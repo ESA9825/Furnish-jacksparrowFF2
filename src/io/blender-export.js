@@ -1,11 +1,34 @@
 /* Snapshot production geometry, without serializing live userData or modifying the scene. */
 (function(root){
 'use strict';
-function snapshot(T,{groups,camera,sun,material=o=>o.material,includeCeilings=false,expandInstances=false,includeHidden=false,meta={}}){
+function snapshot(T,{groups,camera,sun,material=o=>o.material,includeCeilings=false,expandInstances=false,includeHidden=false,meta={}},borrowGeometry=false){
  const lighting=root.FurnishLighting||(typeof require==='function'?require('../core/lighting-core.js'):null);
  const scene=new T.Scene();scene.name='Furnish';scene.userData={furnish:{version:1,syncSchema:1,partIdentity:3,unit:'m',...meta}};
- const materials=new Map(),counts=new Map(),geometries=new Set(),semantic=new Map(),explicit=new Map(),explicitFamilies=new Map(),named=new Map();let meshCount=0,legacyCount=0;
+ const geometryBuckets=new Map(),materials=new Map(),counts=new Map(),geometries=new Set(),semantic=new Map(),explicit=new Map(),explicitFamilies=new Map(),named=new Map();let meshCount=0,legacyCount=0;
  function dispose(){for(const geometry of geometries)geometry.dispose();for(const m of materials.values())m.dispose();}
+ // Only encode() borrows arrays: the pinned GLTFExporter consumes all geometry
+ // synchronously before awaiting image/Blob work. Public snapshots remain deep.
+ // Keep private containers because the exporter may replace normal/index attrs;
+ // shear baking below still clones arrays before applying its residual matrix.
+ // The sampled hash only selects candidates. Every byte is compared before
+ // sharing, so hash collisions cannot merge different geometry or lose precision.
+ function geometryRecord(source){
+  const entries=Object.entries(source.attributes).sort(([a],[b])=>a.localeCompare(b)),attrs=[source.index,...entries.map(([,a])=>a)];
+  if(attrs.some(a=>a&&(a.isInterleavedBufferAttribute||!ArrayBuffer.isView(a.array))))return null;
+  const descriptor=a=>a?[a.array.constructor.name,a.itemSize,a.normalized,a.count,a.isInstancedBufferAttribute||false,a.meshPerAttribute||0]:null;
+  const meta=JSON.stringify([source.type,source.name,source.groups,source.drawRange,source.morphTargetsRelative,source.userData,source.boundingBox,source.boundingSphere,descriptor(source.index),entries.map(([k,a])=>[k,descriptor(a)])]);
+  const arrays=attrs.filter(Boolean).map(a=>new Uint8Array(a.array.buffer,a.array.byteOffset,a.array.byteLength));let hash=2166136261;
+  for(const bytes of arrays){const n=Math.min(64,bytes.length);for(let i=0;i<n;i++)hash=Math.imul(hash^bytes[Math.floor(i*(bytes.length-1)/Math.max(1,n-1))],16777619);}
+  return {key:meta+'|'+hash,arrays};
+ }
+ function sameGeometry(a,b){if(a.length!==b.length)return false;for(let i=0;i<a.length;i++){if(a[i].length!==b[i].length)return false;for(let j=0;j<a[i].length;j++)if(a[i][j]!==b[i][j])return false;}return true;}
+ function copyGeometry(source){
+  if(!borrowGeometry||Object.values(source.morphAttributes).some(attrs=>attrs.length))return source.clone();
+  const record=geometryRecord(source),bucket=record?(geometryBuckets.get(record.key)||[]):[];
+  if(record)for(const candidate of bucket)if(sameGeometry(record.arrays,candidate.arrays))return candidate.copy;
+  const copy=new T.BufferGeometry();copy.name=source.name;copy.index=source.index;copy.attributes={...source.attributes};copy.morphAttributes=Object.fromEntries(Object.entries(source.morphAttributes).map(([key,attrs])=>[key,attrs.slice()]));copy.morphTargetsRelative=source.morphTargetsRelative;copy.groups=source.groups.map(group=>({...group}));copy.drawRange={...source.drawRange};copy.boundingBox=source.boundingBox?.clone()||null;copy.boundingSphere=source.boundingSphere?.clone()||null;copy.userData=JSON.parse(JSON.stringify(source.userData));
+  if(record){bucket.push({copy,arrays:record.arrays});geometryBuckets.set(record.key,bucket);}return copy;
+ }
  function clean(m){if(materials.has(m))return materials.get(m);const c=m.clone();c.userData={};c.clippingPlanes=null;c.envMap=null;c.onBeforeCompile=()=>{};materials.set(m,c);return c;}
  // Blender/glTF instance transforms decompose into translation/rotation/scale.
  // Bake only the residual shear into a private geometry, keeping the mirrored
@@ -32,7 +55,7 @@ function snapshot(T,{groups,camera,sun,material=o=>o.material,includeCeilings=fa
   const key=o.userData.layerObject||(o.userData.ceiling?.id?'ceiling:'+o.userData.ceiling.id:layer);
   if(!includeCeilings&&(key.startsWith('roomCeiling:')||o.userData.ceiling)){if(!includeHidden)return;shown=false;}
   if(o.isMesh&&!o.material?.wireframe){
-   const m=material(o),geometry=o.geometry.clone(),mats=Array.isArray(m)?m.map(clean):clean(m),prefix=owner?'furniture:'+owner+':'+part:'architecture:'+key;geometries.add(geometry);
+   const m=material(o),geometry=copyGeometry(o.geometry),mats=Array.isArray(m)?m.map(clean):clean(m),prefix=owner?'furniture:'+owner+':'+part:'architecture:'+key;geometries.add(geometry);
    const areaEmitter=o.userData.ceiling?.part==='light'||(Array.isArray(m)?m:[m]).some(m=>m.userData?.ceilingPanelEmitter);
    const ordinal=counts.get(prefix)||0;counts.set(prefix,ordinal+1);const id=owner?prefix:prefix+':'+ordinal;
    const kind=String(o.userData.cherryCoffeePart||o.userData.partKind||o.geometry.type||'Mesh');
@@ -72,7 +95,7 @@ function snapshot(T,{groups,camera,sun,material=o=>o.material,includeCeilings=fa
  return {scene,meshCount,aspect:cam.aspect,dispose};
  }catch(error){dispose();throw error;}
 }
-async function encode(T,input){const copy=snapshot(T,input);try{const Exporter=root.FurnishGLTFExporter(T),buffer=await new Exporter().parseAsync(copy.scene,{binary:true,onlyVisible:true,maxTextureSize:2048});return {buffer,meshCount:copy.meshCount,aspect:copy.aspect};}finally{copy.dispose();}}
+async function encode(T,input){const copy=snapshot(T,input,true);try{const Exporter=root.FurnishGLTFExporter(T),buffer=await new Exporter().parseAsync(copy.scene,{binary:true,onlyVisible:true,maxTextureSize:2048});return {buffer,meshCount:copy.meshCount,aspect:copy.aspect};}finally{copy.dispose();}}
 function dimensions(aspect,quality){const edge=quality==='final'?1920:960;if(!Number.isFinite(aspect)||aspect<=0)throw Error('相机比例无效 / Invalid camera aspect');const size=aspect>=1?{width:edge,height:Math.round(edge/aspect)}:{width:Math.round(edge*aspect),height:edge};if(Math.min(size.width,size.height)<64)throw Error('请调整窗口，当前相机比例过于狭长 / Resize the window: camera aspect is too narrow');return size;}
 const api={snapshot,encode,dimensions};if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishBlenderExport=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

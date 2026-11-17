@@ -1,0 +1,287 @@
+{
+  "baseline": "86c303b9",
+  "forcedGC": false,
+  "order": "ABBA",
+  "runs": [
+    {
+      "label": "before",
+      "artifact": "output/runtime-memory/profile-hhhdsh.noindex/run-0",
+      "codeHashes": {
+        "src/io/blender-export.js": "e854566a5f129fc061d01a4011e5160364c0074fda86ac737c12f48b47020758",
+        "src/render/lighting-preview.js": "6dd0a7af13a3de14843f3d0139e78b1e23af96290e486e93e4a15dc8d78b0c3d"
+      },
+      "sourceHash": "2b743b4992ec6a63511e02bc6f1b4efdef37b6307d479b1e5957c95ba4aa2329",
+      "sourceUnchanged": true,
+      "errors": [],
+      "settledMiB": 5752.670692443848,
+      "sampledMaxMiB": 7994.671241760254,
+      "peakIntervalMs": 2000,
+      "geometryBytes": 153963392,
+      "exportAudit": {
+        "clones": 4360,
+        "attributeBytes": 141733088,
+        "uniqueSourceGeometries": 4360
+      },
+      "releaseAudits": [
+        {
+          "releasedCpuBytes": 0
+        }
+      ],
+      "state": {
+        "planId": "custom_mv37igji",
+        "furniture": 182,
+        "view": "3d",
+        "viewport": [
+          1440,
+          928
+        ],
+        "dpr": 2,
+        "progressiveStatus": "渐进高清 · 已收敛",
+        "settledImage": [
+          1200,
+          1092
+        ],
+        "progressiveCanvases": []
+      },
+      "renderInputsHash": "7826f5ea1e1f6a4c3b3100821e414f4ad1196015db0295bdee381af63a890891"
+    },
+    {
+      "label": "after",
+      "artifact": "output/runtime-memory/profile-hhhdsh.noindex/run-1",
+      "codeHashes": {
+        "src/io/blender-export.js": "f0c29057030105430205a4ca404d398bfea121c012bf7a27a715ecf99cc3f7d9",
+        "src/render/lighting-preview.js": "51e77ed883f8a73c172c2b5f09df63bbb4d6c9c5f4047d65f0b04d489f43a29c"
+      },
+      "sourceHash": "2b743b4992ec6a63511e02bc6f1b4efdef37b6307d479b1e5957c95ba4aa2329",
+      "sourceUnchanged": true,
+      "errors": [],
+      "settledMiB": 5203.716903686523,
+      "sampledMaxMiB": 7740.389465332031,
+      "peakIntervalMs": 2000,
+      "geometryBytes": 96928524,
+      "exportAudit": {
+        "clones": 18,
+        "attributeBytes": 587680,
+        "uniqueSourceGeometries": 5
+      },
+      "releaseAudits": [
+        {
+          "releasedCpuBytes": 683502562
+        }
+      ],
+      "state": {
+        "planId": "custom_mv37igji",
+        "furniture": 182,
+        "view": "3d",
+        "viewport": [
+          1440,
+          928
+        ],
+        "dpr": 2,
+        "progressiveStatus": "渐进高清 · 已收敛",
+        "settledImage": [
+          1200,
+          1092
+        ],
+        "progressiveCanvases": []
+      },
+      "renderInputsHash": "7826f5ea1e1f6a4c3b3100821e414f4ad1196015db0295bdee381af63a890891"
+    },
+    {
+      "label": "after",
+      "artifact": "output/runtime-memory/profile-hhhdsh.noindex/run-2",
+      "codeHashes": {
+        "src/io/blender-export.js": "f0c29057030105430205a4ca404d398bfea121c012bf7a27a715ecf99cc3f7d9",
+        "src/render/lighting-preview.js": "51e77ed883f8a73c172c2b5f09df63bbb4d6c9c5f4047d65f0b04d489f43a29c"
+      },
+      "sourceHash": "2b743b4992ec6a63511e02bc6f1b4efdef37b6307d479b1e5957c95ba4aa2329",
+      "sourceUnchanged": true,
+      "errors": [],
+      "settledMiB": 5256.154495239258,
+      "sampledMaxMiB": 7521.827033996582,
+      "peakIntervalMs": 2000,
+      "geometryBytes": 96928524,
+      "exportAudit": {
+        "clones": 18,
+        "attributeBytes": 587680,
+        "uniqueSourceGeometries": 5
+      },
+      "releaseAudits": [
+        {
+          "releasedCpuBytes": 683502562
+        }
+      ],
+      "state": {
+        "planId": "custom_mv37igji",
+        "furniture": 182,
+        "view": "3d",
+        "viewport": [
+          1440,
+          928
+        ],
+        "dpr": 2,
+        "progressiveStatus": "渐进高清 · 已收敛",
+        "settledImage": [
+          1200,
+          1092
+        ],
+        "progressiveCanvases": []
+      },
+      "renderInputsHash": "7826f5ea1e1f6a4c3b3100821e414f4ad1196015db0295bdee381af63a890891"
+    },
+    {
+      "label": "before",
+      "artifact": "output/runtime-memory/profile-hhhdsh.noindex/run-3",
+      "codeHashes": {
+        "src/io/blender-export.js": "e854566a5f129fc061d01a4011e5160364c0074fda86ac737c12f48b47020758",
+        "src/render/lighting-preview.js": "6dd0a7af13a3de14843f3d0139e78b1e23af96290e486e93e4a15dc8d78b0c3d"
+      },
+      "sourceHash": "2b743b4992ec6a63511e02bc6f1b4efdef37b6307d479b1e5957c95ba4aa2329",
+      "sourceUnchanged": true,
+      "errors": [],
+      "settledMiB": 5634.904632568359,
+      "sampledMaxMiB": 7809.936477661133,
+      "peakIntervalMs": 2000,
+      "geometryBytes": 153963392,
+      "exportAudit": {
+        "clones": 4360,
+        "attributeBytes": 141733088,
+        "uniqueSourceGeometries": 4360
+      },
+      "releaseAudits": [
+        {
+          "releasedCpuBytes": 0
+        }
+      ],
+      "state": {
+        "planId": "custom_mv37igji",
+        "furniture": 182,
+        "view": "3d",
+        "viewport": [
+          1440,
+          928
+        ],
+        "dpr": 2,
+        "progressiveStatus": "渐进高清 · 已收敛",
+        "settledImage": [
+          1200,
+          1092
+        ],
+        "progressiveCanvases": []
+      },
+      "renderInputsHash": "7826f5ea1e1f6a4c3b3100821e414f4ad1196015db0295bdee381af63a890891"
+    }
+  ],
+  "metrics": {
+    "settledMiB": {
+      "before": 5693.7876625061035,
+      "after": 5229.935699462891,
+      "saved": 463.8519630432129,
+      "percent": 8.146632620280226
+    },
+    "sampledMaxMiB": {
+      "before": 7902.303859710693,
+      "after": 7631.108249664307,
+      "saved": 271.1956100463867,
+      "percent": 3.4318549990093095
+    }
+  },
+  "nativePng": [
+    {
+      "width": 1200,
+      "height": 1092,
+      "mean": 0,
+      "max": 0,
+      "changed": 0
+    },
+    {
+      "width": 1200,
+      "height": 1092,
+      "mean": 0.0593091804029304,
+      "max": 16,
+      "changed": 302486
+    },
+    {
+      "width": 1200,
+      "height": 1092,
+      "mean": 0.056676587301587304,
+      "max": 16,
+      "changed": 290364
+    },
+    {
+      "width": 1200,
+      "height": 1092,
+      "mean": 0.06086252289377289,
+      "max": 16,
+      "changed": 310084
+    }
+  ],
+  "lifecycle": {
+    "artifact": "output/desktop-verification/progressive-memory-RNt3zb.noindex",
+    "errors": [],
+    "views": {
+      "first": {
+        "nativePixelsEqual": true,
+        "compositor": {
+          "width": 866,
+          "height": 851,
+          "mean": 0.03468307900228776,
+          "max": 43,
+          "differing": 2799,
+          "interiorDiffering": 0,
+          "interiorMax": 0
+        },
+        "releases": 1
+      },
+      "second": {
+        "nativePixelsEqual": true,
+        "compositor": {
+          "width": 866,
+          "height": 851,
+          "mean": 0.03468307900228776,
+          "max": 43,
+          "differing": 2799,
+          "interiorDiffering": 0,
+          "interiorMax": 0
+        },
+        "releases": 2
+      },
+      "third": {
+        "nativePixelsEqual": true,
+        "compositor": {
+          "width": 812,
+          "height": 811,
+          "mean": 0.036473550260275885,
+          "max": 43,
+          "differing": 2638,
+          "interiorDiffering": 0,
+          "interiorMax": 0
+        },
+        "releases": 3
+      },
+      "fourth": {
+        "nativePixelsEqual": true,
+        "compositor": {
+          "width": 812,
+          "height": 811,
+          "mean": 0.036473550260275885,
+          "max": 43,
+          "differing": 2638,
+          "interiorDiffering": 0,
+          "interiorMax": 0
+        },
+        "releases": 4
+      }
+    }
+  },
+  "sceneEquivalence": {
+    "artifact": "output/desktop-verification/progressive-scene-equivalence-8xlltx.noindex",
+    "modes": [
+      "http",
+      "file",
+      "desktop"
+    ],
+    "passed": true
+  },
+  "copiedSourceAndCachesCleaned": true
+}

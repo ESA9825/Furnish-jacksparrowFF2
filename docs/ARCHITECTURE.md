@@ -1,3 +1,5 @@
+2026-11-17（导出只读复用与预览CPU释放）：blender-export公有snapshot保持独立深复制，encode复用同步读取的属性并按完整字节共享重复几何；生产部件身份／矩阵不合并。lighting-preview保持Worker输入所有权，在原收敛图与GPU退出后释放孤立iframe的CPU缓冲，无主场景或持久格式变化。见[契约与同场景验证](validation/scene-memory-20261117/README.md)。
+
 2026-11-17（方案讲解与交付）：presentation-core提供可选讲解文档、来源／内容指纹与过期判定；presentation-ui复用原mutate、生产画布及相机，design-ui同源生成分阅读对象的多图成果。项目／工作区／缓存94兼容旧缺失，人工确认与原空间核对独立；MCP增加读取及原子配置讲解，共35项工具。见[讲解契约](PRESENTATION.md)。
 
 2026-11-17（收敛工作集释放）：progressive-view沿原生产快照和主View3D碰撞／拾取，原精度收敛画布无损转到轻量二维画布后显式销毁WebGPU工作集；短时导航仍复用，空闲释放后相机／投影／场景变化重建，原生画质预算、模型和持久链不变。见[生命周期与实测](validation/progressive-memory-20261117/README.md)。

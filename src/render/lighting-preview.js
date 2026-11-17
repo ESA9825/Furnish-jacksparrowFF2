@@ -6,6 +6,18 @@ import {GenerateMeshBVHWorker} from '../../vendor/lighting-preview/three-mesh-bv
 import {initUNetFromURL} from '../../vendor/lighting-preview/oidn-webgpu/dist/oidn.js';
 let token=null,renderer=null,tracer=null,scene=null,stopped=false;
 let live=false,liveCamera=null,liveProjection=null,viewKey=null,aspect=1,edge=1200,liveVersion=0,paused=false,liveComplete=false;
+function isolateBVHInputs(scene){
+ const seen=new Set();scene.traverse(o=>{if(!o.isMesh||seen.has(o.geometry))return;const g=o.geometry;seen.add(g);if(g.attributes.position)g.setAttribute('position',g.attributes.position.clone({}));if(g.index)g.setIndex(g.index.clone());});
+}
+function previewCpuBuffers(scene,tracer){
+ const buffers=new Set(),add=value=>{const a=value?.isInterleavedBufferAttribute?value.data.array:value?.array||value;if(ArrayBuffer.isView(a)&&a.buffer instanceof ArrayBuffer)buffers.add(a.buffer);else if(a instanceof ArrayBuffer)buffers.add(a);};
+ scene?.traverse(o=>{const g=o.geometry;if(!g)return;for(const a of [g.index,...Object.values(g.attributes),...Object.values(g.morphAttributes).flat()])add(a);for(const root of g.boundsTree?._roots||[])add(root);add(g.boundsTree?._indirectBuffer);});
+ for(const node of Object.values(tracer?._bvhData?.storage||{}))add(node.value);
+ for(const root of tracer?._bvhData?.bvh?._roots||[])add(root);
+ const paths=tracer?._pathTracer;for(const key of ['rayDataStorage','rayQueue','shadowRayQueue','queueCounters','rayIntersectionsStorage','shadowRayIntersectionsStorage','mediumQueue','sampleCountersStorage','pixelQueue'])add(paths?.[key]);
+ return buffers;
+}
+function releaseCpuBuffers(buffers){let bytes=0;for(const buffer of buffers){if(!buffer.byteLength||typeof buffer.transfer!=='function')continue;const length=buffer.byteLength;try{buffer.transfer(0);bytes+=length;}catch{}}return bytes;}
 function updateLiveProjection(){liveCamera.projectionMatrix.fromArray(globalThis.FurnishProgressivePolicy.projectionMatrix(liveProjection,liveCamera.coordinateSystem===T.WebGPUCoordinateSystem));liveCamera.projectionMatrixInverse.copy(liveCamera.projectionMatrix).invert();}
 function renderLoop(){renderer?.setAnimationLoop(()=>{if(stopped||paused)return;try{tracer.renderSample();}catch(error){fail(error);}});}
 function resizeLive(nextEdge){liveComplete=false;edge=nextEdge;const {width,height}=globalThis.FurnishProgressivePolicy.size(aspect,edge);renderer.setSize(width,height);tracer.reset();}
@@ -22,10 +34,15 @@ async function sendLiveImage(version=liveVersion){
 function stop(){stopped=true;renderer?.setAnimationLoop(null);}
 function fail(error){if(stopped)return;console.warn('Furnish HD preview:',error?.stack||error);stop();send('error',{message:String(error?.message||error).slice(0,350)});}
 let disposal=null;
-function dispose(){if(disposal)return disposal;stop();disposal=(async()=>{
+function dispose(releaseCpu=false){if(disposal)return disposal;stop();disposal=(async()=>{
+ const buffers=releaseCpu&&liveComplete?previewCpuBuffers(scene,tracer):null;
  tracer?.dispose();tracer=null;
  if(scene){const resources=new Set();scene.traverse(o=>{if(o.geometry)resources.add(o.geometry);for(const m of [o.material].flat().filter(Boolean)){resources.add(m);for(const v of Object.values(m))if(v?.isTexture)resources.add(v);}});for(const r of resources)r.dispose();scene.clear();scene=null;}
  liveCamera=null;const ownedRenderer=renderer;renderer=null;await ownedRenderer?.dispose();
+ // Only after a settled frame and GPU teardown: these buffers belong solely to
+ // this immutable iframe. Detaching them releases backing stores even when the
+ // retired realm awaits natural GC. Older engines keep the normal GC fallback.
+ return buffers?releaseCpuBuffers(buffers):0;
 })();return disposal;}
 window.addEventListener('pagehide',()=>{dispose().catch(console.warn);});
 async function run(data){
@@ -43,10 +60,9 @@ async function run(data){
   const gltf=await new GLTFLoader().parseAsync(data.buffer,'');if(stopped)return;
   scene=new T.Scene();scene.add(gltf.scene);scene.background=new T.Color(data.environment.background);scene.environment=new T.Color().fromArray(data.environment.world);scene.environmentIntensity=1;
   const camera=gltf.cameras[0];if(!camera)throw Error('场景缺少相机');camera.aspect=data.aspect;camera.updateProjectionMatrix();if(live){camera.removeFromParent();scene.add(camera);liveCamera=camera;liveProjection=globalThis.FurnishProgressivePolicy.projectionMatrix(data.camera?.projectionMatrix);camera.updateProjectionMatrix=updateLiveProjection;updateLiveProjection();}scene.updateMatrixWorld(true);
-  // glTF primitives can share BufferAttribute objects across geometries. Worker
-  // transfers must own their attribute arrays, otherwise another BVH job can
-  // encounter a detached array. Copy only this isolated preview's geometry.
-  const privateGeometry=new Map();scene.traverse(o=>{if(o.isMesh){if(!privateGeometry.has(o.geometry))privateGeometry.set(o.geometry,o.geometry.clone());o.geometry=privateGeometry.get(o.geometry);}});for(const geometry of privateGeometry.keys())geometry.dispose();
+  // Workers transfer position/index buffers and reorder indices. Isolate only
+  // those inputs per unique geometry; normals/UVs/colors remain read-only.
+  isolateBVHInputs(scene);
   const remove=[];scene.traverse(o=>{
    if(o.isLight){if(!o.isDirectionalLight)remove.push(o);else o.intensity/=683;}
    if(o.isMesh&&o.userData.furnishAreaEmitter){o.material=(Array.isArray(o.material)?o.material:[o.material]).map(m=>{const c=m.clone();if(c.emissive){c.emissive.setRGB(0,0,0);c.emissiveIntensity=0;}return c;});if(o.material.length===1)o.material=o.material[0];}
@@ -80,5 +96,5 @@ async function run(data){
  }catch(error){fail(error);}
 }
 window.addEventListener('message',e=>{if(e.source!==parent||e.origin!==location.origin||e.data?.channel!=='furnish-lighting-preview'||e.data.type!=='scene'||token!==null)return;run(e.data);});
-window.addEventListener('message',e=>{if(e.source!==parent||e.origin!==location.origin||e.data?.channel!=='furnish-lighting-preview'||e.data.token!==token||!live||stopped)return;const d=e.data;if(d.type==='dispose'){dispose().then(()=>send('released')).catch(error=>{console.warn(error);send('released');});return;}try{if(d.type==='pause'){paused=true;if(tracer)tracer.pause=true;renderer?.setAnimationLoop(null);}else if(d.type==='resume'){paused=false;if(tracer)tracer.pause=false;if(liveComplete){send('live-complete',{viewKey,samples:tracer.maxSamples,frameTime:tracer.frameTime});sendLiveImage().catch(error=>console.warn(error));}else renderLoop();}else if(d.type==='camera')updateLiveCamera(d);else if(d.type==='resize'&&tracer&&[640,800,1200].includes(d.edge)){liveVersion++;resizeLive(d.edge);paused=false;tracer.pause=false;renderLoop();}}catch(error){fail(error);}});
+window.addEventListener('message',e=>{if(e.source!==parent||e.origin!==location.origin||e.data?.channel!=='furnish-lighting-preview'||e.data.token!==token||!live||stopped)return;const d=e.data;if(d.type==='dispose'){dispose(true).then(releasedCpuBytes=>send('released',{releasedCpuBytes})).catch(error=>{console.warn(error);send('released');});return;}try{if(d.type==='pause'){paused=true;if(tracer)tracer.pause=true;renderer?.setAnimationLoop(null);}else if(d.type==='resume'){paused=false;if(tracer)tracer.pause=false;if(liveComplete){send('live-complete',{viewKey,samples:tracer.maxSamples,frameTime:tracer.frameTime});sendLiveImage().catch(error=>console.warn(error));}else renderLoop();}else if(d.type==='camera')updateLiveCamera(d);else if(d.type==='resize'&&tracer&&[640,800,1200].includes(d.edge)){liveVersion++;resizeLive(d.edge);paused=false;tracer.pause=false;renderLoop();}}catch(error){fail(error);}});
 send('ready');
