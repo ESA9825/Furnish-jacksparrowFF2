@@ -33,7 +33,17 @@ function updateBeforeWrite(req,res){
  const state=updates.ensure();if(!state.updateAvailable&&!state.updating)return false;
  req.resume();res.writeHead(503,{'Content-Type':'application/json','Cache-Control':'no-store','Retry-After':'2'}).end(JSON.stringify({code:'BACKEND_UPDATING',error:state.updateError||state.lastUpdateError||(state.updateBusy?'正在渲染，后台更新将等待任务结束；编辑保留在恢复缓存':'后台代码已更新，正在自动接替服务；编辑保留在恢复缓存，请稍候')}));return true;
 }
-const server=http.createServer(async(req,res)=>{if(control(req,res)||updateBeforeWrite(req,res)||await blender.handle(req,res)||await repository.handle(req,res))return;let file;try{const pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);file=path.resolve(root,'.'+(pathname==='/'?'/index.html':pathname));if(!file.startsWith(root+path.sep)||file.slice(root.length+1).split(path.sep).some(s=>s.startsWith('.'))){res.writeHead(403).end();return;}}catch{res.writeHead(400).end();return;}fs.readFile(file,(err,data)=>{if(err){res.writeHead(404).end();return;}res.writeHead(200,{'Content-Type':mime[path.extname(file).toLowerCase()]||'application/octet-stream','Cache-Control':'no-store'});res.end(data);});});
+const server=http.createServer(async(req,res)=>{if(control(req,res)||updateBeforeWrite(req,res)||await blender.handle(req,res)||await repository.handle(req,res))return;let file;try{const pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);file=path.resolve(root,'.'+(pathname==='/'?'/index.html':pathname));if(!file.startsWith(root+path.sep)||file.slice(root.length+1).split(path.sep).some(s=>s.startsWith('.'))){res.writeHead(403).end();return;}}catch{res.writeHead(400).end();return;}const stream=fs.createReadStream(file);
+ // Bound in-flight asset buffers. Open/stat before headers preserves 404 for
+ // missing, unreadable and directory paths; interrupted reads fail explicitly.
+ res.once('close',()=>stream.destroy());
+ stream.on('error',()=>{if(res.destroyed)return;if(res.headersSent)res.destroy();else res.writeHead(404).end();});
+ stream.once('open',fd=>fs.fstat(fd,(error,stat)=>{
+  if(res.destroyed){stream.destroy();return;}
+  if(error||!stat.isFile()){stream.destroy();res.writeHead(404).end();return;}
+  res.writeHead(200,{'Content-Type':mime[path.extname(file).toLowerCase()]||'application/octet-stream','Cache-Control':'no-store'});
+  if(req.method==='HEAD'){stream.destroy();res.end();}else stream.pipe(res);
+ }));});
 server.on('close',()=>blender.close());
 // A desktop can close during the brief handoff gap. The stopped owner marker
 // prevents a late replacement from outliving that desktop, even without IPC.

@@ -745,3 +745,7 @@ product-rules 集中派生 kind，保留 type 为模型／数据兼容 ID；name
 ## 2026-11-17：二维内存共享与恢复派生
 
 FurnitureSolids保留完整顶点／索引及原缓存键，只在不可变记录内共享重复坐标；调用者不得原位改写返回顶点。Project.withDraftCache供Repository.validate的同步事务复用已校验户型派生，最多8项、逐次校验与深拷贝，正常／异常退出均释放；事务外及原effectivePlan缓存保持原契约。没有新状态、加载或持久机制，见[增量验收](validation/memory-optimization-20261117/README.md)。
+
+## 2026-11-17：源码指纹与静态流
+
+server-runtime.watch跨轮只保留依赖路径、stat签名和摘要，原始字节仅供本次哈希；无require字节的文件不做依赖扫描解码，仍参与原SHA协议和更新预检。serve静态资源采用有背压读流，打开／stat后发送原MIME与no-store头，关闭／错误释放流；API、存档、owner和前端加载入口不变。整组RSS／physical footprint的区别及范围见[验收](validation/runtime-memory-20261117/README.md)。

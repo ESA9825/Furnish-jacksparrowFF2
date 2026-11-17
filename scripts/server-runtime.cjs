@@ -7,6 +7,9 @@ function sources(entry){
   file=require.resolve(file);if(sources.has(file))return;
   const bytes=fs.readFileSync(file);sources.set(file,bytes);
   if(path.extname(file)!=='.js'&&path.extname(file)!=='.cjs')return;
+  // Most generated meshes contain no require token. Avoid decoding their huge
+  // numeric literals merely to prove there is no literal dependency to visit.
+  if(!bytes.includes('require'))return;
   for(const match of bytes.toString('utf8').matchAll(/\brequire\(\s*['"](\.[^'"]+)['"]\s*\)/g))visit(path.resolve(path.dirname(file),match[1]));
  }
  visit(entry);
@@ -24,8 +27,8 @@ function fingerprint(entry,files=sources(entry)){
 }
 function watch(entry){
  let files,stamp,hash;
- const signature=()=>{const paths=new Set(files?.keys()||[]),base=path.dirname(entry);const scan=dir=>{if(!fs.existsSync(dir))return;for(const e of fs.readdirSync(dir,{withFileTypes:true})){const f=path.join(dir,e.name);if(e.isDirectory())scan(f);else if(/\.(?:c?js)$/.test(e.name))paths.add(f);}};for(const name of ['core','data','render'])scan(path.resolve(base,'../src',name));return [...paths].sort().map(f=>{try{const s=fs.statSync(f);return [f,s.size,s.mtimeMs,s.ctimeMs,s.ino];}catch{return [f,null];}});};
- return ()=>{const next=JSON.stringify(signature());if(!files||next!==stamp){files=sources(entry);hash=fingerprint(entry,files);stamp=JSON.stringify(signature());}return hash;};
+ const signature=()=>{const paths=new Set(files||[]),base=path.dirname(entry);const scan=dir=>{if(!fs.existsSync(dir))return;for(const e of fs.readdirSync(dir,{withFileTypes:true})){const f=path.join(dir,e.name);if(e.isDirectory())scan(f);else if(/\.(?:c?js)$/.test(e.name))paths.add(f);}};for(const name of ['core','data','render'])scan(path.resolve(base,'../src',name));return [...paths].sort().map(f=>{try{const s=fs.statSync(f);return [f,s.size,s.mtimeMs,s.ctimeMs,s.ino];}catch{return [f,null];}});};
+ return ()=>{const next=JSON.stringify(signature());if(!files||next!==stamp){const found=sources(entry);hash=fingerprint(entry,found);files=[...found.keys()];stamp=JSON.stringify(signature());}return hash;};
 }
 function validate(entry){for(const [file,bytes]of sources(entry))if(/\.(?:c?js)$/.test(file)){
  const code=bytes.toString('utf8').replace(/^#![^\n]*/, '');
