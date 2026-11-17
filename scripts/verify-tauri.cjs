@@ -20,6 +20,11 @@ async function run(engine){
  result.sourceUnchanged=require('node:crypto').createHash('sha256').update(fs.readFileSync(result.source.source)).digest('hex')===result.source.sourceHash;
  fs.writeFileSync(path.join(dir,'verification.json'),JSON.stringify(result,null,2));fs.writeFileSync(path.join(dir,'stdout.log'),stdout);
  result.passed=result.sourceUnchanged&&exit.code===0&&records.some(r=>r.observation.stage==='return-2d')&&records.every(r=>r.observation.passed);
+ // The launcher has exited and released its workspace lock; reports and project
+ // copies stay in place while the registered runtime inputs can be regenerated.
+ const cleanup=require('./lib/test-artifacts.cjs').openRun(dir,{existing:true});
+ cleanup.discard('profile-'+engine);result.cleanup=cleanup.finish(result.passed);
+ fs.writeFileSync(path.join(dir,'verification.json'),JSON.stringify(result,null,2));
  console.log(path.join(dir,'verification.json'));return result;
 }
 async function main(){

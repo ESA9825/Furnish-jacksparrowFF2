@@ -9,6 +9,7 @@ function noLinks(file){
  if(stat.isSymbolicLink())throw Error('Refuse test cleanup through a symlink/junction: '+file);
  if(stat.isDirectory())for(const name of fs.readdirSync(file))noLinks(path.join(file,name));
 }
+const profileCaches=['Cache','Code Cache','GPUCache','DawnGraphiteCache','GraphiteDawnCache','GPUPersistentCache','DawnWebGPUCache','ShaderCache','GrShaderCache'];
 function write(file,data){const temp=file+'.'+crypto.randomUUID()+'.tmp';fs.writeFileSync(temp,JSON.stringify(data,null,2));fs.renameSync(temp,file);}
 function openRun(directory,{root=outputRoot,removeEntire=false,env=process.env,existing=false}={}){
  const dir=inside(path.resolve(root),directory);if(fs.lstatSync(path.resolve(root)).isSymbolicLink())throw Error('Linked output root');
@@ -51,11 +52,15 @@ function openRun(directory,{root=outputRoot,removeEntire=false,env=process.env,e
    if(owner.token!==token||current.token!==token||owner.pid!==process.pid)throw Error('Test ownership changed; preserve directory');
    owned=true;
    state.status=passed===true?'passed':'failed';state.finished=new Date().toISOString();
-   state.kept=passed!==true||!managed||env.FURNISH_KEEP_TEST_WORKSPACES==='1'||fs.existsSync(path.join(dir,'.keep'));
+   state.kept=(state.removeEntire&&passed!==true)||!managed||env.FURNISH_KEEP_TEST_WORKSPACES==='1'||fs.existsSync(path.join(dir,'.keep'));
    if(!state.kept){
     noLinks(dir);
-    const targets=state.disposable.map(rel=>inside(dir,path.join(dir,rel)));
-    const generatedFiles=Object.entries(state.generated).filter(([rel,hash])=>{const f=inside(dir,path.join(dir,rel));return fs.existsSync(f)&&sha(f)===hash;}).map(([rel])=>inside(dir,path.join(dir,rel)));
+    // A registered browser profile may contain the only copy of unsaved edits.
+    const targets=state.disposable.flatMap(rel=>{
+     const target=inside(dir,path.join(dir,rel));
+     return /^profile(?:-|$)/.test(path.basename(target))?profileCaches.map(name=>path.join(target,name)):[target];
+    });
+    const generatedFiles=(passed===true?Object.entries(state.generated):[]).filter(([rel,hash])=>{const f=inside(dir,path.join(dir,rel));return fs.existsSync(f)&&sha(f)===hash;}).map(([rel])=>inside(dir,path.join(dir,rel)));
     if(state.removeEntire){fs.rmSync(dir,{recursive:true,force:true});return state;}
     for(const target of [...targets,...generatedFiles])fs.rmSync(target,{recursive:true,force:true});
     state.cleaned=true;

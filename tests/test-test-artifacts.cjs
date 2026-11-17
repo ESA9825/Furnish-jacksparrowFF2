@@ -17,7 +17,16 @@ const T=require('../scripts/lib/test-artifacts.cjs'),helper=require.resolve('../
   assert.equal(fs.readFileSync(path.join(out,'snapshot.json'),'utf8'),'after');assert(fs.existsSync(path.join(out,'result.png')));assert(fs.existsSync(path.join(work,'projects/workspace.furnish.json')));assert(fs.existsSync(path.join(job.dir,'report.json')));assert(!fs.existsSync(path.join(job.dir,'.furnish-test-lock.json')));
   assert(!fs.existsSync(path.join(work,'docs/baseline.md')));assert(fs.existsSync(path.join(work,'docs/new-evidence.png')));assert.equal(fs.readFileSync(path.join(work,'docs/changed.md'),'utf8'),'new report');
   assert.equal(job.finish(false),status,'finish must be idempotent');assert.throws(()=>job.discard('../outside'),/escapes/);
-  const failed=make();failed.workspace('workspace',source);failed.finish(false);assert(fs.existsSync(path.join(failed.dir,'workspace/src/app.js')));assert.equal(JSON.parse(fs.readFileSync(path.join(failed.dir,'.furnish-test-run.json'))).status,'failed');
+  const failed=make();failed.workspace('workspace',source);fs.writeFileSync(path.join(failed.dir,'failure.json'),'evidence');failed.finish(false);assert(!fs.existsSync(path.join(failed.dir,'workspace/src/app.js')));assert(fs.existsSync(path.join(failed.dir,'failure.json')));assert(fs.existsSync(path.join(failed.dir,'workspace/projects/workspace.furnish.json')));assert.equal(JSON.parse(fs.readFileSync(path.join(failed.dir,'.furnish-test-run.json'))).status,'failed');
+  for(const passed of [true,false]){
+   const cacheJob=make();cacheJob.discard('profile');
+   for(const name of ['Cache','GPUCache','Local Storage','IndexedDB']){const folder=path.join(cacheJob.dir,'profile',name);fs.mkdirSync(folder,{recursive:true});fs.writeFileSync(path.join(folder,'data'),'keep-or-cache');}
+   const evidence=path.join(cacheJob.dir,'evidence');fs.mkdirSync(evidence);fs.writeFileSync(path.join(evidence,'before.json'),'snapshot');cacheJob.generated(evidence);
+   cacheJob.finish(passed);
+   for(const name of ['Cache','GPUCache'])assert(!fs.existsSync(path.join(cacheJob.dir,'profile',name)));
+   for(const name of ['Local Storage','IndexedDB'])assert.equal(fs.readFileSync(path.join(cacheJob.dir,'profile',name,'data'),'utf8'),'keep-or-cache');
+   assert.equal(fs.existsSync(path.join(evidence,'before.json')),!passed,'failed run keeps registered generated evidence');
+  }
   const resumed=T.openRun(failed.dir,{root,existing:true});resumed.finish(true);assert(!fs.existsSync(path.join(failed.dir,'workspace/src')));
   for(const mode of ['environment','pin']){
    const keep=make({env:mode==='environment'?{FURNISH_KEEP_TEST_WORKSPACES:'1'}:{}});keep.workspace('workspace',source);
