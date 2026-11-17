@@ -2084,15 +2084,23 @@ function loop(){
 }
 
 function syncCeilingModeButtons(){document.querySelectorAll('[data-ceiling-display]').forEach(b=>{const on=b.dataset.ceilingDisplay===ui.ceilingMode;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));});}
-function blenderScene(options={}){
+function blenderScene(options={}, {observationCeilings=false,includeLighting=false}={}){
  if(globalThis.FurnishCatalog?.active())throw Error('请先确认或取消家具替换，再导出三维场景。');
  if(!inited||!active||anim||fly)throw Error(tr('请等待三维视角稳定后重试。','Wait for the 3D camera to settle and retry.'));
  sync();
  if(furnitureRenderErrors.size)throw Error(tr('请先修复三维模型错误再导出。','Resolve 3D model errors before exporting.'));
  let tvPicturePending=false;furnG.traverse(o=>{if(o.userData.tvScreenOwnMaterial&&!o.material.userData.tvImageReady)tvPicturePending=true;});
  if(tvPicturePending)throw Error(tr('请等待电视图片加载完成；若图片损坏，请重新选择图片。','Wait for the TV picture to load; reselect it if the image is damaged.'));
- ceilingDisplay.restore();
- try{return FurnishBlenderExport.encode(THREE,{groups:[archFloor,archUp,furnG,lampG],camera,sun,material:o=>observation.material(o),...options,meta:{plan:PLAN.name,planId:PLAN.id,originMm:[OX,OY],cut:opt.cut,temporaryFocusClipping:false,lighting:FurnishLighting.environment(opt.night,opt.hour),...options.meta}});}finally{applyObservationLayers();}
+ ceilingDisplay.restore();const display=observationCeilings?FurnishCeilingModel.createDisplay(THREE):null;
+ try{
+  display?.update(archUp,camera,ui.ceilingMode,{progressive:true});
+  const lighting=includeLighting?FurnishLighting.collect(THREE,[archFloor,archUp,furnG,lampG]):null;
+  // encode clones synchronously before its asynchronous GLB serialization.
+  // Only the live observation snapshot receives view overrides; regular GLB,
+  // independent HD and Blender keep the original production materials/occluders.
+  const encoded=FurnishBlenderExport.encode(THREE,{groups:[archFloor,archUp,furnG,lampG],camera,sun,material:o=>display?o.material:observation.material(o),...options,meta:{plan:PLAN.name,planId:PLAN.id,originMm:[OX,OY],cut:opt.cut,temporaryFocusClipping:false,lighting:FurnishLighting.environment(opt.night,opt.hour),...options.meta}});
+  return includeLighting?encoded.then(data=>({...data,lighting})):encoded;
+ }finally{display?.clear();applyObservationLayers();}
 }
 function blenderSyncSignature(){if(globalThis.FurnishCatalog?.active())return null;if(!inited||!active||anim||fly)return null;sync();return JSON.stringify([PLAN.id,sigArch,sigFurn,state.objectLayers?.assignments,state.objectLayers?.layers?.map(l=>[l.id,l.visible]),opt.furn,opt.lamps]);}
 let highQualityState='',highQualityRevision=0;
@@ -2106,17 +2114,15 @@ function productionMotionPending(){return doors.some(d=>d.cur!==(d.open?d.a1:d.a
 function progressiveState(){
  const signature=highQualitySignature();if(!signature||productionMotionPending())return null;
  const parts=JSON.parse(signature),cameraState={matrixWorld:camera.matrixWorld.elements.slice(),projectionMatrix:camera.projectionMatrix.elements.slice(),near:camera.near,far:camera.far,aspect:camera.aspect};
- return {sceneKey:JSON.stringify(parts.slice(0,-2)),viewKey:FurnishProgressivePolicy.cameraKey(cameraState),camera:cameraState,editing:!!selHelper||!!sceneIssue||!!sceneMeasure?.active()||!!globalThis.FurnishTilePresetUI?.inspecting()};
+ return {sceneKey:JSON.stringify([...parts.slice(0,-2),ceilingDisplay.progressiveKey(archUp,camera,ui.ceilingMode)]),viewKey:FurnishProgressivePolicy.cameraKey(cameraState),camera:cameraState,editing:!!selHelper||!!sceneIssue||!!sceneMeasure?.active()||!!globalThis.FurnishTilePresetUI?.inspecting()};
 }
 function progressiveScene(){return highQualityScene({cameraIndependent:true});}
 async function highQualityScene({cameraIndependent=false}={}){
  const initial=progressiveState(),signature=highQualitySignature();if(!signature)throw Error('请等待三维视角稳定后重试。');
- ceilingDisplay.restore();let lighting;
- try{lighting=FurnishLighting.collect(THREE,[archFloor,archUp,furnG,lampG]);}finally{applyObservationLayers();}
  const environment=FurnishLighting.environment(opt.night,opt.hour);
- const data=await blenderScene({includeCeilings:true,expandInstances:true,meta:{plan:PLAN.name,planId:PLAN.id,lighting:environment}});
+ const data=await blenderScene({includeCeilings:true,expandInstances:true,meta:{plan:PLAN.name,planId:PLAN.id,lighting:environment}},{observationCeilings:cameraIndependent,includeLighting:true});
  if(cameraIndependent?progressiveState()?.sceneKey!==initial?.sceneKey:highQualitySignature()!==signature)throw Error('场景已改变，请重新预览。');
- return {...data,lighting,environment,signature};
+ return {...data,environment,signature};
 }
 async function automationReady(){
  const until=performance.now()+15000;

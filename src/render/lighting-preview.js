@@ -5,12 +5,13 @@ import {WebGPUPathTracer,OIDNDenoiser} from '../../vendor/lighting-preview/three
 import {GenerateMeshBVHWorker} from '../../vendor/lighting-preview/three-mesh-bvh/src/workers/GenerateMeshBVHWorker.js';
 import {initUNetFromURL} from '../../vendor/lighting-preview/oidn-webgpu/dist/oidn.js';
 let token=null,renderer=null,tracer=null,scene=null,stopped=false;
-let live=false,liveCamera=null,viewKey=null,aspect=1,edge=1200,liveVersion=0,paused=false,liveComplete=false;
+let live=false,liveCamera=null,liveProjection=null,viewKey=null,aspect=1,edge=1200,liveVersion=0,paused=false,liveComplete=false;
+function updateLiveProjection(){liveCamera.projectionMatrix.fromArray(globalThis.FurnishProgressivePolicy.projectionMatrix(liveProjection,liveCamera.coordinateSystem===T.WebGPUCoordinateSystem));liveCamera.projectionMatrixInverse.copy(liveCamera.projectionMatrix).invert();}
 function renderLoop(){renderer?.setAnimationLoop(()=>{if(stopped||paused)return;try{tracer.renderSample();}catch(error){fail(error);}});}
 function resizeLive(nextEdge){liveComplete=false;edge=nextEdge;const {width,height}=globalThis.FurnishProgressivePolicy.size(aspect,edge);renderer.setSize(width,height);tracer.reset();}
 function updateLiveCamera(data){if(!live||!tracer||!liveCamera)return;
  const valid=a=>Array.isArray(a)&&a.length===16&&a.every(Number.isFinite),c0=data.camera;
- if(!c0||!valid(c0.matrixWorld)||!valid(c0.projectionMatrix)||!Number.isFinite(c0.aspect)||c0.aspect<.1||c0.aspect>10||!Number.isFinite(c0.near)||!Number.isFinite(c0.far))throw Error('相机数据无效');liveVersion++;viewKey=data.viewKey;const c=data.camera;aspect=c.aspect;liveCamera.matrixWorld.fromArray(c.matrixWorld);liveCamera.matrixWorld.decompose(liveCamera.position,liveCamera.quaternion,liveCamera.scale);liveCamera.updateMatrixWorld(true);liveCamera.projectionMatrix.fromArray(c.projectionMatrix);liveCamera.projectionMatrixInverse.copy(liveCamera.projectionMatrix).invert();liveCamera.near=c.near;liveCamera.far=c.far;resizeLive(edge);tracer.updateCamera();paused=false;tracer.pause=false;renderLoop();}
+ if(!c0||!valid(c0.matrixWorld)||!valid(c0.projectionMatrix)||!Number.isFinite(c0.aspect)||c0.aspect<.1||c0.aspect>10||!Number.isFinite(c0.near)||!Number.isFinite(c0.far))throw Error('相机数据无效');liveVersion++;viewKey=data.viewKey;const c=data.camera;aspect=c.aspect;liveCamera.aspect=c.aspect;liveCamera.matrixWorld.fromArray(c.matrixWorld);liveCamera.matrixWorld.decompose(liveCamera.position,liveCamera.quaternion,liveCamera.scale);liveCamera.updateMatrixWorld(true);liveProjection=c.projectionMatrix.slice();liveCamera.near=c.near;liveCamera.far=c.far;updateLiveProjection();resizeLive(edge);tracer.updateCamera();paused=false;tracer.pause=false;renderLoop();}
 const send=(type,values={})=>parent.postMessage({channel:'furnish-lighting-preview',token,type,...values},location.origin);
 const status=message=>send('status',{message});
 function stop(){stopped=true;renderer?.setAnimationLoop(null);}
@@ -30,7 +31,7 @@ async function run(data){
   if(stopped)return;status('正在读取生产模型…');
   const gltf=await new GLTFLoader().parseAsync(data.buffer,'');if(stopped)return;
   scene=new T.Scene();scene.add(gltf.scene);scene.background=new T.Color(data.environment.background);scene.environment=new T.Color().fromArray(data.environment.world);scene.environmentIntensity=1;
-  const camera=gltf.cameras[0];if(!camera)throw Error('场景缺少相机');camera.aspect=data.aspect;camera.updateProjectionMatrix();if(live){camera.removeFromParent();scene.add(camera);liveCamera=camera;}scene.updateMatrixWorld(true);
+  const camera=gltf.cameras[0];if(!camera)throw Error('场景缺少相机');camera.aspect=data.aspect;camera.updateProjectionMatrix();if(live){camera.removeFromParent();scene.add(camera);liveCamera=camera;liveProjection=globalThis.FurnishProgressivePolicy.projectionMatrix(data.camera?.projectionMatrix);camera.updateProjectionMatrix=updateLiveProjection;updateLiveProjection();}scene.updateMatrixWorld(true);
   // glTF primitives can share BufferAttribute objects across geometries. Worker
   // transfers must own their attribute arrays, otherwise another BVH job can
   // encounter a detached array. Copy only this isolated preview's geometry.

@@ -183,16 +183,28 @@ function createDisplay(THREE){
  const overrides=new Map(),materials=new Map(),outlines=new Map(),states=new Map(),position=new THREE.Vector3(),bounds=new THREE.Box3();
  function restore(){for(const [m,s]of overrides){m.material=s.material;m.visible=s.visible;m.castShadow=s.castShadow;m.renderOrder=s.renderOrder;}overrides.clear();for(const line of outlines.values())line.visible=false;}
  function clear(){restore();for(const m of materials.values())m.dispose();materials.clear();for(const line of outlines.values()){line.removeFromParent();line.geometry.dispose();line.material.dispose();}outlines.clear();states.clear();}
- function update(group,camera,mode='solid'){
+ function viewState(m,mode,progressive){
+  const part=m.userData.ceiling?.part,roof=progressive&&m.userData.layerObject?.startsWith('roomCeiling:');if(!m.isMesh||!part&&!roof)return null;
+  if(!m.geometry.boundingBox)m.geometry.computeBoundingBox();bounds.copy(m.geometry.boundingBox).applyMatrix4(m.matrixWorld);
+  // Raster camera rays cull the structural roof from above, but path-traced
+  // shadow rays still hit it. Exclude it only in the observation cutaway;
+  // below the roof and in physical exports it remains an opaque light blocker.
+  if(roof)return mode!=='solid'&&position.y>bounds.max.y?'hidden':'solid';
+  const luminous=part==='light'||part==='diffuser',above=mode==='ghost'&&position.y>bounds.max.y,hidden=mode==='hidden'||above&&part==='panel-backing';
+  return hidden?'hidden':above&&!luminous?'ghost':'solid';
+ }
+ function progressiveKey(group,camera,mode='solid'){
+  camera.getWorldPosition(position);group.updateWorldMatrix(true,true);const mask=[];
+  group.traverse(m=>{const s=viewState(m,mode,true);if(s)mask.push(s==='solid'?0:s==='ghost'?1:2);});return mask.join('');
+ }
+ function update(group,camera,mode='solid',{progressive=false}={}){
   restore();camera.getWorldPosition(position);group.updateWorldMatrix(true,true);let changed=false;
   group.traverse(m=>{
-   const part=m.userData.ceiling?.part;if(!m.isMesh||!part)return;
-   if(!m.geometry.boundingBox)m.geometry.computeBoundingBox();bounds.copy(m.geometry.boundingBox).applyMatrix4(m.matrixWorld);
-   const luminous=part==='light'||part==='diffuser',above=mode==='ghost'&&position.y>bounds.max.y,hidden=mode==='hidden'||above&&part==='panel-backing',ghost=above&&!luminous&&!hidden,next=hidden?'hidden':ghost?'ghost':'solid';
+   const part=m.userData.ceiling?.part,next=viewState(m,mode,progressive);if(!next)return;
    if(states.get(m)!==next){states.set(m,next);changed=true;}
    if(next==='solid')return;
    overrides.set(m,{material:m.material,visible:m.visible,castShadow:m.castShadow,renderOrder:m.renderOrder});
-   if(hidden){m.visible=false;return;}
+   if(next==='hidden'){m.visible=false;return;}
    let material=materials.get(m.material);if(!material){material=m.material.clone();material.transparent=true;material.opacity=.25;material.depthWrite=false;material.side=THREE.FrontSide;material.clippingPlanes=m.material.clippingPlanes;material.onBeforeCompile=m.material.onBeforeCompile;material.customProgramCacheKey=m.material.customProgramCacheKey;materials.set(m.material,material);}
    m.material=material;m.castShadow=false;m.renderOrder=1;
    if(part==='panel'||part==='panel-trim'){
@@ -204,7 +216,7 @@ function createDisplay(THREE){
    }
   });return changed;
  }
- return {restore,clear,update};
+ return {restore,clear,update,progressiveKey};
 }
 const api={build,preview,applyWash,createDisplay};if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishCeilingModel=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

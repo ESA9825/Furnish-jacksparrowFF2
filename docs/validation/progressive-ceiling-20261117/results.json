@@ -1,0 +1,207 @@
+{
+  "reports": [
+    {
+      "label": "above-ghost",
+      "width": 1200,
+      "height": 1122,
+      "rect": {
+        "width": 866,
+        "height": 810
+      },
+      "projectionError": 0,
+      "rayError": 0,
+      "bounces": 8,
+      "sampleBudget": 256
+    },
+    {
+      "label": "resize-980",
+      "width": 1200,
+      "height": 1099,
+      "rect": {
+        "width": 960,
+        "height": 879
+      },
+      "projectionError": 0,
+      "rayError": 0,
+      "bounces": 8,
+      "sampleBudget": 256
+    },
+    {
+      "label": "fov-90",
+      "width": 1200,
+      "height": 1099,
+      "rect": {
+        "width": 960,
+        "height": 879
+      },
+      "projectionError": 0,
+      "rayError": 0,
+      "bounces": 8,
+      "sampleBudget": 256
+    },
+    {
+      "label": "landscape-return",
+      "width": 1200,
+      "height": 1122,
+      "rect": {
+        "width": 866,
+        "height": 810
+      },
+      "projectionError": 0,
+      "rayError": 0,
+      "bounces": 8,
+      "sampleBudget": 256
+    },
+    {
+      "label": "above-hidden",
+      "width": 1200,
+      "height": 1122,
+      "rect": {
+        "width": 866,
+        "height": 810
+      },
+      "projectionError": 0,
+      "rayError": 0,
+      "bounces": 8,
+      "sampleBudget": 256
+    },
+    {
+      "label": "inside-ghost",
+      "width": 1200,
+      "height": 1122,
+      "rect": {
+        "width": 866,
+        "height": 810
+      },
+      "projectionError": 0,
+      "rayError": 0,
+      "bounces": 8,
+      "sampleBudget": 256
+    }
+  ],
+  "formal": [
+    {
+      "hash": "4e5c24e20a4336a35d7d6b8b65693d6cfdacaf9ded40c2fc472aff6c1f5c7710",
+      "containerHash": "06f05376800c3224de2f4471f3910129d19669743fb2e6a781638332e0bbfbb6",
+      "meshes": 5199,
+      "roofs": 11,
+      "ceilings": 68,
+      "blends": 2,
+      "rects": 25,
+      "spots": 9
+    },
+    {
+      "hash": "4e5c24e20a4336a35d7d6b8b65693d6cfdacaf9ded40c2fc472aff6c1f5c7710",
+      "containerHash": "5b1666df6c871f1c82a2b024522bc4574e31b6eb7c30e8de16712388a8254c1c",
+      "meshes": 5199,
+      "roofs": 11,
+      "ceilings": 68,
+      "blends": 2,
+      "rects": 25,
+      "spots": 9
+    },
+    {
+      "hash": "4e5c24e20a4336a35d7d6b8b65693d6cfdacaf9ded40c2fc472aff6c1f5c7710",
+      "containerHash": "4d60ae4b3e3ad65eef534bcaab4c0a146e8fce9d306efcf9a3d002347226a7bf",
+      "meshes": 5199,
+      "roofs": 11,
+      "ceilings": 68,
+      "blends": 2,
+      "rects": 25,
+      "spots": 9
+    }
+  ],
+  "observed": {
+    "solid": {
+      "hash": "4e5c24e20a4336a35d7d6b8b65693d6cfdacaf9ded40c2fc472aff6c1f5c7710",
+      "containerHash": "ee81d2bf732a034f614a181331f897786950efa61a98fbcb091642c7701bfa33",
+      "meshes": 5199,
+      "roofs": 11,
+      "ceilings": 68,
+      "blends": 2,
+      "rects": 25,
+      "spots": 9
+    },
+    "ghost": {
+      "hash": "12b3320d798c553090f30113727773d1150343667950fe0458c64fecd56e8f9c",
+      "containerHash": "2f10dd2c4a63f1d702ff311af7b20078437fc580f89f5296fb32f6ef8a38e75d",
+      "meshes": 5186,
+      "roofs": 0,
+      "ceilings": 66,
+      "blends": 64,
+      "rects": 25,
+      "spots": 9
+    },
+    "hidden": {
+      "hash": "6de3a1dca96dee7c1449cc2cfce6703858d4e6ff853c42c965255301d425bb2d",
+      "containerHash": "80da2eec5b83c76831ab7f984a74850a7162b2210dcbb5e24e990eda8bacbb13",
+      "meshes": 5120,
+      "roofs": 0,
+      "ceilings": 0,
+      "blends": 0,
+      "rects": 17,
+      "spots": 9
+    }
+  },
+  "indoor": {
+    "formal": "07c8d60c9d580076e4dcf84588a5a55f3502a7c22b78c2bcaf46924207051a17",
+    "ghost": "07c8d60c9d580076e4dcf84588a5a55f3502a7c22b78c2bcaf46924207051a17",
+    "hiddenRoofs": 11
+  },
+  "evidence": "progressive-ceiling-FCR9WT",
+  "completed256": [
+    "above-ghost",
+    "above-hidden",
+    "inside-ghost"
+  ],
+  "projectionCheck": {
+    "evidence": "progressive-projection-N7iKmZ",
+    "reports": [
+      {
+        "label": "initial",
+        "viewport": {
+          "width": 1056,
+          "height": 909.5
+        },
+        "projectionError": 0,
+        "rayUniformError": 0
+      },
+      {
+        "label": "portrait",
+        "viewport": {
+          "width": 700,
+          "height": 875
+        },
+        "projectionError": 0,
+        "rayUniformError": 0
+      },
+      {
+        "label": "fov-90",
+        "viewport": {
+          "width": 700,
+          "height": 875
+        },
+        "projectionError": 0,
+        "rayUniformError": 0
+      },
+      {
+        "label": "landscape",
+        "viewport": {
+          "width": 1056,
+          "height": 649.5
+        },
+        "projectionError": 0,
+        "rayUniformError": 0
+      },
+      {
+        "label": "sidebar-toggle",
+        "viewport": {
+          "width": 1304,
+          "height": 649.5
+        },
+        "projectionError": 0,
+        "rayUniformError": 0
+      }
+    ]
+  }
+}
