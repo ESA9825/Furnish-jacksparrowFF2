@@ -1,0 +1,67 @@
+{
+  "areas": [
+    {
+      "id": "area_fmv3oztg03",
+      "name": "次卧",
+      "finishedZ": 60
+    },
+    {
+      "id": "area_fmv3p1fkz7",
+      "name": "主卧",
+      "finishedZ": 60
+    },
+    {
+      "id": "area_fmv3p1yse11",
+      "name": "走廊",
+      "finishedZ": 60
+    },
+    {
+      "id": "area_fmv3p2ig914",
+      "name": "阳台",
+      "finishedZ": 60
+    },
+    {
+      "id": "area_fmv3qajd93",
+      "name": "餐厨过厅",
+      "finishedZ": 60
+    },
+    {
+      "id": "area_fmv3qb1oi4",
+      "name": "客餐厅",
+      "finishedZ": 60
+    },
+    {
+      "id": "area_fmv3qb1oi5",
+      "name": "玄关",
+      "finishedZ": 60
+    },
+    {
+      "id": "area_fmv3qcck717",
+      "name": "厨房",
+      "finishedZ": 60
+    },
+    {
+      "id": "area_fmv3qdfiz23",
+      "name": "卫生间",
+      "finishedZ": 55
+    }
+  ],
+  "steps": [
+    {
+      "id": "door-2",
+      "seam": [
+        [
+          5683,
+          6553.5
+        ],
+        [
+          6443,
+          6553.5
+        ]
+      ],
+      "low": 55,
+      "high": 60,
+      "drop": 5
+    }
+  ]
+}

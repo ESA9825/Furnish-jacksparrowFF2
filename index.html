@@ -1322,7 +1322,11 @@ const syncIdentity=FurnishPartIdentity;
   }
   const floorSteps=finishPlan.floorFinish?.steps||[],floorEdges=FurnishFloorFinishModel.stepEdges(THREE,floorSteps,{wx,wz});floorEdges.traverse(o=>{if(o.userData.floorStep){const step=o.userData.floorStep,a=finishPlan.floorFinish.doorways.find(a=>a.id.startsWith(step.id+"-")&&a.finishedZ===step.high);if(a)o.userData.layerObject="floor:"+a.roomId;}});archFloor.add(floorEdges);
   // Label the measured difference rather than exaggerating a 5 mm riser.
-  for(const step of floorSteps){const [[x,z],[X,Z]]=step.seam;const el=document.createElement('div');el.className='scene-floor-step';el.textContent=`${tr('地面高差','Floor step')} ${Number(step.drop.toFixed(2))} mm`;const label=new CSS2DObject(el);label.position.set(wx((x+X)/2),step.high/1000+.035,wz((z+Z)/2));archFloor.add(label);}
+  for(const step of floorSteps){
+    const [[x,z],[X,Z]]=step.seam,adjoining=finishPlan.floorFinish.doorways.filter(a=>a.id.startsWith(step.id+'-')),ids=[...new Set(adjoining.map(a=>a.roomId))],names=[...new Set(adjoining.map(a=>state.rooms[a.roomId]?.name||a.room.name).filter(Boolean))];
+    const el=document.createElement('div');el.className='scene-floor-step';el.dataset.floorStep=step.id;el.dataset.floorRooms=JSON.stringify(ids);el.textContent=`${names.length?names.join(' / ')+' · ':''}${tr('地面高差','Floor step')} ${Number(step.drop.toFixed(2))} mm`;
+    const label=new CSS2DObject(el);label.position.set(wx((x+X)/2),step.high/1000+.035,wz((z+Z)/2));archFloor.add(label);
+  }
   for(const [kind,list] of syncIdentity.items("index.html:generator-41",[["item-a",['door',DOORS]],["item-b",['slide',SLIDES]]]))syncIdentity.each("index.html:generator-42",list,(d,index)=>{if(finishPlan.floorFinish?.doorways.some(a=>a.kind===kind&&a.index===index))return;const [x0,y0,x1,y1]=d.rect,s=syncIdentity.produce("index:site-226",()=>box(M(x1-x0),.012,M(y1-y0),mat('#d8d0c0',{roughness:.3}),wx((x0+x1)/2),0,wz((y0+y1)/2)));s.castShadow=false;archFloor.add(s);},(item,slot)=>item.id||"plan-slot:"+slot);
   // Schematic risers: user default diameter 100 mm, floor to room ceiling.
   for(const marker of syncIdentity.records("index.html:generator-43",PLAN.markers||[])){

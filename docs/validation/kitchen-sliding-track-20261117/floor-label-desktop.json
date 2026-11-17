@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "labels": [
+    {
+      "text": "走廊 / 卫生间 · 地面高差 5 mm",
+      "rooms": [
+        "area_fmv3p1yse11",
+        "area_fmv3qdfiz23"
+      ],
+      "step": "door-2"
+    }
+  ],
+  "floorsUnchanged": true
+}

@@ -1,0 +1,24 @@
+{
+  "camera": {
+    "mode": "orbit",
+    "position": {
+      "x": 9400,
+      "y": 9750,
+      "z": 2200
+    },
+    "target": {
+      "x": 7650,
+      "y": 8460,
+      "z": 1100
+    },
+    "horizontalFov": 75.00000000000001,
+    "verticalFov": 56.865609912823075,
+    "aspect": 1.417201540436457,
+    "unit": "mm",
+    "coordinateSystem": "x/y 为户型模型坐标，z 为绝对离地高度",
+    "cut": 2.8,
+    "focusIds": [],
+    "temporaryFocusClipping": false
+  },
+  "revision": "b12618c9433607eaf9f046c4b9c8a9bc09ec2c767243d9784f4867a678a9eb2e"
+}
