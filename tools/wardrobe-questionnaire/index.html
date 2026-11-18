@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<title>衣柜需求问卷 · Furnish</title>
+<style>
+:root{color-scheme:light;--ink:#26372f;--muted:#626e65;--paper:#f7f5ef;--line:#d9ded3;--green:#345642;--soft:#eaf0e5}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.7 system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}header,main,footer{max-width:1000px;margin:auto;padding:32px 28px}header{padding-top:54px}.eyebrow{font-size:12px;letter-spacing:.15em;color:var(--green);font-weight:700}h1{font-size:clamp(30px,5vw,48px);line-height:1.2;margin:15px 0}h2{font-size:23px;margin:0 0 8px}p{margin:8px 0}.intro{max-width:720px;color:var(--muted)}.steps{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}.steps span{border:1px solid var(--line);border-radius:20px;padding:5px 13px;font-size:13px}.notice{padding:18px 22px;background:var(--soft);border-radius:12px;margin:22px 0}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}button,.file-button{font:inherit;font-size:14px;cursor:pointer;border:1px solid var(--line);border-radius:8px;background:white;color:var(--ink);padding:10px 16px;display:inline-block}button:hover,.file-button:hover{border-color:var(--green)}button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #acbc81;outline-offset:3px}.primary{background:var(--green);color:white;border-color:var(--green)}nav{display:flex;gap:18px;flex-wrap:wrap;margin:26px 0 0}nav a{color:var(--green);font-size:14px;text-underline-offset:5px}main{padding-top:0}.section{background:#fff;border:1px solid var(--line);border-radius:16px;padding:28px;margin-bottom:22px;scroll-margin-top:20px}.section-head{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:24px}.section-head small{color:var(--muted)}.question{padding:0;margin:0 0 26px;border:0;min-width:0}legend,.label{font-weight:650;padding:0;margin-bottom:9px;display:block}.hint{display:block;color:var(--muted);font-size:13px;font-weight:400;margin-bottom:9px}.options{display:flex;gap:9px;flex-wrap:wrap}.choice{display:flex;align-items:center;gap:8px;border:1px solid var(--line);padding:9px 13px;border-radius:8px;cursor:pointer;font-size:14px}.choice:has(input:checked){background:var(--soft);border-color:var(--green)}input[type=radio],input[type=checkbox]{accent-color:var(--green);width:17px;height:17px;margin:0}input[type=text],input[type=number],textarea,select{font:inherit;font-size:15px;border:1px solid #aeb9ad;background:white;border-radius:7px;padding:10px 12px;width:100%;color:var(--ink)}input:focus,textarea:focus,select:focus{outline:2px solid #a5b68f;outline-offset:1px}textarea{resize:vertical;min-height:78px}input::placeholder,textarea::placeholder{color:#7c867c}.note{margin-top:12px}.note summary{font-size:13px;color:var(--green);cursor:pointer;width:fit-content}.note textarea{margin-top:8px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.measure{display:grid;grid-template-columns:1fr 1fr;gap:8px}.field{min-width:0}.field label{display:block;margin-bottom:7px;font-size:14px}.measure input{min-width:0}.count-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}.status{padding:12px 0;white-space:pre-wrap;font-size:14px}.status.error{color:#973d26}#summary{white-space:pre-wrap;font-size:14px;line-height:1.8;width:100%;min-height:300px;background:#fcfcf8}#summary-panel[hidden]{display:none}footer{font-size:13px;color:var(--muted);padding-top:0;padding-bottom:45px}.section-number{color:#78916c;font-size:13px;display:block;margin-bottom:8px}.actions{border-top:1px solid var(--line);padding-top:16px;margin-top:18px}#import-file{position:absolute;width:1px;height:1px;opacity:0} .file-button:focus-within{outline:3px solid #acbc81}.required{font-size:12px;color:#87593e}#finish{background:#edf2e8}.print-only{display:none}@media(max-width:600px){header,main,footer{padding-left:18px;padding-right:18px}header{padding-top:30px}.section{padding:20px 17px}.grid,.count-grid{grid-template-columns:1fr}.choice{flex-grow:1}h2{font-size:21px}.toolbar>*{flex-grow:1;text-align:center}}@media print{header,nav,.toolbar,.actions,.notice,form,#finish,footer{display:none!important}main{padding:0;max-width:none}.section{border:0;padding:0}#summary-panel{display:block!important}#summary{display:none}.print-only{display:block;white-space:pre-wrap;font-size:11pt;color:#000}body{background:white}h2{font-size:18pt}}
+</style>
+</head>
+<body>
+<header>
+<div class="eyebrow">FURNISH / 衣柜需求采集 · v1</div>
+<h1>先聊生活，再设计衣柜。</h1>
+<p class="intro">告诉我们你的衣物、整理习惯和放置位置。选适合自己的答案，也可以补充说明；暂时不知道的尺寸可以留空，后续再测。</p>
+<div class="steps"><span>01 填写需求</span><span>02 导出答卷</span><span>03 发给设计者</span></div>
+<div class="notice"><strong>答卷由你保管</strong><p>本问卷无需联网，不自动上传，也不自动保存。离开前请导出答卷或草稿；之后可导入继续填写。导出不等于已经发送，请将下载的 JSON 文件通过微信「文件」、邮件附件等方式发给设计者。</p></div>
+<div class="toolbar"><label class="file-button">导入已有答卷<input id="import-file" type="file" accept=".json,application/json"></label><button type="button" id="draft">导出草稿</button><button type="button" id="clear">清空本页</button></div>
+<nav aria-label="问卷章节"><a href="#people">使用与习惯</a><a href="#capacity">衣物与容量</a><a href="#region">放置区域</a><a href="#preferences">偏好与取舍</a><a href="#finish">检查与导出</a></nav>
+</header>
+<main>
+<form id="survey" novalidate></form>
+<section class="section" id="finish"><span class="section-number">05 / 交回答卷</span><h2>检查一下，然后发给设计者。</h2><p>答卷会同时包含你的原始选择、补充说明和文字摘要。未知信息会保留为待核实，不会自动补成设计尺寸。</p><div class="toolbar"><button type="button" id="preview">查看需求摘要</button><button type="button" id="export" class="primary">导出答卷 JSON</button><button type="button" id="text-export">导出文字摘要</button><button type="button" id="print">打印 / 存为 PDF</button></div><div id="status" class="status" role="status" aria-live="polite"></div><p class="hint">回传步骤：找到刚下载的「衣柜答卷-…json」→ 作为文件附件发给设计者 → 请对方确认收到。文字摘要可作为备用；只发送空白 HTML 不会包含填写内容。手机若只能预览 HTML、无法填写或下载，请改用电脑浏览器打开。</p></section>
+<section id="summary-panel" class="section" hidden><h2>需求摘要</h2><p class="hint">可选中下方文字复制给设计者。摘要供沟通使用，不能代替现场复核或施工图。</p><textarea id="summary" readonly aria-label="需求摘要"></textarea><div id="print-summary" class="print-only"></div></section>
+</main><footer>离线文件 · 不包含自动提交或自动生成柜体功能。填写内容由你主动分享；请勿填写密码等无关信息。放置区域在此用位置描述和尺寸记录，尚未绑定 Furnish 画布。</footer>
+<script>
+'use strict';
+const SCHEMA='furnish.wardrobe-questionnaire', VERSION=1;
+const groups=[
+{id:'people',num:'01',title:'谁在用，平时怎么整理？',hint:'不用先懂柜体参数，按日常习惯回答。',questions:[
+{id:'caseName',title:'答卷编号或称呼',type:'text',required:true,hint:'用于区分答卷即可，不必填写真实姓名。',placeholder:'例如：1601主卧 / A家庭'},
+{id:'users',title:'使用人数与分区',options:['一人使用','两人，个人区为主','多人共用','个人区＋共用区','尚未确定']},
+{id:'habit',title:'平时更愿意怎样整理衣物？',options:['尽量挂起来','偏好折叠收纳','挂叠结合','希望设计者建议']},
+{id:'pain',title:'目前最想改善什么？',type:'multi',options:['衣服太挤','不好找','叠衣容易乱','抽屉不够','拿不到高处','弯腰不方便','其他'],hint:'可多选，并补充最困扰你的具体情况。'},
+{id:'access',title:'取放需求',type:'multi',options:['常用物品不登高取用','尽量少弯腰','需要坐姿取用','儿童自己拿','无特殊要求','暂不清楚'],exclusive:['无特殊要求','暂不清楚']}
+]},
+{id:'capacity',num:'02',title:'衣柜里，需要放下什么？',hint:'容量按希望在这个柜中存放的总量填写，包含计划增加的衣物；不要重复加增长量。数量不清楚可留空，并在说明中写估计范围。',questions:[
+{id:'inventory',title:'物品类别',type:'multi',options:['短上衣 / 衬衫','长裙 / 长大衣','裤子','针织 / 叠放衣物','内衣袜子等小件','包袋','被褥','行李箱','其他']},
+{id:'shortCount',title:'短挂衣物目标件数',type:'number',unit:'件',max:100000},
+{id:'longCount',title:'长挂衣物目标件数',type:'number',unit:'件',max:100000},
+{id:'shortRail',title:'短挂衣物占杆长',type:'measurement',unit:'mm',hint:'有现成衣物时挂成一排测量。与件数是同一批衣物的两种描述，不相加。'},
+{id:'longRail',title:'长挂衣物占杆长',type:'measurement',unit:'mm'},
+{id:'longest',title:'最长衣物挂好后的垂落长度',type:'measurement',unit:'mm',hint:'注明从衣架挂钩还是杆位量起；不是挂杆离地高度。'},
+{id:'items',title:'叠放衣物、收纳盒及大件明细',type:'textarea',placeholder:'例如：毛衣约3叠；被褥2床；行李箱宽500×深300×高750mm（实测）。不清楚可说明。'},
+{id:'season',title:'换季与未来变化',type:'multi',options:['换季衣物也放这里','换季另有存放处','未来物量预计增加','使用人数可能变化','儿童成长需要调整','暂不清楚'],exclusive:['暂不清楚']}
+]},
+{id:'region',num:'03',title:'衣柜准备放在哪里？',hint:'填写完成面尺寸，单位统一为毫米（1cm＝10mm）。不确定就留空。此问卷不绘制或修改 Furnish 中的方案。',questions:[
+{id:'location',title:'房间、墙面与范围描述',type:'textarea',required:true,placeholder:'例如：主卧进门左手墙，从门套到窗帘旁；或填写“位置暂未确定”。'},
+{id:'planRef',title:'已有方案或位置编号（选填）',type:'text',placeholder:'例如：Furnish方案名、柜体编号。无需填写文件完整路径。'},
+{id:'width',title:'可用完成面净宽',type:'measurement',unit:'mm'},
+{id:'height',title:'可用完成面净高',type:'measurement',unit:'mm'},
+{id:'depth',title:'可接受的柜体总深',type:'measurement',unit:'mm',hint:'属于空间限制，不等于衣柜闭门后的内部净深。'},
+{id:'obstacles',title:'附近有哪些需要避让或保留？',type:'multi',options:['房门 / 门套','窗 / 窗帘','床 / 床头柜','梁 / 吊顶','插座 / 开关','管道 / 检修口','踢脚线','其他家具','暂无已知障碍','尚未核实'],exclusive:['暂无已知障碍','尚未核实']},
+{id:'regionNotes',title:'现场及保留项说明',type:'textarea',placeholder:'说明障碍的位置、高度，以及必须保留的柜体或配件。照片、平面图可作为附件与答卷一起发送。'},
+{id:'reach',title:'本人舒适取放范围（选填）',type:'text',placeholder:'例如：站地可取挂杆上沿约1600mm，已试取；或待现场确认。'}
+]},
+{id:'preferences',num:'04',title:'哪些必须满足，哪些可以商量？',hint:'所有选择都可留空。外观偏好不会覆盖必需容量、取放和现场限制。',questions:[
+{id:'door',title:'柜门偏好',options:['平开门','滑门','开放式','希望比较后再定']},
+{id:'priority',title:'最重视的事项',type:'multi',maxChoices:3,options:['储物容量','取放便利','少花时间整理','控制预算','外观搭配','未来便于调整'],hint:'最多选3项；如有先后顺序，请写在补充说明里。'},
+{id:'must',title:'必须满足的要求',type:'textarea',placeholder:'例如：保留一处长裙区；常用衣物必须站地拿到；不得移动现有插座。'},
+{id:'tradeoff',title:'空间或预算不足时，愿意怎样取舍？',type:'multi',options:['减少复杂配件','部分物品放到别处','减少展示区','调整柜门形式','缩减非必需容量','先比较方案再决定']},
+{id:'budget',title:'预算范围与口径（选填）',type:'text',placeholder:'例如：目标8000–12000元，含柜体、五金和安装；或暂未确定。'},
+{id:'style',title:'外观偏好',type:'multi',options:['暖白 / 浅色','原木 / 木色','胡桃木 / 深木色','与现有装修一致','需要设计者建议','其他']},
+{id:'special',title:'有无特殊用途？',type:'multi',options:['灯带','穿衣镜','首饰 / 配饰','保险箱','猫通道','其他','没有'],exclusive:['没有']},
+{id:'extra',title:'还有什么希望设计者知道？',type:'textarea',placeholder:'可以描述喜欢或不喜欢的方案、特殊使用习惯，以及上面没有覆盖的要求。'}
+]}
+];
+const questions=groups.flatMap(g=>g.questions);
+const $=id=>document.getElementById(id);
+function node(tag,props={},text){const e=document.createElement(tag);Object.assign(e,props);if(text!==undefined)e.textContent=text;return e;}
+function input(q){const e=node(q.type==='textarea'?'textarea':'input',{id:q.id,name:q.id});e.maxLength=4000;if(q.type!=='textarea')e.type=q.type==='number'||q.type==='measurement'?'number':'text';if(e.type==='number'){e.min=q.type==='measurement'?'0.1':'0';e.max=String(q.max||100000);e.step=q.type==='number'?'1':'0.1';e.inputMode='decimal';}e.placeholder=q.placeholder||((q.type==='number'||q.type==='measurement')?'未知可留空':'');return e;}
+function render(){for(const g of groups){const section=node('section',{id:g.id,className:'section'});section.append(node('span',{className:'section-number'},g.num+' / 需求问卷'));const head=node('div',{className:'section-head'});head.append(node('h2',{},g.title),node('small',{},g.hint));section.append(head);for(const q of g.questions){const f=node('fieldset',{className:'question'});f.append(node('legend',{},q.title+(q.unit?'（'+q.unit+'）':'')+(q.required?' · 必填':'')));if(q.hint)f.append(node('span',{className:'hint'},q.hint));if(q.options){const opts=node('div',{className:'options'});for(const value of q.options){const l=node('label',{className:'choice'}),e=node('input',{type:q.type==='multi'?'checkbox':'radio',name:q.id,value});l.append(e,node('span',{},value));opts.append(l);}f.append(opts);}else{const e=input(q);e.setAttribute('aria-label',q.title);if(q.required)e.required=true;if(q.type==='measurement'){const wrap=node('div',{className:'measure'}),source=node('select',{id:q.id+'Source'});source.setAttribute('aria-label',q.title+'依据');for(const [value,label] of [['unknown','依据待确认'],['estimated','估计值'],['measured','现场 / 实物测量'],['drawing','图纸标注']])source.append(node('option',{value},label));wrap.append(e,source);f.append(wrap);}else f.append(e);}
+const detail=node('details',{className:'note'}),note=node('textarea',{id:q.id+'Note',placeholder:'补充细节、估计范围或特别要求（选填）',maxLength:4000});note.setAttribute('aria-label',q.title+'补充说明');detail.append(node('summary',{},'＋ 补充说明'),note);f.append(detail);section.append(f);} $('survey').append(section);}}
+render();
+let dirty=false;
+$('survey').addEventListener('input',()=>{dirty=true;$('summary-panel').hidden=true;});
+$('survey').addEventListener('change',event=>{dirty=true;const q=questions.find(q=>q.id===event.target.name);if(q?.type==='multi'&&event.target.checked){const checked=[...document.querySelectorAll('input[name="'+q.id+'"]:checked')];if(q.exclusive?.includes(event.target.value))checked.filter(e=>e!==event.target).forEach(e=>e.checked=false);else checked.filter(e=>q.exclusive?.includes(e.value)).forEach(e=>e.checked=false);}});
+$('survey').addEventListener('submit',e=>e.preventDefault());
+window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});
+function collect(){const answers={};for(const q of questions){let value;if(q.options){const selected=[...document.querySelectorAll('input[name="'+q.id+'"]:checked')].map(e=>e.value);value=q.type==='multi'?selected:selected[0]||null;}else if(q.type==='number'||q.type==='measurement')value=$(q.id).value===''?null:Number($(q.id).value);else value=$(q.id).value.trim();answers[q.id]={value,note:$(q.id+'Note').value.trim()};if(q.type==='measurement')answers[q.id].source=$(q.id+'Source').value;}return answers;}
+function validate(answers,complete){const errors=[];for(const q of questions){const a=answers[q.id],v=a.value;if(q.required&&complete&&!v)errors.push(q.title+'：请填写，未知可明确说明。');if(q.type==='multi'){if(q.maxChoices&&v.length>q.maxChoices)errors.push(q.title+'：最多选择'+q.maxChoices+'项。');if(v.length>1&&v.some(x=>q.exclusive?.includes(x)))errors.push(q.title+'：选项存在冲突。');}if(q.type==='number'||q.type==='measurement'){if(v!==null&&(!Number.isFinite(v)||v<(q.type==='measurement'?0.1:0)||v>(q.max||100000)||(q.type==='number'&&!Number.isInteger(v))))errors.push(q.title+'：请输入有效'+(q.type==='number'?'整数':'正数')+'，或留空。');if(v!==null&&q.type==='measurement'&&a.source==='unknown'&&complete)errors.push(q.title+'：请选择该尺寸的依据，或将尺寸留空。');}}return errors;}
+function summary(answers,state){const lines=['Furnish 衣柜需求答卷 · v1',state==='complete'?'状态：已导出答卷（仍需设计与现场复核）':'状态：草稿','说明：未填不代表没有；估计值不能作为施工尺寸。'];for(const g of groups){lines.push('\n'+g.num+' '+g.title);for(const q of g.questions){const a=answers[q.id];let value=Array.isArray(a.value)?a.value.join('、'):a.value;lines.push(q.title+'：'+(value===null||value===''?'未填写 / 待确认':value+(q.unit?' '+q.unit:''))+(a.source?' ['+({unknown:'依据待确认',estimated:'估计',measured:'实测',drawing:'图纸标注'}[a.source])+']':''));if(a.note)lines.push('  补充：'+a.note);}}lines.push('\n附件提示：位置图、现场照片可另外发送；本答卷未附带图像。','本文件不是 Furnish 项目文件，不可作为项目导入。');return lines.join('\n');}
+function message(text,error=false){$('status').textContent=text;$('status').classList.toggle('error',error);}
+function get(complete){const bad=questions.find(q=>!q.options&&$(q.id).validity.badInput);if(bad){message(bad.title+'：输入未完成，请填写有效数字或清空。',true);$(bad.id).focus();return null;}const answers=collect(),errors=validate(answers,complete);if(errors.length){message(errors.join('\n'),true);$('status').scrollIntoView({block:'center'});return null;}return answers;}
+function show(answers,state='draft'){const text=summary(answers,state);$('summary').value=text;$('print-summary').textContent=text;$('summary-panel').hidden=false;return text;}
+function filename(prefix){const title=($('caseName').value.trim()||'未命名').replace(/[^\p{L}\p{N}_-]/gu,'_').slice(0,40);return prefix+'-'+title+'-'+new Date().toISOString().replace(/[:.]/g,'-');}
+function download(content,type,name){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=node('a',{href:url,download:name});document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);}
+function exportJSON(complete){const answers=get(complete);if(!answers)return;const state=complete?'complete':'draft',payload={format:SCHEMA,version:VERSION,status:state,exportedAt:new Date().toISOString(),answers,summary:show(answers,state)};download(JSON.stringify(payload,null,2),'application/json;charset=utf-8',filename(complete?'衣柜答卷':'衣柜草稿')+'.json');dirty=false;message('已发起下载。请确认文件已保存，再通过微信文件或邮件附件发送给设计者；这里不会自动发送。');}
+$('draft').onclick=()=>exportJSON(false);$('export').onclick=()=>exportJSON(true);
+$('preview').onclick=()=>{const a=get(false);if(a){show(a);message('摘要已生成，可继续修改。');$('summary-panel').scrollIntoView({});}};
+$('text-export').onclick=()=>{const a=get(true);if(a){download(show(a,'complete'),'text/plain;charset=utf-8',filename('衣柜需求摘要')+'.txt');message('已发起文字摘要下载。建议同时导出 JSON，便于设计者读取和后续补充。');}};
+$('print').onclick=()=>{const a=get(false);if(a){show(a);window.print();}};
+$('clear').onclick=()=>{if(!confirm('清空本页填写内容？未导出的内容将丢失。'))return;$('survey').reset();dirty=false;$('summary-panel').hidden=true;message('已清空本页。已下载的答卷文件不会被删除。');};
+function parseImport(text){const p=JSON.parse(text);if(p.format!==SCHEMA||p.version!==VERSION||!['draft','complete'].includes(p.status)||!p.answers||typeof p.answers!=='object'||Array.isArray(p.answers))throw Error('不是受支持的衣柜答卷 v1 文件。');const answers={};for(const q of questions){if(!Object.hasOwn(p.answers,q.id))throw Error('答卷缺少字段：'+q.title);const a=p.answers[q.id];if(!a||typeof a!=='object'||typeof a.note!=='string'||a.note.length>4000)throw Error('补充说明格式不正确：'+q.title);const v=a.value;if(q.options){if(q.type==='multi'){if(!Array.isArray(v)||v.length>q.options.length||new Set(v).size!==v.length||v.some(x=>!q.options.includes(x)))throw Error('选项无效：'+q.title);}else if(v!==null&&!q.options.includes(v))throw Error('选项无效：'+q.title);}else if(q.type==='number'||q.type==='measurement'){if(v!==null&&typeof v!=='number')throw Error('数值格式无效：'+q.title);}else if(typeof v!=='string'||v.length>4000)throw Error('文字格式无效：'+q.title);answers[q.id]={value:v,note:a.note};if(q.type==='measurement'){if(!['unknown','estimated','measured','drawing'].includes(a.source))throw Error('尺寸依据无效：'+q.title);answers[q.id].source=a.source;}}const errors=validate(answers,false);if(errors.length)throw Error(errors.join('\n'));return answers;}
+$('import-file').onchange=async event=>{const file=event.target.files[0];if(!file)return;try{if(file.size>2*1024*1024)throw Error('答卷文件超过2MB，请选择本问卷导出的 JSON。');const answers=parseImport(await file.text());if(dirty&&!confirm('用导入答卷替换本页未导出的内容？'))return;for(const q of questions){const a=answers[q.id];if(q.options)document.querySelectorAll('input[name="'+q.id+'"]').forEach(e=>e.checked=Array.isArray(a.value)?a.value.includes(e.value):a.value===e.value);else $(q.id).value=a.value??'';$(q.id+'Note').value=a.note;$(q.id+'Note').parentElement.open=!!a.note;if(q.type==='measurement')$(q.id+'Source').value=a.source;}dirty=false;show(answers);message('已导入答卷，可以继续修改并重新导出。');}catch(error){message('未导入，原填写内容保留。'+error.message,true);}finally{event.target.value='';}};
+</script>
+</body>
+</html>
