@@ -313,15 +313,16 @@ function syncPaneBtns(){
 }
 function closeDrawers(){ if (narrow()) drawer(null); }
 
-/* ======================= 风格方案：一键统一家具配色与地面 ======================= */
+/* ======================= 配色方案：一键统一家具配色与地面 ======================= */
 const STYLES = FurnishStylePresets;
 function applyStyle(id){
   if(window.FurnishWorkflowTools)return FurnishWorkflowTools.previewStyle(id);
   const style=FurnishStyles.find(id);if(!style)return;
   mutate(()=>FurnishStyles.apply(state,ROOMS,id,!!PLAN.customDraft));
-  toast(tr(`已应用「${style.zh}」风格：家具配色与客厅 / 卧室地面已更新`,`Applied "${style.en}": furniture colors and living / bedroom floors updated`),{label:tr('撤销','Undo'),fn:undo});
+  toast(tr(`已应用「${style.zh}」配色：家具配色与客厅 / 卧室地面已更新`,`Applied "${style.en}": furniture colors and living / bedroom floors updated`),{label:tr('撤销','Undo'),fn:undo});
 }
-function styleCardsHTML(selected,attribute='data-style-preview'){return `<div class="styles style-schemes">${STYLES.map(s=>{const body=s.cabinet?.bodyColor??s.wood,front=s.cabinet?.frontColor??s.soft;return `<button class="stcard ${selected===s.id?'on':''}" ${attribute}="${s.id}" aria-pressed="${selected===s.id}"><span class="style-cabinet-sample" style="--cab-body:${body};--cab-front:${front}"><i class="style-sample-door"></i><i class="style-sample-open ${s.cabinet?.bodySurface==='walnut'?'walnut':''}"></i></span><b>${tr(s.zh,s.en)}</b><small>${tr(s.description??'柜门与柜身分色',s.description?'Warm white fronts · walnut open shelving':'Coordinated fronts & carcass')}</small></button>`;}).join('')}</div>`;}
+function styleDirectionsHTML(style){return `<small class="style-directions"><span>${tr('适用风格','Suitable styles')}</span>${esc(tr(style.applicableStyles.zh.join(' · '),style.applicableStyles.en.join(' · ')))}</small>`;}
+function styleCardsHTML(selected,attribute='data-style-preview'){return `<div class="styles style-schemes">${STYLES.map(s=>{const body=s.cabinet?.bodyColor??s.wood,front=s.cabinet?.frontColor??s.soft;return `<button class="stcard ${selected===s.id?'on':''}" ${attribute}="${s.id}" aria-pressed="${selected===s.id}"><span class="style-cabinet-sample" style="--cab-body:${body};--cab-front:${front}"><i class="style-sample-door"></i><i class="style-sample-open ${s.cabinet?.bodySurface==='walnut'?'walnut':''}"></i></span><b>${esc(tr(s.zh,s.en))}</b>${styleDirectionsHTML(s)}</button>`;}).join('')}</div>`;}
 const stylesHTML = () => styleCardsHTML(state.style,'data-style');
 
 /* ======================= 命令面板（Ctrl+K） ======================= */

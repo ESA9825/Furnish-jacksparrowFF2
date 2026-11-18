@@ -1,0 +1,95 @@
+[
+  {
+    "mode": "http",
+    "passed": true,
+    "checks": [
+      "overview and preview separate colour names from suitable interior styles for all seven existing IDs",
+      "six scope controls, custom colours, temporary/cancelled preview, unchanged materials/layout/elevations and excluded appliances",
+      "selected categories apply in one original undo/redo",
+      "individual room, bay and architectural frame overrides survive later scheme changes",
+      "saved production GLB has frame colour and embedded floor/bay tinted textures with UVs",
+      "2D flooring retains the individual finish colour"
+    ],
+    "production": {
+      "frame": true,
+      "floor": {
+        "pixel": [
+          154,
+          169,
+          185
+        ],
+        "uv": true
+      },
+      "bay": {
+        "pixel": [
+          225,
+          215,
+          202
+        ],
+        "uv": true
+      }
+    }
+  },
+  {
+    "mode": "file",
+    "passed": true,
+    "checks": [
+      "overview and preview separate colour names from suitable interior styles for all seven existing IDs",
+      "six scope controls, custom colours, temporary/cancelled preview, unchanged materials/layout/elevations and excluded appliances",
+      "selected categories apply in one original undo/redo",
+      "individual room, bay and architectural frame overrides survive later scheme changes",
+      "saved production GLB has frame colour and embedded floor/bay tinted textures with UVs",
+      "2D flooring retains the individual finish colour"
+    ],
+    "production": {
+      "frame": true,
+      "floor": {
+        "pixel": [
+          154,
+          169,
+          185
+        ],
+        "uv": true
+      },
+      "bay": {
+        "pixel": [
+          225,
+          215,
+          202
+        ],
+        "uv": true
+      }
+    }
+  },
+  {
+    "mode": "desktop",
+    "passed": true,
+    "checks": [
+      "overview and preview separate colour names from suitable interior styles for all seven existing IDs",
+      "six scope controls, custom colours, temporary/cancelled preview, unchanged materials/layout/elevations and excluded appliances",
+      "selected categories apply in one original undo/redo",
+      "individual room, bay and architectural frame overrides survive later scheme changes",
+      "saved production GLB has frame colour and embedded floor/bay tinted textures with UVs",
+      "2D flooring retains the individual finish colour"
+    ],
+    "production": {
+      "frame": true,
+      "floor": {
+        "pixel": [
+          170,
+          187,
+          204
+        ],
+        "uv": true
+      },
+      "bay": {
+        "pixel": [
+          225,
+          215,
+          202
+        ],
+        "uv": true
+      }
+    }
+  }
+]

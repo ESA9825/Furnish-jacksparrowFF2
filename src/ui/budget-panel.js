@@ -39,7 +39,7 @@ function overviewPanel(){
     <div class="comp" title="${tr('预算构成','Budget breakdown')}"><i class="c1" style="flex:${B.floor}"></i><i class="c2" style="flex:${B.paint}"></i><i class="c3" style="flex:${B.furn || .0001}"></i><i style="background:#8b78b5;flex:${B.renovation || .0001}"></i></div>
     <div class="comp-l"><span><i class="c1"></i>${tr('地面','Floors')} ${Math.round(B.total?B.floor/B.total*100:0)}%</span><span><i class="c2"></i>${tr('墙面','Walls')} ${Math.round(B.total?B.paint/B.total*100:0)}%</span><span><i class="c3"></i>${tr('家具','Furniture')} ${Math.round(B.total?B.furn/B.total*100:0)}%</span><span><i style="background:#8b78b5"></i>${tr('工程','Renovation')} ${Math.round(B.total?B.renovation/B.total*100:0)}%</span></div>
     <div class="actions"><button class="btn" data-tab="quote">${ico('coin')}${tr('报价明细','Quote details')}</button><button class="btn" data-act="csv">${ico('download')}${tr('导出 CSV','Export CSV')}</button></div></section>
-  <section><h3>${tr('风格方案','Style Presets')} <small>${tr('先预览，再选择应用范围','Preview, then choose what to apply')}</small></h3>${stylesHTML()}</section>
+  <section><h3>${tr('配色方案','Colour schemes')} <small>${tr('先预览，再选择应用范围','Preview, then choose what to apply')}</small></h3>${stylesHTML()}</section>
   <section><h3>${tr('房间面积','Room Areas')} <small>${tr('点击查看 / 更换地面','Click to view / change flooring')}</small></h3>
     <table>${rows}</table>
     <div class="total"><span>${tr('套内使用面积','Net floor area')}</span><b>${fmt(B.tot)} m²</b></div>

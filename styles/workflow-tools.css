@@ -299,3 +299,6 @@ aside.right:has(.style-schemes){min-height:0;min-width:0;overflow:auto;overscrol
 .style-scope-fields p{font-size:11px;line-height:1.6;color:var(--muted)}
 .style-local-surface input[type=color]{width:64px;height:32px;margin:5px 10px;vertical-align:middle}
 .style-bay-frames{padding:12px;border:1px solid var(--line);border-radius:10px}
+
+.style-directions{display:block;overflow-wrap:anywhere}
+.style-directions>span{display:block;font-size:10px;margin-bottom:2px}
