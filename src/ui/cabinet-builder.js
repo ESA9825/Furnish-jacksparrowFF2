@@ -79,12 +79,15 @@
      <div class="builder-inventory-actions"><button type="button" class="btn primary" data-review-apply>应用配色到草稿</button></div>`);
     const view=dialog.querySelector('[data-review-view]'),style=dialog.querySelector('[data-review-style]'),apply=dialog.querySelector('[data-review-apply]');
     const failure=dialog.querySelector('[data-review-error]'),grid=dialog.querySelector('.builder-review-grid'),canvases=[...grid.querySelectorAll('canvas')];
-    const draw=()=>{
+    let revision=0;
+    const draw=async()=>{
+     const version=++revision,isCurrent=()=>version===revision&&dialog.isConnected;
      try{
       const values=[closed,closed,FurnishStyles.furniture(closed,style.value)];
-      preview.compare(values.map((value,i)=>({value,canvas:canvases[i],doors:i===1?'hidden':'normal'})),view.value==='front');
+      await preview.compare(values.map((value,i)=>({value,canvas:canvases[i],doors:i===1?'hidden':'normal'})),view.value==='front',isCurrent);
+      if(!isCurrent())return;
       failure.textContent='';grid.hidden=false;apply.disabled=false;
-     }catch(e){failure.textContent=e.message;grid.hidden=true;apply.disabled=true;}
+     }catch(e){if(isCurrent()){failure.textContent=e.message;grid.hidden=true;apply.disabled=true;}}
     };
     apply.onclick=()=>{try{record(FurnishStyles.furniture(draft,style.value));dialog.close();}catch(e){failure.textContent=e.message;}};
     view.onchange=style.onchange=draw;
@@ -105,13 +108,13 @@
    const choice=dialog.querySelector('[data-starter-choice]'),grid=dialog.querySelector('.builder-review-grid'),failure=dialog.querySelector('[data-review-error]');
    const apply=dialog.querySelector('[data-starter-apply]'),canvases=[...grid.querySelectorAll('canvas')];
    let sample;
-   function draw(){
+   async function draw(){
     try{
      sample=B.starter(choice.value);
      dialog.querySelector('[data-starter-dimensions]').textContent=`${sample.w} 宽 × ${sample.d} 深 × ${sample.h} 高 mm`;
      dialog.querySelector('[data-starter-description]').textContent=B.starters.find(item=>item.id===choice.value).description;
      const preview=getPreview();
-     if(preview)preview.compare(canvases.map((canvas,i)=>({value:sample,canvas,doors:i?'hidden':'normal',standalone:true})),true);
+     if(preview)await preview.compare(canvases.map((canvas,i)=>({value:sample,canvas,doors:i?'hidden':'normal',standalone:true})),true);
      grid.hidden=!preview;failure.textContent='';
     }catch(e){grid.hidden=true;failure.textContent=e.message;}
    }
@@ -143,9 +146,23 @@
   };
  }
  function workspaceTools(){return `<div class="builder-toolbar"><span data-builder-size></span><button type="button" class="btn" data-builder-undo>撤销</button><button type="button" class="btn" data-builder-redo>重做</button><button type="button" class="btn" data-builder-view>三维检查</button><button type="button" class="btn" data-builder-inventory>构件清单</button><button type="button" class="btn" data-builder-compare>效果比较</button></div><section class="builder-equalize" aria-label="均分尺寸"><div class="builder-equalize-actions"><b>均分</b><button type="button" class="btn" data-builder-equal-bays>左右分格</button><button type="button" class="btn" data-builder-equal-boxes>柜箱等宽</button><button type="button" class="btn" data-builder-equal>活动层板</button><button type="button" class="btn" data-builder-equal-fixed>固定层板</button><label>柜箱范围<select data-builder-equal-scope><option value="row">当前横排</option><option value="all">整组柜箱</option><option value="selected">指定柜箱</option></select></label></div><div data-builder-equal-selection hidden></div><p data-builder-equal-context></p></section><details class="builder-display"><summary>显示与编辑选项</summary><div class="builder-display-controls">${cabinetViewTools('builder',{expand:false})}<label>门板显示<select data-builder-doors><option value="auto">自动</option><option value="normal">正常显示</option><option value="hidden">隐藏门板</option><option value="ghost">半透明门板</option></select></label><label><input data-builder-dimensions type="checkbox" checked>尺寸标注</label><label><input data-builder-snap type="checkbox" checked>吸附</label><button type="button" class="btn" data-builder-open-all>全部打开</button><button type="button" class="btn" data-builder-close-all>全部关闭</button><button type="button" class="btn" data-builder-space>草稿空间核对</button></div><p data-builder-space-result role="status"></p></details>`;}
+ function surfaceOptions(value){
+  return FurnishProducts.cabinetAppearance.options.map(({id,name})=>
+   `<option value="${id}" ${value===id?'selected':''}>${esc(name)}</option>`).join('');
+ }
+ function bodyAppearance(host,f,record,error){
+  let node=host.querySelector('[data-cabinet-body-appearance]');
+  if(!node){node=document.createElement('fieldset');node.dataset.cabinetBodyAppearance='';host.prepend(node);}
+  const rule=FurnishProducts.cabinetAppearance,value=(f.kitchen??f.cabinet)?.appearance?.bodySurface;
+  node.innerHTML=`<legend>整组柜身</legend><label>饰面<select data-cabinet-body-surface>
+   ${value===undefined?'<option value="" selected disabled>原饰面</option>':''}
+   ${surfaceOptions(value)}</select></label><p>适用于柜身和开放格。单独设置的部件优先。</p>`;
+  node.querySelector('select').onchange=e=>{try{record(rule.withBodySurface(f,e.target.value));}catch(e){error(e.message);}};
+ }
  function plinthAppearance(host,f,record,error){
+  bodyAppearance(host,f,record,error);
   let node=host.querySelector('[data-shared-plinth]');if(!node){node=document.createElement('fieldset');node.dataset.sharedPlinth='';host.append(node);}const rule=FurnishProducts.cabinetAppearance,value=(f.kitchen??f.cabinet)?.appearance?.plinth;
-  node.innerHTML=`<legend>整组踢脚外观</legend><label><input type="checkbox" data-plinth-unified ${value?'checked':''}>统一各段踢脚</label><label>颜色<input type="color" data-plinth-color value="${value?.color??'#303438'}" ${value?'':'disabled'}></label><label>饰面<select data-plinth-surface ${value?'':'disabled'}><option value="solid" ${value?.surface!=='walnut'?'selected':''}>素色板</option><option value="walnut" ${value?.surface==='walnut'?'selected':''}>胡桃木纹理</option></select></label><p>统一时替换各段踢脚的单独外观；柜门、柜身与支撑位置保持。</p>`;
+  node.innerHTML=`<legend>整组踢脚外观</legend><label><input type="checkbox" data-plinth-unified ${value?'checked':''}>统一各段踢脚</label><label>颜色<input type="color" data-plinth-color value="${value?.color??'#303438'}" ${value?'':'disabled'}></label><label>饰面<select data-plinth-surface ${value?'':'disabled'}>${surfaceOptions(value?.surface??'solid')}</select></label><p>统一时替换各段踢脚的单独外观；柜门、柜身与支撑位置保持。</p>`;
   for(const input of node.querySelectorAll('input,select'))input.onchange=()=>{try{record(rule.withPlinth(f,node.querySelector('[data-plinth-unified]').checked?{color:node.querySelector('[data-plinth-color]').value,surface:node.querySelector('[data-plinth-surface]').value}:undefined));}catch(e){error(e.message);}};
  }
  function componentInspector({host,draft,selected,record,error,choose,arm,savePreset,preview,setFront,status,disabledBoxFields={},selectionKey=JSON.stringify(selected)}){
@@ -207,7 +224,7 @@ host.querySelector('[data-component-surface]')?.addEventListener('change',e=>{tr
    host.querySelector('[data-component-appearance-reset]')?.addEventListener('click',()=>{try{record(B.update(draft,selected,{surface:undefined,color:undefined}));}catch(e){error(e.message);}});
    host.querySelector('[data-builder-zone-parent]')?.addEventListener('click',()=>choose({boxId:b.id,componentId:p.id}));bindMultiDoor(host,b,p);
   }
-  function appearanceFields(p){return `<fieldset><legend>部件外观（优先于风格）</legend><label>饰面<select data-component-surface><option value="" ${p.surface===undefined?'selected':''}>跟随风格／原饰面</option><option value="solid" ${p.surface==='solid'?'selected':''}>素色板</option><option value="walnut" ${p.surface==='walnut'?'selected':''}>胡桃木纹理</option></select></label><label>部件颜色<input type="color" data-component-color value="${p.color??(p.surface==='walnut'?'#765239':(FurnishProducts.cabinetAppearance.frontKinds.includes(p.kind)?draft.cabinet.appearance?.frontColor??draft.color:draft.cabinet.appearance?.bodyColor)??'#bc936b')}"></label><button type="button" class="btn" data-component-appearance-reset>恢复风格默认</button></fieldset>`;}
+  function appearanceFields(p){return `<fieldset><legend>部件外观（优先于整组饰面）</legend><label>饰面<select data-component-surface><option value="" ${p.surface===undefined?'selected':''}>跟随整组／原饰面</option>${surfaceOptions(p.surface)}</select></label><label>部件颜色<input type="color" data-component-color value="${p.color??(p.surface==='walnut'?'#765239':(FurnishProducts.cabinetAppearance.frontKinds.includes(p.kind)?draft.cabinet.appearance?.frontColor??draft.color:draft.cabinet.appearance?.bodyColor)??'#bc936b')}"></label><button type="button" class="btn" data-component-appearance-reset>恢复风格默认</button></fieldset>`;}
   function multiDoorFields(b,p){
    const row=B.derived(draft).find(v=>v.box.id===b.id),map=row.maps.find(v=>v.bay===p.bay),range=B.frontRange(row,map,p),parts=B.fronts(draft).filter(v=>v.componentId===p.id),field=(key,label,value,min,max,attrs='')=>`<label>${label}<input data-door-field="${key}" type="number" step="any" min="${min}" max="${max}" value="${Number(value.toFixed(3))}" ${attrs}></label>`,options=(key,label,value,values)=>`<label>${label}<select data-door-field="${key}">${values.map(([v,label])=>`<option value="${v}" ${v===value?'selected':''}>${label}</option>`).join('')}</select></label>`;
    return '<p>从下向上分段。末段填满门组顶部；调整分界不增加内部板件。</p><div class="actions"><button type="button" class="btn" data-door-all="open">打开全部门扇</button><button type="button" class="btn" data-door-all="close">关闭全部门扇</button></div>'+p.segments.map((segment,i)=>`<fieldset data-door-segment="${segment.id}"><legend>第 ${i+1} 段 · 净面板高 ${Number((parts[i].furniture.h-2).toFixed(2))} mm</legend>${field('top','本段顶缝距柜底 mm',range.bottom+(range.top-range.bottom)*segment.top,range.bottom,range.top,i===p.segments.length-1?'disabled':'')}${options('mode','本段开向',segment.mode,[['left','左铰链'],['right','右铰链'],['double','左右对开'],['up','上翻'],['down','下翻']])}${field('maxAngle','默认最大开角 °',segment.maxAngle,1,180)}${options('handle','把手',segment.handle,[['bar','长条'],['knob','圆钮'],['none','无把手']])}${options('finish','饰面',segment.finish,[['solid','素色'],['wood','木色'],['glass','玻璃']])}<label>门色<input data-door-field="color" type="color" value="${segment.color??draft.color??FurnishCabinet.palette.front}"></label>${segment.leaves.map((leaf,j)=>{const limit=leaf.maxAngle??segment.maxAngle;return `<section data-door-leaf="${leaf.id}"><h4>${segment.leaves.length===2?j===0?'左扇':'右扇':'门扇'}</h4><label>开启角 °<input data-leaf-field="angle" type="number" min="0" max="${limit}" step="any" value="${leaf.open?leaf.angle??limit:0}"></label><label><input data-leaf-inherit type="checkbox" ${leaf.maxAngle===undefined?'checked':''}>跟随本段最大角</label><label>本扇最大角 °<input data-leaf-field="maxAngle" type="number" min="1" max="180" step="any" value="${limit}" ${leaf.maxAngle===undefined?'disabled':''}></label><button type="button" class="btn" data-leaf-toggle>${leaf.open?'关闭':'打开'}本扇</button></section>`;}).join('')}<div class="actions"><button type="button" class="btn" data-door-split ${p.segments.length>=FurnishProducts.cabinetBuilder.multiDoor.maxSegments?'disabled':''}>拆为两段</button><button type="button" class="btn" data-door-merge ${p.segments.length===1?'disabled':''}>移除此段</button></div><p>移除后由相邻段填满，其他门段与门扇身份保留。</p></fieldset>`).join('');

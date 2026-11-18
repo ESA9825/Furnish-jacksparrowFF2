@@ -433,11 +433,68 @@ const syncIdentity=root.FurnishPartIdentity||(typeof require==='function'?requir
   const placement=C.pegboardPlacement(f,c);if(placement?.offset)for(const child of g.children)child.position.y+=placement.offset/1000;
   return g;
  }
+ const veneerImages=new Map(),veneerTextureLoads=new WeakMap(),veneerPool=new WeakMap();
+ function veneerMaps(T,materialId){
+  const sources=root.FurnishWoodVeneerTextures?.[materialId];
+  if(typeof Image==='undefined'||!sources)return {};
+  return Object.fromEntries(Object.entries(sources).map(([role,source])=>{
+   let load=veneerImages.get(source);
+   if(!load){
+    const image=new Image();
+    load={image,done:false,error:null};
+    load.promise=new Promise(resolve=>{
+     image.onload=()=>{load.done=true;resolve();root.dispatchEvent(new Event('furnish-veneer-ready'));};
+     image.onerror=()=>{load.error=Error('木饰面贴图无法加载：'+materialId);load.done=true;resolve();};
+    });
+    veneerImages.set(source,load);
+    image.src=source;
+   }
+   const texture=new T.Texture(load.image);
+   texture.name=materialId+'-'+role;
+   texture.wrapS=texture.wrapT=T.RepeatWrapping;
+   texture.colorSpace=role==='baseColor'?T.SRGBColorSpace:T.NoColorSpace;
+   texture.anisotropy=4;
+   let disposed=false;
+   texture.addEventListener('dispose',()=>{disposed=true;});
+   if(load.done&&!load.error)texture.needsUpdate=true;
+   else load.promise.then(()=>{if(!disposed&&!load.error)texture.needsUpdate=true;});
+   veneerTextureLoads.set(texture,load);
+   return [role,texture];
+  }));
+ }
+ function acquireVeneer(T,id){
+  let pool=veneerPool.get(T);
+  if(!pool){pool=new Map();veneerPool.set(T,pool);}
+  let entry=pool.get(id);
+  if(!entry){entry={maps:veneerMaps(T,id),users:0};pool.set(id,entry);}
+  entry.users++;
+  return {maps:entry.maps,release(){
+   if(--entry.users>0)return;
+   pool.delete(id);
+   for(const texture of Object.values(entry.maps))texture.dispose();
+  }};
+ }
+ function pendingVeneers(group){
+  const loads=new Set();
+  group.traverse(o=>{
+   for(const m of Array.isArray(o.material)?o.material:[o.material]){
+    for(const map of [m?.map,m?.normalMap,m?.roughnessMap]){
+     const load=veneerTextureLoads.get(map);
+     if(load?.error)throw load.error;
+     if(load&&!load.done)loads.add(load);
+    }
+   }
+  });
+  if(loads.size)return Promise.all([...loads].map(load=>load.promise)).then(()=>{
+   for(const load of loads)if(load.error)throw load.error;
+  });
+ }
+
  // Physical-scale, deterministic veneer approximation. No remote image dependency.
  // Textures are owned by each model, shared by its boards, released with materials.
  function applyAppearance(T,model,f,appearance=f.cabinet?.appearance){
   const B=root.FurnishCabinetBuilder||(typeof require==='function'?require('../core/cabinet-builder-core.js'):null),C=root.FurnishCabinet||(typeof require==='function'?require('../core/cabinet-core.js'):null);
-  const materials=new Map();let texture,owners=0;
+  const materials=new Map(),veneerTextures=new Map();let texture,owners=0;
   const walnut=()=>{
    if(texture)return texture;const w=256,h=512,bytes=new Uint8Array(w*h*4);
    for(let y=0;y<h;y++)for(let x=0;x<w;x++){
@@ -461,14 +518,53 @@ const syncIdentity=root.FurnishPartIdentity||(typeof require==='function'?requir
    if(!bodyTheme&&!role&&override===undefined&&(explicit===undefined||front||B?.isPlinth(p)||p?.kind==='board'))return;
    const originalWood=front&&(local?.finish??col?.finish)==='wood';
    const surface=override??role?.surface??(front&&!originalWood?'solid':theme?.bodySurface??'solid');
-   const color=explicit??role?.color??(surface==='walnut'?(f.cabinet?.version===3?f.cabinet.bodyColor:theme?.bodyColor)??'#765239':(front&&!originalWood?f.color??theme?.frontColor:f.cabinet?.version===3?f.cabinet.bodyColor:theme?.bodyColor))??m.color?.getStyle();
+   const veneer=(root.FurnishProducts||require('../core/product-rules.js')).cabinetAppearance.veneer(surface);
+   const color=explicit??role?.color??(veneer?veneer.baseColorTintSrgb??'#ffffff':undefined)??(surface==='walnut'?(f.cabinet?.version===3?f.cabinet.bodyColor:theme?.bodyColor)??'#765239':(front&&!originalWood?f.color??theme?.frontColor:f.cabinet?.version===3?f.cabinet.bodyColor:theme?.bodyColor))??m.color?.getStyle();
    const key=JSON.stringify([surface,color,m.transparent,m.opacity]),old=m;
-   if(!materials.has(key)){const material=old.clone();material.color.set(color);material.metalness=0;material.roughness=surface==='walnut'?.57:.65;material.map=surface==='walnut'?walnut():null;material.userData={...material.userData,cabinetSurface:surface};owners++;let released=false;material.addEventListener('dispose',()=>{if(released)return;released=true;if(--owners===0)texture?.dispose();});materials.set(key,material);}
+   if(!materials.has(key)){
+    const material=old.clone();
+    material.color.set(color);
+    material.metalness=0;
+    if(veneer&&!veneerTextures.has(veneer.materialId))veneerTextures.set(veneer.materialId,acquireVeneer(T,veneer.materialId));
+    const maps=veneerTextures.get(veneer?.materialId)?.maps;
+    material.map=maps?.baseColor??(surface==='walnut'?walnut():null);
+    if(maps?.normalGL){
+     material.normalMap=maps.normalGL;
+     material.normalScale.setScalar(.3);
+     material.roughnessMap=maps.roughness;
+    }
+    material.roughness=maps?.roughness?1:surface==='walnut'?.57:.65;
+    material.userData={...material.userData,cabinetSurface:surface};
+    owners++;
+    let released=false;
+    material.addEventListener('dispose',()=>{
+     if(released)return;
+     released=true;
+     if(--owners===0){
+      texture?.dispose();
+      for(const entry of veneerTextures.values())entry.release();
+     }
+    });
+    materials.set(key,material);
+   }
    o.material=materials.get(key);if(d.cabinetOwnMaterial)old.dispose();d.cabinetOwnMaterial=true;d.cabinetSurface=surface;
-   if(surface==='walnut'){
+   if(surface==='walnut'||veneer){
     // Project local board coordinates, with grain along its longest in-plane axis.
     const g=o.geometry.clone(),a=g.attributes.position,n=g.attributes.normal;g.computeBoundingBox();const size=g.boundingBox.getSize(new T.Vector3()).toArray(),uv=new Float32Array(a.count*2);
-    for(let i=0;i<a.count;i++){const normal=[Math.abs(n.getX(i)),Math.abs(n.getY(i)),Math.abs(n.getZ(i))],face=normal.indexOf(Math.max(...normal)),axes=[0,1,2].filter(k=>k!==face).sort((a,b)=>size[a]-size[b]),point=[a.getX(i),a.getY(i),a.getZ(i)];uv[i*2]=point[axes[0]]/.6;uv[i*2+1]=point[axes[1]]/1.8;}
+    const scale=veneer?.sampleWidthMm/1000;
+    for(let i=0;i<a.count;i++){
+     const normal=[Math.abs(n.getX(i)),Math.abs(n.getY(i)),Math.abs(n.getZ(i))];
+     const face=normal.indexOf(Math.max(...normal));
+     const axes=[0,1,2].filter(k=>k!==face).sort((a,b)=>size[a]-size[b]);
+     const point=[a.getX(i),a.getY(i),a.getZ(i)];
+     const cross=point[axes[0]],grain=point[axes[1]];
+     if(veneer){
+      uv[i*2]=(veneer.grainAxis==='v'?cross:grain)/scale;
+      uv[i*2+1]=(veneer.grainAxis==='v'?grain:cross)/scale;
+     }else{
+      uv[i*2]=cross/.6;
+      uv[i*2+1]=grain/1.8;
+     }}
     g.setAttribute('uv',new T.BufferAttribute(uv,2));o.geometry.dispose();o.geometry=g;
    }
   });return model;
@@ -500,6 +596,6 @@ const syncIdentity=root.FurnishPartIdentity||(typeof require==='function'?requir
   }
   for(const [o,position,rotation]of transforms){o.position.copy(position);o.rotation.copy(rotation);}g.updateMatrixWorld(true);g.userData.serviceCuts=pipes.map(p=>p.id);return g;
  }
- root.FurnishCabinetModel={build,applyAppearance,cutServices,buildRaw,createComponents};
+ root.FurnishCabinetModel={build,applyAppearance,pendingVeneers,cutServices,buildRaw,createComponents};
  if(typeof module!=='undefined')module.exports=root.FurnishCabinetModel;
 })(typeof globalThis!=='undefined'?globalThis:this);

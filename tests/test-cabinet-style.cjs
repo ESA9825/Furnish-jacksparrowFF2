@@ -13,5 +13,27 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),S=require('../s
  const recolored={...f,color:'#bbccdd'};Model.build(T,recolored,box).traverse(n=>{if(n.isMesh&&n.userData.cabinetDoorSize)assert.equal(n.material.color.getHexString(),'bbccdd');});
  const legacy={...C.preset('storage'),type:'cabinet',id:'legacy',cx:4000,cy:4000,rot:0};const themed=S.furniture(legacy,'warm-walnut'),upgraded=B.upgrade(themed);assert.deepEqual(upgraded.cabinet.appearance,themed.cabinet.appearance);assert.deepEqual(B.preset(f,null,'styled reusable').cabinet.appearance,f.cabinet.appearance);
  const packed=J.pack({planId:'demo',current:{furniture:[custom,wk.furniture[0]]},designs:[{name:'style',work:{furniture:[custom]}}],catalog:[]});assert.equal(packed.version,96);assert.deepEqual(J.unpack(packed).current.furniture,[custom,wk.furniture[0]]);let restored=[custom];for(let i=0;i<3;i++)restored=D.restoreFurniture(restored,{makeId:()=> 'x',colorFor:()=> '#fff'});assert.deepEqual(restored,[custom]);assert.equal(JSON.parse(R.text({v:96,planId:'demo',work:{demo:{furniture:[custom]}},designs:[],custom:[]})).version,96);
+ const appearance=require('../src/core/product-rules.js').cabinetAppearance;
+ const veneer=appearance.withBodySurface(custom,'black-walnut-warm');
+ const veneerWork={furniture:[veneer]};
+ assert.deepEqual(C.spatialConfig(veneer),spatial);
+ assert.equal(veneer.cabinet.appearance.frontColor,'#f3f0e8');
+ assert.deepEqual(veneer.cabinet.boxes,custom.cabinet.boxes);
+ assert.throws(()=>appearance.withBodySurface(custom,'missing-veneer'));
+ const preview=S.preview(veneerWork,[],'warm-walnut',{scopes:['cabinet'],bodySurface:'ash-veneer'});
+ assert.equal(preview.furniture[0].cabinet.appearance.bodySurface,'ash-veneer');
+ assert.deepEqual(preview.furniture[0].cabinet.boxes,custom.cabinet.boxes);
+ assert.equal(veneer.cabinet.appearance.bodySurface,'black-walnut-warm');
+ const local=B.update(custom,pick,{surface:'white-oak-veneer'});
+ for(const [current,catalog] of [[veneerWork,[]],[{furniture:[custom]},[{...B.preset(local,null,'veneer preset'),id:'veneer-preset',price:0}]]]){
+  const project=J.pack({planId:'demo',current,designs:[],catalog});
+  assert.equal(project.version,99);
+  const restored=J.unpack(project);
+  assert.deepEqual(restored.current.furniture,current.furniture);
+  assert.equal(restored.catalog[0]?.cabinet.boxes[0].components[0].surface,catalog.length?'white-oak-veneer':undefined);
+ }
+ assert.equal(J.pack({planId:'demo',current:{furniture:[custom]},designs:[{name:'wood',work:veneerWork}],catalog:[]}).version,99);
+ const workspace={v:99,planId:'p1',work:{p1:veneerWork},designs:[],custom:[]};
+ assert.deepEqual(R.parse(JSON.parse(R.text(workspace))).work.p1.furniture,[veneer]);
  console.log('PASS cabinet style: production walnut map / warm white fronts, component override/reset, spatial stability, kitchen, v96 project/named/repository and repeated recovery');
 })().catch(e=>{console.error(e.stack?.replace(/data:text\/javascript;base64,[A-Za-z0-9+/=]+/g,'three')||e);process.exitCode=1;});

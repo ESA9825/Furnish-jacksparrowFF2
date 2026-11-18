@@ -15,7 +15,7 @@
  }
  // Render all cards with one camera, projection, scale and lighting setup.
  // Copy the frames to ordinary canvases before releasing the temporary GPU.
- function compare(THREE,box,variants,{front,background,furniture,plan}){
+ async function compare(THREE,box,variants,{front,background,furniture,plan,isCurrent}){
   const renderer=new THREE.WebGLRenderer({antialias:true}),models=[];
   try{
    const width=560,height=480;
@@ -31,6 +31,9 @@
     models.push(model);
     if(value.flip)model.scale.x=-1;
    }
+   const pending=models.map(model=>root.FurnishCabinetModel.pendingVeneers(model)).filter(Boolean);
+   if(pending.length)await Promise.all(pending);
+   if(isCurrent&&!isCurrent())return;
    const bounds=new THREE.Box3(),center=new THREE.Vector3(),point=new THREE.Vector3();
    for(const model of models)bounds.expandByObject(model);
    bounds.getCenter(center);
@@ -83,7 +86,7 @@
      d.cabinetTop||d.cabinetSection==='top'?'顶板':d.cabinetSection==='bottom'?'底板':
      root.FurnishCabinetBuilder.palette.find(item=>item.kind===part?.kind&&item.kind!=='box')?.name??'其他柜体构件';
     const color=node.material?.color?.getHexString();
-    const finish=[d.cabinetSurface==='walnut'?'胡桃木纹':'',color?'#'+color:''].filter(Boolean).join(' ');
+    const finish=[root.FurnishProducts.cabinetAppearance.options.find(v=>v.id===d.cabinetSurface)?.name,color?'#'+color:''].filter(Boolean).join(' ');
     rows.push([[scope,boxId].filter(Boolean).join(' / ')||'整组',kind,...mm(bounds),finish,part?.componentId??'',d.serviceCuts?.length?'有管线切口':'']);
    }
    for(const child of node.children)visit(child,scope,boxId);
@@ -190,7 +193,7 @@
   const gesture=componentGesture({THREE,canvas,camera:()=>camera,controls:()=>controls,rayAt,hitAt:r=>{const h=componentHit(r),data=h?.object.userData;return data?{pick:data.cabinetBuilder,point:h.point,part:data.cabinetPart?{...data.cabinetPart}:null,kind:B.selection(current,data.cabinetBuilder).component?.kind}:null;},infoOf:editInfo,settings:()=>({...settings,doors:doorView}),actions:{...actions,selected:()=>selected,size:()=>[current.w,current.h,current.d]},isPlacing:actions.isPlacing,onState:value=>drag=value,resetDown:()=>down=null,afterEnd:d=>{if(d.size.some((v,i)=>v!==[current.w,current.h,current.d][i]))fit();}});
   const placingGhost=placementGhost({THREE,scene,box,host,furniture,plan,current:()=>current,zoneBox});
   const observer=new ResizeObserver(resize);observer.observe(host);update(f);function loop(){if(dead)return;frame=requestAnimationFrame(loop);if(!drag)controls.update();renderer.render(scene,camera);if(settings.dimensions){const blocked=[];model.traverse(o=>{if(!o.isMesh||!o.visible||!o.userData.cabinetPart&&!B.horizontalSelection(current,o.userData.cabinetBuilder))return;const b=new THREE.Box3().setFromObject(o),points=[];for(const x of [b.min.x,b.max.x])for(const y of [b.min.y,b.max.y])for(const z of [b.min.z,b.max.z]){const p=new THREE.Vector3(x,y,z).project(camera);points.push({x:(p.x+1)*host.clientWidth/2,y:(1-p.y)*host.clientHeight/2});}blocked.push({left:Math.min(...points.map(p=>p.x))-8,right:Math.max(...points.map(p=>p.x))+8,top:Math.min(...points.map(p=>p.y))-8,bottom:Math.max(...points.map(p=>p.y))+8});});projectDimensionLabels({THREE,cam:camera,canvas,labels,blocked,centerPoint:new THREE.Vector3(0,current.h/2000,0),rulers,rulerPath,occupied:readout.hidden?[]:[{left:8,top:8,right:Math.min(host.clientWidth-8,700),bottom:40}]});}}loop();
-  return {update,inventory:value=>inventory(THREE,box,value,{furniture,plan}),compare:(variants,front)=>compare(THREE,box,variants,{front,background,furniture,plan}),projectPoint,selectPart:value=>{selected=value;highlight();dimensions();},cancelDrag:()=>endDrag(true),focus:()=>canvas.focus({preventScroll:true}),setView:options=>{Object.assign(settings,options);const next=options.front??front;doorView=options.doors??doorView;const changed=next!==front;if(changed){front=next;controls.dispose();camera=front?new THREE.OrthographicCamera(-1,1,1,-1,.01,100):new THREE.PerspectiveCamera(38,1,.01,100);controls=new OrbitControls(camera,canvas);}update(current,{reframe:changed});},ghost:placingGhost.show,dispose:()=>{dead=true;drag=null;if(tinted){tinted.mesh.material=tinted.original;tinted.material.dispose();tinted=null;}cancelAnimationFrame(frame);observer.disconnect();disposeModel(ghost);disposeModel(model);if(helper){helper.geometry.dispose();helper.material.dispose();}placingGhost.clear();controls.dispose();renderer.dispose();renderer.forceContextLoss();host.replaceChildren();}};
+  return {update,inventory:value=>inventory(THREE,box,value,{furniture,plan}),compare:(variants,front,isCurrent)=>compare(THREE,box,variants,{front,background,furniture,plan,isCurrent}),projectPoint,selectPart:value=>{selected=value;highlight();dimensions();},cancelDrag:()=>endDrag(true),focus:()=>canvas.focus({preventScroll:true}),setView:options=>{Object.assign(settings,options);const next=options.front??front;doorView=options.doors??doorView;const changed=next!==front;if(changed){front=next;controls.dispose();camera=front?new THREE.OrthographicCamera(-1,1,1,-1,.01,100):new THREE.PerspectiveCamera(38,1,.01,100);controls=new OrbitControls(camera,canvas);}update(current,{reframe:changed});},ghost:placingGhost.show,dispose:()=>{dead=true;drag=null;if(tinted){tinted.mesh.material=tinted.original;tinted.material.dispose();tinted=null;}cancelAnimationFrame(frame);observer.disconnect();disposeModel(ghost);disposeModel(model);if(helper){helper.geometry.dispose();helper.material.dispose();}placingGhost.clear();controls.dispose();renderer.dispose();renderer.forceContextLoss();host.replaceChildren();}};
  }
  function create({THREE,OrbitControls,box,host,f,actions,background,furniture=[],plan=null,elevation=null}){
   if(f.cabinet?.version===2)return createBuilder({THREE,OrbitControls,box,host,f,actions,background,furniture,plan});
@@ -545,7 +548,7 @@
   const projectPoint=(x,y)=>{if(splitRoot){for(const panel of splitPanels){const p=panel.preview.projectPoint(x,y);if(p)return {...p,elevation:panel.meta.run};}return null;}const rect=cv.getBoundingClientRect();if(!settings.front||x<rect.left||x>rect.right||y<rect.top||y>rect.bottom)return null;const out=new THREE.Vector3();return rayAt({clientX:x,clientY:y}).ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,0,1),0),out)?{x:out.x*1000*(current.flip?-1:1),y:out.y*1000}:null;};
   const observer=new ResizeObserver(resize);observer.observe(host);update(f);fit();resize();
   function render(){if(disposed)return;if(!splitRoot){if(!drag&&!drawerDrag)controls.update();r.render(sc,cam);projectSelection();projectLabels();projectDrawers();}frame=requestAnimationFrame(render);}render();
-  return {inventory:value=>inventory(THREE,box,value,{furniture,plan}),compare:(variants,front)=>compare(THREE,box,variants,{front,background,furniture,plan}),projectPoint,ghost:(value,pick,options)=>{if(splitRoot){for(const panel of splitPanels)panel.preview.ghost(options?.elevation===panel.meta.run?value:null,pick,options);}else placingGhost.show(value,pick,options);},cancelDrag:()=>builderGesture.end(true)||splitPanels.some(p=>p.preview.cancelDrag()),
+  return {inventory:value=>inventory(THREE,box,value,{furniture,plan}),compare:(variants,front,isCurrent)=>compare(THREE,box,variants,{front,background,furniture,plan,isCurrent}),projectPoint,ghost:(value,pick,options)=>{if(splitRoot){for(const panel of splitPanels)panel.preview.ghost(options?.elevation===panel.meta.run?value:null,pick,options);}else placingGhost.show(value,pick,options);},cancelDrag:()=>builderGesture.end(true)||splitPanels.some(p=>p.preview.cancelDrag()),
    update:value=>{const dims=v=>[C.assemblyBounds(v),v.w,v.d,v.kitchen?(Object.keys(root.FurnishKitchen.assemblyConfig(v)).length?FurnishKitchen.laundryHeight(v):FurnishKitchen.overallHeight(v)):v.h,v.kitchen?.shape,v.kitchen?.corner],changed=JSON.stringify(dims(value))!==JSON.stringify(dims(current));update(value);if(changed)fit();},
    selectPart:part=>{const oldPart=JSON.stringify(selected);selected=part;const old=activeColumn;activeColumn=part?.column??null;highlight();if(old!==activeColumn||oldPart!==JSON.stringify(part))dimensions();else markActive();},focus:()=>cv.focus({preventScroll:true}),
    partDimensions:()=>{const mesh=selectedMesh(),size=mesh?.userData.cabinetDoorSize??mesh?.userData.cabinetDrawerSize;return size?{width:size.width,height:size.height}:null;},

@@ -434,6 +434,7 @@
 <script src="src/data/hood-blender-asset.js"></script>
 <script src="src/render/hood-asset-model.js"></script>
 <script src="src/render/fotile-model.js"></script>
+<script src="src/data/wood-veneers.js"></script>
 <script src="src/core/product-rules.js"></script>
 <script src="src/core/lighting-core.js"></script>
 <script src="src/core/progressive-view-core.js"></script>
@@ -552,6 +553,7 @@
 <script src="src/io/dxf-export.js"></script>
 <script src="src/data/y52y09-blender-asset.js"></script>
 <script src="src/render/bookcase-asset-model.js"></script>
+<script src="src/data/wood-veneer-textures.js"></script>
 <script src="src/render/cabinet-model.js"></script>
 <script src="src/render/balcony-garden-model.js"></script>
 <script src="src/core/model-solid-recorder.js"></script>
@@ -749,6 +751,7 @@ let dirty = true;
 // Camera and annotation changes reuse the light-space depth map. Geometry,
 // visibility and sunlight edits explicitly request a fresh shadow pass.
 const invalidate = (shadows=false) => { dirty = true; if(shadows===true&&renderer)renderer.shadowMap.needsUpdate=true; };
+window.addEventListener('furnish-veneer-ready',()=>invalidate());
 
 /* ======================= 初始化 ======================= */
 function init(){
@@ -2134,6 +2137,8 @@ function blenderScene(options={}, {observationCeilings=false,includeLighting=fal
  sync();
  if(furnitureRenderErrors.size)throw Error(tr('请先修复三维模型错误再导出。','Resolve 3D model errors before exporting.'));
  let tvPicturePending=false;furnG.traverse(o=>{if(o.userData.tvScreenOwnMaterial&&!o.material.userData.tvImageReady)tvPicturePending=true;});
+ const veneerPending=FurnishCabinetModel.pendingVeneers(furnG);
+ if(veneerPending)return veneerPending.then(()=>blenderScene(options,{observationCeilings,includeLighting}));
  if(tvPicturePending)throw Error(tr('请等待电视图片加载完成；若图片损坏，请重新选择图片。','Wait for the TV picture to load; reselect it if the image is damaged.'));
  ceilingDisplay.restore();const display=observationCeilings?FurnishCeilingModel.createDisplay(THREE):null;
  try{
@@ -2173,6 +2178,7 @@ async function automationReady(){
  while(anim||fly||stage.classList.contains('animating')){if(performance.now()>until)throw Error('三维视角尚未稳定');await new Promise(r=>setTimeout(r,30));}
  if(!active)throw Error('三维画布未激活');
  sync();
+ await FurnishCabinetModel.pendingVeneers(furnG);
  // Saved furniture states must reach their production motion endpoints before capture.
  while(productionMotionPending()){if(performance.now()>until)throw Error('活动部件尚未稳定');await new Promise(r=>setTimeout(r,30));}
  renderScene();labelRenderer.render(scene,camera);

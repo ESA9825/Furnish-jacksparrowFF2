@@ -30,7 +30,8 @@
           "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/natural_walnut_veneer/natural_walnut_veneer_rough_2k.jpg",
           "sha256": "2056eb8c99a936bdc7ec4fc6b04e3b1a443c7c87ca8fd0e7011bed6188290fef"
         }
-      }
+      },
+      "grainAxis": "u"
     },
     {
       "id": "ash-veneer",
@@ -57,7 +58,8 @@
           "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/ash_veneer/ash_veneer_rough_2k.jpg",
           "sha256": "3e6b077f6af6ba7725668b438bfc523f1342d0fb4bd497f1c9668663ad189ef0"
         }
-      }
+      },
+      "grainAxis": "u"
     },
     {
       "id": "white-oak-veneer",
@@ -84,7 +86,8 @@
           "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/white_oak_veneer/white_oak_veneer_rough_2k.jpg",
           "sha256": "1e325ebc77729c09afb9a2c6ed3bf51b2f0b3f8c1731642dca39b197c79097f0"
         }
-      }
+      },
+      "grainAxis": "v"
     },
     {
       "id": "white-maple-veneer",
@@ -111,7 +114,36 @@
           "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/white_maple_veneer/white_maple_veneer_rough_2k.jpg",
           "sha256": "1184ebdeb279f7450852d5a5ce648bc96a045470acfa98aa3001dd38b65cfb51"
         }
-      }
+      },
+      "grainAxis": "u"
+    },
+    {
+      "id": "black-walnut-veneer-01",
+      "name": "细直纹黑胡桃木",
+      "source": "https://polyhaven.com/a/black_walnut_veneer_01",
+      "sampleWidthMm": 1000,
+      "resolution": [
+        2048,
+        2048
+      ],
+      "maps": {
+        "baseColor": {
+          "file": "black_walnut_veneer_01/black_walnut_veneer_01_diff_2k.jpg",
+          "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/black_walnut_veneer_01/black_walnut_veneer_01_diff_2k.jpg",
+          "sha256": "131a5322d045f86dcf6fa413cdf34f230f8f7f96d820221a1637647108bf2304"
+        },
+        "normalGL": {
+          "file": "black_walnut_veneer_01/black_walnut_veneer_01_nor_gl_2k.jpg",
+          "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/black_walnut_veneer_01/black_walnut_veneer_01_nor_gl_2k.jpg",
+          "sha256": "8970308650c9e8b44b3fad5f14459239869a8dc74db40d00b6a095b38e7e24e9"
+        },
+        "roughness": {
+          "file": "black_walnut_veneer_01/black_walnut_veneer_01_rough_2k.jpg",
+          "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/black_walnut_veneer_01/black_walnut_veneer_01_rough_2k.jpg",
+          "sha256": "8c2ab9b1ab0681c93e777906e2bd98eedb0a4c37db5a7b3ad28a734a0de88814"
+        }
+      },
+      "grainAxis": "u"
     }
   ],
   "finishes": [
@@ -119,8 +151,13 @@
       "id": "walnut-warm-dark",
       "name": "暖深胡桃木",
       "materialId": "natural-walnut-veneer",
-      "baseColorTintSrgb": "#e6c4a2",
-      "status": "trial"
+      "baseColorTintSrgb": "#e6c4a2"
+    },
+    {
+      "id": "black-walnut-warm",
+      "name": "细直纹黑胡桃 · 暖深棕",
+      "materialId": "black-walnut-veneer-01",
+      "baseColorTintSrgb": "#c9a583"
     }
   ]
 }
