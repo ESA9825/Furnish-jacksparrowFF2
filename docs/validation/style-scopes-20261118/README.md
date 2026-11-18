@@ -26,3 +26,5 @@
 [范围与配色预览](preview.png) · [窄屏](narrow.png)
 
 全三入口证据目录为 `output/desktop-verification/style-scopes-iv0KUO.noindex/`；最终控件、空范围与缓存补充后的桌面复验为 `style-scopes-ejf0KS.noindex/`，原柜体桌面回归为 `cabinet-style-6xcSp2.noindex/`。末次只读源码复查基于并行问卷任务已完成的main；未覆盖其加载／相机预览增量。
+
+最终目视复查修正了主操作按钮被通用panel样式覆盖的问题：只有“应用所选范围”使用共享主操作色，柜体快捷按钮使用次级样式。HTTP `style-scopes-ZgvDFr.noindex` 与同包隔离桌面 `style-scopes-MOHO2N.noindex` 全流程通过；本目录最终截图与final-desktop-results已更新为后者。渐进观察／高清缓存经只读复查沿原sigArch／sigFurn接收颜色与预览签名。
