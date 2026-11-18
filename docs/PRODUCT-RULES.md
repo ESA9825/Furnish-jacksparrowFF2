@@ -532,3 +532,7 @@ storage_bin_族七款注册storageSupply和storageBin能力，mountHeight新建0
 ## 90°L型转角柜（2026-11-17）
 
 `cabinetBuilder.corner90`集中定义软件尺寸范围、默认构造、层板净高下限及v93格式要求；非厂家安装值。`w/d/h/mountHeight`仍为既有家具尺寸／离地语义，v3仅新增转角构造参数，不对旧柜套用模板。空间指纹包含转角几何、地脚服务和foldDoor规则版本，颜色和可拆卸标记不改变空间结果。恢复、生产几何及案例约束见[CABINET-CORNER90.md](CABINET-CORNER90.md)。
+
+## 柜体风格与饰面（2026-11-18）
+
+cabinetAppearance声明最低格式96、solid／walnut饰面、可调组件及面板范围；根appearance严格包含六位bodyColor／frontColor与bodySurface。新建／旧缺失保持原外观，只有主动应用风格才写入。柜箱和组件surface／color可独立覆盖／删除恢复，面板覆盖不染抽盒内部；不改变安装高度／几何／核对。项目、仓库、缓存、复制与原替换通道按完整cabinet／kitchen传递；v1→v2和profile转换保留外观。见[复验与边界](validation/cabinet-style-20261118/README.md)。

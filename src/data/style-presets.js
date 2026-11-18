@@ -2,6 +2,7 @@
 (function(root){
 'use strict';
 const STYLES = [
+  {id:'warm-walnut', zh:'暖白＋胡桃木', en:'Warm White & Walnut', soft:'#e5ddd0', wood:'#f3f0e8', textile:'#e8e0d3', pop:'#798368', floor:['tile800','wood'], cabinet:{bodyColor:'#765239',frontColor:'#f3f0e8',bodySurface:'walnut'}, description:'暖白柜门 · 胡桃木柜身与开放格'},
   {id:'natural', zh:'原木', en:'Natural Oak', soft:'#cdbfa8', wood:'#d9bf98', textile:'#e7dccd', pop:'#9db08a', floor:['wood', 'wood']},
   {id:'cream', zh:'奶油', en:'Cream', soft:'#efe3cf', wood:'#e8dcc6', textile:'#f5ecdc', pop:'#d9b99a', floor:['tile800', 'wood']},
   {id:'nordic', zh:'北欧', en:'Nordic', soft:'#c9d3da', wood:'#e2d3bc', textile:'#dfe6ea', pop:'#8fa8ba', floor:['wood', 'wood']},

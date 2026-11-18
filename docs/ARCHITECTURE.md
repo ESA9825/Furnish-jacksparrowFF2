@@ -767,3 +767,5 @@ server-runtime.watch跨轮只保留依赖路径、stat签名和摘要，原始�
 ## 2026-11-18：二维拖动延迟
 
 FurnitureSolids沿完整生产键为活家具弱引用保留当前局部／世界实体，固定LRU容量保持；厨房避让快照只复制会改写的厨房。移动无位姿／辅助线变化时跳过重绘，孔洞展示依真实输入失效，排序提前做原包络排除。松手复用原defer保存；project-core的reviewSteps/spaceCheckSteps统一同步核对与可取消分片自动核对，无新状态或持久格式。186件1601同包隔离实测、精度对照及剩余延迟见[验收](validation/drag-latency-20261118/README.md)。
+
+2026-11-18（柜体风格）：style-core沿原mutate生成cabinet／kitchen.appearance，product-rules集中饰面与格式规则；cabinet-model在同源生产板件上应用角色材质及物理尺度UV，组合厨房传递外观。组件surface／color优先，v96沿原项目、仓库与缓存，空间签名排除纯外观。见[契约](validation/cabinet-style-20261118/README.md)。

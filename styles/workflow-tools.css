@@ -272,3 +272,21 @@ main.drawer-panel #fab-editor{visibility:hidden}
 
 #saveMenu .saved.dirty{color:var(--accent);font-weight:700}
 #saveMenu:has(.saved.dirty)>summary{border-color:var(--accent);background:var(--accent-soft,#fff0e4)}
+
+/* Material schemes show cabinet roles before committing a scope. */
+.styles.style-schemes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.style-schemes .stcard{min-width:0;display:flex;flex-direction:column;align-items:stretch;text-align:left;padding:10px;gap:7px;white-space:normal}
+.style-schemes .stcard small{font-size:11px;line-height:1.5;color:var(--muted);font-weight:400}
+.style-cabinet-sample{display:flex;height:76px;padding:8px;background:var(--cab-body);gap:4px;border-radius:6px;box-shadow:inset 0 -4px 8px #0002}
+.style-sample-door{width:66%;background:var(--cab-front);box-shadow:1px 0 3px #0003;border-radius:2px}
+.style-sample-open{flex:1;background:var(--cab-body);border-bottom:3px solid #0003;box-shadow:inset 2px 3px 7px #0004;position:relative}
+.style-sample-open:after{content:'';position:absolute;left:0;right:0;top:48%;border-top:3px solid #0003;box-shadow:0 3px 3px #0002}
+.style-sample-open.walnut{background:repeating-linear-gradient(92deg,#ffffff08 0 1px,#00000016 2px 3px,transparent 4px 8px),var(--cab-body)}
+.style-material-note{margin:12px 0;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:12px;line-height:1.6}
+.style-material-note p{margin:5px 0}
+@media(max-width:420px){.style-schemes .stcard{padding:8px}.style-cabinet-sample{height:60px}}
+aside.right:has(.style-schemes){min-height:0;min-width:0;overflow:auto;overscroll-behavior:contain}
+.style-apply-actions{margin:12px 0}
+.style-apply-actions .btn{white-space:normal;flex:1 1 110px}
+@media(max-width:1100px){aside.right:has(.style-schemes){box-sizing:border-box;width:min(330px,calc(100vw - 36px));max-width:calc(100% - 16px);max-height:100%}}
+.style-apply-actions .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}

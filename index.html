@@ -1414,7 +1414,7 @@ function buildFurn(work=state){
   const byId = new Map(furnG.children.map(o => [o.userData.fid, o])), keep = new Set(), validFurniture=work.furniture.filter(f=>!furnitureError(f));
   const preview=globalThis.FurnishWorkflowTools?.styleId(),plan=FurnishProject.effectivePlan(PLAN,work);
   for (const saved of work.furniture){
-    const f=preview?{...saved,color:FurnishStyles.color(saved,preview)}:saved;
+    const f=preview?FurnishStyles.furniture(saved,preview):saved;
     keep.add(f.id);
     try{
     const error=furnitureError(f);if(error)throw Error(error);

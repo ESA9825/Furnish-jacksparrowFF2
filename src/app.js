@@ -57,7 +57,7 @@ const workRules = FurnishWork.create({
   makeId:uid, colorFor:typeColor, materials:MATS,
 });
 const {fresh:freshWork,restore:fixWork,restoreFurniture:sanitizeFurn}=workRules;
-let STORE = 'huxing-design-v95';
+let STORE = 'huxing-design-v96';
 let store = FurnishWorkspaceCache.load({read:key=>localStorage.getItem(key), firstPlan:PLANS[0], restore:fixWork, key:STORE});
 // Preserve the actual cache before startup normalization adds defaults.
 STORE='huxing-design-v'+(store.v>=3?store.v:2);
@@ -321,8 +321,8 @@ function applyStyle(id){
   mutate(()=>FurnishStyles.apply(state,ROOMS,id,!!PLAN.customDraft));
   toast(tr(`已应用「${style.zh}」风格：家具配色与客厅 / 卧室地面已更新`,`Applied "${style.en}": furniture colors and living / bedroom floors updated`),{label:tr('撤销','Undo'),fn:undo});
 }
-const stylesHTML = () => `<div class="styles">${STYLES.map(s => `<button class="stcard ${state.style === s.id ? 'on' : ''}" data-style="${s.id}" title="${tr('预览风格', 'Preview style')}">
-  <span class="stsw">${[s.soft, s.wood, s.textile, s.pop, MATS[s.floor[0]].sw].map(c => `<i style="background:${c}"></i>`).join('')}</span><b>${tr(s.zh, s.en)}</b></button>`).join('')}</div>`;
+function styleCardsHTML(selected,attribute='data-style-preview'){return `<div class="styles style-schemes">${STYLES.map(s=>{const body=s.cabinet?.bodyColor??s.wood,front=s.cabinet?.frontColor??s.soft;return `<button class="stcard ${selected===s.id?'on':''}" ${attribute}="${s.id}" aria-pressed="${selected===s.id}"><span class="style-cabinet-sample" style="--cab-body:${body};--cab-front:${front}"><i class="style-sample-door"></i><i class="style-sample-open ${s.cabinet?.bodySurface==='walnut'?'walnut':''}"></i></span><b>${tr(s.zh,s.en)}</b><small>${tr(s.description??'柜门与柜身分色',s.description?'Warm white fronts · walnut open shelving':'Coordinated fronts & carcass')}</small></button>`;}).join('')}</div>`;}
+const stylesHTML = () => styleCardsHTML(state.style,'data-style');
 
 /* ======================= 命令面板（Ctrl+K） ======================= */
 let cmdItems = [], cmdSel = 0;
@@ -421,7 +421,7 @@ $('#panel').addEventListener('click', e => {
   const tab = t.closest('[data-tab]'); if (tab){ ui.tab = tab.dataset.tab;ui.panelScope='design';saveUI();renderPanel();$('aside.right').scrollTop=0;return; }
   const lk = t.closest('[data-lockid]'); if (lk){ e.stopPropagation(); const f = getF(lk.dataset.lockid); if(f&&FurnishLayers.locked(state,'furniture:'+f.id)){toast(tr('请先在图层管理中解锁所在图层','Unlock the layer in Layer manager first'));return;} if (f) mutate(() => { if (f.locked) delete f.locked; else f.locked = true; }); return; }
   const act = t.closest('[data-act]'); if (act){ runAct(act); return; }
-  const st = t.closest('[data-style]'); if (st){ applyStyle(st.dataset.style); return; }
+  const st = t.closest('[data-style]'); if (st){ FurnishWorkflowTools.previewStyle(st.dataset.style); return; }
   const fo = t.closest('[data-focus]'); if (fo) focusItem(fo.dataset.focus);
 });
 $('#fab').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b) runAct(b); });

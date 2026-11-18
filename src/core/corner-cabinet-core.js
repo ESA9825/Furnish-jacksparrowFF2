@@ -9,7 +9,7 @@
  function create(base={}){const r=rule();return validate({...base,type:'cabinet',name:base.name||'90° L型转角柜',w:r.outer.default,d:r.outer.default,h:r.height.default,color:base.color||'#e9e5de',mountHeight:base.mountHeight??0,cabinet:{version:3,shape:'corner90',...defaults()}});}
  function config(f){if(!is(f))throw Error('请选择90° L型转角柜');return f.cabinet;}
  function validate(f){
-  const c=config(f),r=rule();if(f.name!==undefined&&(typeof f.name!=='string'||!f.name.trim()||f.name.length>80)||f.color!==undefined&&!/^#(?:[\da-f]{3}|[\da-f]{6})$/i.test(f.color))throw Error('名称或门面颜色无效');if(f.type!=='cabinet'||f.obj)throw Error('L型转角柜须为参数柜体');keys(c,['version','shape',...Object.keys(r.defaults)]);
+  const c=config(f),r=rule();if(f.name!==undefined&&(typeof f.name!=='string'||!f.name.trim()||f.name.length>80)||f.color!==undefined&&!/^#(?:[\da-f]{3}|[\da-f]{6})$/i.test(f.color))throw Error('名称或门面颜色无效');if(f.type!=='cabinet'||f.obj)throw Error('L型转角柜须为参数柜体');keys(c,['version','shape','appearance',...Object.keys(r.defaults)]);P().cabinetAppearance.validate(c.appearance);
   for(const k of ['w','d'])num(f[k],r.outer.min,r.outer.max,'转角柜外长');num(f.h,r.height.min,r.height.max,'柜体高度');num(f.mountHeight??0,0,20000,'柜底离地');
   for(const k of ['depthA','depthB'])num(c[k],r.depth.min,r.depth.max,'柜深');num(c.thickness,12,30,'板厚');num(c.backThickness,0,50,'背厚');num(c.plinth,0,250,'踢脚高');num(c.railWidth,r.rail.min,r.rail.max,'顶撑宽');num(c.shelfSetback,0,100,'层板前退');
   if(!['left','right'].includes(c.hand)||!['one','split'].includes(c.panelMode)||!['solid','rails'].includes(c.top)||!['one','split'].includes(c.shelfMode)||!/^#[\da-f]{6}$/i.test(c.bodyColor)||!['legs','solid'].includes(c.base))throw Error('转角柜构造选项无效');
@@ -55,7 +55,7 @@
   if(c.door.enabled)parts.push(door(f));return {...cp(f),cabinet:{version:2,boxes:[{id:'corner90',w:f.w,d:f.d,h:f.h,thickness:t,backThickness:b,bottom:true,top:c.top==='solid',frontBand:true,carcass:false,baseLevel:c.plinth,components:parts}]}};
  }
  function setOpening(f,open,progress=1){if(!config(f).door.enabled)throw Error('该柜未安装联动门');return edit(f,{'door.open':open,'door.progress':open?progress:0});}
- function spatial(f){const c=cp(config(f));delete c.bodyColor;for(const s of c.shelves)delete s.removable;return {...c,geometryVersion:rule().version,serviceRule:P().cabinetService.version,foldDoorRule:P().cabinetBuilder.foldDoor.version};}
+ function spatial(f){const c=cp(config(f));delete c.bodyColor;delete c.appearance;for(const s of c.shelves)delete s.removable;return {...c,geometryVersion:rule().version,serviceRule:P().cabinetService.version,foldDoorRule:P().cabinetBuilder.foldDoor.version};}
  function preset(f,name=f.name){if(typeof name!=='string'||!name.trim()||name.length>80)throw Error('组件名称须为1–80字');return validate({type:'cabinet',name:name.trim(),w:f.w,d:f.d,h:f.h,color:f.color,mountHeight:0,cx:0,cy:0,rot:0,flip:false,price:0,cabinet:specification(f)});}
  function specification(f){const c=cp(config(f));c.door.open=false;c.door.progress=1;return c;}
  const api={is,defaults,create,validate,edit,resize,door,points,outline,supports,dimensions,clearances,derived,setOpening,spatial,specification,preset};root.FurnishCornerCabinet=api;if(typeof module==='object'&&module.exports)module.exports=api;

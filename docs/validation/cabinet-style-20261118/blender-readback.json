@@ -1,0 +1,163 @@
+{
+  "source_sha256": "878918d9ff5070ac875f4aedd61ff9334e1e14b91b72e472641337221e24c746",
+  "blender": "5.3.0",
+  "source": "/Users/makinami/Documents/GitHub/Furnish/output/desktop-verification/cabinet-style-Xe3ZSl.noindex/production.glb",
+  "objects": [
+    {
+      "name": "Furniture_style-ui_335",
+      "key": "named:[\"builder:box1\",\"component:shell\",\"call:cabinet-model.js:generator-call-25\",\"call:cabinet-model:site-47\",\"call:cabinet-model:site-1\",\"call:model-primitives:site-2\",\"call:model-primitives:site-1\"]",
+      "uvLayers": 1,
+      "materials": [
+        {
+          "name": "Material_107",
+          "images": [
+            {
+              "name": "Image_35",
+              "size": [
+                256,
+                512
+              ],
+              "packed": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Furniture_style-ui_336",
+      "key": "named:[\"builder:box1\",\"component:shell\",\"call:cabinet-model.js:generator-call-25\",\"call:cabinet-model:site-48\",\"call:cabinet-model:site-1\",\"call:model-primitives:site-2\",\"call:model-primitives:site-1\"]",
+      "uvLayers": 1,
+      "materials": [
+        {
+          "name": "Material_107",
+          "images": [
+            {
+              "name": "Image_35",
+              "size": [
+                256,
+                512
+              ],
+              "packed": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Furniture_style-ui_337",
+      "key": "named:[\"builder:box1\",\"component:shell\",\"call:cabinet-model.js:generator-call-25\",\"item:[\\\"cabinet-model.js:generator-30\\\",\\\"bay:left\\\"]\",\"call:cabinet-model:site-49\",\"call:cabinet-model:site-1\",\"call:model-primitives:site-2\",\"call:model-primitives:site-1\"]",
+      "uvLayers": 1,
+      "materials": [
+        {
+          "name": "Material_107",
+          "images": [
+            {
+              "name": "Image_35",
+              "size": [
+                256,
+                512
+              ],
+              "packed": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Furniture_style-ui_338",
+      "key": "named:[\"builder:box1\",\"component:shell\",\"call:cabinet-model.js:generator-call-25\",\"item:[\\\"cabinet-model.js:generator-30\\\",\\\"bay:left\\\"]\",\"call:cabinet-model.js:generator-call-12\",\"item:[\\\"cabinet-model.js:generator-15\\\",\\\"slot:0\\\"]\",\"item:[\\\"cabinet-model.js:generator-16\\\",\\\"slot:0\\\"]\",\"call:cabinet-model:site-26\",\"call:cabinet-model:site-1\",\"call:model-primitives:site-2\",\"call:model-primitives:site-1\"]",
+      "uvLayers": 1,
+      "materials": [
+        {
+          "name": "Material_107",
+          "images": [
+            {
+              "name": "Image_35",
+              "size": [
+                256,
+                512
+              ],
+              "packed": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Furniture_style-ui_339",
+      "key": "named:[\"builder:box1\",\"component:shell\",\"call:cabinet-model.js:generator-call-25\",\"call:cabinet-model.js:generator-call-13\",\"item:[\\\"cabinet-model.js:generator-15\\\",\\\"slot:0\\\"]\",\"item:[\\\"cabinet-model.js:generator-16\\\",\\\"slot:0\\\"]\",\"call:cabinet-model:site-26\",\"call:cabinet-model:site-1\",\"call:model-primitives:site-2\",\"call:model-primitives:site-1\"]",
+      "uvLayers": 1,
+      "materials": [
+        {
+          "name": "Material_107",
+          "images": [
+            {
+              "name": "Image_35",
+              "size": [
+                256,
+                512
+              ],
+              "packed": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Furniture_style-ui_340",
+      "key": "named:[\"builder:box1\",\"component:part1\",\"call:cabinet-model.js:generator-call-25\",\"item:[\\\"cabinet-model.js:generator-34\\\",\\\"bay:left\\\"]\",\"item:[\\\"cabinet-model.js:generator-36\\\",\\\"shelf:part1\\\"]\",\"call:cabinet-model:site-68\",\"call:cabinet-model:site-1\",\"call:model-primitives:site-2\",\"call:model-primitives:site-1\"]",
+      "uvLayers": 1,
+      "materials": [
+        {
+          "name": "Material_108",
+          "images": []
+        }
+      ]
+    },
+    {
+      "name": "Furniture_style-ui_341",
+      "key": "named:[\"builder:box1\",\"component:part2\",\"call:cabinet-model.js:generator-call-25\",\"item:[\\\"cabinet-model.js:generator-34\\\",\\\"bay:left\\\"]\",\"item:[\\\"cabinet-model.js:generator-45\\\",\\\"slot:0\\\"]\",\"call:cabinet-model:site-76\",\"call:cabinet-model:site-1\",\"call:model-primitives:site-2\",\"call:model-primitives:site-1\"]",
+      "uvLayers": 1,
+      "materials": [
+        {
+          "name": "Material_109",
+          "images": []
+        }
+      ]
+    },
+    {
+      "name": "Furniture_style-ui_342",
+      "key": "named:[\"builder:box1\",\"component:part2\",\"call:cabinet-model.js:generator-call-25\",\"item:[\\\"cabinet-model.js:generator-34\\\",\\\"bay:left\\\"]\",\"item:[\\\"cabinet-model.js:generator-45\\\",\\\"slot:0\\\"]\",\"call:cabinet-model.js:generator-call-24\",\"call:cabinet-model:site-67\",\"call:cabinet-model:site-1\",\"call:model-primitives:site-2\",\"call:model-primitives:site-1\"]",
+      "uvLayers": 1,
+      "materials": [
+        {
+          "name": "Material_110",
+          "images": []
+        }
+      ]
+    },
+    {
+      "name": "Furniture_style-ui_343",
+      "key": "named:[\"builder:box1\",\"component:part2\",\"call:cabinet-model.js:generator-call-25\",\"item:[\\\"cabinet-model.js:generator-34\\\",\\\"bay:left\\\"]\",\"item:[\\\"cabinet-model.js:generator-45\\\",\\\"slot:1\\\"]\",\"call:cabinet-model:site-76\",\"call:cabinet-model:site-1\",\"call:model-primitives:site-2\",\"call:model-primitives:site-1\"]",
+      "uvLayers": 1,
+      "materials": [
+        {
+          "name": "Material_109",
+          "images": []
+        }
+      ]
+    },
+    {
+      "name": "Furniture_style-ui_344",
+      "key": "named:[\"builder:box1\",\"component:part2\",\"call:cabinet-model.js:generator-call-25\",\"item:[\\\"cabinet-model.js:generator-34\\\",\\\"bay:left\\\"]\",\"item:[\\\"cabinet-model.js:generator-45\\\",\\\"slot:1\\\"]\",\"call:cabinet-model.js:generator-call-24\",\"call:cabinet-model:site-67\",\"call:cabinet-model:site-1\",\"call:model-primitives:site-2\",\"call:model-primitives:site-1\"]",
+      "uvLayers": 1,
+      "materials": [
+        {
+          "name": "Material_110",
+          "images": []
+        }
+      ]
+    }
+  ],
+  "passed": true
+}
