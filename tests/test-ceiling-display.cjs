@@ -15,6 +15,29 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),C=require('../s
  panel.geometry.computeBoundingBox();camera.position.y=panel.geometry.boundingBox.max.y;display.update(group,camera,'ghost');assert.equal(panel.material.opacity,1);camera.position.y+=.001;display.update(group,camera,'ghost');assert.equal(panel.material.opacity,.25);
  display.restore();for(let i=0;i<meshes.length;i++){assert.equal(meshes[i].material,original[i].material);assert.deepEqual(Array.from(meshes[i].geometry.attributes.position.array),original[i].geometry);assert.equal(meshes[i].userData.furnishStablePart,original[i].token);}assert.equal(JSON.stringify(data),saved);
  const ghosts=new Set();display.update(group,camera,'ghost');for(const m of meshes)if(m.material.transparent)ghosts.add(m.material);let disposed=0;for(const m of ghosts)m.addEventListener('dispose',()=>disposed++);display.clear();assert.equal(disposed,ghosts.size);assert(meshes.every(m=>!m.children.length));assert.equal(panel.material.opacity,1);
+ // Whole, seam-crossing and trim-crossing holes must show only physical edges.
+ const Z=require('../src/core/zone-geometry.js'),layout=C.aluminumLayout(item);
+ for(const cx of [100,320,45]){
+  const lamp={id:'lamp',type:'downlight_philips_dl269',w:85,d:85,h:45,cx,cy:100,rot:0};
+  const bodies=[{f:lamp,vertical:{bottom:2498,top:2543}}],hole=C.downlightHoles(item,bodies)[0];
+  const perforated=M.build(T,data,{bodies}),cutaway=M.createDisplay(T);
+  cutaway.update(perforated,camera,'ghost');
+  let holeEdges=0;
+  for(const mesh of perforated.children){
+   const line=mesh.children.find(o=>o.isLineSegments);
+   if(!line)continue;
+   const panel=layout.panels.find(p=>'aluminum:'+p.id===mesh.userData.furnishStablePart);
+   const rings=panel?.polygons||[item.polygon,layout.inner],positions=line.geometry.attributes.position;
+   for(let i=0;i<positions.count;i+=2){
+    const point=[(positions.getX(i)+positions.getX(i+1))*500,(positions.getZ(i)+positions.getZ(i+1))*500];
+    const onHole=Math.abs(Math.hypot(point[0]-hole.x,point[1]-hole.y)-hole.r)<.06;
+    if(onHole)holeEdges++;
+    assert(onHole||rings.some(ring=>ring.some((a,j)=>{const [x,y]=Z.projectSegment(point,a,ring[(j+1)%ring.length]).point;return Math.hypot(point[0]-x,point[1]-y)<.01;})),`false edge inside board at ${point} with lamp x=${cx}`);
+   }
+  }
+  assert(holeEdges>0,'the real circular opening remains outlined');
+  cutaway.clear();
+ }
  // Light strips and diffusers belong to the ceiling, including when lamps are off.
  const region={id:'lit-ring',name:'灯槽吊顶',style:'ring',polygon:[[0,0],[3800,0],[3800,2800],[0,2800]],height:2400,thickness:12,center:true,sections:C.sectionPreset('up')};
  for(const lamps of [true,false]){

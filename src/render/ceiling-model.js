@@ -17,7 +17,7 @@ function build(THREE,data,{wx=v=>v/1000,wz=v=>v/1000,top=Infinity,lamps=true,bod
  const seamSurface=flatSurface.clone();seamSurface.color.set('#aaa99f');seamSurface.roughness=.85;
  const diffuser=new THREE.MeshStandardMaterial({color:'#f6f7ef',emissive:'#fff1d2',emissiveIntensity:lamps ? .22 : 0,roughness:.65,transparent:true,opacity:.8,side:THREE.DoubleSide}),diffuserOff=diffuser.clone();diffuserOff.emissiveIntensity=0;
  let conflictLight=null;const lightMaterial=layout=>{if(!layout.pending.some(m=>m.includes('相交')))return light;if(!conflictLight){conflictLight=light.clone();conflictLight.color.set('#e96842');conflictLight.emissive.set('#e35030');conflictLight.emissiveIntensity=lamps?1:0;}return conflictLight;};
- const shape=p=>{const s=new THREE.Shape();p.forEach(([x,y],i)=>s[i?'lineTo':'moveTo'](x/1000,y/1000));s.closePath();return s;};
+ const shape=(p,s=new THREE.Shape())=>{p.forEach(([x,y],i)=>s[i?'lineTo':'moveTo'](x/1000,y/1000));s.closePath();return s;};
  function mesh(geometry,material,c,part){const m=syncIdentity.produce("ceiling-model:site-1",()=>new THREE.Mesh(geometry,material));m.userData.ceiling={id:c.id,part};m.userData.ceilingOwnMaterial=true;m.castShadow=part!=='light';m.receiveShadow=true;group.add(m);return m;}
  function sweep(c,p,material,part){
   const L=Math.hypot(c.path.b[0]-c.path.a[0],c.path.b[1]-c.path.a[1]),t=c.path.b.map((v,i)=>(v-c.path.a[i])/L),n=c.path.normal;
@@ -76,14 +76,33 @@ function build(THREE,data,{wx=v=>v/1000,wz=v=>v/1000,top=Infinity,lamps=true,bod
   }else{
    if(c.aluminum){
     if(c.height>=top)continue;
-    const layout=C.aluminumLayout(c),replacements=C.panelReplacements(c,bodies),holes=C.downlightHoles(c,bodies),holePolys=holes.map(h=>Array.from({length:64},(_,i)=>[h.x+h.r*Math.cos(i*Math.PI/32),h.y+h.r*Math.sin(i*Math.PI/32)])).concat(replacements.map(s=>s.cell));
+    const Z=root.FurnishZoneGeometry||require('../core/zone-geometry.js'),layout=C.aluminumLayout(c),replacements=C.panelReplacements(c,bodies),holes=C.downlightHoles(c,bodies),holePolys=holes.map(h=>Array.from({length:64},(_,i)=>[h.x+h.r*Math.cos(i*Math.PI/32),h.y+h.r*Math.sin(i*Math.PI/32)])).concat(replacements.map(s=>s.cell));
+    function bounds(polygons){
+     const lo=[Infinity,Infinity],hi=[-Infinity,-Infinity];
+     for(const poly of polygons)for(const [x,y]of poly){lo[0]=Math.min(lo[0],x);lo[1]=Math.min(lo[1],y);hi[0]=Math.max(hi[0],x);hi[1]=Math.max(hi[1],y);}
+     return {lo,hi};
+    }
+    const openings=holePolys.map(poly=>({poly,...bounds([poly])}));
+    const trace=(ring,path)=>shape(ring.map(([x,y])=>[x,-y]),path);
     function panelMesh(polygons,bottom,material,part,token){
-     const positions=[],normals=[];
-     for(const poly of polygons){
-      const relevant=holePolys.filter(h=>{const xs=poly.map(p=>p[0]),ys=poly.map(p=>p[1]),hx=h.map(p=>p[0]),hy=h.map(p=>p[1]);return Math.min(...hx)<=Math.max(...xs)&&Math.max(...hx)>=Math.min(...xs)&&Math.min(...hy)<=Math.max(...ys)&&Math.max(...hy)>=Math.min(...ys);}),Z=root.FurnishZoneGeometry||(typeof require==='function'?require('../core/zone-geometry.js'):null),pieces=relevant.length?Z.decompose([poly,...relevant],p=>Z.inside(p,poly)&&!relevant.some(h=>Z.inside(p,h))):[poly];
-      for(const piece of pieces){const g=new THREE.ExtrudeGeometry(shape(piece.map(([x,y])=>[x,-y])),{depth:(c.thickness-bottom-(part==='panel-backing'?.5:0))/1000,bevelEnabled:false});g.rotateX(-Math.PI/2);g.translate(wx(0),(c.height+bottom)/1000,wz(0));positions.push(...g.attributes.position.array);normals.push(...g.attributes.normal.array);g.dispose();}
+     if(!polygons.length)return;
+     const {lo,hi}=bounds(polygons),relevant=openings.filter(h=>lo.every((v,i)=>v<=h.hi[i]&&hi[i]>=h.lo[i])).map(h=>h.poly);
+     let shapes=polygons.map(poly=>trace(poly));
+     if(relevant.length||part==='panel-trim'){
+      const pieces=relevant.length?Z.decompose([...polygons,...relevant],p=>polygons.some(poly=>Z.inside(p,poly))&&!relevant.some(h=>Z.inside(p,h))):polygons;
+      // Extrude physical boundaries only. Sweep partitions would introduce
+      // internal walls that show up as extra seams in the transparent view.
+      const rings=Z.outline(pieces).rings,holes=rings.filter(r=>Z.signed(r)<0);
+      shapes=rings.filter(r=>Z.signed(r)>0).map(r=>{
+       const panel=trace(r);
+       for(const hole of holes)if(Z.inside(hole[0],r))panel.holes.push(trace(hole,new THREE.Path()));
+       return panel;
+      });
      }
-     if(!positions.length)return;const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));const m=syncIdentity.produce('ceiling-aluminum:'+part,()=>mesh(g,material,c,part));m.userData.furnishStablePart='aluminum:'+token;return m;
+     if(!shapes.length)return;
+     const g=new THREE.ExtrudeGeometry(shapes,{depth:(c.thickness-bottom-(part==='panel-backing'?.5:0))/1000,bevelEnabled:false});
+     g.rotateX(-Math.PI/2);g.translate(wx(0),(c.height+bottom)/1000,wz(0));g.deleteAttribute('uv');
+     const m=syncIdentity.produce('ceiling-aluminum:'+part,()=>mesh(g,material,c,part));m.userData.furnishStablePart='aluminum:'+token;return m;
     }
     panelMesh([c.polygon],1.2,seamSurface,'panel-backing','backing');
     panelMesh(layout.trim,0,panelSurface,'panel-trim','trim');
