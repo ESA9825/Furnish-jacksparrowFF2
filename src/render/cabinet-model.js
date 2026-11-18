@@ -453,14 +453,15 @@ const syncIdentity=root.FurnishPartIdentity||(typeof require==='function'?requir
    // Hardware, glass, lights and stone retain their physical material.
    if(d.cabinetHardware||d.cabinetHangingRod||d.cabinetAccessory||d.cabinetPart&&!d.cabinetDoorSize&&!d.cabinetDrawerBoard&&!d.cabinetFoldDoor||d.cabinetServicePart?.match(/^(leg|clip)-/ )||p?.kind==='rail'||m.metalness>.25||m.transparent&&m.opacity<.5||m.emissiveIntensity>0&&m.emissive?.getHex()>0||d.kitchenSlab)return;
    const cfg=d.cabinetTier==='upper'?f.cabinet?.tiers?.upper:f.cabinet,theme=cfg?.appearance??appearance;
+   const plinth=!!B?.isPlinth(p)||d.cabinetSection==='plinth',role=plinth?(theme?.plinth??appearance?.plinth):undefined,bodyTheme=theme?.bodySurface!==undefined;
    const col=cfg?.columns?.[d.cabinetPart?.column??d.cabinetShelf?.column??0],front=!!d.cabinetDoorSize||d.cabinetDrawerBoard==='front'||d.cabinetFoldDoor;
    const frontOnly=(root.FurnishProducts||require('../core/product-rules.js')).cabinetAppearance.frontKinds.includes(p?.kind),visual=front||!frontOnly?p:undefined;
    const local=front?(p?.kind==='multiDoor'?p.segments.find(s=>s.id===d.cabinetPart?.section):p):visual;
    const override=local?.surface??visual?.surface??(!front?b?.surface:undefined),explicit=local?.color??visual?.color??(!front?b?.color:undefined)??(front?col?.doorColor:undefined);
-   if(!theme&&override===undefined&&(explicit===undefined||front||B?.isPlinth(p)||p?.kind==='board'))return;
+   if(!bodyTheme&&!role&&override===undefined&&(explicit===undefined||front||B?.isPlinth(p)||p?.kind==='board'))return;
    const originalWood=front&&(local?.finish??col?.finish)==='wood';
-   const surface=override??(front&&!originalWood?'solid':theme?.bodySurface??'solid');
-   const color=explicit??(surface==='walnut'?(f.cabinet?.version===3?f.cabinet.bodyColor:theme?.bodyColor)??'#765239':(front&&!originalWood?f.color??theme?.frontColor:f.cabinet?.version===3?f.cabinet.bodyColor:theme?.bodyColor))??m.color?.getStyle();
+   const surface=override??role?.surface??(front&&!originalWood?'solid':theme?.bodySurface??'solid');
+   const color=explicit??role?.color??(surface==='walnut'?(f.cabinet?.version===3?f.cabinet.bodyColor:theme?.bodyColor)??'#765239':(front&&!originalWood?f.color??theme?.frontColor:f.cabinet?.version===3?f.cabinet.bodyColor:theme?.bodyColor))??m.color?.getStyle();
    const key=JSON.stringify([surface,color,m.transparent,m.opacity]),old=m;
    if(!materials.has(key)){const material=old.clone();material.color.set(color);material.metalness=0;material.roughness=surface==='walnut'?.57:.65;material.map=surface==='walnut'?walnut():null;material.userData={...material.userData,cabinetSurface:surface};owners++;let released=false;material.addEventListener('dispose',()=>{if(released)return;released=true;if(--owners===0)texture?.dispose();});materials.set(key,material);}
    o.material=materials.get(key);if(d.cabinetOwnMaterial)old.dispose();d.cabinetOwnMaterial=true;d.cabinetSurface=surface;
@@ -477,7 +478,7 @@ const syncIdentity=root.FurnishPartIdentity||(typeof require==='function'?requir
   const model=syncIdentity.produce("cabinet-model.js:generator-call-25",()=>buildRaw(THREE,f,box,options));
   // Capture the actual exterior front before service cuts replace its geometry.
   model.traverse(o=>{if(o.userData.cabinetDrawerBoard!=='front')return;const p=o.geometry.parameters;o.userData.cabinetDrawerSize={width:p.width*1000,height:p.height*1000};});
-  applyAppearance(THREE,model,f,f.cabinet?.appearance??options.appearance);
+  applyAppearance(THREE,model,f,options.appearance||f.cabinet?.appearance?{...options.appearance,...f.cabinet?.appearance}:undefined);
   return cutServices(THREE,model,f,{...options,cabinetOnly:f.type==='vanity'});
  }
  function cutServices(THREE,g,f,options={}){

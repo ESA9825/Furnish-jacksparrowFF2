@@ -21,7 +21,7 @@ const legacy7={...workspace(linked,7),updatedAt:200},legacy8={...workspace(ceili
 assert.deepEqual(Cache.load({read,key:'huxing-design-v9',firstPlan:plan,restore}),legacy7,'newest divergent legacy cache wins even with a lower version');
 const candidates=Cache.candidates({read,key:'huxing-design-v9'});assert.equal(candidates.length,2);assert.deepEqual(values,original,'reads retain both original keys');
 values['huxing-design-v9']=JSON.stringify({...workspace(mixed),updatedAt:50});assert.equal(Cache.load({read,key:'huxing-design-v9',firstPlan:plan,restore}).v,9,'existing unified cache takes precedence');delete values['huxing-design-v9'];
-const saveSource=fs.readFileSync(require.resolve('../src/app.js'),'utf8').match(/function save\(\)\{[\s\S]*?\n\}/)[0];
+const saveSource=fs.readFileSync(require.resolve('../src/app.js'),'utf8').match(/function save\([^)]*\)\{[\s\S]*?\n\}/)[0];
 for(const current of [ceiling,linked,mixed])for(const v of [6,7,8,9]){
  const ctx=vm.createContext({FurnishDesign:require('../src/core/design-core.js'),FurnishProject:P,storageWiping:false,repositoryBooting:false,PLAN:plan,state:copy(current),store:workspace(copy(current),v),STORE:'huxing-design-v'+v,autosave:{save(w){values['huxing-design-v9']=JSON.stringify(w);}},repositoryClient:null});vm.runInContext(saveSource+'\nsave();',ctx);assert.equal(ctx.store.v,9);assert.equal(ctx.STORE,'huxing-design-v9');assert.equal(values['huxing-design-v7'],original['huxing-design-v7']);assert.equal(values['huxing-design-v8'],original['huxing-design-v8']);
 }

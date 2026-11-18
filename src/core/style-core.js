@@ -18,7 +18,7 @@ function furniture(f,id,overrides={}){
  const next={...f,color:color(f,id,overrides)},C=root.FurnishCabinet||(inNode?require('./cabinet-core.js'):null);
  if(!f.obj&&(f.kitchen||C?.supported(f))){
   const key=f.kitchen?'kitchen':'cabinet',config=f[key]||(C?.config(f));
-  if(config){const p=palette(id,overrides),appearance={bodyColor:p.body,frontColor:p.front,bodySurface:style.cabinet?.bodySurface??'solid'};next.color=appearance.frontColor;next[key]={...config,...(config.version===3?{bodyColor:appearance.bodyColor}:{}),appearance};}
+  if(config){const p=palette(id,overrides),appearance={...config.appearance,bodyColor:p.body,frontColor:p.front,bodySurface:style.cabinet?.bodySurface??'solid'};next.color=appearance.frontColor;next[key]={...config,...(config.version===3?{bodyColor:appearance.bodyColor}:{}),appearance};}
  }
  return next;
 }
