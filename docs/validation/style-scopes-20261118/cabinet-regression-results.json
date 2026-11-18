@@ -1,0 +1,179 @@
+[
+  {
+    "mode": "desktop",
+    "passed": true,
+    "checks": [
+      "preview is temporary; cabinet scope applies as one undo/redo",
+      "real component UI supports finish/color override, reset and draft history",
+      "save/reload and production GLB retain embedded walnut map and UVs",
+      "390px scheme panel fits; cancel retains component overrides; no page errors"
+    ],
+    "glb": {
+      "target": [
+        {
+          "key": "named:[\"builder:box1\",\"component:shell\",\"call:cabinet-model.js:generator-call-25\",\"call:cabinet-model:site-47\",\"call:cabinet-model:site-1\",\"call:model-primitives:site-2\",\"call:model-primitives:site-1\"]",
+          "material": {
+            "baseColorFactor": [
+              0.181164244239483,
+              0.08437621153575764,
+              0.040915196900556984,
+              1
+            ],
+            "metallicFactor": 0,
+            "roughnessFactor": 0.57,
+            "baseColorTexture": {
+              "index": 35,
+              "texCoord": 0
+            }
+          },
+          "uv": true
+        },
+        {
+          "key": "named:[\"builder:box1\",\"component:shell\",\"call:cabinet-model.js:generator-call-25\",\"call:cabinet-model:site-48\",\"call:cabinet-model:site-1\",\"call:model-primitives:site-2\",\"call:model-primitives:site-1\"]",
+          "material": {
+            "baseColorFactor": [
+              0.181164244239483,
+              0.08437621153575764,
+              0.040915196900556984,
+              1
+            ],
+            "metallicFactor": 0,
+            "roughnessFactor": 0.57,
+            "baseColorTexture": {
+              "index": 35,
+              "texCoord": 0
+            }
+          },
+          "uv": true
+        },
+        {
+          "key": "named:[\"builder:box1\",\"component:shell\",\"call:cabinet-model.js:generator-call-25\",\"item:[\\\"cabinet-model.js:generator-30\\\",\\\"bay:left\\\"]\",\"call:cabinet-model:site-49\",\"call:cabinet-model:site-1\",\"call:model-primitives:site-2\",\"call:model-primitives:site-1\"]",
+          "material": {
+            "baseColorFactor": [
+              0.181164244239483,
+              0.08437621153575764,
+              0.040915196900556984,
+              1
+            ],
+            "metallicFactor": 0,
+            "roughnessFactor": 0.57,
+            "baseColorTexture": {
+              "index": 35,
+              "texCoord": 0
+            }
+          },
+          "uv": true
+        },
+        {
+          "key": "named:[\"builder:box1\",\"component:shell\",\"call:cabinet-model.js:generator-call-25\",\"item:[\\\"cabinet-model.js:generator-30\\\",\\\"bay:left\\\"]\",\"call:cabinet-model.js:generator-call-12\",\"item:[\\\"cabinet-model.js:generator-15\\\",\\\"slot:0\\\"]\",\"item:[\\\"cabinet-model.js:generator-16\\\",\\\"slot:0\\\"]\",\"call:cabinet-model:site-26\",\"call:cabinet-model:site-1\",\"call:model-primitives:site-2\",\"call:model-primitives:site-1\"]",
+          "material": {
+            "baseColorFactor": [
+              0.181164244239483,
+              0.08437621153575764,
+              0.040915196900556984,
+              1
+            ],
+            "metallicFactor": 0,
+            "roughnessFactor": 0.57,
+            "baseColorTexture": {
+              "index": 35,
+              "texCoord": 0
+            }
+          },
+          "uv": true
+        },
+        {
+          "key": "named:[\"builder:box1\",\"component:shell\",\"call:cabinet-model.js:generator-call-25\",\"call:cabinet-model.js:generator-call-13\",\"item:[\\\"cabinet-model.js:generator-15\\\",\\\"slot:0\\\"]\",\"item:[\\\"cabinet-model.js:generator-16\\\",\\\"slot:0\\\"]\",\"call:cabinet-model:site-26\",\"call:cabinet-model:site-1\",\"call:model-primitives:site-2\",\"call:model-primitives:site-1\"]",
+          "material": {
+            "baseColorFactor": [
+              0.181164244239483,
+              0.08437621153575764,
+              0.040915196900556984,
+              1
+            ],
+            "metallicFactor": 0,
+            "roughnessFactor": 0.57,
+            "baseColorTexture": {
+              "index": 35,
+              "texCoord": 0
+            }
+          },
+          "uv": true
+        },
+        {
+          "key": "named:[\"builder:box1\",\"component:part1\",\"call:cabinet-model.js:generator-call-25\",\"item:[\\\"cabinet-model.js:generator-34\\\",\\\"bay:left\\\"]\",\"item:[\\\"cabinet-model.js:generator-36\\\",\\\"shelf:part1\\\"]\",\"call:cabinet-model:site-68\",\"call:cabinet-model:site-1\",\"call:model-primitives:site-2\",\"call:model-primitives:site-1\"]",
+          "material": {
+            "baseColorFactor": [
+              0.21952619971859377,
+              0.28314874041918053,
+              0.14412847084818123,
+              1
+            ],
+            "metallicFactor": 0,
+            "roughnessFactor": 0.65
+          },
+          "uv": true
+        },
+        {
+          "key": "named:[\"builder:box1\",\"component:part2\",\"call:cabinet-model.js:generator-call-25\",\"item:[\\\"cabinet-model.js:generator-34\\\",\\\"bay:left\\\"]\",\"item:[\\\"cabinet-model.js:generator-45\\\",\\\"slot:0\\\"]\",\"call:cabinet-model:site-76\",\"call:cabinet-model:site-1\",\"call:model-primitives:site-2\",\"call:model-primitives:site-1\"]",
+          "material": {
+            "baseColorFactor": [
+              0.8962693533719567,
+              0.8713671191959567,
+              0.8069522576650873,
+              1
+            ],
+            "metallicFactor": 0,
+            "roughnessFactor": 0.65
+          },
+          "uv": true
+        },
+        {
+          "key": "named:[\"builder:box1\",\"component:part2\",\"call:cabinet-model.js:generator-call-25\",\"item:[\\\"cabinet-model.js:generator-34\\\",\\\"bay:left\\\"]\",\"item:[\\\"cabinet-model.js:generator-45\\\",\\\"slot:0\\\"]\",\"call:cabinet-model.js:generator-call-24\",\"call:cabinet-model:site-67\",\"call:cabinet-model:site-1\",\"call:model-primitives:site-2\",\"call:model-primitives:site-1\"]",
+          "material": {
+            "baseColorFactor": [
+              0.16513219449147767,
+              0.13843161502267545,
+              0.10946171076915331,
+              1
+            ],
+            "metallicFactor": 0,
+            "roughnessFactor": 0.7
+          },
+          "uv": true
+        },
+        {
+          "key": "named:[\"builder:box1\",\"component:part2\",\"call:cabinet-model.js:generator-call-25\",\"item:[\\\"cabinet-model.js:generator-34\\\",\\\"bay:left\\\"]\",\"item:[\\\"cabinet-model.js:generator-45\\\",\\\"slot:1\\\"]\",\"call:cabinet-model:site-76\",\"call:cabinet-model:site-1\",\"call:model-primitives:site-2\",\"call:model-primitives:site-1\"]",
+          "material": {
+            "baseColorFactor": [
+              0.8962693533719567,
+              0.8713671191959567,
+              0.8069522576650873,
+              1
+            ],
+            "metallicFactor": 0,
+            "roughnessFactor": 0.65
+          },
+          "uv": true
+        },
+        {
+          "key": "named:[\"builder:box1\",\"component:part2\",\"call:cabinet-model.js:generator-call-25\",\"item:[\\\"cabinet-model.js:generator-34\\\",\\\"bay:left\\\"]\",\"item:[\\\"cabinet-model.js:generator-45\\\",\\\"slot:1\\\"]\",\"call:cabinet-model.js:generator-call-24\",\"call:cabinet-model:site-67\",\"call:cabinet-model:site-1\",\"call:model-primitives:site-2\",\"call:model-primitives:site-1\"]",
+          "material": {
+            "baseColorFactor": [
+              0.16513219449147767,
+              0.13843161502267545,
+              0.10946171076915331,
+              1
+            ],
+            "metallicFactor": 0,
+            "roughnessFactor": 0.7
+          },
+          "uv": true
+        }
+      ],
+      "images": 36,
+      "textured": true,
+      "uv": true
+    }
+  }
+]

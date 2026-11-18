@@ -536,3 +536,7 @@ storage_bin_族七款注册storageSupply和storageBin能力，mountHeight新建0
 ## 柜体风格与饰面（2026-11-18）
 
 cabinetAppearance声明最低格式96、solid／walnut饰面、可调组件及面板范围；根appearance严格包含六位bodyColor／frontColor与bodySurface。新建／旧缺失保持原外观，只有主动应用风格才写入。柜箱和组件surface／color可独立覆盖／删除恢复，面板覆盖不染抽盒内部；不改变安装高度／几何／核对。项目、仓库、缓存、复制与原替换通道按完整cabinet／kitchen传递；v1→v2和profile转换保留外观。见[复验与边界](validation/cabinet-style-20261118/README.md)。
+
+## 风格应用范围与建筑表面颜色（2026-11-18）
+
+styleAppearance集中声明v97、六种范围、三种建筑表面及十种颜色角色；styleRole按既有产品种类／窗帘族／门窗族派生可调主色，不在UI另列型号白名单。work.styleAppearance默认色与逐面覆盖严格校验、旧缺失保留，局部覆盖优先；不改安装、实体或空间签名。家具使用原color，柜体继续v96字段；完整契约与复验见[风格方案](STYLE-SCHEMES.md)。

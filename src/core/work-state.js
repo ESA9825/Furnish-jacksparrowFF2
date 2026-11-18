@@ -21,7 +21,7 @@
       return design.restoreFurniture(list, {makeId, colorFor,onUpgrade:added=>{if(work)(root.FurnishFurnitureUpgrade||require('./furniture-upgrade.js')).inheritLayers(work,added);}});
     }
     // Preserve the caller's work object and extra project fields, as before.
-    function restore(work, plan){
+    function restore(work, plan){(root.FurnishStyles||require('./style-core.js')).validateAppearance(work.styleAppearance);
       if(work.presentation!==undefined)(root.FurnishPresentation||require('./presentation-core.js')).validate(work.presentation);
       (root.FurnishLayers||require('./layers-core.js')).validate(work.objectLayers);
       design.products().validateDatum(work);

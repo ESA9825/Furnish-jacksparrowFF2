@@ -1,0 +1,19 @@
+{
+  "base": "8c0fb390d803e8e56143b9808e8c3f7b47b28e28",
+  "sources": {
+    "index.html": "cf74cdbf3d3e26c093e0be968c18c233ec8b39f9352294a967a359cac78c3ee1",
+    "src/app.js": "2abd6f046445f4f64dcea28a75b21776e4f6446c7c160f45fa230a1cb7e02a11",
+    "src/core/product-rules.js": "08db02f1fa3b5b174a217c8d4c6d995d190318a71e9c4ca046e76e270d5bbcae",
+    "src/core/project-core.js": "eaec8bd5a8c9256d6578bc4b9c0415d1574f39a99883edda4875e6e1c4e6be0f",
+    "src/core/repository-core.js": "4d64f248e6788cde71d395d97d842216824673e30adb84be5552cf2983af9769",
+    "src/core/style-core.js": "cee2bb43e97a92419c4325c18f7da758a04616302e80836b4a340345c8564723",
+    "src/core/work-state.js": "d5bd5f693771992678f78d606855cd043d501b1e89ae7e26dea58d84bdcfc836",
+    "src/data/style-presets.js": "f882899b1df8e90159e78dbb65cbf6c8a81f09c45750ba2b6e94fa3e72305525",
+    "src/io/workspace-cache.js": "5d75b43764763c277d8e54014dc3aef6afb78b64db9abf65b8cf7a394f6be6c4",
+    "src/render/plan-renderer.js": "2aba0ea600d06575731fc2abb63bbddc618c363f6eed6bb82389d3036ca61f74",
+    "src/ui/project-ui.js": "d2b499b25488cbcd4ebe4b8a5ad82ebae2cf8555228904feb32d4a45ea4760f2",
+    "src/ui/property-panel.js": "3703f5324283f6b15fd443840e5dbbcf50c6cb2b115ee5b19b88c7d5c4f1bb11",
+    "src/ui/workflow-tools.js": "44f6d21114a95e3e581b43c19edda1ca3f510d5a43bf297290328582ff1a183c",
+    "styles/workflow-tools.css": "81dd070819c5ebe3dbc4096ffc9581cddf1a999534624533a52fd7d34b7f0330"
+  }
+}
