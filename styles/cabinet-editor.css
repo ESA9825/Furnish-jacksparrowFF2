@@ -501,3 +501,23 @@
 .builder-inventory th {position:sticky; top:0; background:var(--panel,#fffdf9)}
 .builder-inventory td:nth-child(n+3):nth-child(-n+5) {text-align:right; font-variant-numeric:tabular-nums}
 .builder-inventory-actions {display:flex; justify-content:flex-end; margin-top:14px}
+
+.builder-starter-button {width:100%; margin-bottom:10px}
+.builder-review {width:min(1080px,calc(100vw - 24px))}
+.builder-review-controls {display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px; margin:14px 0}
+.builder-review-controls label {display:flex; align-items:center; gap:8px}
+.builder-review-controls select {padding:6px 8px; max-width:100%; border:1px solid var(--line); border-radius:6px; color:var(--ink); background:var(--card)}
+.builder-review-controls output {font-variant-numeric:tabular-nums; color:var(--muted)}
+.builder-review-grid {display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px}
+.builder-review-pair {grid-template-columns:repeat(2,minmax(0,1fr))}
+.builder-review-grid[hidden] {display:none}
+.builder-review-grid figure {margin:0; min-width:0; overflow:hidden; border:1px solid var(--line); border-radius:8px; background:var(--card)}
+.builder-review-grid canvas {display:block; width:100%; height:auto}
+.builder-review-grid figcaption {padding:8px; text-align:center; font-size:13px}
+.builder-review [data-review-error]:empty {display:none}
+.builder-review [data-review-error] {color:var(--danger,#ac3526)}
+@media(max-width:600px) {
+  .builder-review {padding:14px}
+  .builder-review-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .builder-review-grid:not(.builder-review-pair) figure:last-child {grid-column:1 / -1; width:calc((100% - 10px) / 2); justify-self:center}
+}

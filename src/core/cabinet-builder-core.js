@@ -14,6 +14,35 @@
  function empty(base={}){const {cabinet,kitchen,...rest}=copy(base);return {...rest,type:'cabinet',name:'乐高式柜体',w:600,d:450,h:720,color:base.color||'#f3f1ec',mountHeight:base.mountHeight??0,cabinet:{version:2,boxes:[]}};}
  function box(id='box1'){return {id,w:600,d:450,h:720,thickness:18,backThickness:18,bottom:true,components:[]};}
  function create(base={}){return fit({...empty(base),cabinet:{version:2,boxes:[box()]}});}
+ const starters=[
+  {id:'wardrobe',name:'挂叠衣柜',description:'长衣单挂，短衣叠放，下部两抽。',size:[600,600,2200],boxes:[
+   [['rail',.85],['shelf',.93],['multiDoor']],
+   [['drawers'],['shelf',.35],['shelf',.53],['shelf',.71],['shelf',.89],['multiDoor']],
+  ]},
+  {id:'sideboard',name:'餐边收纳柜',description:'一侧层板收纳餐具，另一侧开放陈列、下部两抽。',size:[600,420,900],boxes:[
+   [['shelf',.52],['multiDoor']],
+   [['drawers'],['shelf',.6]],
+  ]},
+  {id:'linen',name:'可调层板高柜',description:'下部放大件，上部四块活动层板，可调整间距。',size:[600,450,1800],boxes:[
+   [['shelf',.28],['shelf',.47],['shelf',.66],['shelf',.85],['multiDoor']],
+  ]},
+ ];
+ function starter(id){
+  const recipe=starters.find(item=>item.id===id);
+  if(!recipe)throw Error('找不到柜体搭配');
+  const [w,d,h]=recipe.size;
+  let furniture=empty();
+  let target;
+  for(const parts of recipe.boxes){
+   const added=addBox(furniture,{target,params:{...box(),w,d,h}});
+   furniture=added.furniture;
+   target=added.selected.boxId;
+   for(const [kind,at] of parts){
+    furniture=add(furniture,kind,{boxId:target,at,...(kind==='multiDoor'?{params:doorComponent(1)}:{})}).furniture;
+   }
+  }
+  return validate({...furniture,name:recipe.name});
+ }
  function boxLimits(b){return Object.fromEntries(Object.entries(rules().boxDimensions).map(([key,v])=>[key,{min:b.carcass===false?v.profileMin??v.min:v.min,max:b.carcass===false?v.profileMax??v.max:v.max}]));}
  function isPlinth(p){return p?.kind==='plinth'||p?.kind==='board'&&Array.isArray(p.profile?.parts)&&p.profile.parts.length>0&&p.profile.parts.every(v=>v?.metadata?.cabinetSection==='plinth');}
  function drawerAppearance(p){return rules().drawerAppearance.kinds.includes(p?.kind);}
@@ -490,5 +519,5 @@
    return slices.map((parts,leaf)=>({kind:'cabinetdoor',foldDoor:true,column,section:'foldDoor',boxId:row.box.id,componentId:p.id,leaf,poly:hull(parts.flatMap(v=>v.poly)),ranges,slices:parts}));
   }));foldZoneCache.set(key,result);if(foldZoneCache.size>8)foldZoneCache.delete(foldZoneCache.keys().next().value);return result;
  }
- const api={foldPose,foldParts,foldZones,boxLimits,drawerAppearance,drawerColor,isPlinth,plinthColor,serviceChanges,ventHoles,boardPieces,detailParts,serviceConfig,transfer,drawerStates,updateDrawer,shelfCollisionIgnored,setShelfCollisionIgnored,shelfRemovable,markShelfRemovable,componentSizeInfo,componentEditInfo,adjustComponent,editComponentSize,componentGuides,drawerInfo,moveDrawer,horizontalShape,shelfShape,horizontalSelection,horizontalPicks,boardParams,editBoardShape,measurements,shelfInfo,moveShelf,editShelfClearance,dividerInfo,moveDivider,resizeBay,equalBays,equalBoxWidths,equalBoxTargets,equalLayerPicks,equalLayers,equalizeInfo,equalShelves,setOpening,hasZones,zoneBounds,zoneParts,shellOptions,linearParts,linearZones,defaultPart,is,palette,doorComponent,empty,create,box,bays,layout,dimensions,trimParts,railParts,fronts,derived,validate,fit,resize,baseHeight,bodyHeight,innerHeight,frontDepth,addBox,add,update,connect,remove,drop,selection,move,insert,motion,motionState,updateSegment,updateLeaf,splitSegment,removeSegment,setDoorOpening,convertDoor,frontRange,spatial,specification,preset,upgrade};root.FurnishCabinetBuilder=api;if(typeof module==='object'&&module.exports)module.exports=api;
+ const api={foldPose,foldParts,foldZones,boxLimits,drawerAppearance,drawerColor,isPlinth,plinthColor,serviceChanges,ventHoles,boardPieces,detailParts,serviceConfig,transfer,drawerStates,updateDrawer,shelfCollisionIgnored,setShelfCollisionIgnored,shelfRemovable,markShelfRemovable,componentSizeInfo,componentEditInfo,adjustComponent,editComponentSize,componentGuides,drawerInfo,moveDrawer,horizontalShape,shelfShape,horizontalSelection,horizontalPicks,boardParams,editBoardShape,measurements,shelfInfo,moveShelf,editShelfClearance,dividerInfo,moveDivider,resizeBay,equalBays,equalBoxWidths,equalBoxTargets,equalLayerPicks,equalLayers,equalizeInfo,equalShelves,setOpening,hasZones,zoneBounds,zoneParts,shellOptions,linearParts,linearZones,defaultPart,is,palette,doorComponent,starters:starters.map(({id,name,description})=>({id,name,description})),starter,empty,create,box,bays,layout,dimensions,trimParts,railParts,fronts,derived,validate,fit,resize,baseHeight,bodyHeight,innerHeight,frontDepth,addBox,add,update,connect,remove,drop,selection,move,insert,motion,motionState,updateSegment,updateLeaf,splitSegment,removeSegment,setDoorOpening,convertDoor,frontRange,spatial,specification,preset,upgrade};root.FurnishCabinetBuilder=api;if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

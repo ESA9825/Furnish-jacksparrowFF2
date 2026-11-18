@@ -1,10 +1,66 @@
 /* Shared-model preview: structure picking, constrained drags and dimension overlays. */
 (function(root){
+ function productionModel(THREE,box,f,options){
+  const value=f.kitchen?{...f,mountHeight:0}:f;
+  const builder=f.kitchen?root.FurnishKitchenModel:root.FurnishCabinetModel;
+  return builder.build(THREE,value,box,options);
+ }
+ function disposeProductionModel(model){
+  const materials=new Set();
+  model.traverse(node=>{
+   node.geometry?.dispose();
+   if(node.userData.cabinetOwnMaterial)materials.add(node.material);
+  });
+  for(const material of materials)material?.dispose();
+ }
+ // Render all cards with one camera, projection, scale and lighting setup.
+ // Copy the frames to ordinary canvases before releasing the temporary GPU.
+ function compare(THREE,box,variants,{front,background,furniture,plan}){
+  const renderer=new THREE.WebGLRenderer({antialias:true}),models=[];
+  try{
+   const width=560,height=480;
+   renderer.setSize(width,height,false);
+   renderer.toneMapping=THREE.ACESFilmicToneMapping;
+   const scene=new THREE.Scene();
+   scene.background=new THREE.Color(background);
+   scene.add(new THREE.HemisphereLight(0xffffff,0x8f8170,1.5));
+   const light=new THREE.DirectionalLight(0xffffff,1.8);
+   light.position.set(3,5,4);scene.add(light);
+   for(const {value,doors,standalone} of variants){
+    const model=productionModel(THREE,box,value,{doors,furniture:standalone?[]:furniture,plan:standalone?null:plan});
+    models.push(model);
+    if(value.flip)model.scale.x=-1;
+   }
+   const bounds=new THREE.Box3(),center=new THREE.Vector3(),point=new THREE.Vector3();
+   for(const model of models)bounds.expandByObject(model);
+   bounds.getCenter(center);
+   const span=Math.max(bounds.getSize(point).length(),.5),camera=new THREE.OrthographicCamera(-1,1,1,-1,.01,span*10);
+   camera.position.copy(center).addScaledVector(front?new THREE.Vector3(0,0,1):new THREE.Vector3(1,.55,1.7),span*2);
+   camera.lookAt(center);camera.updateMatrixWorld();
+   let halfWidth=.1,halfHeight=.1;
+   for(const x of [bounds.min.x,bounds.max.x])for(const y of [bounds.min.y,bounds.max.y])for(const z of [bounds.min.z,bounds.max.z]){
+    point.set(x,y,z).applyMatrix4(camera.matrixWorldInverse);
+    halfWidth=Math.max(halfWidth,Math.abs(point.x));halfHeight=Math.max(halfHeight,Math.abs(point.y));
+   }
+   const half=Math.max(halfHeight,halfWidth*height/width)*1.13;
+   Object.assign(camera,{left:-half*width/height,right:half*width/height,top:half,bottom:-half});
+   camera.updateProjectionMatrix();
+   variants.forEach(({canvas},i)=>{
+    scene.add(models[i]);renderer.render(scene,camera);
+    canvas.width=width;canvas.height=height;
+    canvas.getContext('2d').drawImage(renderer.domElement,0,0);
+    scene.remove(models[i]);
+   });
+  }finally{
+   models.forEach(disposeProductionModel);
+   renderer.dispose();renderer.forceContextLoss();
+  }
+ }
  // Build a separate, unfiltered production model so view settings and pick
  // highlights never change the inventory. Measure each mesh in its local axes.
  function inventory(THREE,box,f,{furniture,plan}){
   const options={furniture,plan,doors:'normal'},rows=[],dimensions=new THREE.Vector3();
-  const model=f.kitchen?root.FurnishKitchenModel.build(THREE,f,box,options):root.FurnishCabinetModel.build(THREE,f,box,options);
+  const model=productionModel(THREE,box,f,options);
   const scopeLabels=f.kitchen?new Map(root.FurnishCabinetAssembly.modules(f).map(row=>[row.id,row.label])):new Map();
   const slab=new THREE.Box3();
   const mm=bounds=>bounds.getSize(dimensions).toArray().map(v=>Number((v*1000).toFixed(2)));
@@ -38,12 +94,7 @@
    if(!slab.isEmpty())rows.unshift(['整组','连续台面',...mm(slab),'','','按整体包络，轮廓与开孔需复核']);
    return rows;
   }finally{
-   const materials=new Set();
-   model.traverse(node=>{
-    node.geometry?.dispose();
-    if(node.userData.cabinetOwnMaterial)materials.add(node.material);
-   });
-   for(const material of materials)material?.dispose();
+   disposeProductionModel(model);
   }
  }
  // Shared SVG projection, collision avoidance and dimension-line styling.
@@ -139,7 +190,7 @@
   const gesture=componentGesture({THREE,canvas,camera:()=>camera,controls:()=>controls,rayAt,hitAt:r=>{const h=componentHit(r),data=h?.object.userData;return data?{pick:data.cabinetBuilder,point:h.point,part:data.cabinetPart?{...data.cabinetPart}:null,kind:B.selection(current,data.cabinetBuilder).component?.kind}:null;},infoOf:editInfo,settings:()=>({...settings,doors:doorView}),actions:{...actions,selected:()=>selected,size:()=>[current.w,current.h,current.d]},isPlacing:actions.isPlacing,onState:value=>drag=value,resetDown:()=>down=null,afterEnd:d=>{if(d.size.some((v,i)=>v!==[current.w,current.h,current.d][i]))fit();}});
   const placingGhost=placementGhost({THREE,scene,box,host,furniture,plan,current:()=>current,zoneBox});
   const observer=new ResizeObserver(resize);observer.observe(host);update(f);function loop(){if(dead)return;frame=requestAnimationFrame(loop);if(!drag)controls.update();renderer.render(scene,camera);if(settings.dimensions){const blocked=[];model.traverse(o=>{if(!o.isMesh||!o.visible||!o.userData.cabinetPart&&!B.horizontalSelection(current,o.userData.cabinetBuilder))return;const b=new THREE.Box3().setFromObject(o),points=[];for(const x of [b.min.x,b.max.x])for(const y of [b.min.y,b.max.y])for(const z of [b.min.z,b.max.z]){const p=new THREE.Vector3(x,y,z).project(camera);points.push({x:(p.x+1)*host.clientWidth/2,y:(1-p.y)*host.clientHeight/2});}blocked.push({left:Math.min(...points.map(p=>p.x))-8,right:Math.max(...points.map(p=>p.x))+8,top:Math.min(...points.map(p=>p.y))-8,bottom:Math.max(...points.map(p=>p.y))+8});});projectDimensionLabels({THREE,cam:camera,canvas,labels,blocked,centerPoint:new THREE.Vector3(0,current.h/2000,0),rulers,rulerPath,occupied:readout.hidden?[]:[{left:8,top:8,right:Math.min(host.clientWidth-8,700),bottom:40}]});}}loop();
-  return {update,inventory:value=>inventory(THREE,box,value,{furniture,plan}),projectPoint,selectPart:value=>{selected=value;highlight();dimensions();},cancelDrag:()=>endDrag(true),focus:()=>canvas.focus({preventScroll:true}),setView:options=>{Object.assign(settings,options);const next=options.front??front;doorView=options.doors??doorView;const changed=next!==front;if(changed){front=next;controls.dispose();camera=front?new THREE.OrthographicCamera(-1,1,1,-1,.01,100):new THREE.PerspectiveCamera(38,1,.01,100);controls=new OrbitControls(camera,canvas);}update(current,{reframe:changed});},ghost:placingGhost.show,dispose:()=>{dead=true;drag=null;if(tinted){tinted.mesh.material=tinted.original;tinted.material.dispose();tinted=null;}cancelAnimationFrame(frame);observer.disconnect();disposeModel(ghost);disposeModel(model);if(helper){helper.geometry.dispose();helper.material.dispose();}placingGhost.clear();controls.dispose();renderer.dispose();host.replaceChildren();}};
+  return {update,inventory:value=>inventory(THREE,box,value,{furniture,plan}),compare:(variants,front)=>compare(THREE,box,variants,{front,background,furniture,plan}),projectPoint,selectPart:value=>{selected=value;highlight();dimensions();},cancelDrag:()=>endDrag(true),focus:()=>canvas.focus({preventScroll:true}),setView:options=>{Object.assign(settings,options);const next=options.front??front;doorView=options.doors??doorView;const changed=next!==front;if(changed){front=next;controls.dispose();camera=front?new THREE.OrthographicCamera(-1,1,1,-1,.01,100):new THREE.PerspectiveCamera(38,1,.01,100);controls=new OrbitControls(camera,canvas);}update(current,{reframe:changed});},ghost:placingGhost.show,dispose:()=>{dead=true;drag=null;if(tinted){tinted.mesh.material=tinted.original;tinted.material.dispose();tinted=null;}cancelAnimationFrame(frame);observer.disconnect();disposeModel(ghost);disposeModel(model);if(helper){helper.geometry.dispose();helper.material.dispose();}placingGhost.clear();controls.dispose();renderer.dispose();host.replaceChildren();}};
  }
  function create({THREE,OrbitControls,box,host,f,actions,background,furniture=[],plan=null,elevation=null}){
   if(f.cabinet?.version===2)return createBuilder({THREE,OrbitControls,box,host,f,actions,background,furniture,plan});
@@ -494,7 +545,7 @@
   const projectPoint=(x,y)=>{if(splitRoot){for(const panel of splitPanels){const p=panel.preview.projectPoint(x,y);if(p)return {...p,elevation:panel.meta.run};}return null;}const rect=cv.getBoundingClientRect();if(!settings.front||x<rect.left||x>rect.right||y<rect.top||y>rect.bottom)return null;const out=new THREE.Vector3();return rayAt({clientX:x,clientY:y}).ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,0,1),0),out)?{x:out.x*1000*(current.flip?-1:1),y:out.y*1000}:null;};
   const observer=new ResizeObserver(resize);observer.observe(host);update(f);fit();resize();
   function render(){if(disposed)return;if(!splitRoot){if(!drag&&!drawerDrag)controls.update();r.render(sc,cam);projectSelection();projectLabels();projectDrawers();}frame=requestAnimationFrame(render);}render();
-  return {inventory:value=>inventory(THREE,box,value.kitchen?{...value,mountHeight:0}:value,{furniture,plan}),projectPoint,ghost:(value,pick,options)=>{if(splitRoot){for(const panel of splitPanels)panel.preview.ghost(options?.elevation===panel.meta.run?value:null,pick,options);}else placingGhost.show(value,pick,options);},cancelDrag:()=>builderGesture.end(true)||splitPanels.some(p=>p.preview.cancelDrag()),
+  return {inventory:value=>inventory(THREE,box,value,{furniture,plan}),compare:(variants,front)=>compare(THREE,box,variants,{front,background,furniture,plan}),projectPoint,ghost:(value,pick,options)=>{if(splitRoot){for(const panel of splitPanels)panel.preview.ghost(options?.elevation===panel.meta.run?value:null,pick,options);}else placingGhost.show(value,pick,options);},cancelDrag:()=>builderGesture.end(true)||splitPanels.some(p=>p.preview.cancelDrag()),
    update:value=>{const dims=v=>[C.assemblyBounds(v),v.w,v.d,v.kitchen?(Object.keys(root.FurnishKitchen.assemblyConfig(v)).length?FurnishKitchen.laundryHeight(v):FurnishKitchen.overallHeight(v)):v.h,v.kitchen?.shape,v.kitchen?.corner],changed=JSON.stringify(dims(value))!==JSON.stringify(dims(current));update(value);if(changed)fit();},
    selectPart:part=>{const oldPart=JSON.stringify(selected);selected=part;const old=activeColumn;activeColumn=part?.column??null;highlight();if(old!==activeColumn||oldPart!==JSON.stringify(part))dimensions();else markActive();},focus:()=>cv.focus({preventScroll:true}),
    partDimensions:()=>{const mesh=selectedMesh(),size=mesh?.userData.cabinetDoorSize??mesh?.userData.cabinetDrawerSize;return size?{width:size.width,height:size.height}:null;},

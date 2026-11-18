@@ -40,17 +40,92 @@
   return {hover,install,clear,bind,sync};
  }
  function previewDoors({armed,front,mode,component}){return armed?'hidden':mode==='auto'?(front&&!['door','splitDoor','multiDoor','foldDoor'].includes(component?.kind)?'hidden':'normal'):mode;}
+ function closedDraft(draft){
+  if(draft.kitchen)return FurnishCabinetAssembly.setOpening(draft,false);
+  if(draft.cabinet?.version===2)return draft.cabinet.boxes.length?FurnishCabinetBuilder.setOpening(draft,false):draft;
+  if(draft.cabinet?.version===3)return draft.cabinet.door.enabled?FurnishCornerCabinet.setOpening(draft,false):draft;
+  return FurnishCabinetAssembly.setOpening(draft,false);
+ }
+ function showCabinetDialog(button,dialog){
+  dialog.addEventListener('keydown',e=>e.stopPropagation());
+  dialog.addEventListener('close',()=>{dialog.remove();button.focus({preventScroll:true});},{once:true});
+  button.after(dialog);
+  dialog.showModal();
+ }
+ function reviewPanel(button,title,markup){
+  const dialog=document.createElement('dialog');
+  dialog.className='builder-inventory builder-review';
+  dialog.setAttribute('aria-labelledby','builder-review-title');
+  dialog.innerHTML=`<div class="builder-inventory-heading"><h3 id="builder-review-title">${title}</h3><button type="button" class="btn" autofocus>关闭</button></div>${markup}`;
+  dialog.querySelector('.builder-inventory-heading button').onclick=()=>dialog.close();
+  showCabinetDialog(button,dialog);
+  return dialog;
+ }
+ const reviewCard=label=>`<figure><canvas role="img" aria-label="${label}"></canvas><figcaption>${label}</figcaption></figure>`;
+ function bindComparison(button,getDraft,getPreview,record,error){
+  button.onclick=()=>{
+   try{
+    const preview=getPreview(),draft=getDraft();
+    if(draft.cabinet?.version===2&&!draft.cabinet.boxes.length)throw Error('请先添加柜箱或选择用途搭配');
+    if(!preview)throw Error('请等待柜体模型加载完成');
+    const closed=closedDraft(draft);
+    const styles=FurnishStylePresets;
+    const dialog=reviewPanel(button,'同机位效果比较',`
+     <div class="builder-review-controls"><label>机位 <select data-review-view><option value="angle">斜视</option><option value="front">正视</option></select></label>
+     <label>对照配色 <select data-review-style>${styles.map(s=>`<option value="${esc(s.id)}">${esc(s.zh)}</option>`).join('')}</select></label></div>
+     <div class="builder-review-grid">${['当前配色 · 合上','当前配色 · 隐藏门板','对照配色 · 合上'].map(reviewCard).join('')}</div>
+     <p class="cab-hint">内部视图隐藏门板，抽面保留。应用配色只作用于当前柜体草稿，局部颜色覆盖仍优先。</p>
+     <p data-review-error role="alert"></p>
+     <div class="builder-inventory-actions"><button type="button" class="btn primary" data-review-apply>应用配色到草稿</button></div>`);
+    const view=dialog.querySelector('[data-review-view]'),style=dialog.querySelector('[data-review-style]'),apply=dialog.querySelector('[data-review-apply]');
+    const failure=dialog.querySelector('[data-review-error]'),grid=dialog.querySelector('.builder-review-grid'),canvases=[...grid.querySelectorAll('canvas')];
+    const draw=()=>{
+     try{
+      const values=[closed,closed,FurnishStyles.furniture(closed,style.value)];
+      preview.compare(values.map((value,i)=>({value,canvas:canvases[i],doors:i===1?'hidden':'normal'})),view.value==='front');
+      failure.textContent='';grid.hidden=false;apply.disabled=false;
+     }catch(e){failure.textContent=e.message;grid.hidden=true;apply.disabled=true;}
+    };
+    apply.onclick=()=>{try{record(FurnishStyles.furniture(draft,style.value));dialog.close();}catch(e){failure.textContent=e.message;}};
+    view.onchange=style.onchange=draw;
+    draw();
+   }catch(e){error(e.message);}
+  };
+ }
+ function bindStarters(button,getDraft,getPreview,adopt){
+  button.onclick=()=>{
+   const B=FurnishCabinetBuilder,adding=!!getDraft().cabinet.boxes.length;
+   const dialog=reviewPanel(button,'按用途选搭配',`
+    <div class="builder-review-controls"><label>储物用途 <select data-starter-choice>${B.starters.map(item=>`<option value="${item.id}">${item.name}</option>`).join('')}</select></label>
+    <output data-starter-dimensions></output></div><p data-starter-description></p>
+    <div class="builder-review-grid builder-review-pair">${['闭门外观','内部布置'].map(reviewCard).join('')}</div>
+    <p class="cab-hint">示例尺寸可在搭建器内调整。采用后请按现场尺寸和实际物品核对。</p>
+    <p data-review-error role="alert"></p>
+    <div class="builder-inventory-actions"><button type="button" class="btn primary" data-starter-apply>${adding?'选中并定位拼接':'用此搭配开始'}</button></div>`);
+   const choice=dialog.querySelector('[data-starter-choice]'),grid=dialog.querySelector('.builder-review-grid'),failure=dialog.querySelector('[data-review-error]');
+   const apply=dialog.querySelector('[data-starter-apply]'),canvases=[...grid.querySelectorAll('canvas')];
+   let sample;
+   function draw(){
+    try{
+     sample=B.starter(choice.value);
+     dialog.querySelector('[data-starter-dimensions]').textContent=`${sample.w} 宽 × ${sample.d} 深 × ${sample.h} 高 mm`;
+     dialog.querySelector('[data-starter-description]').textContent=B.starters.find(item=>item.id===choice.value).description;
+     const preview=getPreview();
+     if(preview)preview.compare(canvases.map((canvas,i)=>({value:sample,canvas,doors:i?'hidden':'normal',standalone:true})),true);
+     grid.hidden=!preview;failure.textContent='';
+    }catch(e){grid.hidden=true;failure.textContent=e.message;}
+   }
+   choice.onchange=draw;
+   apply.onclick=()=>{try{if(sample){adopt(sample);dialog.close();}}catch(e){failure.textContent=e.message;}};
+   draw();
+  };
+ }
  function bindInventory(button,getDraft,getPreview,error){
   button.onclick=()=>{
    try{
     const preview=getPreview();
     if(!preview)throw Error('请等待柜体模型加载完成');
-    const draft=getDraft(),version=draft.cabinet?.version;
-    let closed=draft;
-    if(version===2&&draft.cabinet.boxes.length)closed=FurnishCabinetBuilder.setOpening(draft,false);
-    if(version===3&&draft.cabinet.door.enabled)closed=FurnishCornerCabinet.setOpening(draft,false);
-    if(draft.kitchen)closed=FurnishCabinetAssembly.setOpening(draft,false);
-    const rows=preview.inventory(closed),headers=['柜箱／模块','构件','宽 mm','高 mm','深 mm','预览饰面','组件 ID','备注'];
+    const draft=getDraft(),rows=preview.inventory(closedDraft(draft)),headers=['柜箱／模块','构件','宽 mm','高 mm','深 mm','预览饰面','组件 ID','备注'];
     const note='按当前草稿的三维模型列出构件，尺寸为构件局部包络。预览颜色用于核对搭配。异形件、开孔、切分网格与未建模五金需另核对；下单和开料使用厂家确认的清单。';
     const dialog=document.createElement('dialog');
     dialog.className='builder-inventory';
@@ -63,14 +138,11 @@
     dialog.querySelector('.builder-inventory-heading button').onclick=()=>dialog.close();
     dialog.querySelector('.builder-inventory-actions button').onclick=()=>download(draft.name.replace(/[\\/:*?"<>|]/g,'_')+'-构件清单.csv',
      new Blob([FurnishProject.csv([['柜体',draft.name],['说明',note],[],headers,...rows])],{type:'text/csv;charset=utf-8'}));
-    dialog.addEventListener('keydown',e=>e.stopPropagation());
-    dialog.addEventListener('close',()=>{dialog.remove();button.focus({preventScroll:true});},{once:true});
-    button.after(dialog);
-    dialog.showModal();
+    showCabinetDialog(button,dialog);
    }catch(e){error(e.message);}
   };
  }
- function workspaceTools(){return `<div class="builder-toolbar"><span data-builder-size></span><button type="button" class="btn" data-builder-undo>撤销</button><button type="button" class="btn" data-builder-redo>重做</button><button type="button" class="btn" data-builder-view>三维检查</button><button type="button" class="btn" data-builder-inventory>构件清单</button></div><section class="builder-equalize" aria-label="均分尺寸"><div class="builder-equalize-actions"><b>均分</b><button type="button" class="btn" data-builder-equal-bays>左右分格</button><button type="button" class="btn" data-builder-equal-boxes>柜箱等宽</button><button type="button" class="btn" data-builder-equal>活动层板</button><button type="button" class="btn" data-builder-equal-fixed>固定层板</button><label>柜箱范围<select data-builder-equal-scope><option value="row">当前横排</option><option value="all">整组柜箱</option><option value="selected">指定柜箱</option></select></label></div><div data-builder-equal-selection hidden></div><p data-builder-equal-context></p></section><details class="builder-display"><summary>显示与编辑选项</summary><div class="builder-display-controls">${cabinetViewTools('builder',{expand:false})}<label>门板显示<select data-builder-doors><option value="auto">自动</option><option value="normal">正常显示</option><option value="hidden">隐藏门板</option><option value="ghost">半透明门板</option></select></label><label><input data-builder-dimensions type="checkbox" checked>尺寸标注</label><label><input data-builder-snap type="checkbox" checked>吸附</label><button type="button" class="btn" data-builder-open-all>全部打开</button><button type="button" class="btn" data-builder-close-all>全部关闭</button><button type="button" class="btn" data-builder-space>草稿空间核对</button></div><p data-builder-space-result role="status"></p></details>`;}
+ function workspaceTools(){return `<div class="builder-toolbar"><span data-builder-size></span><button type="button" class="btn" data-builder-undo>撤销</button><button type="button" class="btn" data-builder-redo>重做</button><button type="button" class="btn" data-builder-view>三维检查</button><button type="button" class="btn" data-builder-inventory>构件清单</button><button type="button" class="btn" data-builder-compare>效果比较</button></div><section class="builder-equalize" aria-label="均分尺寸"><div class="builder-equalize-actions"><b>均分</b><button type="button" class="btn" data-builder-equal-bays>左右分格</button><button type="button" class="btn" data-builder-equal-boxes>柜箱等宽</button><button type="button" class="btn" data-builder-equal>活动层板</button><button type="button" class="btn" data-builder-equal-fixed>固定层板</button><label>柜箱范围<select data-builder-equal-scope><option value="row">当前横排</option><option value="all">整组柜箱</option><option value="selected">指定柜箱</option></select></label></div><div data-builder-equal-selection hidden></div><p data-builder-equal-context></p></section><details class="builder-display"><summary>显示与编辑选项</summary><div class="builder-display-controls">${cabinetViewTools('builder',{expand:false})}<label>门板显示<select data-builder-doors><option value="auto">自动</option><option value="normal">正常显示</option><option value="hidden">隐藏门板</option><option value="ghost">半透明门板</option></select></label><label><input data-builder-dimensions type="checkbox" checked>尺寸标注</label><label><input data-builder-snap type="checkbox" checked>吸附</label><button type="button" class="btn" data-builder-open-all>全部打开</button><button type="button" class="btn" data-builder-close-all>全部关闭</button><button type="button" class="btn" data-builder-space>草稿空间核对</button></div><p data-builder-space-result role="status"></p></details>`;}
  function plinthAppearance(host,f,record,error){
   let node=host.querySelector('[data-shared-plinth]');if(!node){node=document.createElement('fieldset');node.dataset.sharedPlinth='';host.append(node);}const rule=FurnishProducts.cabinetAppearance,value=(f.kitchen??f.cabinet)?.appearance?.plinth;
   node.innerHTML=`<legend>整组踢脚外观</legend><label><input type="checkbox" data-plinth-unified ${value?'checked':''}>统一各段踢脚</label><label>颜色<input type="color" data-plinth-color value="${value?.color??'#303438'}" ${value?'':'disabled'}></label><label>饰面<select data-plinth-surface ${value?'':'disabled'}><option value="solid" ${value?.surface!=='walnut'?'selected':''}>素色板</option><option value="walnut" ${value?.surface==='walnut'?'selected':''}>胡桃木纹理</option></select></label><p>统一时替换各段踢脚的单独外观；柜门、柜身与支撑位置保持。</p>`;
@@ -194,18 +266,31 @@ host.querySelector('[data-component-surface]')?.addEventListener('change',e=>{tr
   const placing=placement({getArmed:()=>armed,setArmed:value=>armed=value,getPreview:()=>preview,candidate,accept:r=>{record(r.furniture,r.selected);syncView();},status,describe:r=>{const target=B.selection(r.furniture,r.selected);return `可安装：${target.component?nameOf(target.component.kind):'柜箱'} · 柜箱 ${r.furniture.cabinet.boxes.findIndex(b=>b.id===r.selected.boxId)+1}`;}});
   function switchHistory(from,to){if(!from.length)return;to.push({draft:copy(draft),selected:copy(selected)});const value=from.pop();draft=value.draft;selected=value.selected;render();}
   function key(event){if(!q('')||event.target.closest?.('.builder-inventory'))return;if(event.key==='Escape'&&preview?.cancelDrag?.()){event.preventDefault();event.stopImmediatePropagation();return;}if(event.target.matches('input,select,textarea')){if(event.key==='Enter'){event.preventDefault();event.stopPropagation();event.target.dispatchEvent(new Event('change',{bubbles:true}));}return;}if(event.target.tagName==='CANVAS'&&event.key==='Delete'){event.preventDefault();event.stopPropagation();q('[data-builder-remove]')?.click();return;}if(event.target.tagName==='CANVAS'&&(event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='d'){event.preventDefault();event.stopPropagation();q('[data-builder-copy]')?.click();return;}if((event.ctrlKey||event.metaKey)&&['z','y'].includes(event.key.toLowerCase())){event.preventDefault();event.stopPropagation();event.key.toLowerCase()==='y'||event.shiftKey?switchHistory(future,history):switchHistory(history,future);}if(event.key==='Escape'){armed=null;placing.clear();status('已取消放置');}}
-  openDialog({title:'乐高式柜体搭建',wide:true,onClose:()=>{dead=true;if(!shell?.querySelector('#cab-builder'))shell?.classList.remove('builder-dialog','builder-fullscreen');fullButton?.remove();preview?.dispose();document.removeEventListener('keydown',key,true);options.onClose?.();},body:`<div id="cab-builder"><aside class="builder-library"><h3>组件库</h3><p>拖入安装，或选中组件后点击位置。</p><div data-builder-library></div></aside><main class="builder-workspace">${workspaceTools()}<div data-builder-preview></div><p data-builder-drop-status role="status">先拖入一个空柜箱，向左右拼接、向上下叠放。</p><p data-builder-error role="alert" class="project-error"></p></main><aside class="builder-details"><section class="builder-structure"><h3>柜体结构</h3><div data-builder-tree></div></section><div class="builder-properties"><h3>整组设置</h3><label>名称<input data-builder-name value="${esc(draft.name)}" maxlength="80"></label><label>柜底离地 mm<input data-builder-bottom type="number" min="0" max="20000" value="${draft.mountHeight??0}"></label><label>柜体默认颜色<input data-builder-color type="color" value="${draft.color}"></label><details class="builder-overall-size"><summary data-builder-overall-summary>整组尺寸与固定端</summary><div class="form"><label>整组宽 mm<input data-builder-overall="w" type="number" min="150" max="6000" step="any"></label><label>整组深 mm<input data-builder-overall="d" type="number" min="150" max="1200" step="any"></label><label>整组高 mm<input data-builder-overall="h" type="number" min="200" max="3200" step="any"></label></div><label>数值改尺寸时固定<select data-builder-anchor>${Object.entries(FurnishDesign.resizeAnchorChoices(draft)).map(([key,label])=>'<option value="'+key+'">'+tr(...label)+'</option>').join('')}</select></label><p>按原柜箱比例调整整组，板厚、踢脚、顶封板及拼缝保持；单箱尺寸在结构列表中选择柜箱编辑。</p></details><div data-builder-inspector></div><section class="builder-reuse"><h3>保存复用</h3><label>组件／整组名称<input data-builder-preset-name value="我的柜体组件" maxlength="80"></label><button type="button" class="btn" data-builder-save-all>保存整组到组件库</button><p>组件随本次柜体保存进入家具库，可跨柜体拖用，也随项目导出。</p></section></div></aside></div>`,actions:[{label:'取消'},{label:'保存柜体搭建',cls:'primary',fn:()=>{try{draft={...draft,name:q('[data-builder-name]').value.trim(),mountHeight:Number(q('[data-builder-bottom]').value)};if(!draft.name||draft.name.length>80)throw Error('请填写柜体名称');B.validate(draft);if(PLAN.id!==planId)throw Error('当前方案已变化，请重新打开');if(original&&!options.original){const current=getF(id);if(!current||JSON.stringify(current)!==before||furnitureLocked(current))throw Error('柜体已变化，请重新打开');}FurnishProject.validateWork({furniture:[draft]});if(options.onSave)options.onSave(copy(draft),copy(pending));else mutate(()=>{if(original)Object.assign(getF(id),copy(draft));else{if(state.furniture.length>=2000)throw Error('方案家具数量已满');state.furniture.push(copy(draft));}(store.custom||=[]).push(...pending);});if(pending.length&&!options.onSave){save();buildCats();buildLib();}return true;}catch(e){error(e.message);return false;}}}],onOpen:()=>{
+  openDialog({title:'乐高式柜体搭建',wide:true,onClose:()=>{dead=true;if(!shell?.querySelector('#cab-builder'))shell?.classList.remove('builder-dialog','builder-fullscreen');fullButton?.remove();preview?.dispose();document.removeEventListener('keydown',key,true);options.onClose?.();},body:`<div id="cab-builder"><aside class="builder-library"><h3>组件库</h3><p>拖入安装，或选中组件后点击位置。</p><button type="button" class="btn builder-starter-button" data-builder-starters>按用途选搭配</button><div data-builder-library></div></aside><main class="builder-workspace">${workspaceTools()}<div data-builder-preview></div><p data-builder-drop-status role="status">先拖入一个空柜箱，向左右拼接、向上下叠放。</p><p data-builder-error role="alert" class="project-error"></p></main><aside class="builder-details"><section class="builder-structure"><h3>柜体结构</h3><div data-builder-tree></div></section><div class="builder-properties"><h3>整组设置</h3><label>名称<input data-builder-name value="${esc(draft.name)}" maxlength="80"></label><label>柜底离地 mm<input data-builder-bottom type="number" min="0" max="20000" value="${draft.mountHeight??0}"></label><label>柜体默认颜色<input data-builder-color type="color" value="${draft.color}"></label><details class="builder-overall-size"><summary data-builder-overall-summary>整组尺寸与固定端</summary><div class="form"><label>整组宽 mm<input data-builder-overall="w" type="number" min="150" max="6000" step="any"></label><label>整组深 mm<input data-builder-overall="d" type="number" min="150" max="1200" step="any"></label><label>整组高 mm<input data-builder-overall="h" type="number" min="200" max="3200" step="any"></label></div><label>数值改尺寸时固定<select data-builder-anchor>${Object.entries(FurnishDesign.resizeAnchorChoices(draft)).map(([key,label])=>'<option value="'+key+'">'+tr(...label)+'</option>').join('')}</select></label><p>按原柜箱比例调整整组，板厚、踢脚、顶封板及拼缝保持；单箱尺寸在结构列表中选择柜箱编辑。</p></details><div data-builder-inspector></div><section class="builder-reuse"><h3>保存复用</h3><label>组件／整组名称<input data-builder-preset-name value="我的柜体组件" maxlength="80"></label><button type="button" class="btn" data-builder-save-all>保存整组到组件库</button><p>组件随本次柜体保存进入家具库，可跨柜体拖用，也随项目导出。</p></section></div></aside></div>`,actions:[{label:'取消'},{label:'保存柜体搭建',cls:'primary',fn:()=>{try{draft={...draft,name:q('[data-builder-name]').value.trim(),mountHeight:Number(q('[data-builder-bottom]').value)};if(!draft.name||draft.name.length>80)throw Error('请填写柜体名称');B.validate(draft);if(PLAN.id!==planId)throw Error('当前方案已变化，请重新打开');if(original&&!options.original){const current=getF(id);if(!current||JSON.stringify(current)!==before||furnitureLocked(current))throw Error('柜体已变化，请重新打开');}FurnishProject.validateWork({furniture:[draft]});if(options.onSave)options.onSave(copy(draft),copy(pending));else mutate(()=>{if(original)Object.assign(getF(id),copy(draft));else{if(state.furniture.length>=2000)throw Error('方案家具数量已满');state.furniture.push(copy(draft));}(store.custom||=[]).push(...pending);});if(pending.length&&!options.onSave){save();buildCats();buildLib();}return true;}catch(e){error(e.message);return false;}}}],onOpen:()=>{
    const root=q('');mountShell(root,{library:root.querySelector('.builder-library'),workspace:root.querySelector('.builder-workspace'),structure:root.querySelector('.builder-structure'),properties:root.querySelector('.builder-properties')});shell=root.closest('.dlg-box');shell?.classList.add('builder-dialog','builder-fullscreen');fullButton=root.closest('.dlg-box').querySelector('[data-cabinet-fullscreen]');render();document.addEventListener('keydown',key,true);q('[data-builder-undo]').onclick=()=>switchHistory(history,future);q('[data-builder-redo]').onclick=()=>switchHistory(future,history);q('[data-builder-save-all]').onclick=()=>savePreset(null);for(const [selector,kind]of [['[data-builder-equal-bays]','bays'],['[data-builder-equal-boxes]','boxes'],['[data-builder-equal]','adjustable'],['[data-builder-equal-fixed]','fixed']])q(selector).onclick=()=>equalize(kind);q('[data-builder-equal-scope]').onchange=e=>{equalScope=e.target.value;renderEqualize();};
    q('[data-builder-anchor]').onchange=e=>{try{record({...draft,resizeAnchor:e.target.value});}catch(err){error(err.message);}};q('').querySelectorAll('[data-builder-overall]').forEach(input=>input.onchange=()=>{try{record(FurnishDesign.resizeFurniture(draft,{[input.dataset.builderOverall]:input.value.trim()?Number(input.value):NaN}));}catch(err){error(err.message);}});
    for(const [selector,key]of [['[data-builder-name]','name'],['[data-builder-bottom]','mountHeight'],['[data-builder-color]','color']])q(selector).onchange=e=>{try{const value=key==='mountHeight'?e.target.value.trim()?Number(e.target.value):NaN:key==='name'?e.target.value.trim():e.target.value;if(key==='name'&&(!value||value.length>80))throw Error('请填写柜体名称');const next={...draft,[key]:value};B.validate(next,{draft:true});if(next.cabinet.boxes.length)FurnishProject.validateWork({furniture:[next]});record(next);}catch(err){error(err.message);}};
    q('[data-builder-view]').onclick=()=>{front=!front;syncView();q('[data-builder-view]').textContent=front?'三维检查':'正视搭建';};
    q('#builder-interaction').value=view.interaction;q('#builder-interaction').onchange=e=>{view.interaction=e.target.value;syncView();};q('#builder-dimension-mode').onchange=e=>{view.dimensionScope=e.target.value;syncView();};q('[data-builder-doors]').onchange=e=>{doorMode.value=e.target.value;syncView();};for(const key of ['dimensions','snap'])q('[data-builder-'+key+']').onchange=e=>{view[key]=e.target.checked;syncView();};for(const open of [true,false])q(open?'[data-builder-open-all]':'[data-builder-close-all]').onclick=()=>{try{record(B.setOpening(draft,open));}catch(e){error(e.message);}};q('[data-builder-space]').onclick=()=>{try{const furniture=state.furniture.filter(v=>v.id!==draft.id).concat(copy(draft)),issues=FurnishProject.spaceCheck(FurnishProject.effectivePlan(PLAN,state),furniture,{focusIds:[draft.id],passage:state.spaceThreshold||800});q('[data-builder-space-result]').textContent=issues.length?issues.map(v=>v.message).join('；'):'当前算法未发现问题；未知信息仍需核对。';}catch(e){error(e.message);}};
    bindInventory(q('[data-builder-inventory]'),()=>draft,()=>preview,error);
+   bindComparison(q('[data-builder-compare]'),()=>draft,()=>preview,record,error);
+   bindStarters(q('[data-builder-starters]'),()=>draft,()=>preview,sample=>{
+    placing.clear();
+    if(!draft.cabinet.boxes.length){
+     armed=null;
+     const next={...draft,name:original?draft.name:sample.name,w:sample.w,d:sample.d,h:sample.h,cabinet:sample.cabinet};
+     record(next,{boxId:next.cabinet.boxes[0].id});
+     status('搭配已加入草稿，可调整尺寸和组件');
+    }else{
+     armed={kind:'assembly',params:sample.cabinet};setFront();
+     status('已选 '+sample.name+'，点击预览确定拼接位置');
+    }
+   });
    const host=q('[data-builder-preview]');placing.bind(host);
    View3D.cabinetPreview(host,draft,{select:pick=>{if(!armed)choose(pick);},isPlacing:()=>!!armed,adjust,editDimension,activateDoor:part=>{if(armed)return false;try{const {state,limit}=B.motionState(draft,part);record(B.motion(draft,part,state.open?0:limit));return true;}catch(e){error(e.message);return false;}}}).then(p=>{if(dead||!host.isConnected){p.dispose();return;}preview=p;syncView();p.selectPart(selected);}).catch(e=>error(e.message));
   }});
  }
  function upgrade(id){try{const original=getF(id),draft=FurnishCabinetBuilder.upgrade(original,{referencePrice:priceOf(original)});open(id,{draft});}catch(e){toast(e.message);}}
  function toggleScene(id,part){const f=getF(id);if(!f||(globalThis.FurnishElectricalUI?.active()?FurnishElectricalUI.physicalLocked(f):furnitureLocked(f)))return;try{const next=f.kitchen?FurnishKitchen.toggle(f,part.column,part.drawer,undefined,part.leaf,part.bay,part.lid,part.lane,part.section,part.componentId,part.sourceSection):FurnishCabinet.toggle(f,part.column,part.drawer,part.lid,part.lane,part.section,part.leaf,part.tier,part.componentId);mutate(()=>Object.assign(f,next),{sceneFirst:true});}catch(e){toast(e.message);}}
- root.FurnishCabinetBuilderUI={open,upgrade,toggleScene,mountShell,focusInspector,disclosures,restoreDisclosures,libraryItems,placement,componentInspector,componentTree,workspaceTools,previewDoors,plinthAppearance,bindInventory};
+ root.FurnishCabinetBuilderUI={open,upgrade,toggleScene,mountShell,focusInspector,disclosures,restoreDisclosures,libraryItems,placement,componentInspector,componentTree,workspaceTools,previewDoors,plinthAppearance,bindInventory,bindComparison};
 })(typeof globalThis!=='undefined'?globalThis:this);
