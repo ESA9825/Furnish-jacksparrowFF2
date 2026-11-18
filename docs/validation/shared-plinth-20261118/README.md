@@ -16,4 +16,4 @@
 - 定向回归通过：cabinet-style、cabinet-plinth-color、corner-cabinet、product-rules、style-presets、workspace-cache、repository-workspace、merged-format。merged-format原先仅匹配无参数save()，已改为读取实际带可选参数签名并复验。
 - 另试repository-version-compat因沙箱本机监听限制未完成；申请重试的自动审批超时，未将其计为通过。没有运行全量check、Cycles或GLB/Blender回读。本次不改几何／机构，完整空间算法和柜门行程验收不据此重新宣称通过。
 
-当前1601原暖白胡桃木方案已通过MCP统一为胡桃木踢脚并正式保存；另一会话随后创建灯光深化副本，继承此配色。共享新控件的正式窗口刷新及实际采用应以最终MCP回执另记，不用隔离验收替代正式已加载状态。
+当前1601原暖白胡桃木方案已通过MCP统一为胡桃木踢脚并正式保存；另一会话随后创建灯光深化副本，继承此配色。与该会话协调后已刷新正式窗口（未切换方案），在灯光深化方案 `dmwlvl5l0` 以MCP设置共享角色 `{color:'#bc936b',surface:'walnut'}`，清除各段旧外观覆盖。入口内移脚的profile补五金身份，以免共享饰面染木纹；脚位及几何保持。最终回执 applied/persisted 均为true，revision为 `9fedb319509c614eb9f05ffc640152b01f76ed29024df02c1c264610dc1aaae2`，正式路径 `/Users/makinami/Documents/FurnishData/1601/workspace.furnish.json`。厨房内侧及入口低视角实际看图确认踢脚色带统一；复查后返回刷新时的二维模式。原方案和其它家具未再次改写，后续灯具工作继续由另一会话负责。
