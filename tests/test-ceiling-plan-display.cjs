@@ -59,9 +59,42 @@ async function main(){
    await p.screenshot({animations:'disabled',path:path.join(run,mode+'-mobile.png')});
    assert.equal(await p.locator('[data-model-error]').count(),0,'valid reference furniture');
    await p.evaluate(()=>setLang('en'));assert.equal(await p.locator('[data-plan-mode="ceiling"]').textContent(),'Ceiling');await p.evaluate(()=>setTheme('dark'));
-   await p.screenshot({animations:'disabled',path:path.join(run,mode+'-dark-en.png')});assert.deepEqual(errors,[]);results.push({mode,status:'PASS'});
+   await p.screenshot({animations:'disabled',path:path.join(run,mode+'-dark-en.png')});
+   await p.setViewportSize({width:1500,height:1100});
+   const aluminum=await p.evaluate(()=>{
+    const C=FurnishCeiling,region={id:'display_aluminum',name:'铝扣板',polygon:[[500,500],[3500,500],[3500,2200],[500,2200]],style:'aluminum',height:2400,thickness:8,center:true,aluminum:{...C.aluminumDefaults(),direction:90,origin:[520,520]},sections:[C.componentPreset('gypsum','low')]};
+    const next=C.setRegion({},region),item=next.ceilings.items[0];
+    const heater={id:'display_heater',type:'bath_heater_300x600',name:'浴霸',w:300,d:600,h:180,cx:1420,cy:970,rot:90},lamp={...getF('display_light'),cx:2000,cy:1120};
+    const plan=FurnishProject.effectivePlan(PLAN,state);
+    for(const f of [heater,lamp])f.mountHeight=2398-FurnishProducts.floorBase(plan,f,[heater,lamp]).z;
+    mutate(()=>{state.ceilings=next.ceilings;state.furniture=[heater,lamp];});
+    const count=C.aluminumLayout(item).panels.flatMap(p=>p.polygons).length;
+    return {id:item.id,count};
+   });
+   const panels=p.locator('[data-ceiling-panels]');
+   assert.equal(await panels.getAttribute('pointer-events'),'none','panel outlines cannot steal selection');
+   assert.equal((await panels.locator('[data-ceiling-panel-edges]').getAttribute('d')).match(/M/g).length,aluminum.count-1,'the heater replaces one complete panel');
+   assert.equal(await panels.locator('[data-ceiling-panel-device]').getAttribute('data-ceiling-panel-device'),'display_heater');
+   assert.equal(await panels.locator('[data-ceiling-panel-hole]').getAttribute('cy'),'1120');
+   assert.match(await panels.locator('[clip-path]').getAttribute('clip-path'),/ceiling-panel-holes/);
+   assert.equal(await p.locator(`[data-ceiling-id="${aluminum.id}"]`).getAttribute('stroke-dasharray'),null,'aluminum outer boundary is solid');
+   await p.evaluate(()=>mutate(()=>getF('display_light').cy+=60));
+   assert.equal(await panels.locator('[data-ceiling-panel-hole]').getAttribute('cy'),'1180','moving a lamp updates its opening');
+   await p.locator('#undo').click();
+   assert.equal(await panels.locator('[data-ceiling-panel-hole]').getAttribute('cy'),'1120');
+   await p.evaluate(()=>{const next=FurnishLayers.update(state,'0',{visible:false});mutate(()=>state.objectLayers=next.objectLayers);});
+   assert.equal(await panels.isHidden(),true);
+   assert.ok(await p.evaluate(()=>{
+    const selector='[data-ceiling-panels]',visible=preparePlanSVG().svg.querySelector(selector),all=preparePlanSVG({light:true,visibleLayers:false}).svg.querySelector(selector);
+    return visible.style.display==='none'&&all.style.display===''&&all.querySelector('[data-ceiling-panel-edges]').getAttribute('stroke')===PAL_LIGHT.winLine;
+   }),'export keeps panel geometry and respects layer and palette options');
+   await p.locator('#undo').click();
+   await toggle('furniture');assert.equal(await panels.count(),0);
+   await toggle('ceiling');assert.equal(await panels.isVisible(),true);
+   await p.screenshot({animations:'disabled',path:path.join(run,mode+'-aluminum.png')});
+   assert.deepEqual(errors,[]);results.push({mode,status:'PASS'});
   }catch(e){await p.screenshot({animations:'disabled',path:path.join(run,mode+'-failure.png')});throw e;}finally{await ctx.close();}
  }}finally{await browser?.close();await server?.close();fs.writeFileSync(path.join(run,'results.json'),JSON.stringify(results,null,2));job.finish(results.length===2);console.log('Evidence: '+run);}
- console.log('PASS 2D plan modes, persistence, layering, selection, hidden layers, exports, project roundtrip, rotation and narrow viewport over HTTP/file://');
+ console.log('PASS 2D plan modes, aluminum contours and openings, persistence, layering, selection, exports, rotation and narrow viewport over HTTP/file://');
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});

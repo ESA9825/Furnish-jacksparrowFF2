@@ -173,15 +173,43 @@ function refreshLevels(){
 function prepareExport(root,{visibleLayers=true}={}){
  root.querySelectorAll('[data-ceiling-target],#gCeilingSelection').forEach(n=>n.remove());
  root.querySelectorAll('[data-ceiling-level]').forEach(n=>n.remove());
+ if(!visibleLayers)root.querySelectorAll('[data-ceiling-panels]').forEach(n=>n.style.removeProperty('display'));
  if(planMode()==='ceiling')root.querySelector('#gCeilings')?.insertAdjacentHTML('beforeend',levelLabels(FurnishProject.effectivePlan(PLAN,state).ceilings?.items||[],visibleLayers,.06));
+}
+function aluminumPlanSVG(c,bodies,style){
+ const layout=C.aluminumLayout(c),slots=C.panelReplacements(c,bodies),holes=C.downlightHoles(c,bodies);
+ const replaced=new Set(slots.map(s=>s.id)),path=ring=>'M'+ring.map(p=>p.join(' ')).join('L')+'Z';
+ const outline=`fill="none" stroke="${PAL.winLine}" vector-effect="non-scaling-stroke"`;
+ const panels=layout.panels.filter(p=>!replaced.has(p.id)).flatMap(p=>p.polygons).map(path).join('');
+ const inner=c.aluminum.trim?path(layout.inner):'';
+ const clipId=esc('ceiling-panel-holes-'+c.id);
+ const clip=holes.length?`<clipPath id="${clipId}"><path clip-rule="evenodd" d="${path(c.polygon)}${holes.map(({x,y,r})=>`M${x-r} ${y}a${r} ${r} 0 1 0 ${2*r} 0a${r} ${r} 0 1 0 ${-2*r} 0Z`).join('')}"/></clipPath>`:'';
+ return `<g data-ceiling-panels="${esc(c.id)}" style="${style}" pointer-events="none">
+ ${clip}<g ${clip?`clip-path="url(#${clipId})"`:''}>
+ <path data-ceiling-panel-edges d="${panels}" ${outline} stroke-width="1.1"/>
+ ${inner?`<path d="${inner}" ${outline} stroke-width="1.25"/>`:''}
+ </g>
+ ${slots.map(s=>`<path data-ceiling-panel-device="${esc(s.fid)}" d="${path(s.cell)}" ${outline} stroke-width="1.4"/>`).join('')}
+ ${holes.map(({id,x,y,r})=>`<circle data-ceiling-panel-hole="${esc(id)}" cx="${x}" cy="${y}" r="${r}" ${outline} stroke-width="1.1"/>`).join('')}
+ </g>`;
 }
 function afterRender(){
  let g=document.querySelector('#gCeilings');if(!g){g=document.createElementNS(NS,'g');g.id='gCeilings';}
  const ceiling=planMode()==='ceiling';if(ceiling)document.querySelector('#gLabels')?.before(g);else document.querySelector('#gRooms')?.after(g);
  g.setAttribute('transform',`rotate(${drawingRotation()})`);
- const data=FurnishProject.effectivePlan(PLAN,state).ceilings;
+ const plan=FurnishProject.effectivePlan(PLAN,state),items=plan.ceilings?.items||[];
+ const bodies=ceiling&&items.some(c=>c.aluminum)?state.furniture.filter(f=>{
+  const spec=FurnishProducts.definition(f);return !f.obj&&(spec?.downlight||spec?.ceilingPanel);
+ }).map(f=>({f,vertical:FurnishDesign.furnitureVerticalBounds(f,plan,state.furniture)})):[];
  labelViewKey=JSON.stringify([planMode(),view.s,drawingRotation()]);
- g.innerHTML=(data?.items||[]).map(c=>{const points=ceilingPoints(c),style=FurnishLayers.visible(state,'ceiling:'+c.id)?'':'display:none';return `<g><polygon data-ceiling-id="${esc(c.id)}" style="${style}" points="${points}" fill="${ceiling?(c.kind==='profile'?'#d7b580':'#a9d5dd'):'none'}" fill-opacity=".08" stroke="${ceiling?(c.kind==='profile'?'#a9732c':'#317580'):'#64868b'}" stroke-dasharray="${ceiling?'8 3 2 3':'6 4'}" stroke-width="${ceiling?'1.7':'1'}" vector-effect="non-scaling-stroke" pointer-events="none"><title>${esc(c.name)} · ${tr('吊顶投影','Overhead ceiling')}</title></polygon><polygon data-ceiling-target="${esc(c.id)}" style="${style};cursor:pointer" points="${points}" fill="none" stroke="transparent" stroke-width="10" vector-effect="non-scaling-stroke" pointer-events="stroke"><title>${esc(c.name)} · 单击选中，双击编辑</title></polygon></g>`;}).join('')+(ceiling?levelLabels(data?.items||[]):'');
+ g.innerHTML=items.map(c=>{
+  const points=ceilingPoints(c),style=FurnishLayers.visible(state,'ceiling:'+c.id)?'':'display:none',aluminum=ceiling&&c.aluminum;
+  const stroke=aluminum?PAL.winLine:ceiling?(c.kind==='profile'?'#a9732c':'#317580'):'#64868b';
+  const dash=aluminum?'':`stroke-dasharray="${ceiling?'8 3 2 3':'6 4'}"`;
+  return `<g><polygon data-ceiling-id="${esc(c.id)}" style="${style}" points="${points}" fill="${ceiling?(c.kind==='profile'?'#d7b580':'#a9d5dd'):'none'}" fill-opacity=".08" stroke="${stroke}" ${dash} stroke-width="${aluminum?'2.15':ceiling?'1.7':'1'}" vector-effect="non-scaling-stroke" pointer-events="none"><title>${esc(c.name)} · ${tr('吊顶投影','Overhead ceiling')}</title></polygon>
+  ${aluminum?aluminumPlanSVG(c,bodies,style):''}
+  <polygon data-ceiling-target="${esc(c.id)}" style="${style};cursor:pointer" points="${points}" fill="none" stroke="transparent" stroke-width="10" vector-effect="non-scaling-stroke" pointer-events="stroke"><title>${esc(c.name)} · 单击选中，双击编辑</title></polygon></g>`;
+ }).join('')+(ceiling?levelLabels(items):'');
  selectionChanged();
  let down=null;const id=e=>e.target.closest('[data-ceiling-target]')?.dataset.ceilingTarget;g.onpointerdown=e=>{if(ui.tool==='select'&&e.button===0&&!spaceDown&&id(e)){e.stopPropagation();down=[e.clientX,e.clientY];}};g.onclick=e=>{const target=id(e);if(ui.tool==='select'&&target&&down&&Math.hypot(e.clientX-down[0],e.clientY-down[1])<6){e.stopPropagation();selectObject(target);}down=null;};g.ondblclick=e=>{const target=id(e);if(ui.tool==='select'&&target){e.preventDefault();e.stopPropagation();selectObject(target,true);}};
 
