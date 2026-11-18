@@ -24,6 +24,8 @@ const suites={
 suites['downlight-labot-ip65']=['downlight-labot'];
 suites['acwall-midea-mxc3p']=['acwall-midea'];
 suites['desk-lamp-mijia-pro']=['desk-lamp'];suites.cove_light=['cove-light'];
+const mijiaCeilingLights=require('./mijia-ceiling-light-specs.json');
+for(const [id,spec] of Object.entries(mijiaCeilingLights))assetTypes[id]=spec.type;
 const copy=o=>JSON.parse(JSON.stringify(o));
 assetTypes['panel-xiaomi-switch2']='panel_bull_g12';suites['panel-xiaomi-switch2']=['panel-xiaomi-switch2'];
 assetTypes['panel-bull-g12']='panel_bull_g12';suites['panel-bull-g12']=['panel-bull-g12'];
@@ -99,7 +101,7 @@ function profiles(){
  out.push({id:'kitchen--tall',type:'counter',route:'parametric',fixture:kitchen,tests:['kitchen-tall','kitchen']});
  for(const shape of ['L','U']){const modules=[{run:0,width:900,role:'hob'},{run:0,width:600,role:'drawer'},{run:1,width:700,role:'door'},{run:1,width:500,role:'door'},...(shape==='U'?[{run:2,width:900,role:'sink'}]:[])],f=K.configure({id:'model-pilot',name:shape+'形厨房',type:'counter',cx:0,cy:0,rot:0,color:'#f3f1ec'},{version:1,shape,depth:600,counterDepth:630,baseHeight:820,thickness:20,modules});out.push({id:'kitchen--'+shape,type:'counter',route:'parametric',fixture:f,tests:['kitchen-u','kitchen-resize','kitchen-corner-fit']});}
  const vessel=items.find(i=>i[10]==='vessel-sink');out.push({id:'sink--vessel',type:'ksink',route:'parametric',fixture:{...itemFixture(vessel),...K.catalogSpec(vessel)},tests:['sink','sink-surface','laundry-resize-vessel']});
- for(const p of out){p.fixture={id:'model-pilot',cx:0,cy:0,rot:0,flip:false,...p.fixture};if(!p.fixture.h)p.fixture.h=P.height(p.fixture);p.fixture=copy(p.fixture);if(P.definition(p.fixture)?.ceilingPanel||P.definition(p.fixture)?.downlight)p.detailView='underside';p.resizePolicy=p.type==='tv'?'coupled-screen':'independent';p.alternate=operate(p.fixture);p.alternateKind=p.id==='stack-stool'?'nested-stack':JSON.stringify(p.fixture)!==JSON.stringify(p.alternate)?'operating':'back';for(const name of p.tests)if(!fs.existsSync(path.join(root,'tests/test-'+name+'.cjs')))throw Error('Missing suite '+name);}
+ for(const p of out){p.fixture={id:'model-pilot',cx:0,cy:0,rot:0,flip:false,...p.fixture};if(!p.fixture.h)p.fixture.h=P.height(p.fixture);p.fixture=copy(p.fixture);if(P.definition(p.fixture)?.ceilingPanel||P.definition(p.fixture)?.downlight||P.definition(p.fixture)?.panelLight?.asset)p.detailView='underside';p.resizePolicy=p.type==='tv'?'coupled-screen':'independent';p.alternate=operate(p.fixture);p.alternateKind=p.id==='stack-stool'?'nested-stack':JSON.stringify(p.fixture)!==JSON.stringify(p.alternate)?'operating':'back';for(const name of p.tests)if(!fs.existsSync(path.join(root,'tests/test-'+name+'.cjs')))throw Error('Missing suite '+name);}
  return out;
 }
 module.exports={profiles,sourceFiles,operate,originalTypes,assetTypes};

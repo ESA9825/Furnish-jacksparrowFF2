@@ -24,6 +24,11 @@ const products=typeof module==='object'&&module.exports?require('../core/product
 if(f?.paperArray&&products.supports(f,'paperArray')){const l=products.paperArrayLayout(f),top=new Map();for(const cell of l.cells)top.set(cell.row+':'+cell.col,cell);return [...top.values()].map(cell=>{const [x,,z]=cell.center,[uw,,ud]=l.size;return products.definition(f).paperArray.kind==='roll'&&l.config.orientation==='upright'?ec(x,z,uw/2,ud/2,c)+ec(x,z,uw*.1,ud*.1,'#918879'):rc(x-uw/2,z-ud/2,uw,ud,c,'rx="2"');}).join('');}
 if(products.definition(t)?.garmentPhoto)return rc(-w/2,-d/2,w,d,c,'rx="2" data-garment-photo="true"')+ln(-w*.45,d*.38,w*.45,d*.38);
 if(t==='trolley_ikea_raskog_large')return rc(-w/2,-d*.49,w,d*.98,'none',`rx="${w*.10}"`)+rc(-w*.46,-d*.48,w*.92,d*.96,c,`rx="${w*.09}"`)+rc(-w*.43,-d*.45,w*.86,d*.90,shade(c,1.12),`rx="${w*.08}"`)+[-1,1].map(s=>rc(-w*.105,s*d*.467-d*.027,w*.21,d*.054,c)).join('');
+const panel=products.definition(t)?.panelLight;
+if(panel?.asset){
+ if(panel.round)return ec(0,0,w/2,d/2,c)+ec(0,0,w*.48,d*.48,'#fff4e4');
+ return rc(-w/2,-d/2,w,d,c,'rx="23"')+rc(-w*.49,-d*.49,w*.98,d*.98,'#fff4e4','rx="17"');
+}
 if(products.definition(t)?.coveLight)return rc(-w/2,-d/2,w,d,c,'rx="2"')+rc(-w/2+2,-d*.1,w-4,d*.2,'#ffdbb3');
 if(products.definition(t)?.deskLight){const kx=w/520,kz=d/420;return `<g data-desk-light="mijia-pro">${rc(-106.5*kx,-210*kz,213*kx,159*kz,c,'rx="5"')}${rc(-11*kx,-177*kz,22*kx,344*kz,c,'rx="2"')}${rc(-w/2,139*kz,w,56*kz,c,'rx="4"')}${rc(-23*kx,189*kz,46*kx,21*kz,'#d1d4d1','rx="6"')}</g>`;}
 if(products.definition(t)?.storageSupply)return rc(-w/2,-d/2,w,d,c,'rx="4"')+rc(-w*.18,-d*.15,w*.36,d*.3,'#e4e4dd','rx="2"');

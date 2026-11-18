@@ -25,6 +25,7 @@ docs['toolbox-jiabangshou-390']='TOOLBOX-JIABANGSHOU-390.md';
 docs['trolley-ikea-raskog-large']='TROLLEY-IKEA-RASKOG-LARGE.md';
 docs['cat-food-2kg']='CAT-FOOD-2KG.md';
 docs['beverage-can-330']=docs['beverage-can-500']='BEVERAGE-CANS.md';
+for(const id of Object.keys(require('./mijia-ceiling-light-specs.json')))docs[id]='MIJIA-CEILING-LIGHTS.md';
 const hash=f=>crypto.createHash('sha256').update(fs.readFileSync(path.join(root,f))).digest('hex');
 const textHash=f=>crypto.createHash('sha256').update(fs.readFileSync(path.join(root,f),'utf8').replace(/\r\n/g,'\n')).digest('hex');
 const rel=f=>path.relative(root,f).split(path.sep).join('/');
@@ -63,7 +64,7 @@ function build(){
   function walk(dir){for(const e of fs.readdirSync(dir,{withFileTypes:true})){const file=path.join(dir,e.name);if(e.isDirectory())walk(file);else if(/\.(blend|glb)$/i.test(e.name)){const filePath=rel(file);files.push({path:filePath,role:current.has(filePath)?'published-source':e.name==='material-studio.blend'?'material-studio':'retained-other',sha256:hash(filePath),bytes:fs.statSync(file).size});}}}
   walk(supplies[p.id]?path.dirname(path.dirname(path.join(root,p.asset.glb))):path.join(root,'assets/models',p.id));
   const modelModule=P.definition(p.fixture)?.solidModel?.module,constructor=modelModule?'src/render/'+modelModule+'-model.js':null;
-  const author=garments[p.id]?'scripts/blender-model-garment-photos.py':['beverage-can-330','beverage-can-500'].includes(p.id)?'scripts/blender-model-beverage-can-printed.py':p.id==='cat-food-2kg'?'scripts/blender-model-cat-food-2kg.py':supplies[p.id]?'scripts/blender-model-storage-supply.py':['pet-bowl','litter-bag'].includes(p.id)?'scripts/blender-model-pet-supplies.py':'scripts/blender-model-'+(p.id.startsWith('washer')?'washer':p.id==='corner-bookcase-580'?'corner-bookcase':p.id)+'.py';
+  const author=p.id.startsWith('mijia-ceiling-')?'scripts/blender-model-mijia-ceiling.py':garments[p.id]?'scripts/blender-model-garment-photos.py':['beverage-can-330','beverage-can-500'].includes(p.id)?'scripts/blender-model-beverage-can-printed.py':p.id==='cat-food-2kg'?'scripts/blender-model-cat-food-2kg.py':supplies[p.id]?'scripts/blender-model-storage-supply.py':['pet-bowl','litter-bag'].includes(p.id)?'scripts/blender-model-pet-supplies.py':'scripts/blender-model-'+(p.id.startsWith('washer')?'washer':p.id==='corner-bookcase-580'?'corner-bookcase':p.id)+'.py';
   models.push({profile:p.id,type:p.type,name:p.fixture.name,sizeMm:[p.fixture.w,p.fixture.d,p.fixture.h],parts:p.asset.parts,runtimeVersion:runtime.version,runtime:{path:p.asset.runtime,sha256:textHash(p.asset.runtime),normalization:'utf8-lf'},sourceSha256:runtime.sourceSha256,current:{blend:p.asset.blend,glb:p.asset.glb},document:'docs/'+docs[p.id],constructor:constructor&&fs.existsSync(path.join(root,constructor))?constructor:null,author:fs.existsSync(path.join(root,author))?author:null,files:files.sort((a,b)=>a.path.localeCompare(b.path))});
  }
  const catalog=C.library.flatMap(c=>c.items.map(i=>({category:c.cat,type:i[0],name:i[1],w:i[2],d:i[3],h:i[6]??P.height({type:i[0]}),module:P.definition(i[0])?.solidModel?.module||'index-inline'})));

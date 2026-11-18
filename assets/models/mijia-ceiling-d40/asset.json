@@ -1,0 +1,27 @@
+{
+  "format": 1,
+  "id": "mijia-ceiling-d40",
+  "name": "米家吸顶灯 D40",
+  "types": [
+    "ceiling_light_mijia_d40"
+  ],
+  "route": "blender",
+  "document": "docs/MIJIA-CEILING-LIGHTS.md",
+  "sourceLinks": [
+    "https://www.mi.com/tw/product/xiaomi-smart-ceiling-light-d40/specs/"
+  ],
+  "references": [
+    {
+      "path": "references/specs.jpg",
+      "kind": "marketing",
+      "sourceUrl": "https://img.ithome.com/newsuploadfiles/2024/9/5f30c003-4773-4383-8f2a-b8239c270f4b.jpg",
+      "sha256": "b752cb5f66843f89cdb5dba7ebfcbe65be066c772fa813f3f657175bf3c61109",
+      "bytes": 108890
+    }
+  ],
+  "missingReferences": [
+    "厂家CAD、隐藏构造及IES"
+  ],
+  "supportingFiles": [],
+  "validation": []
+}

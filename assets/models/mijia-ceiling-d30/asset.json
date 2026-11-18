@@ -1,0 +1,19 @@
+{
+  "format": 1,
+  "id": "mijia-ceiling-d30",
+  "name": "米家吸顶灯 D30",
+  "types": [
+    "ceiling_light_mijia_d30"
+  ],
+  "route": "blender",
+  "document": "docs/MIJIA-CEILING-LIGHTS.md",
+  "sourceLinks": [
+    "https://www.mi.com/hk/product/xiaomi-smart-ceiling-light-d30/specs/"
+  ],
+  "references": [],
+  "missingReferences": [
+    "厂家CAD、隐藏构造及IES"
+  ],
+  "supportingFiles": [],
+  "validation": []
+}

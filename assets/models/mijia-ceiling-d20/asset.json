@@ -1,0 +1,19 @@
+{
+  "format": 1,
+  "id": "mijia-ceiling-d20",
+  "name": "米家吸顶灯 D20",
+  "types": [
+    "ceiling_light_mijia_d20"
+  ],
+  "route": "blender",
+  "document": "docs/MIJIA-CEILING-LIGHTS.md",
+  "sourceLinks": [
+    "https://www.mi.com/tw/product/xiaomi-smart-ceiling-light-d20/specs/"
+  ],
+  "references": [],
+  "missingReferences": [
+    "厂家CAD、隐藏构造及IES"
+  ],
+  "supportingFiles": [],
+  "validation": []
+}

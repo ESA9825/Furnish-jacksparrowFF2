@@ -1,0 +1,209 @@
+{
+  "passed": true,
+  "blender": "/Applications/Blender.app/Contents/MacOS/Blender",
+  "device": "cpu",
+  "sourceFingerprint": "b9e0e8857298c6baaf875e14d7f5c0c8c5ba6da151b0a6012f1db237ceff47d6",
+  "workspacePruned": true,
+  "reports": [
+    {
+      "id": "mijia-ceiling-l60",
+      "passed": true,
+      "stages": [
+        {
+          "name": "author-preflight",
+          "passed": true
+        },
+        {
+          "name": "preflight-negative",
+          "passed": true
+        },
+        {
+          "name": "publish",
+          "passed": true
+        },
+        {
+          "name": "geometry-state",
+          "passed": true
+        },
+        {
+          "name": "http-file-production",
+          "passed": true
+        },
+        {
+          "name": "blender-production-readback",
+          "passed": true
+        },
+        {
+          "name": "studio-production-export",
+          "passed": true
+        },
+        {
+          "name": "render-front",
+          "passed": true
+        },
+        {
+          "name": "render-oblique",
+          "passed": true
+        },
+        {
+          "name": "render-detail",
+          "passed": true
+        },
+        {
+          "name": "downloaded-blend-reopen",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "id": "mijia-ceiling-d40",
+      "passed": true,
+      "stages": [
+        {
+          "name": "author-preflight",
+          "passed": true
+        },
+        {
+          "name": "preflight-negative",
+          "passed": true
+        },
+        {
+          "name": "publish",
+          "passed": true
+        },
+        {
+          "name": "geometry-state",
+          "passed": true
+        },
+        {
+          "name": "http-file-production",
+          "passed": true
+        },
+        {
+          "name": "blender-production-readback",
+          "passed": true
+        },
+        {
+          "name": "studio-production-export",
+          "passed": true
+        },
+        {
+          "name": "render-front",
+          "passed": true
+        },
+        {
+          "name": "render-oblique",
+          "passed": true
+        },
+        {
+          "name": "render-detail",
+          "passed": true
+        },
+        {
+          "name": "downloaded-blend-reopen",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "id": "mijia-ceiling-d30",
+      "passed": true,
+      "stages": [
+        {
+          "name": "author-preflight",
+          "passed": true
+        },
+        {
+          "name": "preflight-negative",
+          "passed": true
+        },
+        {
+          "name": "publish",
+          "passed": true
+        },
+        {
+          "name": "geometry-state",
+          "passed": true
+        },
+        {
+          "name": "http-file-production",
+          "passed": true
+        },
+        {
+          "name": "blender-production-readback",
+          "passed": true
+        },
+        {
+          "name": "studio-production-export",
+          "passed": true
+        },
+        {
+          "name": "render-front",
+          "passed": true
+        },
+        {
+          "name": "render-oblique",
+          "passed": true
+        },
+        {
+          "name": "render-detail",
+          "passed": true
+        },
+        {
+          "name": "downloaded-blend-reopen",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "id": "mijia-ceiling-d20",
+      "passed": true,
+      "stages": [
+        {
+          "name": "author-preflight",
+          "passed": true
+        },
+        {
+          "name": "preflight-negative",
+          "passed": true
+        },
+        {
+          "name": "publish",
+          "passed": true
+        },
+        {
+          "name": "geometry-state",
+          "passed": true
+        },
+        {
+          "name": "http-file-production",
+          "passed": true
+        },
+        {
+          "name": "blender-production-readback",
+          "passed": true
+        },
+        {
+          "name": "studio-production-export",
+          "passed": true
+        },
+        {
+          "name": "render-front",
+          "passed": true
+        },
+        {
+          "name": "render-oblique",
+          "passed": true
+        },
+        {
+          "name": "render-detail",
+          "passed": true
+        },
+        {
+          "name": "downloaded-blend-reopen",
+          "passed": true
+        }
+      ]
+    }
+  ]
+}

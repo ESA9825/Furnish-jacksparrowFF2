@@ -1,0 +1,6 @@
+{
+  "mijia-ceiling-l60": {"type":"ceiling_light_mijia_l60","global":"FurnishMijiaCeilingL60","size":[600,60,600],"parts":["diffuser","rim","base"],"sourceUrl":"https://www.mi.com/shop/buy/detail?product_id=22569"},
+  "mijia-ceiling-d40": {"type":"ceiling_light_mijia_d40","global":"FurnishMijiaCeilingD40","size":[450,60,450],"parts":["diffuser","rim","base"],"sourceUrl":"https://www.mi.com/tw/product/xiaomi-smart-ceiling-light-d40/specs/"},
+  "mijia-ceiling-d30": {"type":"ceiling_light_mijia_d30","global":"FurnishMijiaCeilingD30","size":[350,60,350],"parts":["diffuser","rim","base"],"sourceUrl":"https://www.mi.com/hk/product/xiaomi-smart-ceiling-light-d30/specs/"},
+  "mijia-ceiling-d20": {"type":"ceiling_light_mijia_d20","global":"FurnishMijiaCeilingD20","size":[250,60,250],"parts":["diffuser","rim","base"],"sourceUrl":"https://www.mi.com/tw/product/xiaomi-smart-ceiling-light-d20/specs/"}
+}

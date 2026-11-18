@@ -1,0 +1,27 @@
+{
+  "format": 1,
+  "id": "mijia-ceiling-l60",
+  "name": "米家吸顶灯 L60",
+  "types": [
+    "ceiling_light_mijia_l60"
+  ],
+  "route": "blender",
+  "document": "docs/MIJIA-CEILING-LIGHTS.md",
+  "sourceLinks": [
+    "https://www.mi.com/shop/buy/detail?product_id=22569"
+  ],
+  "references": [
+    {
+      "path": "references/series.jpg",
+      "kind": "marketing",
+      "sourceUrl": "https://img.ithome.com/newsuploadfiles/2024/9/a30e96e5-3c3f-4d87-a57b-7171c1450a0a.jpg",
+      "sha256": "5ae99a0d897e680f23507096d1d290fc9c9072a08a1bea0066f5ba13df8fbbbf",
+      "bytes": 159991
+    }
+  ],
+  "missingReferences": [
+    "厂家CAD、隐藏构造及IES"
+  ],
+  "supportingFiles": [],
+  "validation": []
+}

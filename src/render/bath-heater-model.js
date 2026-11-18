@@ -10,6 +10,23 @@ function area(g,{position,width,height,candela,color,material}){
 }
 function direct(lamp){lamp.userData.radiometricLight=true;lamp.userData.areaSurrogate=true;lamp.castShadow=true;lamp.shadow.mapSize.set(512,512);lamp.shadow.camera.near=.02;lamp.shadow.bias=-.0001;lamp.shadow.normalBias=.01;}
 const supported=f=>!!(products().definition(f)?.ceilingPanel||products().definition(f)?.panelLight)&&!f.obj;
+function buildCeilingLight(T,f,light){
+ const P=products(),base=P.value(f,'mountHeight');
+ const asset=root[light.global]||(typeof require==='function'?require('../data/'+light.asset+'-blender-asset.js'):null);
+ const loader=root.FurnishStaticAssetModel||require('./static-asset-model.js');
+ const group=loader.build(T,asset,{...f,h:P.height(f)},base);
+ if(!T.SpotLight||!T.Object3D)return group;
+ const diffuser=group.children.find(mesh=>mesh.name==='diffuser').material;
+ const candela=light.previewCandela*P.value(f,'lightPreviewLevel')/100;
+ const position=[0,base/1000-.001,0],extent=light.round?.70:.96;
+ diffuser.emissive.set(light.color);
+ diffuser.userData.ceilingPanelEmitter=true;
+ area(group,{position,width:f.w*extent/1000,height:f.d*extent/1000,candela,color:light.color,material:diffuser});
+ const lamp=new T.SpotLight(light.color,lighting().radiometric(candela),0,Math.PI/2,1,2),target=new T.Object3D();
+ lamp.position.set(...position);target.position.set(0,position[1]-1,0);lamp.target=target;
+ lamp.userData.ceilingPanelLight=true;direct(lamp);group.add(lamp,target);
+ return group;
+}
 function heaterLight(T,g,f){
  const P=products(),light=P.definition(f)?.heaterLight;if(!light)return g;
  g.traverse(o=>{if(o.name===light.part&&o.material?.emissive){o.material.emissive.set(light.color);(o.material.userData||={}).ceilingPanelEmitter=true;area(g,{position:[f.w*.1375/1000,P.value(f,'mountHeight')/1000-.002,0],width:f.w*.675/1000,height:f.d*.95/1000,candela:light.previewCandela,color:light.color,material:o.material});}});
@@ -17,6 +34,8 @@ function heaterLight(T,g,f){
  return g;
 }
 function build(T,f){
+ const lightProfile=products().definition(f).panelLight;
+ if(lightProfile?.asset)return buildCeilingLight(T,f,lightProfile);
  if(products().definition(f).ceilingPanel?.profile==='se2'){
   const asset=root.FurnishSE2BlenderAsset||(typeof require==='function'?require('../data/se2-blender-asset.js'):null);
   const loader=root.FurnishStaticAssetModel||(typeof require==='function'?require('./static-asset-model.js'):null);
