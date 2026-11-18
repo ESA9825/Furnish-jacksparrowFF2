@@ -135,9 +135,13 @@ function selectionChanged(){
  overlay.innerHTML=items.map(c=>`<polygon points="${ceilingPoints(c)}" fill="none" stroke="${PAL.halo}" stroke-width="6" vector-effect="non-scaling-stroke"/><polygon data-ceiling-highlight="${esc(c.id)}" points="${ceilingPoints(c)}" fill="none" stroke="${ACC}" stroke-width="3" vector-effect="non-scaling-stroke"/>`).join('');
 }
 function applyMode(){
- const ceiling=planMode()==='ceiling';
- document.querySelectorAll('[data-plan-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.planMode===planMode())));
- const note=document.querySelector('#plan-display-note');if(note)note.textContent=ceiling?tr('吊顶高度从地砖完成面计；另列底部到房顶的距离','Ceiling heights use finished floors; underside-to-roof distance is listed separately'):tr('虚线为头顶吊顶投影 · 高度从地砖完成面计','Dashed lines: overhead ceiling · heights use finished floors');
+ const mode=planMode(),ceiling=mode==='ceiling';
+ document.querySelectorAll('[data-plan-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.planMode===mode)));
+ const note=document.querySelector('#plan-display-note');
+ note.textContent=mode==='electrical'
+  ?tr('家具底图只读。点位高度从完成地面计。','Furniture is read-only. Socket heights are measured from the finished floor.')
+  :ceiling?tr('吊顶高度从地砖完成面计；另列底部到房顶的距离','Ceiling heights use finished floors; underside-to-roof distance is listed separately')
+   :tr('虚线为头顶吊顶投影 · 高度从地砖完成面计','Dashed lines: overhead ceiling · heights use finished floors');
  // Explicit SVG attributes survive PNG/SVG export without external CSS.
  for(const node of document.querySelectorAll('#gFurn > [data-fid]')){
   const f=getF(node.dataset.fid),spec=FurnishProducts.definition(f);
@@ -183,6 +187,6 @@ function afterRender(){
 
 }
 function design(previous,selectionId){return FurnishCeilingDesign.open({selectionId:selectionId||(ui.sel?.kind==='ceiling'?ui.sel.regionId:undefined)});}
-window.addEventListener('load',()=>{document.querySelectorAll('[data-plan-mode]').forEach(b=>b.onclick=()=>{ui.planMode=b.dataset.planMode;saveUI();afterRender();});afterRender();const rail=document.querySelector('.rail-tool-pop .rail-finishes');if(!rail)return;const b=document.createElement('button');b.className='btn';b.id='ceiling-open';b.innerHTML=ico('ceiling')+`<span data-zh="吊顶" data-en="Ceiling">${tr('吊顶','Ceiling')}</span>`;b.onclick=()=>design();rail.append(b);});
+window.addEventListener('load',()=>{afterRender();const rail=document.querySelector('.rail-tool-pop .rail-finishes');if(!rail)return;const b=document.createElement('button');b.className='btn';b.id='ceiling-open';b.innerHTML=ico('ceiling')+`<span data-zh="吊顶" data-en="Ceiling">${tr('吊顶','Ceiling')}</span>`;b.onclick=()=>design();rail.append(b);});
 window.FurnishCeilingUI={selectObject,annotateSection,open,design,afterRender,selectionChanged,prepareExport,pointerMenu,closePointerMenu};
 })();

@@ -9,7 +9,8 @@ globalThis.FurnishElectricalUI=(()=>{
  function assertEditable(before,after){if(active())E.assertEditable(before,after);}
  function setMode(mode){
   if(!['furniture','ceiling','electrical'].includes(mode))return;
-  endDrag(true);closeFabEditor(false);closeDialog();adding=false;poseHost=null;ui.sceneMove=false;ui.sel=null;ui.tool='select';ui.planMode=mode;saveUI();renderAll();applyView();
+  endDrag(true);closeFabEditor(false);if(!$('#dlg').hidden)closeDialog();
+  adding=false;poseHost=null;ui.sceneMove=false;ui.sel=null;ui.tool='select';ui.planMode=mode;saveUI();renderAll();applyView();
  }
  function selection(sel){
   if(!active())return sel;
@@ -29,11 +30,11 @@ globalThis.FurnishElectricalUI=(()=>{
   const chosen=selItems().length===1&&selItems()[0];
   if(chosen&&E.panel(chosen)){const hit=E.nearest(chosen,E.surfaces(canvasEffectivePlan(),state,chosen),1);if(hit){const s=hit.surface,n=s.normal,a=s.a,b=[s.a[0]+(s.b[0]-s.a[0])*hit.offset/s.length,s.a[1]+(s.b[1]-s.a[1])*hit.offset/s.length],d=35*k,u=[a[0]+n[0]*d,a[1]+n[1]*d],v=[b[0]+n[0]*d,b[1]+n[1]*d],mid=[(u[0]+v[0])/2,(u[1]+v[1])/2];g.insertAdjacentHTML('beforeend',`<g pointer-events="none" data-electrical-dimension><path d="M${a}L${u}L${v}L${b}" fill="none" stroke="#a64d31" stroke-width="1" vector-effect="non-scaling-stroke"/><text transform="translate(${mid}) rotate(${-drawingRotation()})" text-anchor="middle" font-size="${11*k}" fill="#783a28" stroke="#fffaf4" stroke-width="${3*k}" paint-order="stroke">中心距面起点 ${Number(hit.offset.toFixed(1))} mm</text></g>`);}}
   for(const node of root.querySelectorAll('#gFurn > [data-fid]')){const ref=!E.panel(getF(node.dataset.fid));if(ref){node.setAttribute('opacity','.28');node.setAttribute('pointer-events','none');}else node.setAttribute('pointer-events','none');}
-  if(!exporting){const note=document.querySelector('#plan-display-note');if(note)note.textContent=adding?'点击画布放置面板；按 Esc 取消':'家具底图只读 · 柜门可在右栏或三维中开合 · 底／中按完成地面计；未知保留待核对';}
  }
  function afterRender(){
   document.body.classList.toggle('electrical-mode',active());
-  document.querySelectorAll('[data-plan-mode]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.planMode===ui.planMode)));
+  const status=$('#placement-status'),message=active()&&adding?tr('点击画布放置面板，按 Esc 取消','Click the plan to place the socket. Press Esc to cancel.'):'';
+  if(status.textContent!==message)status.textContent=message;
   if(active())draw();else {document.querySelector('#gElectrical')?.remove();for(const n of document.querySelectorAll('#gFurn > [data-fid]'))n.removeAttribute('pointer-events');}
  }
  function pointer(e){

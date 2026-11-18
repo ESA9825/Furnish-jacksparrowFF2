@@ -88,17 +88,18 @@
 <div id="printHead"></div>
 <div class="app">
   <header>
-    <div class="grp" id="paneBtns">
-      <button class="btn chip" id="tgLib"><svg class="i"><use href="#i-lib"/></svg><span data-en="Library">家具库</span></button>
-      <button class="btn chip" id="tgPanel"><span data-en="Properties">属性</span><svg class="i"><use href="#i-panel"/></svg></button>
-      <button class="btn chip" id="tgLayers" aria-controls="layer-sidebar" aria-expanded="false" onclick="FurnishObservationLayers.toggle()"><svg class="i"><use href="#i-layers"/></svg><span data-en="Layers">图层</span></button>
+    <div class="grp" id="paneBtns" role="group" aria-label="面板" data-en-aria="Panels">
+      <button class="btn chip" id="tgLib" aria-label="家具库" data-en-aria="Furniture library"><svg class="i"><use href="#i-lib"/></svg><span data-en="Library">家具库</span></button>
+      <button class="btn chip" id="tgPanel" aria-label="属性" data-en-aria="Properties"><svg class="i"><use href="#i-panel"/></svg><span data-en="Properties">属性</span></button>
+      <button class="btn chip" id="tgLayers" aria-label="图层" data-en-aria="Layers" aria-controls="layer-sidebar" aria-expanded="false" onclick="FurnishObservationLayers.toggle()"><svg class="i"><use href="#i-layers"/></svg><span data-en="Layers">图层</span></button>
+      <button class="btn chip" id="tgSpace" title="空间检查" data-en-title="Space checks" aria-label="空间检查" data-en-aria="Space checks"><svg class="i"><use href="#i-check"/></svg><span data-en="Space checks">空间检查</span></button>
     </div>
-    <button class="btn outline" id="planBtn" title="户型库：浏览并切换户型" data-en-title="Floor plan gallery"><svg class="i"><use href="#i-grid"/></svg><span data-en="Plans">户型库</span><span class="cnt" id="planCnt"></span></button>
+    <button class="btn outline" id="planBtn" title="户型库：浏览并切换户型" data-en-title="Floor plan gallery" aria-label="户型库" data-en-aria="Floor plan gallery"><svg class="i"><use href="#i-grid"/></svg><span data-en="Plans">户型库</span><span class="cnt" id="planCnt"></span></button>
     <div class="brand"><span class="logo" aria-hidden="true"><svg class="i"><use href="#i-home"/></svg></span><div><b data-en="3BR 2LR 2BA · Interior Design">三室两厅两卫 · 装修设计</b><span id="subtitle">原始户型 1:60 · 尺寸单位 mm</span></div></div>
     <div class="grp seg" id="viewSeg" title="切换 2D / 3D (T)" data-en-title="Switch 2D / 3D (T)">
       <span class="pill"></span>
-      <button class="btn" data-view="2d" data-en="2D Plan">2D 平面</button>
-      <button class="btn" data-view="3d" data-en="3D Scene">3D 场景</button>
+      <button class="btn" data-view="2d" aria-label="2D 平面" data-en-aria="2D Plan">2D<span data-en="Plan">平面</span></button>
+      <button class="btn" data-view="3d" aria-label="3D 场景" data-en-aria="3D Scene">3D<span data-en="Scene">场景</span></button>
     </div>
     <div class="grp only2d" id="tools">
       <button class="btn on" data-tool="select" title="选择 / 移动 (V) · Shift+点击多选" data-en-title="Select / Move (V) · Shift+click to multi-select"><svg class="i"><use href="#i-cursor"/></svg><span class="t" data-en="Select">选择</span></button>
@@ -127,7 +128,7 @@
       <button class="btn" id="resetBtn" title="重置：恢复默认布置 / 材料 / 墙体 / 门窗 / 视图" data-en-title="Reset furniture, flooring, walls, doors or view"><svg class="i"><use href="#i-reset"/></svg><span class="t" data-en="Reset">重置</span></button>
     </div>
     <details class="menu" id="showMenu">
-      <summary class="btn"><svg class="i"><use href="#i-layers"/></svg><span data-en="View ▾">显示 ▾</span></summary>
+      <summary class="btn" title="显示选项" data-en-title="View options" aria-label="显示" data-en-aria="View options"><svg class="i"><use href="#i-eye"/></svg><span data-en="View ▾">显示 ▾</span></summary>
       <div class="menu-pop showpop">
         <div class="showsec"><button class="btn" id="observationLayers" onclick="FurnishObservationLayers.open()">图层管理</button></div>
         <div class="showsec only2d"><b data-en="Plan layers">平面图层</b>
@@ -139,6 +140,7 @@
             <button class="btn chip" data-layer="bearing" data-en="Bearing walls">承重墙</button>
             <button class="btn chip on" data-layer="notes" data-en="Notes">标注</button>
           </div>
+          <p id="plan-display-note"></p>
         </div>
         <div class="showsec only2d"><b data-en="Editing aids">编辑辅助</b>
           <div class="chiprow">
@@ -196,7 +198,7 @@
         <div id="file-storage-actions" class="file-actions"></div>
       </div></div>
     </details>
-    <details class="menu" id="fileMenu"><summary class="btn"><svg class="i"><use href="#i-file"/></svg><span data-en="Import / export">导入／导出</span></summary>
+    <details class="menu" id="fileMenu"><summary class="btn" title="导入／导出" data-en-title="Import / export" aria-label="导入／导出" data-en-aria="Import / export"><svg class="i"><use href="#i-file"/></svg><span data-en="Import / export">导入／导出</span></summary>
       <div class="menu-pop file-pop"><div class="file-content">
         <div class="menu-cap" data-en="Move to another computer / editable backup">换电脑／可编辑备份</div>
         <div id="file-backup-actions" class="file-actions"></div>
@@ -231,7 +233,25 @@
     </div>
     <input type="file" id="fileIn" accept=".json,application/json" hidden>
   </header>
-  <nav id="designBar" class="design-bar" aria-label="方案切换"></nav>
+  <section id="designBar" class="design-bar" aria-label="方案与编辑模式" data-en-aria="Design and editing mode">
+    <label id="design-picker" class="design-picker"></label>
+    <div class="design-actions">
+      <button class="btn" id="bar-create-design" data-design-command="create" data-en="＋ New design">＋ 新方案</button>
+      <button class="btn" id="bar-manage-designs" data-design-command="manage" data-en="Manage">管理</button>
+    </div>
+    <details class="menu" id="design-actions-menu">
+      <summary class="btn" aria-label="方案操作" data-en-aria="Design actions" title="方案操作" data-en-title="Design actions">…</summary>
+      <div class="menu-pop">
+        <button class="btn" data-design-command="create" data-en="＋ New design">＋ 新方案</button>
+        <button class="btn" data-design-command="manage" data-en="Manage designs">管理方案</button>
+      </div>
+    </details>
+    <div class="plan-display only2d" role="group" aria-label="平面编辑模式" data-en-aria="Plan editing mode">
+      <button class="btn" data-plan-mode="furniture" aria-pressed="true" data-en="Furniture">家具</button>
+      <button class="btn" data-plan-mode="electrical" aria-pressed="false" data-en="Sockets">插座</button>
+      <button class="btn" data-plan-mode="ceiling" aria-pressed="false" data-en="Ceiling">吊顶</button>
+    </div>
+  </section>
 
   <aside class="lib">
     <div id="lib3d" class="only3d">
@@ -279,14 +299,7 @@
       <g id="gNotes"></g>
       <g id="gSel"></g>
     </svg>
-    <div class="plan-display only2d" role="group" aria-label="平面显示模式" data-en-aria="Plan display mode">
-      <div class="plan-display-buttons">
-        <button class="btn" data-plan-mode="furniture" aria-pressed="true" data-en="Furniture layout">家具布局</button>
-        <button class="btn" data-plan-mode="electrical" aria-pressed="false" data-en="Socket planning">插座布置</button>
-        <button class="btn" data-plan-mode="ceiling" aria-pressed="false" data-en="Ceiling plan">吊顶布置</button>
-      </div>
-      <small id="plan-display-note"></small>
-    </div>
+    <div class="only2d" id="placement-status" role="status"></div>
     <div class="hud only2d" id="zoomHud">
       <button class="btn" id="zoomOut" title="缩小 (-)" aria-label="缩小" data-en-title="Zoom out (-)"><svg class="i"><use href="#i-minus"/></svg></button>
       <button class="btn ratio" id="hudRatio" title="点击切换常用比例 1:50 / 1:60 / 1:100 / 1:200" data-en-title="Cycle common scales 1:50 / 1:60 / 1:100 / 1:200">1:60</button>

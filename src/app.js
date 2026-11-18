@@ -11,6 +11,7 @@ function applyStaticLang(){
   document.title = tr('户型装修设计', 'Floor Plan Designer');
   document.querySelectorAll('[data-en]').forEach(el => { el.dataset.zh ??= el.textContent; el.textContent = tr(el.dataset.zh, el.dataset.en); });
   document.querySelectorAll('[data-en-title]').forEach(el => { el.dataset.zhTitle ??= el.title; el.title = tr(el.dataset.zhTitle, el.dataset.enTitle); });
+  document.querySelectorAll('[data-en-aria]').forEach(el => { el.dataset.zhAria ??= el.getAttribute('aria-label'); el.setAttribute('aria-label', tr(el.dataset.zhAria, el.dataset.enAria)); });
   document.querySelectorAll('[data-en-placeholder]').forEach(el => { el.dataset.zhPh ??= el.placeholder; el.placeholder = tr(el.dataset.zhPh, el.dataset.enPlaceholder); });
   document.querySelectorAll('#langSel [data-lang]').forEach(b => { const on = b.dataset.lang === LANG; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
 }
@@ -305,6 +306,7 @@ function syncPaneBtns(){
   const els = {lib:$('aside.lib'), panel:$('aside.right')}, n = narrow();
   const vis = k => n ? els[k].classList.contains('open') : !panes[k === 'lib' ? 'hideLib' : 'hidePanel'];
   $('#tgLib').classList.toggle('on', vis('lib')); $('#tgPanel').classList.toggle('on', vis('panel'));
+  $('#tgLib').setAttribute('aria-expanded',String(vis('lib'))); $('#tgPanel').setAttribute('aria-expanded',String(vis('panel')));
   $('#tgLib').title = vis('lib') ? tr('收起家具库 ( [ )', 'Hide library ( [ )') : tr('展开家具库 ( [ )', 'Show library ( [ )');
   $('#tgPanel').title = vis('panel') ? tr('收起属性面板 ( ] )', 'Hide properties ( ] )') : tr('展开属性面板 ( ] )', 'Show properties ( ] )');
   $('#stage').classList.toggle('drawer-panel', n && vis('panel'));   // 属性抽屉盖住画面时让出底部工具条

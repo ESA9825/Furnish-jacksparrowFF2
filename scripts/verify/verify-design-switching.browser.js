@@ -58,7 +58,11 @@ async (page,verification)=>{
    await p.getByRole('button',{name:'3D 场景',exact:true}).click();await p.waitForFunction(()=>is3D()&&!switching);await p.locator('#view3d canvas').waitFor();
    await p.locator('#design-select').selectOption(b);if(await p.evaluate(()=>state.designNote)!=='B edited')throw Error('3D switch');
    await p.setViewportSize({width:390,height:844});await p.screenshot({path:verification.output('playwright/design-switching/'+mode+'-narrow.png')});
-   if(!await p.locator('#bar-create-design').isVisible())throw Error('Narrow bar');
+   const narrowActions=p.locator('#design-actions-menu');
+   await narrowActions.locator('summary').click();
+   if(!await narrowActions.locator('[data-design-command="create"]').isVisible())throw Error('Narrow design actions');
+   await p.keyboard.press('Escape');
+   if(await narrowActions.getAttribute('open')!==null)throw Error('Narrow menu Escape');
    const bounds=await p.locator('#designBar').boundingBox();if(bounds.x<0||bounds.x+bounds.width>391)throw Error('Overflow');
    if(errors.length)throw Error(JSON.stringify(errors));results.push({mode,passed:true,independentAutosave:true,historyPreserved:true,refresh:true,undoRedo:true,threeD:true,narrow:true});
   }finally{await context.close();}

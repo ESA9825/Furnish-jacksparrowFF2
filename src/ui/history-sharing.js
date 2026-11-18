@@ -22,17 +22,16 @@ function switchDesign(id,{throwOnError=false}={}){
   }catch(e){if(throwOnError)throw e;toast(e.message);}
 }
 function renderDesignBar(){
-  const host=$('#designBar');if(!host)return;
+  const host=$('#design-picker');
   const active=FurnishDesign.activeDesign(store,PLAN.id),rows=store.designs.filter(d=>d.planId===PLAN.id&&d.editable===true);
   // Preserve the native select while its popup closes (notably on macOS).
   // The active value changes independently from the list of choices.
   const key=JSON.stringify([PLAN.id,!!active,rows.map(d=>[d.id,d.name]),LANG,repositoryBooting]);
   const select=host.querySelector('#design-select');if(select)select.value=active?.id||'';
   if(host.dataset.renderKey===key)return;host.dataset.renderKey=key;
-  host.innerHTML=`<label class="design-picker"><span>${tr('方案','Design')} · ${rows.length}</span><select id="design-select" aria-label="${tr('切换方案','Switch design')}" ${repositoryBooting?'disabled':''}>${!active?`<option value="">${tr('当前布置','Current layout')}</option>`:''}${rows.map(d=>`<option value="${esc(d.id)}" ${d.id===active?.id?'selected':''}>${esc(d.name)}</option>`).join('')}</select></label><button class="btn" id="bar-create-design" ${repositoryBooting?'disabled':''}>${tr('＋ 新方案','＋ New')}</button><button class="btn" id="bar-manage-designs" ${repositoryBooting?'disabled':''}>${tr('管理','Manage')}</button>`;
+  host.innerHTML=`<span>${tr('方案','Design')} · ${rows.length}</span><select id="design-select" aria-label="${tr('切换方案','Switch design')}" ${repositoryBooting?'disabled':''}>${!active?`<option value="">${tr('当前布置','Current layout')}</option>`:''}${rows.map(d=>`<option value="${esc(d.id)}" ${d.id===active?.id?'selected':''}>${esc(d.name)}</option>`).join('')}</select>`;
   $('#design-select').onchange=e=>{const id=e.target.value;try{if(id)switchDesign(id);}finally{renderDesignBar();}};
-  $('#bar-create-design').onclick=()=>window.FurnishDesignUI.editDesign('create',undefined,true);
-  $('#bar-manage-designs').onclick=()=>window.FurnishDesignUI.designs();
+  document.querySelectorAll('[data-design-command]').forEach(b=>b.disabled=repositoryBooting);
 }
 /* Classic declarations; initialize storage and browser handlers after app state exists. */
 function renderDesigns(){renderDesignBar();renderHist();}

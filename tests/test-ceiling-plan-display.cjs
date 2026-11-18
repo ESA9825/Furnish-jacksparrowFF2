@@ -1,15 +1,15 @@
 /* Real browser regression; only a private workspace copy may be written. */
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const V=require('../scripts/lib/browser-verification.cjs');
+const V=require('../scripts/lib/browser-verification.cjs'),Artifacts=require('../scripts/lib/test-artifacts.cjs');
 async function main(){
- const output=path.join(V.projectRoot,'output/playwright');fs.mkdirSync(output,{recursive:true});
- const run=fs.mkdtempSync(path.join(output,'ceiling-plan-')),root=path.join(run,'workspace 离线 #');fs.mkdirSync(root);
- for(const name of ['src','styles','assets','vendor','templates'])if(fs.existsSync(path.join(V.projectRoot,name)))fs.cpSync(path.join(V.projectRoot,name),path.join(root,name),{recursive:true});
- fs.copyFileSync(path.join(V.projectRoot,'index.html'),path.join(root,'index.html'));
- fs.mkdirSync(path.join(root,'projects'));fs.copyFileSync(path.join(V.projectRoot,'projects/workspace.furnish.json'),path.join(root,'projects/workspace.furnish.json'));
- const server=await V.staticServer(root),results=[];let browser;try{browser=await V.loadPlaywright().chromium.launch(V.configuration().launchOptions);}catch(e){await server.close();throw e;}
- try{for(const mode of ['http','file']){
+ const job=Artifacts.createRun({prefix:'ceiling-plan-'}),run=job.dir,results=[];
+ let server,browser;
+ try{
+ const root=job.workspace('workspace 离线 #',V.projectRoot,{directories:['src','styles','assets','vendor','templates'],files:['index.html']});
+ server=await V.staticServer(root);
+ browser=await V.loadPlaywright().chromium.launch(V.configuration().launchOptions);
+ for(const mode of ['http','file']){
   const config=V.configuration({FURNISH_VERIFY_ROOT:root,FURNISH_VERIFY_URL:server.baseURL}),ctx=await browser.newContext({viewport:{width:1500,height:1100},offline:mode==='file'}),p=await ctx.newPage(),errors=[];
   p.on('pageerror',e=>errors.push(e.message));
   await ctx.addInitScript(workspace=>{if(!localStorage.getItem('display-test-seeded')){localStorage.setItem('huxing-design-v25',JSON.stringify(workspace));localStorage.setItem('display-test-seeded','1');}},JSON.parse(fs.readFileSync(path.join(root,'projects/workspace.furnish.json'),'utf8')).workspace);
@@ -42,7 +42,7 @@ async function main(){
    assert.ok(await p.evaluate(()=>{const out=preparePlanSVG().svg;return !out.querySelector('#gCeilingSelection,[data-ceiling-target]')&&out.querySelector('[data-ceiling-level]')&&out.querySelector('#gFurn [data-fid="display_bed"]').getAttribute('opacity')==='.25';}),'export retains mode and excludes edit overlays');
    await toggle('furniture');assert.equal(await p.locator('[data-ceiling-id]').first().getAttribute('fill'),'none');assert.equal(await p.locator('[data-ceiling-id]').first().getAttribute('stroke-dasharray'),'6 4');
    assert.equal(await p.locator('#gFurn [data-fid="display_bed"]').getAttribute('opacity'),null);assert.equal(await p.locator('[data-ceiling-level]').count(),0);
-   assert.equal(await p.locator('[data-ceiling-highlight]').count(),2,'selection remains on top in furniture mode');
+   assert.equal(await p.locator('[data-ceiling-highlight]').count(),0,'switching editing modes clears the selection');
    await p.evaluate(()=>{select(null);renderFurn();renderSel();});assert.equal(await p.locator('[data-ceiling-highlight]').count(),0);
    await toggle('ceiling');await p.evaluate(()=>{renderFurn();renderSel();});assert.equal(await p.locator('#gFurn [data-fid="display_bed"]').getAttribute('opacity'),'.25','partial redraw retains mode');
    await p.evaluate(()=>{state.drawing={...(state.drawing||{}),rotation:90};renderAll();fitView();});assert.equal(await p.locator('#gCeilings').getAttribute('transform'),'rotate(90)');
@@ -58,10 +58,10 @@ async function main(){
    const box=await p.locator('.plan-display').boundingBox();assert.ok(box.x>=0&&box.x+box.width<=390,'mode control fits narrow viewport');
    await p.screenshot({animations:'disabled',path:path.join(run,mode+'-mobile.png')});
    assert.equal(await p.locator('[data-model-error]').count(),0,'valid reference furniture');
-   await p.evaluate(()=>setLang('en'));assert.equal(await p.locator('[data-plan-mode="ceiling"]').textContent(),'Ceiling plan');await p.evaluate(()=>setTheme('dark'));
+   await p.evaluate(()=>setLang('en'));assert.equal(await p.locator('[data-plan-mode="ceiling"]').textContent(),'Ceiling');await p.evaluate(()=>setTheme('dark'));
    await p.screenshot({animations:'disabled',path:path.join(run,mode+'-dark-en.png')});assert.deepEqual(errors,[]);results.push({mode,status:'PASS'});
   }catch(e){await p.screenshot({animations:'disabled',path:path.join(run,mode+'-failure.png')});throw e;}finally{await ctx.close();}
- }}finally{await browser.close();await server.close();fs.writeFileSync(path.join(run,'results.json'),JSON.stringify(results,null,2));console.log('Evidence: '+run);}
+ }}finally{await browser?.close();await server?.close();fs.writeFileSync(path.join(run,'results.json'),JSON.stringify(results,null,2));job.finish(results.length===2);console.log('Evidence: '+run);}
  console.log('PASS 2D plan modes, persistence, layering, selection, hidden layers, exports, project roundtrip, rotation and narrow viewport over HTTP/file://');
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});

@@ -60,9 +60,15 @@ body:has(#style-preview-banner:not([hidden])) #hint3d{display:none}
 .space-status:focus-visible,[data-wall-net]:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
 [data-wall-net] text{fill:var(--s-ink)}
 @media(max-width:1100px){.brand{display:none}header{gap:5px;padding:5px 0}.canvas-rail .btn{min-width:42px}.scene-light{max-width:calc(100% - 80px);right:8px;flex-wrap:wrap}.scene-light input{width:75px}main.drawer-panel .canvas-rail,main.drawer-panel .space-status{visibility:hidden}.preview-banner{top:auto;bottom:240px;left:12px}.workspace-preferences>.menu-pop{position:fixed;right:10px;top:70px;max-height:65vh;overflow:auto}.hud{bottom:14px}}
-@media(max-width:600px){header .btn,header summary.btn{padding:6px 8px;font-size:12px}#paneBtns span{display:none}#paneBtns .btn{padding:7px;min-width:36px}#viewSeg{--seg-w:76px}#showMenu summary span{display:none}.sidebar-heading .btn{min-width:44px;min-height:36px}}
-@media(max-width:600px){header .spacer{display:none}#viewSeg,.workspace-preferences,#saveMenu,#fileMenu{order:1}}
-@media print{.canvas-rail,.space-status,.scene-light,.preview-banner,#gWallNet,#gProposal{display:none!important}}
+@media(max-width:600px){
+ header .btn,header summary.btn{padding:6px 8px;font-size:12px}
+ header .spacer,#planBtn span,#viewSeg .btn span,#showMenu summary span,#fileMenu summary span{display:none}
+ #paneBtns .btn{padding:5px;min-width:27px}
+ #projectWorkspace{padding-inline:6px}
+ #viewSeg.grp{--seg-w:40px}
+ .sidebar-heading .btn{min-width:44px;min-height:36px}
+}
+@media print{.canvas-rail,.space-status,.scene-light,.preview-banner,#gWallNet,#gProposal,#placement-status{display:none!important}}
 .drawing-compass{position:absolute;right:12px;top:12px;width:76px;height:76px;border:0;background:transparent;cursor:pointer;z-index:4;padding:0;filter:drop-shadow(0 4px 10px #0002)}
 .drawing-compass svg{width:100%;height:100%}.drawing-rotate{position:absolute;bottom:12px;right:205px;display:flex;gap:4px;z-index:4}.drawing-check{display:flex;align-items:center;gap:8px}.drawing-check input{width:auto!important}
 @media(max-width:600px){.drawing-compass{width:58px;height:58px}.drawing-rotate{right:12px;bottom:58px}}
@@ -190,29 +196,38 @@ main.drawer-panel #fab-editor{visibility:hidden}
 /* Compact scene IDs share the wall-layout list numbering. */
 .wall-tile-scene-number{pointer-events:auto;cursor:pointer;border:1px solid #087f5b;background:#fffdf4e8;color:#075c43;padding:3px 7px;border-radius:12px;font-size:11px;white-space:nowrap;box-shadow:0 1px 4px #0003}
 
-/* Always available in both 2D and 3D; tabs scroll independently on narrow canvases. */
+/* The scheme stays available in both views; its editing modes apply to 2D. */
 .app{grid-template-rows:auto auto minmax(0,1fr) 34px}
 .app>header{grid-row:1}
 .app>.design-bar{grid-row:2}
 .app>main,.app>aside.lib,.app>aside.right{grid-row:3}
 .app>footer{grid-row:4}
 .design-bar{grid-column:1/-1;min-width:0;margin-bottom:8px;display:flex;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--s-line);border-radius:12px;background:var(--s-overlay);color:var(--s-ink);box-shadow:var(--shadow-md)}
-.design-bar-label{font-size:12px;flex:none;color:var(--s-muted)}
-.design-tabs{display:flex;gap:4px;min-width:0;flex:1;overflow-x:auto;scrollbar-width:thin}
-.design-bar .btn{flex:none;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis;min-height:34px;color:var(--s-ink)}
-.design-bar .btn.on{background:var(--s-accent-soft);color:var(--s-accent-ink);border-color:var(--s-accent-ink);opacity:1}
-@media(max-width:500px){.design-bar{gap:4px;padding:5px}.design-bar-label{display:none}.design-bar .btn{max-width:150px;padding:6px 8px}}
+.design-bar .btn{flex:none;white-space:nowrap;min-height:34px;color:var(--s-ink)}
+.design-picker{display:flex;align-items:center;gap:8px;min-width:0;flex:0 1 500px;font-size:12px}
+.design-picker>span{flex:none;color:var(--s-muted)}
+.design-picker select{font:inherit;color:var(--s-ink);background:var(--s-panel);border:1px solid var(--s-line);border-radius:8px;padding:8px;min-width:0;width:100%;text-overflow:ellipsis}
+.design-actions{display:flex;flex:none;gap:2px}
+#design-actions-menu{display:none}
+.plan-display{margin-left:auto;display:flex;flex:none;gap:2px;padding:2px;border:1px solid var(--s-line);border-radius:10px;background:var(--s-panel);animation:none}
+.plan-display .btn{min-height:30px;padding:4px 14px;border-radius:7px}
+.plan-display .btn[aria-pressed="true"]{background:var(--action-bg);color:var(--on-action)}
+#plan-display-note{margin:8px 0 0;color:var(--muted);font-size:11px}
+#placement-status{animation:none}
+#placement-status:not(:empty){position:absolute;top:10px;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 24px);padding:6px 10px;border:1px solid var(--s-line);border-radius:8px;background:var(--s-overlay);color:var(--s-ink);font-size:12px;pointer-events:none;z-index:5}
+@media(max-width:700px){
+ .design-bar{gap:4px;padding:4px}
+ .design-actions,.design-picker>span{display:none}
+ #design-actions-menu{display:block}
+ #design-actions-menu summary{padding:4px 9px}
+ .plan-display .btn{padding:4px 8px}
+ header #paneBtns span,header #paneBtns #tgLayers span{display:none}
+}
 
 .design-record{padding:12px;margin:10px 0;border:1px solid var(--line);border-radius:10px;overflow-wrap:anywhere}
 @media(max-width:1100px){.app>main,.app>aside.lib,.app>aside.right{grid-row:3}}
 @media print{.design-bar{display:none!important}}
 
-/* Task shortcuts reuse the existing pane preferences and drawer behavior. */
-.workspace-modes{display:flex;gap:3px;flex:none;border-left:1px solid var(--s-line);padding-left:8px;margin-left:auto}
-.workspace-modes .btn{min-height:34px;padding:5px 10px;font-size:12px}
-.design-picker{display:flex;align-items:center;gap:8px;min-width:0;flex:1;font-size:12px}
-.design-picker>span{flex:none;color:var(--s-muted)}
-.design-picker select{font:inherit;color:var(--s-ink);background:var(--s-panel);border:1px solid var(--s-line);border-radius:8px;padding:8px;min-width:0;width:min(100%,440px)}
 .layer-tree{display:grid;gap:5px}
 .layer-branch{min-width:0;border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .layer-branch.on{border-color:var(--accent)}
@@ -261,7 +276,6 @@ main.drawer-panel #fab-editor{visibility:hidden}
  .app.hide-panel{--layer-available:calc(100vw - var(--lib-w) - 520px)}
  .app.hide-lib.hide-panel{--layer-available:calc(100vw - 520px)}
 }
-@media(max-width:600px){.design-bar{flex-wrap:wrap}.workspace-modes{justify-content:center;width:100%;border-left:0;border-top:1px solid var(--s-line);padding:4px 0 0}.workspace-modes .btn{flex:1;max-width:none}}
 
 #moreMenu>.menu-pop{overflow:auto;padding:12px}
 #more-actions .file-actions{margin-bottom:0}
