@@ -1,0 +1,604 @@
+{
+  "cabinetParts": 91,
+  "towerParts": 60,
+  "conservativeAabbHits": [],
+  "measurements": [
+    {
+      "boxId": "north",
+      "bay": "left",
+      "index": 0,
+      "column": 0,
+      "x": -1400,
+      "left": -1792.5,
+      "right": -1007.5,
+      "y": 0,
+      "z": 0,
+      "front": 315,
+      "back": -315,
+      "width": 785,
+      "bottomOpen": false,
+      "topOpen": false,
+      "sideOpen": false,
+      "spaces": [
+        {
+          "bottom": 78,
+          "top": 600,
+          "height": 522,
+          "depths": [
+            {
+              "bottom": 78.00000000000007,
+              "top": 600,
+              "rear": -297,
+              "front": 297,
+              "depth": 594,
+              "backThickness": 18,
+              "doorThickness": 18,
+              "openBack": false,
+              "openFront": false
+            }
+          ],
+          "lowerBoard": null,
+          "upperBoard": {
+            "boxId": "north",
+            "componentId": "p3",
+            "kind": "shelf"
+          },
+          "lowerShelf": null,
+          "upperShelf": "p3"
+        },
+        {
+          "bottom": 618,
+          "top": 999.9999999999999,
+          "height": 381.9999999999999,
+          "depths": [
+            {
+              "bottom": 618,
+              "top": 999.9999999999999,
+              "rear": -297,
+              "front": 297,
+              "depth": 594,
+              "backThickness": 18,
+              "doorThickness": 18,
+              "openBack": false,
+              "openFront": false
+            }
+          ],
+          "lowerBoard": {
+            "boxId": "north",
+            "componentId": "p3",
+            "kind": "shelf"
+          },
+          "upperBoard": {
+            "boxId": "north",
+            "componentId": "p4",
+            "kind": "shelf"
+          },
+          "lowerShelf": "p3",
+          "upperShelf": "p4"
+        },
+        {
+          "bottom": 1017.9999999999998,
+          "top": 1400,
+          "height": 382.0000000000002,
+          "depths": [
+            {
+              "bottom": 1017.9999999999998,
+              "top": 1400,
+              "rear": -297,
+              "front": 297,
+              "depth": 594,
+              "backThickness": 18,
+              "doorThickness": 18,
+              "openBack": false,
+              "openFront": false
+            }
+          ],
+          "lowerBoard": {
+            "boxId": "north",
+            "componentId": "p4",
+            "kind": "shelf"
+          },
+          "upperBoard": {
+            "boxId": "north",
+            "componentId": "p5",
+            "kind": "shelf"
+          },
+          "lowerShelf": "p4",
+          "upperShelf": "p5"
+        },
+        {
+          "bottom": 1417.9999999999998,
+          "top": 1750,
+          "height": 332.0000000000002,
+          "depths": [
+            {
+              "bottom": 1417.9999999999998,
+              "top": 1750,
+              "rear": -297,
+              "front": 297,
+              "depth": 594,
+              "backThickness": 18,
+              "doorThickness": 18,
+              "openBack": false,
+              "openFront": false
+            }
+          ],
+          "lowerBoard": {
+            "boxId": "north",
+            "componentId": "p5",
+            "kind": "shelf"
+          },
+          "upperBoard": {
+            "boxId": "north",
+            "componentId": "p6",
+            "kind": "shelf"
+          },
+          "lowerShelf": "p5",
+          "upperShelf": "p6"
+        },
+        {
+          "bottom": 1767.9999999999998,
+          "top": 2082,
+          "height": 314.0000000000002,
+          "depths": [
+            {
+              "bottom": 1767.9999999999998,
+              "top": 2082,
+              "rear": -297,
+              "front": 297,
+              "depth": 594,
+              "backThickness": 18,
+              "doorThickness": 18,
+              "openBack": false,
+              "openFront": false
+            }
+          ],
+          "lowerBoard": {
+            "boxId": "north",
+            "componentId": "p6",
+            "kind": "shelf"
+          },
+          "upperBoard": null,
+          "lowerShelf": "p6",
+          "upperShelf": null
+        }
+      ]
+    },
+    {
+      "boxId": "middle",
+      "bay": "left",
+      "index": 0,
+      "column": 1,
+      "x": -514.5,
+      "left": -971.5,
+      "right": -57.5,
+      "y": 0,
+      "z": 0,
+      "front": 315,
+      "back": -315,
+      "width": 914,
+      "bottomOpen": false,
+      "topOpen": false,
+      "sideOpen": false,
+      "spaces": [
+        {
+          "bottom": 78,
+          "top": 1750,
+          "height": 1672,
+          "depths": [
+            {
+              "bottom": 78.00000000000007,
+              "top": 1750,
+              "rear": -297,
+              "front": 297,
+              "depth": 594,
+              "backThickness": 18,
+              "doorThickness": 18,
+              "openBack": false,
+              "openFront": false
+            }
+          ],
+          "lowerBoard": null,
+          "upperBoard": {
+            "boxId": "middle",
+            "componentId": "p12",
+            "kind": "shelf"
+          },
+          "lowerShelf": null,
+          "upperShelf": "p12"
+        },
+        {
+          "bottom": 1767.9999999999998,
+          "top": 2082,
+          "height": 314.0000000000002,
+          "depths": [
+            {
+              "bottom": 1767.9999999999998,
+              "top": 2082,
+              "rear": -297,
+              "front": 297,
+              "depth": 594,
+              "backThickness": 18,
+              "doorThickness": 18,
+              "openBack": false,
+              "openFront": false
+            }
+          ],
+          "lowerBoard": {
+            "boxId": "middle",
+            "componentId": "p12",
+            "kind": "shelf"
+          },
+          "upperBoard": null,
+          "lowerShelf": "p12",
+          "upperShelf": null
+        }
+      ]
+    },
+    {
+      "boxId": "south",
+      "bay": "left",
+      "index": 0,
+      "column": 2,
+      "x": 435.5,
+      "left": -21.5,
+      "right": 892.5,
+      "y": 0,
+      "z": 0,
+      "front": 315,
+      "back": -315,
+      "width": 914,
+      "bottomOpen": false,
+      "topOpen": false,
+      "sideOpen": false,
+      "spaces": [
+        {
+          "bottom": 78,
+          "top": 90,
+          "height": 12,
+          "depths": [
+            {
+              "bottom": 78.00000000000007,
+              "top": 90,
+              "rear": -297,
+              "front": 297,
+              "depth": 594,
+              "backThickness": 18,
+              "doorThickness": 18,
+              "openBack": false,
+              "openFront": false
+            }
+          ],
+          "lowerBoard": null,
+          "upperBoard": null,
+          "lowerShelf": null,
+          "upperShelf": null
+        },
+        {
+          "bottom": 494,
+          "top": 600,
+          "height": 106,
+          "depths": [
+            {
+              "bottom": 494,
+              "top": 600,
+              "rear": -297,
+              "front": 297,
+              "depth": 594,
+              "backThickness": 18,
+              "doorThickness": 18,
+              "openBack": false,
+              "openFront": false
+            }
+          ],
+          "lowerBoard": null,
+          "upperBoard": {
+            "boxId": "south",
+            "componentId": "p19",
+            "kind": "shelf"
+          },
+          "lowerShelf": null,
+          "upperShelf": "p19"
+        },
+        {
+          "bottom": 618,
+          "top": 1750,
+          "height": 1132,
+          "depths": [
+            {
+              "bottom": 618,
+              "top": 1750,
+              "rear": -297,
+              "front": 297,
+              "depth": 594,
+              "backThickness": 18,
+              "doorThickness": 18,
+              "openBack": false,
+              "openFront": false
+            }
+          ],
+          "lowerBoard": {
+            "boxId": "south",
+            "componentId": "p19",
+            "kind": "shelf"
+          },
+          "upperBoard": {
+            "boxId": "south",
+            "componentId": "p20",
+            "kind": "shelf"
+          },
+          "lowerShelf": "p19",
+          "upperShelf": "p20"
+        },
+        {
+          "bottom": 1767.9999999999998,
+          "top": 2082,
+          "height": 314.0000000000002,
+          "depths": [
+            {
+              "bottom": 1767.9999999999998,
+              "top": 2082,
+              "rear": -297,
+              "front": 297,
+              "depth": 594,
+              "backThickness": 18,
+              "doorThickness": 18,
+              "openBack": false,
+              "openFront": false
+            }
+          ],
+          "lowerBoard": {
+            "boxId": "south",
+            "componentId": "p20",
+            "kind": "shelf"
+          },
+          "upperBoard": null,
+          "lowerShelf": "p20",
+          "upperShelf": null
+        }
+      ]
+    },
+    {
+      "boxId": "far_south",
+      "bay": "left",
+      "index": 0,
+      "column": 3,
+      "x": 1385.5,
+      "left": 928.5,
+      "right": 1842.5,
+      "y": 0,
+      "z": 0,
+      "front": 315,
+      "back": -315,
+      "width": 914,
+      "bottomOpen": false,
+      "topOpen": false,
+      "sideOpen": false,
+      "spaces": [
+        {
+          "bottom": 78,
+          "top": 382,
+          "height": 304,
+          "depths": [
+            {
+              "bottom": 78.00000000000007,
+              "top": 382,
+              "rear": -297,
+              "front": 297,
+              "depth": 594,
+              "backThickness": 18,
+              "doorThickness": 18,
+              "openBack": false,
+              "openFront": false
+            }
+          ],
+          "lowerBoard": null,
+          "upperBoard": {
+            "boxId": "far_south",
+            "componentId": "p29",
+            "kind": "panel"
+          },
+          "lowerShelf": null,
+          "upperShelf": null
+        },
+        {
+          "bottom": 400,
+          "top": 412,
+          "height": 12,
+          "depths": [
+            {
+              "bottom": 400,
+              "top": 412,
+              "rear": -297,
+              "front": 297,
+              "depth": 594,
+              "backThickness": 18,
+              "doorThickness": 18,
+              "openBack": false,
+              "openFront": false
+            }
+          ],
+          "lowerBoard": {
+            "boxId": "far_south",
+            "componentId": "p29",
+            "kind": "panel"
+          },
+          "upperBoard": null,
+          "lowerShelf": null,
+          "upperShelf": null
+        },
+        {
+          "bottom": 576,
+          "top": 600,
+          "height": 24,
+          "depths": [
+            {
+              "bottom": 576,
+              "top": 600,
+              "rear": -297,
+              "front": 297,
+              "depth": 594,
+              "backThickness": 18,
+              "doorThickness": 18,
+              "openBack": false,
+              "openFront": false
+            }
+          ],
+          "lowerBoard": null,
+          "upperBoard": {
+            "boxId": "far_south",
+            "componentId": "p30",
+            "kind": "panel"
+          },
+          "lowerShelf": null,
+          "upperShelf": null
+        },
+        {
+          "bottom": 618,
+          "top": 1750,
+          "height": 1132,
+          "depths": [
+            {
+              "bottom": 618,
+              "top": 1750,
+              "rear": -297,
+              "front": 297,
+              "depth": 594,
+              "backThickness": 18,
+              "doorThickness": 18,
+              "openBack": false,
+              "openFront": false
+            }
+          ],
+          "lowerBoard": {
+            "boxId": "far_south",
+            "componentId": "p30",
+            "kind": "panel"
+          },
+          "upperBoard": {
+            "boxId": "far_south",
+            "componentId": "p31",
+            "kind": "shelf"
+          },
+          "lowerShelf": null,
+          "upperShelf": "p31"
+        },
+        {
+          "bottom": 1767.9999999999998,
+          "top": 2082,
+          "height": 314.0000000000002,
+          "depths": [
+            {
+              "bottom": 1767.9999999999998,
+              "top": 2082,
+              "rear": -297,
+              "front": 297,
+              "depth": 594,
+              "backThickness": 18,
+              "doorThickness": 18,
+              "openBack": false,
+              "openFront": false
+            }
+          ],
+          "lowerBoard": {
+            "boxId": "far_south",
+            "componentId": "p31",
+            "kind": "shelf"
+          },
+          "upperBoard": null,
+          "lowerShelf": "p31",
+          "upperShelf": null
+        }
+      ]
+    },
+    {
+      "boxId": "cat_top",
+      "bay": "left",
+      "index": 0,
+      "column": 4,
+      "x": -500,
+      "left": -1892.5,
+      "right": 892.5,
+      "y": 2100,
+      "z": 0,
+      "front": 315,
+      "back": -315,
+      "width": 2785,
+      "bottomOpen": false,
+      "topOpen": false,
+      "sideOpen": true,
+      "spaces": [
+        {
+          "bottom": 2118,
+          "top": 2602,
+          "height": 484,
+          "depths": [
+            {
+              "bottom": 2118.0000000000005,
+              "top": 2602,
+              "rear": -297,
+              "front": 315,
+              "depth": 612,
+              "backThickness": 18,
+              "doorThickness": 0,
+              "openBack": false,
+              "openFront": false
+            }
+          ],
+          "lowerBoard": null,
+          "upperBoard": null,
+          "lowerShelf": null,
+          "upperShelf": null
+        }
+      ]
+    },
+    {
+      "boxId": "cat_bridge",
+      "bay": "left",
+      "index": 0,
+      "column": 5,
+      "x": 1410.5,
+      "left": 928.5,
+      "right": 1892.5,
+      "y": 2100,
+      "z": 0,
+      "front": 315,
+      "back": -315,
+      "width": 964,
+      "bottomOpen": false,
+      "topOpen": false,
+      "sideOpen": true,
+      "spaces": [
+        {
+          "bottom": 2118,
+          "top": 2602,
+          "height": 484,
+          "depths": [
+            {
+              "bottom": 2118.0000000000005,
+              "top": 2602,
+              "rear": -297,
+              "front": 315,
+              "depth": 612,
+              "backThickness": 18,
+              "doorThickness": 0,
+              "openBack": false,
+              "openFront": false
+            }
+          ],
+          "lowerBoard": null,
+          "upperBoard": null,
+          "lowerShelf": null,
+          "upperShelf": null
+        }
+      ]
+    }
+  ],
+  "projectRoundTrip": true,
+  "bounds": {
+    "cabinet": [
+      0,
+      2639.9999999999995
+    ]
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "date": "2026-11-18",
+  "planId": "custom_mv37igji",
+  "sourceDesign": {
+    "id": "dmwkuy2yo",
+    "name": "1601 · 厨房门窗衔接示意 · 轨宽待定"
+  },
+  "design": {
+    "id": "dmwlgkelu",
+    "name": "1601 · 主卧到顶猫廊与父母挂衣优化"
+  },
+  "save": {
+    "mode": "saved",
+    "message": "设计已保存到本地正式文件\n保存位置：/Users/makinami/Documents/FurnishData/1601/workspace.furnish.json\n最后成功保存：2026/11/18 10:37:04",
+    "pending": false
+  },
+  "export": {
+    "format": "project",
+    "file": "/Users/makinami/Documents/GitHub/Furnish/.local/mcp-exports/db5d001e106df73c-ffd1e320aca46609.furnish.json",
+    "mimeType": "application/json",
+    "bytes": 25931193,
+    "sha256": "ffd1e320aca46609bbf763985c05044a6ed9e4e731c4c3868a649767eb793729"
+  },
+  "originalCurtainsUnchanged": true,
+  "checks": {
+    "projectRoundTrip": true,
+    "productionMeshes": true,
+    "visualClosedAndOpen": true,
+    "remainingSpaceIssues": 1
+  },
+  "notRun": [
+    "onsite measurements",
+    "load engineering",
+    "cat trial",
+    "owner reach trial",
+    "full application regression",
+    "Blender reimport"
+  ]
+}
