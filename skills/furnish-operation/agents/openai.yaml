@@ -1,0 +1,4 @@
+interface:
+  display_name: "Furnish 方案操作"
+  short_description: "通过 Furnish MCP 操作装修方案，完成布置编辑、空间复核与成果交付"
+  default_prompt: "请使用 $furnish-operation，读取当前 Furnish 方案，按我的要求完成操作并核实保存与空间检查结果。"
