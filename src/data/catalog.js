@@ -19,6 +19,7 @@ const LIB = [
     ['block','方块占位体',1000,1000,'#a8b6c4',undefined,products.height({type:'block'})]
   ]},
   {cat:'电器', items:[
+    ['track_socket_bull_gb50k','公牛 GB50K 轨道插座 · 500 mm＋3五孔 · 墨云灰',products.definition('track_socket_bull_gb50k').trackSocket.width,products.definition('track_socket_bull_gb50k').trackSocket.depth,'#4b4d4f',undefined,products.height({type:'track_socket_bull_gb50k'})],
     ['panel_bull_g12','86开关插座面板 · 公牛／小米（种类可选）',86,10,'#f5f5f2',undefined,86],
     ['panel_light_300x600','厨房平板灯 · 300×600 · 24W',300,600,'#f5f5f2',undefined,products.height({type:'panel_light_300x600'})],
     ['fan_airmate_fa18_x231','艾美特 小暴风 PRO FA18-X231 空气循环扇',300,300,'#eeeee9',undefined,products.height({type:'fan_airmate_fa18_x231'})],
@@ -286,7 +287,7 @@ const navigationTypeGroups={
  'appliances/cooking':['stove','stove_fotile_th36b','rangehood_fotile_jcd10ta','fridge','fridge_french_drawer','dishwasher','dishwasher_mijia_countertop','water_purifier_mijia_1200g'],
  'appliances/laundry':['washer','washer_littleswan_tg10k60w','dryer'],
  'appliances/climate':['fan_airmate_fa18_x231','aircon','aircon_midea_ultra_2hp','acwall','acwall_midea_mxc3p','waterheater','waterheater_flat','bath_heater_aopu_se2','bath_heater_300x600'],
- 'appliances/services':['heating_manifold','electrical_box_strong','electrical_box_weak'],
+ 'appliances/services':['track_socket_bull_gb50k','heating_manifold','electrical_box_strong','electrical_box_weak'],
  'decor/lighting':['ceiling_light_mijia_l90','ceiling_light_mijia_l60','ceiling_light_mijia_d40','ceiling_light_mijia_d30','ceiling_light_mijia_d20','cove_light','surface_light','desk_lamp_mijia_pro','floorlamp','pendant','panel_light_300x600','downlight_philips_dl269','downlight_labot_ip65_7w']
 };
 function navigationCategory(it,cat){

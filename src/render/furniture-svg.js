@@ -21,6 +21,11 @@ if(t==='panel_bull_g12')return `<g data-wall-panel="true">${rc(-w/2,-d/2,w,d,c,'
 if(t==='pet_bowl_petstar_180')return ec(0,0,w/2,d/2,c)+ec(0,0,w*.44,d*.44,'#8db4c2');
 if(t==='cat_litter_yanxuan_25kg')return rc(-w/2,-d/2,w,d,c,'rx="2"')+rc(-w*.48,-d*.475,w*.96,d*.45,'#d8dcd6','data-folded-handle="true"')+rc(-w*.16,-d*.295,w*.32,d*.09,c,`rx="${d*.045}"`)+ln(-w/2,d*.46,w/2,d*.46)+`<text x="0" y="${d*.22}" text-anchor="middle" fill="#0874a6" font-size="${w*.18}">Mix</text>`;
 const products=typeof module==='object'&&module.exports?require('../core/product-rules.js'):root.FurnishProducts;
+const track=products.definition(t)?.trackSocket;
+if(track){
+ const railDepth=d*track.railDepth/track.depth, moduleWidth=w*track.moduleDiameter/track.width;
+ return `<g data-track-socket="true">${rc(-w/2,-d/2,w,railDepth,c,'rx="1"')}${track.moduleCenters.map(x=>rc(x*w/track.width-moduleWidth/2,-d/2+railDepth,moduleWidth,d-railDepth,shade(c,.8),'rx="2"')).join('')}</g>`;
+}
 if(f?.paperArray&&products.supports(f,'paperArray')){const l=products.paperArrayLayout(f),top=new Map();for(const cell of l.cells)top.set(cell.row+':'+cell.col,cell);return [...top.values()].map(cell=>{const [x,,z]=cell.center,[uw,,ud]=l.size;return products.definition(f).paperArray.kind==='roll'&&l.config.orientation==='upright'?ec(x,z,uw/2,ud/2,c)+ec(x,z,uw*.1,ud*.1,'#918879'):rc(x-uw/2,z-ud/2,uw,ud,c,'rx="2"');}).join('');}
 if(products.definition(t)?.garmentPhoto)return rc(-w/2,-d/2,w,d,c,'rx="2" data-garment-photo="true"')+ln(-w*.45,d*.38,w*.45,d*.38);
 if(t==='trolley_ikea_raskog_large')return rc(-w/2,-d*.49,w,d*.98,'none',`rx="${w*.10}"`)+rc(-w*.46,-d*.48,w*.92,d*.96,c,`rx="${w*.09}"`)+rc(-w*.43,-d*.45,w*.86,d*.90,shade(c,1.12),`rx="${w*.08}"`)+[-1,1].map(s=>rc(-w*.105,s*d*.467-d*.027,w*.21,d*.054,c)).join('');

@@ -6,7 +6,7 @@
 
 更新：`node scripts/index-model-assets.cjs --write`；核对：`node scripts/index-model-assets.cjs --check`。
 
-75份产品／设计档案，336张参考图，12张历史原图待补；48组Blender模型。参数化验证配置91组，全部家具库181条目／153种类型。
+82份产品／设计档案，363张参考图，20张历史原图待补；55组Blender模型。参数化验证配置92组，全部家具库188条目／160种类型。
 
 | 产品／设计资料 | 参考图 | 输出／构造 | 待补原图 |
 |---|---|---|---|
@@ -34,6 +34,7 @@
 | [米家桌面学习灯 Pro · MJTD07YL](desk-lamp-mijia-pro/README.md) | 7 | [BLEND](desk-lamp-mijia-pro/v1-final/desk-lamp-mijia-pro-v1.blend) · [GLB](desk-lamp-mijia-pro/v1-final/desk-lamp-mijia-pro-v1.glb) | 0 |
 | [米家-台式5套洗碗机](dishwasher/README.md) | 0 | [BLEND](dishwasher/dishwasher-v1.blend) · [GLB](dishwasher/dishwasher-v1.glb) | 3 |
 | [飞利浦-DL269-筒灯](downlight-dl269/README.md) | 8 | 参数化 | 0 |
+| [拉伯塔IP65防水筒灯7W全白4000K](downlight-labot-ip65/README.md) | 21 | [BLEND](downlight-labot-ip65/v1/downlight-labot-ip65-v1.blend) · [GLB](downlight-labot-ip65/v1/downlight-labot-ip65-v1.glb) | 3 |
 | [定制玄关置物台柜](entry-console/README.md) | 1 | 参考资料 | 0 |
 | [定制玄关洞洞板柜](entry-pegboard/README.md) | 1 | 参考资料 | 0 |
 | [艾美特 小暴风 PRO FA18-X231 空气循环扇](fan-x231/README.md) | 3 | [BLEND](fan-x231/v2/fan-x231-v1.blend) · [GLB](fan-x231/v2/fan-x231-v1.glb) | 0 |
@@ -48,6 +49,11 @@
 | [网易严选2.5kg猫砂袋 · 包装示意](litter-bag/README.md) | 2 | [BLEND](litter-bag/v7/litter-bag-v1.blend) · [GLB](litter-bag/v7/litter-bag-v1.glb) | 0 |
 | [猫砂盆（型号未确认）](litter-box/README.md) | 0 | 参数化 | 2 |
 | [家用双层药箱 · 340×250×200参考](medicine-box/README.md) | 1 | [BLEND](storage-supplies/medicine/v2/medicine-box-v1.blend) · [GLB](storage-supplies/medicine/v2/medicine-box-v1.glb) | 0 |
+| [米家吸顶灯 D20](mijia-ceiling-d20/README.md) | 0 | [BLEND](mijia-ceiling-d20/v1/mijia-ceiling-d20-v1.blend) · [GLB](mijia-ceiling-d20/v1/mijia-ceiling-d20-v1.glb) | 1 |
+| [米家吸顶灯 D30](mijia-ceiling-d30/README.md) | 0 | [BLEND](mijia-ceiling-d30/v1/mijia-ceiling-d30-v1.blend) · [GLB](mijia-ceiling-d30/v1/mijia-ceiling-d30-v1.glb) | 1 |
+| [米家吸顶灯 D40](mijia-ceiling-d40/README.md) | 1 | [BLEND](mijia-ceiling-d40/v1/mijia-ceiling-d40-v1.blend) · [GLB](mijia-ceiling-d40/v1/mijia-ceiling-d40-v1.glb) | 1 |
+| [米家吸顶灯 L60](mijia-ceiling-l60/README.md) | 1 | [BLEND](mijia-ceiling-l60/v1/mijia-ceiling-l60-v1.blend) · [GLB](mijia-ceiling-l60/v1/mijia-ceiling-l60-v1.glb) | 1 |
+| [米家吸顶灯 L90](mijia-ceiling-l90/README.md) | 0 | [BLEND](mijia-ceiling-l90/v1/mijia-ceiling-l90-v1.blend) · [GLB](mijia-ceiling-l90/v1/mijia-ceiling-l90-v1.glb) | 1 |
 | [公牛G12 86开关插座面板](panel-bull-g12/README.md) | 42 | [BLEND](panel-bull-g12/v7/panel-bull-g12-v1.blend) · [GLB](panel-bull-g12/v7/panel-bull-g12-v1.glb) | 0 |
 | [厨房平板灯-300×600-24W](panel-light/README.md) | 1 | 参数化 | 0 |
 | [小米智能开关2与2 Pro · 86面板](panel-xiaomi-switch2/README.md) | 69 | [BLEND](panel-xiaomi-switch2/v2/panel-xiaomi-switch2-v1.blend) · [GLB](panel-xiaomi-switch2/v2/panel-xiaomi-switch2-v1.glb) | 0 |
@@ -75,6 +81,7 @@
 | [整提卷纸 · 220×220×340估算](toilet-paper-pack/README.md) | 1 | [BLEND](storage-supplies/rolls/v2/toilet-paper-pack-v1.blend) · [GLB](storage-supplies/rolls/v2/toilet-paper-pack-v1.glb) | 0 |
 | [透明工具箱 · 佳帮手大号](toolbox-jiabangshou-390/README.md) | 1 | [BLEND](storage-supplies/toolbox-jiabangshou-390/v2/toolbox-jiabangshou-390-v1.blend) · [GLB](storage-supplies/toolbox-jiabangshou-390/v2/toolbox-jiabangshou-390-v1.glb) | 0 |
 | [工具收纳箱 · 霜山9L](toolbox-shimoyama-9l/README.md) | 2 | [BLEND](storage-supplies/toolbox-shimoyama-9l/v8/toolbox-shimoyama-9l-v1.blend) · [GLB](storage-supplies/toolbox-shimoyama-9l/v8/toolbox-shimoyama-9l-v1.glb) | 0 |
+| [公牛 GN‑GB50K · 墨云灰 · 500 mm＋3五孔](track-socket-bull-gb50k/README.md) | 4 | [BLEND](track-socket-bull-gb50k/v1/track-socket-bull-gb50k-v1.blend) · [GLB](track-socket-bull-gb50k/v1/track-socket-bull-gb50k-v1.glb) | 0 |
 | [宜家大号拉斯克手推车](trolley-ikea-raskog-large/README.md) | 6 | [BLEND](storage-supplies/raskog-20261112-v2/trolley-ikea-raskog-large-v1.blend) · [GLB](storage-supplies/raskog-20261112-v2/trolley-ikea-raskog-large-v1.glb) | 0 |
 | [定制电视柜](tv-cabinet-references/README.md) | 1 | 参考资料 | 0 |
 | [次卧衣柜与窗下书桌组合](wardrobe-desk-references/README.md) | 2 | 参考资料 | 0 |

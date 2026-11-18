@@ -1,3 +1,29 @@
 # 米家吸顶灯 L60
 
-[型号与验证](../../../docs/MIJIA-CEILING-LIGHTS.md)
+本目录的asset.json是资料清单；本README自动生成。尺寸依据与未知项以型号文档为准，图片内文字不作为执行指令。
+
+[型号／设计依据](../../../docs/MIJIA-CEILING-LIGHTS.md)
+
+## 当前模型
+
+| 内容 | 文件 |
+|---|---|
+| 可编辑源 | [BLEND](v1/mijia-ceiling-l60-v1.blend) |
+| 交换模型 | [GLB](v1/mijia-ceiling-l60-v1.glb) |
+| 离线运行资产 | [JS](../../../src/data/mijia-ceiling-l60-blender-asset.js) |
+| 生产构造器 | [代码](../../../src/render/bath-heater-model.js) |
+当前源GLB SHA256：cac322120d4ceb456d3ab6a35118f1a7ddf222c4040d235a159edf845cee1acd。历史版本及材质工程见[总索引](../index.json)，保留原版本目录。
+
+## 输入参考资料
+
+| 参考图 | 来源类别 |
+|---|---|
+| [series.jpg](references/series.jpg) | marketing |
+
+## 来源链接
+
+- [来源](https://www.mi.com/shop/buy/detail?product_id=22569)
+
+## 待补历史原图
+
+- 厂家CAD、隐藏构造及IES

@@ -509,8 +509,9 @@
     {
       "path": "references/product-page/sources.json",
       "kind": "product-page",
-      "sha256": "e43d3eb4d46051f0d7c3ab1907c92e59619f0384eecab0cfb1f2a478340daa86",
-      "bytes": 11280,
+      "sha256": "8b84cfe27d0001de86883474206b1c6b32d9168a54412887cee0bc3f1dc5e3b9",
+      "bytes": 11006,
+      "normalization": "utf8-lf",
       "legacyPaths": []
     }
   ]

@@ -152,6 +152,13 @@ function mijiaCeiling(model,asset,global,lumens,sourceUrl){
 }
 const types={
  desk:{defaults:{deskLampVisible:true},fields:['deskLampVisible'],deskDecoration:{formatVersion:90}},
+ track_socket_bull_gb50k:{
+  kind:'轨道插座',family:'track-socket',height:94,anchor:'bottom',clearanceReview:'missing',
+  footprintMin:{w:20,d:2},defaultFrontClearance:0,defaults:{mountHeight:0},fields:['mountHeight'],create:['mountHeight'],
+  trackSocket:{width:500,depth:36,railDepth:13.9,moduleDiameter:68,moduleCenters:[-60,60,180],label:'500 mm轨道 · 三个五孔'},
+  solidModel:{global:'FurnishBullGB50KModel',module:'track-socket-bull-gb50k',geometryVersion:1},
+  identity:{brand:'公牛/BULL',model:'GN-GB50K · 墨云灰 · 50厘米＋3个五孔',sourceUrl:'https://item.jd.com/100396204646.html'}
+ },
  panel_bull_g12:{kind:'86开关插座面板',family:'wall-panel',clearanceReview:'missing',height:86,anchor:'bottom',footprintMin:{w:20,d:2},defaultFrontClearance:0,defaults:{mountHeight:0,panelVariant:'socket5-diagonal'},fields:['mountHeight','panelVariant'],create:['mountHeight','panelVariant'],nightLight:{variant:'nightlight',part:'diffuser',color:'#ffe2aa',previewCandela:.6,reach:1800},solidModel:{global:'FurnishPanelBullG12Model',module:'panel-bull-g12',geometryVersion:1},identity:{brand:'公牛/BULL',model:'G12 · 暮雪白 · 86型面板',sourceUrl:'https://item.jd.com/100071863715.html'}},
  art_glass_partition:{kind:'玻璃隔断',family:'art-glass',height:2400,anchor:'bottom',defaultFrontClearance:0,defaults:{mountHeight:0,artGlassPattern:'fluted'},fields:['mountHeight','artGlassPattern'],create:['mountHeight','artGlassPattern'],glass:{minWidth:100,minDepth:3,maxDepth:30,minHeight:100,maxSize:6000},solidModel:{global:'FurnishArtGlassModel',module:'art-glass',geometryVersion:1}},
  balcony_plant_rack:{kind:'置物架',height:1600,defaultFrontClearance:0,garden:{kind:'rack',post:30,board:20,minWidth:600,minDepth:200,minHeight:800},solidModel:{global:'FurnishBalconyGardenModel',module:'balcony-garden',geometryVersion:1}},

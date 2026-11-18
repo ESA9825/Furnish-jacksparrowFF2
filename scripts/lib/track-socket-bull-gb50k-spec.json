@@ -1,0 +1,15 @@
+{
+  "type": "track_socket_bull_gb50k",
+  "global": "FurnishBullGB50KAsset",
+  "size": [500, 94, 36],
+  "parts": [
+    "rail-back", "rail-upper", "rail-lower", "feed-cap", "end-cap", "channel-shutter", "feed-seam", "end-seam",
+    "left-carrier", "left-rim", "left-face", "left-recess", "left-indicator",
+    "middle-carrier", "middle-rim", "middle-face", "middle-recess", "middle-indicator",
+    "right-carrier", "right-rim", "right-face", "right-recess", "right-indicator"
+  ],
+  "trackDepth": 13.9,
+  "slotWidth": 4.3,
+  "moduleDiameter": 68,
+  "moduleCenters": [-60, 60, 180]
+}

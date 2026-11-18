@@ -1,0 +1,56 @@
+{
+  "format": 1,
+  "id": "track-socket-bull-gb50k",
+  "name": "公牛 GN‑GB50K · 墨云灰 · 500 mm＋3五孔",
+  "types": [
+    "track_socket_bull_gb50k"
+  ],
+  "route": "blender",
+  "document": "docs/TRACK-SOCKET-BULL-GB50K.md",
+  "sourceLinks": [
+    "https://item.jd.com/100396204646.html",
+    "https://wiki.smzdm.com/p/nmoe94d/"
+  ],
+  "references": [
+    {
+      "path": "references/hero.png",
+      "kind": "product-page",
+      "url": "https://y.zdmimg.com/202609/28/6aba0ed8611293574.png",
+      "sha256": "d577bd4f669f354d5c1059c37ca8fcf0ecd483a3b4b03e1107a06cbc86b198f2",
+      "bytes": 59870,
+      "legacyPaths": []
+    },
+    {
+      "path": "references/feature.png",
+      "kind": "product-page",
+      "url": "https://y.zdmimg.com/202609/28/6aba0edaf4b7e8433.png",
+      "sha256": "f08d38434949f41ea1bd16f490e81bd8aaa6cf5118e854816988401613d7f2ee",
+      "bytes": 193557,
+      "legacyPaths": []
+    },
+    {
+      "path": "references/angles.jpg",
+      "kind": "product-page",
+      "url": "https://y.zdmimg.com/202609/28/6aba0edaa99478433.jpg",
+      "sha256": "ab6161e6e575abebd05af2bf40d1d6d402e73ec71388adbc7458814bb7517ab4",
+      "bytes": 249530,
+      "legacyPaths": []
+    },
+    {
+      "path": "references/detail.jpg",
+      "kind": "product-page",
+      "url": "https://y.zdmimg.com/202609/28/6aba0edb9dfec7762.jpg",
+      "sha256": "ad03fa49b9d9341c84063e46015a20e261dafa62b54d10eed99228c2a8bb04d6",
+      "bytes": 90830,
+      "legacyPaths": []
+    }
+  ],
+  "missingReferences": [],
+  "validation": [
+    "docs/validation/track-socket-bull-gb50k-visual-20261118/README.md"
+  ],
+  "notes": [
+    "规格对应京东自营 SKU 100396204646；商品图标注轨道厚度13.9mm、槽宽4.3mm。",
+    "轨道高94mm、整组深36mm、模块直径68mm依据商品图估算。三个模块静态布置。"
+  ]
+}

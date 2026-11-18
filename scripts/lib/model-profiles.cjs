@@ -9,6 +9,7 @@ const assetTypes={'pet-bowl':'pet_bowl_petstar_180','litter-bag':'cat_litter_yan
 assetTypes['downlight-labot-ip65']='downlight_labot_ip65_7w';
 assetTypes['desk-lamp-mijia-pro']='desk_lamp_mijia_pro';
 assetTypes['acwall-midea-mxc3p']='acwall_midea_mxc3p';
+assetTypes['track-socket-bull-gb50k']='track_socket_bull_gb50k';
 const suites={
  pet_feeding_insert:['pet-feeding-frame'],
  'pet-bowl':['pet-supplies'],'litter-bag':['pet-supplies'],
@@ -23,6 +24,7 @@ const suites={
 };
 suites['downlight-labot-ip65']=['downlight-labot'];
 suites['acwall-midea-mxc3p']=['acwall-midea'];
+suites['track-socket-bull-gb50k']=['track-socket-bull-gb50k'];
 suites['desk-lamp-mijia-pro']=['desk-lamp'];suites.cove_light=['cove-light'];
 const mijiaCeilingLights=require('./mijia-ceiling-light-specs.json');
 for(const [id,spec] of Object.entries(mijiaCeilingLights))assetTypes[id]=spec.type;

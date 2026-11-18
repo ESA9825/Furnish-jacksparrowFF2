@@ -2,7 +2,7 @@
 (function(root){
 'use strict';
 const P=()=>root.FurnishProducts||require('./product-rules.js');
-const panel=f=>!!f&&!f.obj&&P().family(f,'wall-panel');
+const panel=f=>!!f&&!f.obj&&(P().family(f,'wall-panel')||!!P().definition(f)?.trackSocket);
 const equal=(a,b)=>JSON.stringify(canonical(a))===JSON.stringify(canonical(b));
 function canonical(v){return Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;}
 // Only production opening state is permitted on the reference furniture.
@@ -18,7 +18,7 @@ function assertEditable(before,after){
  const rest=w=>{const out={...w};delete out.furniture;delete out.scene3d;if(out.objectLayers){out.objectLayers=structuredClone(out.objectLayers);for(const f of [...before.furniture,...after.furniture].filter(panel))delete out.objectLayers.assignments?.['furniture:'+f.id];}return out;};
  if(!equal(rest(before),rest(after)))throw Error('插座布置视图中建筑、装修及其他方案资料只读');
 }
-function points(work,plan){return work.furniture.filter(panel).map((f,i)=>{const bottom=P().bottomHeight(f),height=P().height(f),m=plan?(root.FurnishDesign||require('./design-core.js')).furnitureHeightMeasurements(f,plan,work.furniture):{bottom};return {id:f.id,number:'E'+String(i+1).padStart(2,'0'),name:f.name,variant:P().panelSpec(f),bottom,center:bottom+height/2,finishedBottom:m.bottom,finishedCenter:m.bottom===null?null:m.bottom+height/2};});}
+function points(work,plan){return work.furniture.filter(panel).map((f,i)=>{const bottom=P().bottomHeight(f),height=P().height(f),m=plan?(root.FurnishDesign||require('./design-core.js')).furnitureHeightMeasurements(f,plan,work.furniture):{bottom};return {id:f.id,number:'E'+String(i+1).padStart(2,'0'),name:f.name,variant:P().panelSpec(f)||{label:P().definition(f).trackSocket.label},bottom,center:bottom+height/2,finishedBottom:m.bottom,finishedCenter:m.bottom===null?null:m.bottom+height/2};});}
 const surfaceCache=new Map();
 function surfaces(plan,work,f){
  const G=root.FurnishGeometry||require('./layout-geometry.js'),M=root.FurnishCabinetMotion||require('./cabinet-motion.js'),out=[];

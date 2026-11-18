@@ -18,7 +18,7 @@ function outputs(){
   if(!p.references.length)md.push('当前未归档可用原图；不代表不需要参考资料。','');
   if(p.sourceLinks.length)md.push('## 来源链接','',...p.sourceLinks.map(u=>'- [来源]('+u+')'),'');
   if(p.supportingFiles?.length)md.push('## 原始来源记录','',...p.supportingFiles.map(f=>'- [来源清单]('+url(f.path)+')'),'');
-  if(p.missingReferences.length)md.push('## 待补历史原图','',...p.missingReferences.map(r=>'- `'+r.uploadName+'`，依据[原记录]('+from(base,r.document)+')；本机未找到。'),'');
+  if(p.missingReferences.length)md.push('## 待补历史原图','',...p.missingReferences.map(r=>typeof r==='string'?'- '+r:'- `'+r.uploadName+'`，依据[原记录]('+from(base,r.document)+')；本机未找到。'),'');
   if(p.validation?.length)md.push('## 验收入口','',...p.validation.map(f=>'- [验收资料]('+from(base,f)+')'),'');
   if(p.notes?.length)md.push('## 资料差异','',...p.notes.map(s=>'- '+s),'');
   out[base+'/README.md']=md.join('\n').trimEnd()+'\n';
