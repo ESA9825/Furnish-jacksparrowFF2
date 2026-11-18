@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "license": "CC0-1.0",
+  "licenseUrl": "https://polyhaven.com/license",
+  "provider": "Poly Haven",
+  "author": "Jenelle van Heerden",
+  "materials": [
+    {
+      "id": "natural-walnut-veneer",
+      "name": "天然胡桃木",
+      "source": "https://polyhaven.com/a/natural_walnut_veneer",
+      "sampleWidthMm": 1000,
+      "resolution": [
+        2048,
+        2048
+      ],
+      "maps": {
+        "baseColor": {
+          "file": "natural_walnut_veneer/natural_walnut_veneer_diff_2k.jpg",
+          "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/natural_walnut_veneer/natural_walnut_veneer_diff_2k.jpg",
+          "sha256": "4a1a84e9537b291ac0cce1e2b8908fb9b5d1057a246ee0b3c25345565ac9686d"
+        },
+        "normalGL": {
+          "file": "natural_walnut_veneer/natural_walnut_veneer_nor_gl_2k.jpg",
+          "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/natural_walnut_veneer/natural_walnut_veneer_nor_gl_2k.jpg",
+          "sha256": "9b1e316d019b2ae07f5327e2a8203ef34d7c8b86dbf2579273d3b5cf8e5fd441"
+        },
+        "roughness": {
+          "file": "natural_walnut_veneer/natural_walnut_veneer_rough_2k.jpg",
+          "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/natural_walnut_veneer/natural_walnut_veneer_rough_2k.jpg",
+          "sha256": "2056eb8c99a936bdc7ec4fc6b04e3b1a443c7c87ca8fd0e7011bed6188290fef"
+        }
+      }
+    },
+    {
+      "id": "ash-veneer",
+      "name": "白蜡木",
+      "source": "https://polyhaven.com/a/ash_veneer",
+      "sampleWidthMm": 1000,
+      "resolution": [
+        2048,
+        2048
+      ],
+      "maps": {
+        "baseColor": {
+          "file": "ash_veneer/ash_veneer_diff_2k.jpg",
+          "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/ash_veneer/ash_veneer_diff_2k.jpg",
+          "sha256": "00abb70f86bdfe49aa6e09f350af9e8e1605ccf13171f9be46ceb6018846c06b"
+        },
+        "normalGL": {
+          "file": "ash_veneer/ash_veneer_nor_gl_2k.jpg",
+          "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/ash_veneer/ash_veneer_nor_gl_2k.jpg",
+          "sha256": "64bbd775ba2978aa12108ecd58419c333eb0c194b52cbc8e1d2bea02252020af"
+        },
+        "roughness": {
+          "file": "ash_veneer/ash_veneer_rough_2k.jpg",
+          "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/ash_veneer/ash_veneer_rough_2k.jpg",
+          "sha256": "3e6b077f6af6ba7725668b438bfc523f1342d0fb4bd497f1c9668663ad189ef0"
+        }
+      }
+    },
+    {
+      "id": "white-oak-veneer",
+      "name": "白橡木",
+      "source": "https://polyhaven.com/a/white_oak_veneer",
+      "sampleWidthMm": 500,
+      "resolution": [
+        2048,
+        2048
+      ],
+      "maps": {
+        "baseColor": {
+          "file": "white_oak_veneer/white_oak_veneer_diff_2k.jpg",
+          "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/white_oak_veneer/white_oak_veneer_diff_2k.jpg",
+          "sha256": "00e09e2f901fb76c6d206e7a0197f257f8a9d5f662d3cd863c2258c9b287131e"
+        },
+        "normalGL": {
+          "file": "white_oak_veneer/white_oak_veneer_nor_gl_2k.jpg",
+          "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/white_oak_veneer/white_oak_veneer_nor_gl_2k.jpg",
+          "sha256": "262b2c0b9020e34abbba2f3d02a5d7184d5ef008f12499c5350187125929b053"
+        },
+        "roughness": {
+          "file": "white_oak_veneer/white_oak_veneer_rough_2k.jpg",
+          "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/white_oak_veneer/white_oak_veneer_rough_2k.jpg",
+          "sha256": "1e325ebc77729c09afb9a2c6ed3bf51b2f0b3f8c1731642dca39b197c79097f0"
+        }
+      }
+    },
+    {
+      "id": "white-maple-veneer",
+      "name": "白枫木",
+      "source": "https://polyhaven.com/a/white_maple_veneer",
+      "sampleWidthMm": 1000,
+      "resolution": [
+        2048,
+        2048
+      ],
+      "maps": {
+        "baseColor": {
+          "file": "white_maple_veneer/white_maple_veneer_diff_2k.jpg",
+          "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/white_maple_veneer/white_maple_veneer_diff_2k.jpg",
+          "sha256": "45ee4e8def749bdb41401f98277313b632e52c901d9deb62ca32578347063105"
+        },
+        "normalGL": {
+          "file": "white_maple_veneer/white_maple_veneer_nor_gl_2k.jpg",
+          "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/white_maple_veneer/white_maple_veneer_nor_gl_2k.jpg",
+          "sha256": "c70d14bdb6a0953ab4a9f23af16c07324f94c597e30d058c7cd33d14d2d4fb59"
+        },
+        "roughness": {
+          "file": "white_maple_veneer/white_maple_veneer_rough_2k.jpg",
+          "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/white_maple_veneer/white_maple_veneer_rough_2k.jpg",
+          "sha256": "1184ebdeb279f7450852d5a5ce648bc96a045470acfa98aa3001dd38b65cfb51"
+        }
+      }
+    }
+  ],
+  "finishes": [
+    {
+      "id": "walnut-warm-dark",
+      "name": "暖深胡桃木",
+      "materialId": "natural-walnut-veneer",
+      "baseColorTintSrgb": "#e6c4a2",
+      "status": "trial"
+    }
+  ]
+}
