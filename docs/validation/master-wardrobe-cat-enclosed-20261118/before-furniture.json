@@ -1,0 +1,505 @@
+{
+  "brand": "",
+  "color": "#e8e0d2",
+  "cx": 1154.5,
+  "cy": 7670.5,
+  "d": 630,
+  "frontClearance": 800,
+  "h": 2640,
+  "id": "fmvvt0mto1",
+  "model": "",
+  "name": "主卧到顶衣柜 · 三挂衣区／被褥包／贯通猫廊",
+  "priceDate": "",
+  "purchaseNote": "",
+  "purchaseStatus": "planned",
+  "rot": 270,
+  "sourceUrl": "",
+  "type": "cabinet",
+  "w": 3821,
+  "cabinet": {
+    "version": 2,
+    "boxes": [
+      {
+        "id": "north",
+        "w": 821,
+        "d": 630,
+        "h": 2100,
+        "thickness": 18,
+        "backThickness": 18,
+        "bottom": true,
+        "components": [
+          {
+            "id": "p1",
+            "kind": "plinth",
+            "height": 60,
+            "inset": 40
+          },
+          {
+            "id": "p2",
+            "kind": "trim",
+            "side": "left",
+            "size": 100
+          },
+          {
+            "id": "p3",
+            "kind": "shelf",
+            "bay": "left",
+            "at": 0.26047904191616766,
+            "front": 0,
+            "back": 0
+          },
+          {
+            "id": "p4",
+            "kind": "shelf",
+            "bay": "left",
+            "at": 0.4600798403193613,
+            "front": 0,
+            "back": 0
+          },
+          {
+            "id": "p5",
+            "kind": "shelf",
+            "bay": "left",
+            "at": 0.6596806387225549,
+            "front": 0,
+            "back": 0
+          },
+          {
+            "id": "p6",
+            "kind": "shelf",
+            "bay": "left",
+            "at": 0.8343313373253493,
+            "front": 0,
+            "back": 0
+          },
+          {
+            "id": "p10",
+            "kind": "multiDoor",
+            "bay": "left",
+            "range": {
+              "bottom": 0.02857142857142857,
+              "top": 1
+            },
+            "segments": [
+              {
+                "id": "seg7",
+                "top": 1,
+                "mode": "double",
+                "maxAngle": 90,
+                "handle": "bar",
+                "finish": "solid",
+                "leaves": [
+                  {
+                    "id": "leaf8",
+                    "open": false
+                  },
+                  {
+                    "id": "leaf9",
+                    "open": false
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "middle",
+        "w": 950,
+        "d": 630,
+        "h": 2100,
+        "thickness": 18,
+        "backThickness": 18,
+        "bottom": true,
+        "attach": {
+          "boxId": "north",
+          "side": "right",
+          "gap": 0
+        },
+        "components": [
+          {
+            "id": "p11",
+            "kind": "plinth",
+            "height": 60,
+            "inset": 40
+          },
+          {
+            "id": "p12",
+            "kind": "shelf",
+            "bay": "left",
+            "at": 0.8343313373253493,
+            "front": 0,
+            "back": 0
+          },
+          {
+            "id": "p13",
+            "kind": "rail",
+            "bay": "left",
+            "at": 0.7844311377245509,
+            "depth": 315,
+            "size": 25,
+            "endGap": 2
+          },
+          {
+            "id": "p17",
+            "kind": "multiDoor",
+            "bay": "left",
+            "range": {
+              "bottom": 0.02857142857142857,
+              "top": 1
+            },
+            "segments": [
+              {
+                "id": "seg14",
+                "top": 1,
+                "mode": "double",
+                "maxAngle": 90,
+                "handle": "bar",
+                "finish": "solid",
+                "leaves": [
+                  {
+                    "id": "leaf15",
+                    "open": false
+                  },
+                  {
+                    "id": "leaf16",
+                    "open": false
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "south",
+        "w": 950,
+        "d": 630,
+        "h": 2100,
+        "thickness": 18,
+        "backThickness": 18,
+        "bottom": true,
+        "attach": {
+          "boxId": "middle",
+          "side": "right",
+          "gap": 0
+        },
+        "components": [
+          {
+            "id": "p18",
+            "kind": "plinth",
+            "height": 60,
+            "inset": 40
+          },
+          {
+            "id": "p19",
+            "kind": "shelf",
+            "bay": "left",
+            "at": 0.26047904191616766,
+            "front": 0,
+            "back": 0
+          },
+          {
+            "id": "p20",
+            "kind": "shelf",
+            "bay": "left",
+            "at": 0.8343313373253493,
+            "front": 0,
+            "back": 0
+          },
+          {
+            "id": "p21",
+            "kind": "rail",
+            "bay": "left",
+            "at": 0.7844311377245509,
+            "depth": 315,
+            "size": 25,
+            "endGap": 2
+          },
+          {
+            "id": "p22",
+            "kind": "drawers",
+            "bay": "left",
+            "heights": [
+              220,
+              220
+            ],
+            "open": false,
+            "extension": 1
+          },
+          {
+            "id": "p26",
+            "kind": "multiDoor",
+            "bay": "left",
+            "range": {
+              "bottom": 0.23809523809523808,
+              "top": 1
+            },
+            "segments": [
+              {
+                "id": "seg23",
+                "top": 1,
+                "mode": "double",
+                "maxAngle": 90,
+                "handle": "bar",
+                "finish": "solid",
+                "leaves": [
+                  {
+                    "id": "leaf24",
+                    "open": false
+                  },
+                  {
+                    "id": "leaf25",
+                    "open": false
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "far_south",
+        "w": 950,
+        "d": 630,
+        "h": 2100,
+        "thickness": 18,
+        "backThickness": 18,
+        "bottom": true,
+        "attach": {
+          "boxId": "south",
+          "side": "right",
+          "gap": 0
+        },
+        "components": [
+          {
+            "id": "p27",
+            "kind": "plinth",
+            "height": 60,
+            "inset": 40
+          },
+          {
+            "id": "p28",
+            "kind": "trim",
+            "side": "right",
+            "size": 18
+          },
+          {
+            "id": "p29",
+            "kind": "panel",
+            "bay": "left",
+            "at": 0.1819047619047619,
+            "front": 18,
+            "back": 18,
+            "extendLeft": false,
+            "extendRight": false,
+            "face": false,
+            "edgeGap": 0
+          },
+          {
+            "id": "p30",
+            "kind": "panel",
+            "bay": "left",
+            "at": 0.2857142857142857,
+            "front": 18,
+            "back": 18,
+            "extendLeft": false,
+            "extendRight": false,
+            "face": false,
+            "edgeGap": 0
+          },
+          {
+            "id": "p31",
+            "kind": "shelf",
+            "bay": "left",
+            "at": 0.8343313373253493,
+            "front": 0,
+            "back": 0
+          },
+          {
+            "id": "p32",
+            "kind": "rail",
+            "bay": "left",
+            "at": 0.7844311377245509,
+            "depth": 315,
+            "size": 25,
+            "endGap": 2
+          },
+          {
+            "id": "p33",
+            "kind": "drawerModule",
+            "bay": "left",
+            "bottom": 0.19047619047619047,
+            "height": 200,
+            "lanes": 1,
+            "boxTopInset": 18,
+            "frontBottomOffset": 0,
+            "frontTopOffset": 0,
+            "open": false,
+            "extension": 1,
+            "handle": "bar"
+          },
+          {
+            "id": "p37",
+            "kind": "multiDoor",
+            "bay": "left",
+            "range": {
+              "bottom": 0.02857142857142857,
+              "top": 0.19047619047619047
+            },
+            "segments": [
+              {
+                "id": "seg34",
+                "top": 1,
+                "mode": "double",
+                "maxAngle": 90,
+                "handle": "bar",
+                "finish": "solid",
+                "leaves": [
+                  {
+                    "id": "leaf35",
+                    "open": false
+                  },
+                  {
+                    "id": "leaf36",
+                    "open": false
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "p41",
+            "kind": "multiDoor",
+            "bay": "left",
+            "range": {
+              "bottom": 0.29428571428571426,
+              "top": 1
+            },
+            "segments": [
+              {
+                "id": "seg38",
+                "top": 1,
+                "mode": "double",
+                "maxAngle": 90,
+                "handle": "bar",
+                "finish": "solid",
+                "leaves": [
+                  {
+                    "id": "leaf39",
+                    "open": false
+                  },
+                  {
+                    "id": "leaf40",
+                    "open": false
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cat_top",
+        "w": 2821,
+        "d": 630,
+        "h": 540,
+        "thickness": 18,
+        "backThickness": 18,
+        "bottom": true,
+        "attach": {
+          "boxId": "north",
+          "side": "top",
+          "gap": 0
+        },
+        "components": [
+          {
+            "id": "p42",
+            "kind": "topClosure",
+            "height": 20,
+            "doorGap": 0
+          },
+          {
+            "id": "p43",
+            "kind": "openZone",
+            "bay": "left",
+            "from": 0.03461538461538462,
+            "to": 0.9653846153846154,
+            "side": "right",
+            "back": true,
+            "lower": false,
+            "upper": false,
+            "lowerFront": 0,
+            "upperFront": 0,
+            "extendSides": false,
+            "rearLip": 18,
+            "backAtPanels": true,
+            "light": false
+          },
+          {
+            "id": "p44",
+            "kind": "board",
+            "name": "猫廊前沿60高护边",
+            "w": 2821,
+            "h": 60,
+            "d": 18,
+            "x": 0,
+            "y": 48,
+            "z": 306
+          }
+        ]
+      },
+      {
+        "id": "cat_bridge",
+        "w": 1000,
+        "d": 630,
+        "h": 540,
+        "thickness": 18,
+        "backThickness": 18,
+        "bottom": true,
+        "attach": {
+          "boxId": "cat_top",
+          "side": "right",
+          "gap": 0
+        },
+        "components": [
+          {
+            "id": "p45",
+            "kind": "topClosure",
+            "height": 20,
+            "doorGap": 0
+          },
+          {
+            "id": "p46",
+            "kind": "openZone",
+            "bay": "left",
+            "from": 0.03461538461538462,
+            "to": 0.9653846153846154,
+            "side": "both",
+            "back": true,
+            "lower": false,
+            "upper": false,
+            "lowerFront": 0,
+            "upperFront": 0,
+            "extendSides": false,
+            "rearLip": 18,
+            "backAtPanels": true,
+            "light": false
+          },
+          {
+            "id": "p47",
+            "kind": "board",
+            "name": "猫廊前沿60高护边",
+            "w": 1000,
+            "h": 60,
+            "d": 18,
+            "x": 0,
+            "y": 48,
+            "z": 306
+          }
+        ]
+      }
+    ]
+  },
+  "mountHeight": 0
+}

@@ -1,0 +1,22 @@
+{
+  "plan": "custom_mv37igji",
+  "design": {
+    "id": "dmwlj2pv0",
+    "name": "1601 · 主卧封闭猫廊与柜门猫洞"
+  },
+  "revision": "58752608f1fe7f6014309a58291db03caf7cc41e88efb430b267fa929f37facc",
+  "save": {
+    "mode": "saved",
+    "message": "设计已保存到本地正式文件\n保存位置：/Users/makinami/Documents/FurnishData/1601/workspace.furnish.json\n最后成功保存：2026/11/18 11:16:15",
+    "pending": false
+  },
+  "glb": {
+    "format": "scene_glb",
+    "file": "/Users/makinami/Documents/GitHub/Furnish/.local/mcp-exports/e228a9bee3b059ed-e281fbfa5cd0c16d.glb",
+    "mimeType": "model/gltf-binary",
+    "bytes": 97551632,
+    "sha256": "e281fbfa5cd0c16d9f369a6dc496a6c6be4c49f3d62fe931c516bfa921a6ffd2"
+  },
+  "otherFurnitureUnchanged": true,
+  "remainingSpaceIssues": 1
+}

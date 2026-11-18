@@ -1,0 +1,200 @@
+{
+  "holes": [
+    {
+      "boxId": "cat_top",
+      "leaf": 0,
+      "center": [
+        -1105.25,
+        190,
+        315
+      ],
+      "diameter": 300,
+      "sillAboveDeck": 22
+    },
+    {
+      "boxId": "cat_bridge",
+      "leaf": 1,
+      "center": [
+        250,
+        190,
+        315
+      ],
+      "diameter": 300,
+      "sillAboveDeck": 22
+    }
+  ],
+  "profileParts": [
+    {
+      "id": "cat_top_front",
+      "parts": 103
+    },
+    {
+      "id": "cat_bridge_front",
+      "parts": 99
+    }
+  ],
+  "productionBoards": 295,
+  "holeCentersEmpty": true,
+  "projectRoundTrip": true,
+  "radialApproximationError": 0.08031187854514732,
+  "height": {
+    "deck": 2152,
+    "ceiling": 2602,
+    "clear": 450,
+    "catSitting": [
+      350,
+      400
+    ],
+    "headroom": [
+      50,
+      100
+    ]
+  },
+  "measurements": [
+    {
+      "boxId": "cat_top",
+      "bay": "left",
+      "index": 0,
+      "column": 4,
+      "x": -500,
+      "left": -1892.5,
+      "right": 892.5,
+      "y": 2134,
+      "z": 0,
+      "front": 315,
+      "back": -315,
+      "width": 2785,
+      "bottomOpen": false,
+      "topOpen": false,
+      "sideOpen": true,
+      "spaces": [
+        {
+          "bottom": 2152,
+          "top": 2602,
+          "height": 450,
+          "depths": [
+            {
+              "bottom": 2152,
+              "top": 2595,
+              "rear": -297,
+              "front": 297,
+              "depth": 594,
+              "backThickness": 18,
+              "doorThickness": 18,
+              "openBack": false,
+              "openFront": false
+            },
+            {
+              "bottom": 2595,
+              "top": 2602,
+              "rear": -297,
+              "front": 315,
+              "depth": 612,
+              "backThickness": 18,
+              "doorThickness": 0,
+              "openBack": false,
+              "openFront": false
+            }
+          ],
+          "lowerBoard": null,
+          "upperBoard": null,
+          "lowerShelf": null,
+          "upperShelf": null
+        }
+      ]
+    },
+    {
+      "boxId": "cat_bridge",
+      "bay": "left",
+      "index": 0,
+      "column": 5,
+      "x": 1410.5,
+      "left": 928.5,
+      "right": 1892.5,
+      "y": 2134,
+      "z": 0,
+      "front": 315,
+      "back": -315,
+      "width": 964,
+      "bottomOpen": false,
+      "topOpen": false,
+      "sideOpen": true,
+      "spaces": [
+        {
+          "bottom": 2152,
+          "top": 2602,
+          "height": 450,
+          "depths": [
+            {
+              "bottom": 2152,
+              "top": 2595,
+              "rear": -297,
+              "front": 297,
+              "depth": 594,
+              "backThickness": 18,
+              "doorThickness": 18,
+              "openBack": false,
+              "openFront": false
+            },
+            {
+              "bottom": 2595,
+              "top": 2602,
+              "rear": -297,
+              "front": 315,
+              "depth": 612,
+              "backThickness": 18,
+              "doorThickness": 0,
+              "openBack": false,
+              "openFront": false
+            }
+          ],
+          "lowerBoard": null,
+          "upperBoard": null,
+          "lowerShelf": null,
+          "upperShelf": null
+        }
+      ]
+    }
+  ],
+  "productionMeshRays": [
+    {
+      "boxId": "cat_top",
+      "centerRayClear": true,
+      "adjacentPanelRaySolid": true
+    },
+    {
+      "boxId": "cat_bridge",
+      "centerRayClear": true,
+      "adjacentPanelRaySolid": true
+    }
+  ],
+  "productionMeshes": 295,
+  "drawerFaces": [
+    {
+      "box": "south",
+      "bottom": 78.99999999999999,
+      "top": 397,
+      "height": 318
+    },
+    {
+      "box": "south",
+      "bottom": 399,
+      "top": 597,
+      "height": 198
+    },
+    {
+      "box": "far_south",
+      "bottom": 78.99999999999999,
+      "top": 397,
+      "height": 318
+    },
+    {
+      "box": "far_south",
+      "bottom": 399,
+      "top": 597,
+      "height": 198
+    }
+  ],
+  "preservedRailsAndShelves": 10,
+  "lowerHeight": 2134
+}
