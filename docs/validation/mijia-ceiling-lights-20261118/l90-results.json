@@ -1,0 +1,53 @@
+{
+  "passed": true,
+  "blender": "/Applications/Blender.app/Contents/MacOS/Blender",
+  "device": "cpu",
+  "sourceFingerprint": "da99c07e35db133dde1ce6b98e393b1a441bf0627ab257c7b98e0b2d19a7c533",
+  "workspacePruned": true,
+  "stages": [
+    {
+      "name": "author-preflight",
+      "passed": true
+    },
+    {
+      "name": "preflight-negative",
+      "passed": true
+    },
+    {
+      "name": "publish",
+      "passed": true
+    },
+    {
+      "name": "geometry-state",
+      "passed": true
+    },
+    {
+      "name": "http-file-production",
+      "passed": true
+    },
+    {
+      "name": "blender-production-readback",
+      "passed": true
+    },
+    {
+      "name": "studio-production-export",
+      "passed": true
+    },
+    {
+      "name": "render-front",
+      "passed": true
+    },
+    {
+      "name": "render-oblique",
+      "passed": true
+    },
+    {
+      "name": "render-detail",
+      "passed": true
+    },
+    {
+      "name": "downloaded-blend-reopen",
+      "passed": true
+    }
+  ]
+}

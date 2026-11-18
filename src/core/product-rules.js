@@ -142,11 +142,12 @@ const electricalBox={family:'electrical-box',wallRecess:true,height:400,anchor:'
 const covering={defaultFrontClearance:0,family:'window-covering',height:1800,anchor:'bottom',defaults:{mountHeight:900,curtainOpen:0},fields:['mountHeight','curtainOpen'],create:['mountHeight','curtainOpen'],solidModel:{global:'FurnishWindowCoveringModel',module:'window-covering',base:'mountHeight'}};
 const coverSpecs={head:50,hem:14,cellPitch:30,slatPitch:38,slatThickness:1.5,band:90,bambooPitch:10,sheet:1};
 function mijiaCeiling(model,asset,global,lumens,sourceUrl){
+ const round=model.startsWith('D');
  return {kind:'吸顶灯',family:'surface-light',height:60,anchor:'bottom',defaultFrontClearance:0,
   defaults:{mountHeight:2500,lightPreviewLevel:100},fields:['mountHeight','lightPreviewLevel'],create:['mountHeight'],
   solidModel:{global:'FurnishBathHeaterModel',module:'bath-heater',geometryVersion:1},
-  ...(model==='L60'?{}:{planShape:{exponent:1,segments:64}}),
-  panelLight:{asset,global,color:'#fff1dc',previewCandela:lumens/Math.PI,round:model!=='L60'},
+  ...(!round?{}:{planShape:{exponent:1,segments:64}}),
+  panelLight:{asset,global,color:'#fff1dc',previewCandela:lumens/Math.PI,round},
   identity:{brand:'小米/米家',model,sourceUrl}};
 }
 const types={
@@ -180,6 +181,7 @@ const types={
  acwall_midea_mxc3p:{kind:'壁挂空调',family:'wall-aircon',wallAirconProfile:'mxc3p',floorPassageAbove:2100,height:295,anchor:'bottom',defaultFrontClearance:0,clearanceReview:'missing',defaults:{mountHeight:2200},fields:['mountHeight'],create:['mountHeight'],solidModel:{global:'FurnishMideaWallAirconModel',module:'acwall-midea',geometryVersion:1},identity:{brand:'美的/Midea',model:'风尊三代 Pro · 大1.5匹 · KFR-35GW/MXC3P',sourceUrl:'https://item.jd.com/100328209650.html'}},
  desk_lamp_mijia_pro:{kind:'阅读台灯',family:'desk-light',height:470,anchor:'bottom',defaultFrontClearance:0,defaults:{mountHeight:0,lightPreviewLevel:100},fields:['mountHeight','lightPreviewLevel'],create:['mountHeight'],solidModel:{global:'FurnishDeskLampModel',module:'desk-lamp'},deskLight:{color:'#fff1dc',kelvin:4000,previewCandela:120,faces:[{part:'diffuser-left',center:[-143,435.7,167],width:226,depth:44},{part:'diffuser-right',center:[143,435.7,167],width:226,depth:44}],baseCenter:[0,-130.5],baseSize:[213,159]},identity:{brand:'小米/米家',model:'桌面学习灯 Pro · MJTD07YL · 白色',sourceUrl:'https://item.jd.com/100118995289.html'}},
  cove_light:{kind:'床头反射灯槽',family:'cove-light',height:35,anchor:'bottom',defaultFrontClearance:0,footprintMin:{w:100,d:25},defaults:{mountHeight:1250,lightPreviewLevel:30,lightKelvin:3000},fields:['mountHeight','lightPreviewLevel','lightKelvin'],create:['mountHeight','lightPreviewLevel','lightKelvin'],solidModel:{global:'FurnishCoveLightModel',module:'cove-light',geometryVersion:1},coveLight:{formatVersion:91,wall:1.5,minHeight:20,stripWidth:10,emitterHeight:6,previewCandelaPerM:100,colors:{2700:'#ffd1a0',3000:'#ffdbb3',4000:'#ffe7ce'}}},
+ ceiling_light_mijia_l90:mijiaCeiling('L90','mijia-ceiling-l90','FurnishMijiaCeilingL90',8000,'https://www.mi.com/shop/buy/detail?product_id=22566'),
  ceiling_light_mijia_l60:mijiaCeiling('L60','mijia-ceiling-l60','FurnishMijiaCeilingL60',5000,'https://www.mi.com/shop/buy/detail?product_id=22569'),
  ceiling_light_mijia_d40:mijiaCeiling('D40','mijia-ceiling-d40','FurnishMijiaCeilingD40',3000,'https://www.mi.com/tw/product/xiaomi-smart-ceiling-light-d40/specs/'),
  ceiling_light_mijia_d30:mijiaCeiling('D30','mijia-ceiling-d30','FurnishMijiaCeilingD30',1700,'https://www.mi.com/hk/product/xiaomi-smart-ceiling-light-d30/specs/'),

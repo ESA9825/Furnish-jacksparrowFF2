@@ -10,22 +10,24 @@ args = sys.argv[sys.argv.index('--') + 1:]
 out = Path(args[0]).resolve()
 profile = args[args.index('--profile') + 1]
 spec = json.loads((Path(__file__).parent / 'lib/mijia-ceiling-light-specs.json').read_text())[profile]
-radius = spec['size'][0] / 2
-square = profile.endswith('l60')
+width, _, depth = spec['size']
+radius = width / 2
+rectangular = profile in ('mijia-ceiling-l60', 'mijia-ceiling-l90')
 out.mkdir(parents=True, exist_ok=True)
 bpy.ops.wm.read_factory_settings(use_empty=True)
 scene = bpy.context.scene
 scene.unit_settings.system = 'METRIC'
 
 def contour(half, z, corner):
-    if not square:
+    if not rectangular:
         return [(half * math.cos(i * math.tau / 64), half * math.sin(i * math.tau / 64), z) for i in range(64)]
+    half_depth = half - (width - depth) / 2
     points = []
     for quarter, (sx, sy) in enumerate([(1, 1), (-1, 1), (-1, -1), (1, -1)]):
         for i in range(9):
             angle = (quarter + i / 8) * math.pi / 2
             points.append((sx * (half - corner) + corner * math.cos(angle),
-                           sy * (half - corner) + corner * math.sin(angle), z))
+                           sy * (half_depth - corner) + corner * math.sin(angle), z))
     return points
 
 def part(name, rings, material, caps=False):
@@ -45,7 +47,7 @@ def part(name, rings, material, caps=False):
     bm.free()
     mesh.update()
     for poly in mesh.polygons:
-        poly.use_smooth = abs(poly.normal.z) < .98 and not square
+        poly.use_smooth = abs(poly.normal.z) < .98 and not rectangular
     obj = bpy.data.objects.new(name, mesh)
     bpy.context.collection.objects.link(obj)
     obj['furnishStablePart'] = profile + '-v1:' + name
@@ -61,7 +63,7 @@ def material(name, value, rough):
 
 # White diffuser, narrow rim and recessed ceiling-side mount. Visible proportions
 # follow the marketing photos. Interior construction and screw details are unknown.
-edge = 6 if square else 4
+edge = 6 if rectangular else 4
 part('diffuser', [(radius-edge-1,0,16),(radius-edge,2,17),(radius-edge,6,17)],
      material('opal diffuser', .92, .56), caps=True)
 part('rim', [(radius-edge,2,17),(radius-1,2,22),(radius,4,23),

@@ -151,6 +151,7 @@ const LIB = [
   ]},
   {cat:'灯具', items:[
     ['cove_light','床头反射灯槽 · L2灯带方案占位',2000,45,'#f0f0eb',undefined,35],
+    ['ceiling_light_mijia_l90','米家吸顶灯 L90',900,600,'#f5f5f2',undefined,60],
     ['ceiling_light_mijia_l60','米家吸顶灯 L60',600,600,'#f5f5f2',undefined,60],
     ['ceiling_light_mijia_d40','米家吸顶灯 D40',450,450,'#f5f5f2',undefined,60],
     ['ceiling_light_mijia_d30','米家吸顶灯 D30',350,350,'#f5f5f2',undefined,60],
@@ -286,7 +287,7 @@ const navigationTypeGroups={
  'appliances/laundry':['washer','washer_littleswan_tg10k60w','dryer'],
  'appliances/climate':['fan_airmate_fa18_x231','aircon','aircon_midea_ultra_2hp','acwall','acwall_midea_mxc3p','waterheater','waterheater_flat','bath_heater_aopu_se2','bath_heater_300x600'],
  'appliances/services':['heating_manifold','electrical_box_strong','electrical_box_weak'],
- 'decor/lighting':['ceiling_light_mijia_l60','ceiling_light_mijia_d40','ceiling_light_mijia_d30','ceiling_light_mijia_d20','cove_light','surface_light','desk_lamp_mijia_pro','floorlamp','pendant','panel_light_300x600','downlight_philips_dl269','downlight_labot_ip65_7w']
+ 'decor/lighting':['ceiling_light_mijia_l90','ceiling_light_mijia_l60','ceiling_light_mijia_d40','ceiling_light_mijia_d30','ceiling_light_mijia_d20','cove_light','surface_light','desk_lamp_mijia_pro','floorlamp','pendant','panel_light_300x600','downlight_philips_dl269','downlight_labot_ip65_7w']
 };
 function navigationCategory(it,cat){
  if(it[7])return 'other/custom';
