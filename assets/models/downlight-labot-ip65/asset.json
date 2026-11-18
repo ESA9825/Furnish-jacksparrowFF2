@@ -1,0 +1,192 @@
+{
+  "format": 1,
+  "id": "downlight-labot-ip65",
+  "name": "拉伯塔IP65防水筒灯7W全白4000K",
+  "types": [
+    "downlight_labot_ip65_7w"
+  ],
+  "route": "blender",
+  "document": "docs/DOWNLIGHT-LABOT-IP65.md",
+  "sourceLinks": [
+    "https://item.jd.com/10087901407535.html"
+  ],
+  "references": [
+    {
+      "path": "references/jd/00.jpg",
+      "kind": "jd-product",
+      "sourceUrl": "https://img10.360buyimg.com/pcpubliccms/s1440x1440_jfs/t1/219668/40/35556/116579/6524eae9Fabab320c/77954a6adf7cfaef.jpg",
+      "capturedOn": "2026-11-18",
+      "sha256": "cc868e2f7d1a541d821866e6456f81d07dca5241568c86d0e24d51ebc6e15189",
+      "bytes": 353968
+    },
+    {
+      "path": "references/jd/01.jpg",
+      "kind": "jd-product",
+      "sourceUrl": "https://img30.360buyimg.com/popWareDetail/jfs/t1/57022/14/24664/98584/6524f121F414d5dbd/ad46903579844a27.jpg",
+      "capturedOn": "2026-11-18",
+      "sha256": "21b0cd69d819fb556699970305b9b059004dd0a5bfb7274637887080639a87ed",
+      "bytes": 171261
+    },
+    {
+      "path": "references/jd/02.jpg",
+      "kind": "jd-product",
+      "sourceUrl": "https://img30.360buyimg.com/popWareDetail/jfs/t1/92383/31/47005/60406/6524f122F4f0d808d/a56bf4ed6bb5510d.jpg",
+      "capturedOn": "2026-11-18",
+      "sha256": "9a1a6804d2244bf0c38aa2ddf04890641a8f362b876055f938b832a0c16c4f6a",
+      "bytes": 103301
+    },
+    {
+      "path": "references/jd/03.jpg",
+      "kind": "jd-product",
+      "sourceUrl": "https://img30.360buyimg.com/popWareDetail/jfs/t1/197218/12/36392/27521/6524f122Fb21485d3/0ae8128c8fc45310.jpg",
+      "capturedOn": "2026-11-18",
+      "sha256": "a23f1b98d54363519707bd4ae67cb5f06e7fd8163c60ce723568a5f26c736534",
+      "bytes": 67145
+    },
+    {
+      "path": "references/jd/04.jpg",
+      "kind": "jd-product",
+      "sourceUrl": "https://img30.360buyimg.com/popWareDetail/jfs/t1/132018/9/39299/42942/6524f122Fa7b1cc85/b06522819c7a12d6.jpg",
+      "capturedOn": "2026-11-18",
+      "sha256": "24f68f1ab959f5c8a4ccb6b0c5e5c563d1b9727208208d3ec1b041488285575e",
+      "bytes": 90178
+    },
+    {
+      "path": "references/jd/05.jpg",
+      "kind": "jd-product",
+      "sourceUrl": "https://img30.360buyimg.com/popWareDetail/jfs/t1/96744/36/31012/187507/6524f122F64d90b86/e9057e883af01a03.jpg",
+      "capturedOn": "2026-11-18",
+      "sha256": "8cb179143261952c8386197f13a96427e4a0423968482a74d6a631ecd0c19a06",
+      "bytes": 226287
+    },
+    {
+      "path": "references/jd/06.jpg",
+      "kind": "jd-product",
+      "sourceUrl": "https://img30.360buyimg.com/popWareDetail/jfs/t1/83635/14/26073/37725/6524f122Fefc7fb50/21c76fdab1103391.jpg",
+      "capturedOn": "2026-11-18",
+      "sha256": "1429e003d957f081c43874e706128de923734e11f06d3454b9e618e4b793a22b",
+      "bytes": 69315
+    },
+    {
+      "path": "references/jd/07.jpg",
+      "kind": "jd-product",
+      "sourceUrl": "https://img30.360buyimg.com/popWareDetail/jfs/t1/100930/6/25489/64731/6524f123F112d2ac0/354bdc4f9411a677.jpg",
+      "capturedOn": "2026-11-18",
+      "sha256": "a49f364e1ddf66d1f5c832aef1670005d77b20ef634a48111e4ad41790abb44a",
+      "bytes": 126782
+    },
+    {
+      "path": "references/jd/08.jpg",
+      "kind": "jd-product",
+      "sourceUrl": "https://img30.360buyimg.com/popWareDetail/jfs/t1/113537/30/43286/50348/6524f123F4f74d2be/7a4ec38b5828ba52.jpg",
+      "capturedOn": "2026-11-18",
+      "sha256": "74dc3a18609c44afab37ed68f987b6588d9fda608b747a5097e529eff4387944",
+      "bytes": 90613
+    },
+    {
+      "path": "references/jd/09.jpg",
+      "kind": "jd-product",
+      "sourceUrl": "https://img30.360buyimg.com/popWareDetail/jfs/t1/184756/21/39938/35532/6524f123F30d68958/bc97af6850f574d9.jpg",
+      "capturedOn": "2026-11-18",
+      "sha256": "688c855f6fa342aea5692bb8fc79f5c96ddfb2b37e9ce50e01c7ddea29e01dfa",
+      "bytes": 66562
+    },
+    {
+      "path": "references/jd/10.jpg",
+      "kind": "jd-product",
+      "sourceUrl": "https://img30.360buyimg.com/popWareDetail/jfs/t1/190735/21/39618/51567/6524f123Faf9853d0/b34748e86e8e7920.jpg",
+      "capturedOn": "2026-11-18",
+      "sha256": "2c7c5a3cf75a592610d9f3a04748b194ce2e41594a1d4f74268ba55bf6c73b3a",
+      "bytes": 91842
+    },
+    {
+      "path": "references/jd/11.jpg",
+      "kind": "jd-product",
+      "sourceUrl": "https://img30.360buyimg.com/popWareDetail/jfs/t1/88409/15/32047/118511/6524f123Fb2b0ab14/285511b92e83da1f.jpg",
+      "capturedOn": "2026-11-18",
+      "sha256": "30deafab5b3ac1edf5d8a102ad529d1cebbee0f96c705ca8685622b81ec12f76",
+      "bytes": 170553
+    },
+    {
+      "path": "references/jd/12.jpg",
+      "kind": "jd-product",
+      "sourceUrl": "https://img30.360buyimg.com/popWareDetail/jfs/t1/109025/12/36171/72664/6524f123F865aa932/2789fa30b4e2cb33.jpg",
+      "capturedOn": "2026-11-18",
+      "sha256": "4dfa472e9343da79e8c38008f8e32a9f9bf68521425c383c2b8ddccd7d52b591",
+      "bytes": 117236
+    },
+    {
+      "path": "references/jd/13.jpg",
+      "kind": "jd-product",
+      "sourceUrl": "https://img30.360buyimg.com/popWareDetail/jfs/t1/93679/7/44128/55827/6524f124Fe797317d/1d7a8a5ddb7dfcad.jpg",
+      "capturedOn": "2026-11-18",
+      "sha256": "d45be2f9593b567b4d61c30e474e568b2726e3f86b111c264048536b9d16ddaf",
+      "bytes": 102383
+    },
+    {
+      "path": "references/jd/14.jpg",
+      "kind": "jd-product",
+      "sourceUrl": "https://img30.360buyimg.com/popWareDetail/jfs/t1/193947/38/39445/127495/6524f124F379f9e37/31943d908e2b408a.jpg",
+      "capturedOn": "2026-11-18",
+      "sha256": "c56c0b3159ccbf5ced29ad1161fd29c32fb33dfc3b593a58a01334bd276a5241",
+      "bytes": 179789
+    },
+    {
+      "path": "references/jd/15.jpg",
+      "kind": "jd-product",
+      "sourceUrl": "https://img30.360buyimg.com/popWareDetail/jfs/t1/93514/23/40368/50055/6524f124F9a4443e1/aa8eeacd3a22539b.jpg",
+      "capturedOn": "2026-11-18",
+      "sha256": "7b7bb66cac76d240775a3a6978a0cfc4cac74c7f1e4bc8e63237fd6b11d19914",
+      "bytes": 88645
+    },
+    {
+      "path": "references/jd/16.jpg",
+      "kind": "jd-product",
+      "sourceUrl": "https://img30.360buyimg.com/popWareDetail/jfs/t1/101326/7/43184/81615/6524f124F5dc0ac8a/521fb42858636dbc.jpg",
+      "capturedOn": "2026-11-18",
+      "sha256": "2620ae71347c2a19cd8e3a135952156336f1cd184b53fa126bcd3aaa7d3dd1ab",
+      "bytes": 128862
+    },
+    {
+      "path": "references/jd/17.jpg",
+      "kind": "jd-product",
+      "sourceUrl": "https://img30.360buyimg.com/popWareDetail/jfs/t1/98216/10/44025/109245/6524f144F617b3fc4/6844f3963b521550.jpg",
+      "capturedOn": "2026-11-18",
+      "sha256": "8cdcf313a14fadc0178193680897f68b1b35a2346c0d338955b593b0c0a15db0",
+      "bytes": 152649
+    },
+    {
+      "path": "references/jd/18.jpg",
+      "kind": "jd-product",
+      "sourceUrl": "https://img30.360buyimg.com/popWareDetail/jfs/t1/154007/1/38812/108999/6524f144Fb4662b1c/f18406e297eb0377.jpg",
+      "capturedOn": "2026-11-18",
+      "sha256": "4b345ca4c243c901fab7e3aed92d6c54a9f294dd2e7b4729aff0bafadb22d17e",
+      "bytes": 143348
+    },
+    {
+      "path": "references/jd/19.jpg",
+      "kind": "jd-product",
+      "sourceUrl": "https://img30.360buyimg.com/popWareDetail/jfs/t1/188400/19/39552/44467/6524f144Feb345e70/705d56a9ed9a740b.jpg",
+      "capturedOn": "2026-11-18",
+      "sha256": "42a5cf1eb32b262b6ac6ce18b03528f9cc50e1c2a4f46b98387dbfe88f043fe6",
+      "bytes": 84215
+    },
+    {
+      "path": "references/jd/20.jpg",
+      "kind": "jd-product",
+      "sourceUrl": "https://img30.360buyimg.com/popWareDetail/jfs/t1/92063/14/35549/53419/6524f144F794d7687/0c3fd8a2e84ef65b.jpg",
+      "capturedOn": "2026-11-18",
+      "sha256": "fa5f7857f9f7d27db909f71b3ce7a0c0ab94bd6e927faf1c2dcd0376f7172bd0",
+      "bytes": 85030
+    }
+  ],
+  "missingReferences": [
+    "厂家CAD/密封剖面",
+    "驱动尺寸与安装净空",
+    "实测光通量/IES"
+  ],
+  "supportingFiles": [],
+  "validation": [
+    "docs/validation/downlight-labot-visual-20261118/README.md"
+  ]
+}

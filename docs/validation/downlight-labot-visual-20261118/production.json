@@ -1,0 +1,1179 @@
+{
+  "passed": true,
+  "profile": "downlight-labot-ip65",
+  "route": "blender",
+  "modes": [
+    {
+      "mode": "http",
+      "passed": true,
+      "undoRedo": true,
+      "coreResize": true,
+      "refresh": true,
+      "narrow": true,
+      "offline": false
+    },
+    {
+      "mode": "file",
+      "passed": true,
+      "undoRedo": true,
+      "coreResize": true,
+      "refresh": true,
+      "narrow": true,
+      "offline": true
+    }
+  ],
+  "exports": [
+    {
+      "mode": "http",
+      "state": "nominal",
+      "file": "http-nominal.glb",
+      "fixture": {
+        "id": "model-pilot",
+        "cx": 0,
+        "cy": 0,
+        "rot": 0,
+        "flip": false,
+        "type": "downlight_labot_ip65_7w",
+        "name": "拉伯塔 IP65防水筒灯 · 7W全白4000K",
+        "w": 85,
+        "d": 85,
+        "color": "#f4f4f0",
+        "mountHeight": 2500,
+        "frontClearance": 0,
+        "brand": "拉伯塔/LABOT",
+        "model": "IP65防水筒灯 · 7W全白4000K · JD10087901407535",
+        "sourceUrl": "https://item.jd.com/10087901407535.html",
+        "h": 45
+      },
+      "scene": [
+        {
+          "id": "model-pilot",
+          "cx": 0,
+          "cy": 0,
+          "rot": 0,
+          "flip": false,
+          "type": "downlight_labot_ip65_7w",
+          "name": "拉伯塔 IP65防水筒灯 · 7W全白4000K",
+          "w": 85,
+          "d": 85,
+          "color": "#f4f4f0",
+          "mountHeight": 2500,
+          "frontClearance": 0,
+          "brand": "拉伯塔/LABOT",
+          "model": "IP65防水筒灯 · 7W全白4000K · JD10087901407535",
+          "sourceUrl": "https://item.jd.com/10087901407535.html",
+          "h": 45
+        }
+      ],
+      "geometry": {
+        "parts": [
+          {
+            "key": "explicit:downlight-labot-ip65-v1:diffuser",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 1140,
+            "bounds": [
+              [
+                -0.024800000712275505,
+                2.5299999993294477,
+                -0.024800000712275505
+              ],
+              [
+                0.024800000712275505,
+                2.530799999833107,
+                0.024800000712275505
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 132.58047322990632
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:face-ring",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 3456,
+            "bounds": [
+              [
+                -0.042500000447034836,
+                2.5,
+                -0.042500000447034836
+              ],
+              [
+                0.042500000447034836,
+                2.502000000094995,
+                0.042500000447034836
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:rear-cap",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 1140,
+            "bounds": [
+              [
+                -0.03370000049471855,
+                2.543000001460314,
+                -0.03370000049471855
+              ],
+              [
+                0.03370000049471855,
+                2.5439999997615814,
+                0.03370000049471855
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:rear-fins",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 324,
+            "bounds": [
+              [
+                -0.02459999918937683,
+                2.5439999997615814,
+                -0.03099999949336052
+              ],
+              [
+                0.02459999918937683,
+                2.5450000017881393,
+                0.03099999949336052
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:rear-housing",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 2880,
+            "bounds": [
+              [
+                -0.03500000014901161,
+                2.502000000094995,
+                -0.03500000014901161
+              ],
+              [
+                0.03500000014901161,
+                2.543000001460314,
+                0.03500000014901161
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:reflector-cup",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 2880,
+            "bounds": [
+              [
+                -0.03400000184774399,
+                2.50179999996908,
+                -0.03400000184774399
+              ],
+              [
+                0.03400000184774399,
+                2.5299999993294477,
+                0.03400000184774399
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:spring-cover-left",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 36,
+            "bounds": [
+              [
+                -0.03999999910593033,
+                2.5099999997764826,
+                -0.004000000189989805
+              ],
+              [
+                -0.03799999877810478,
+                2.525000000372529,
+                0.004000000189989805
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:spring-cover-right",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 36,
+            "bounds": [
+              [
+                0.03799999877810478,
+                2.5099999997764826,
+                -0.004000000189989805
+              ],
+              [
+                0.03999999910593033,
+                2.525000000372529,
+                0.004000000189989805
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:spring-left",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 192,
+            "bounds": [
+              [
+                -0.040432900190353394,
+                2.5095635997131467,
+                -0.00044999999227002263
+              ],
+              [
+                -0.0345550999045372,
+                2.53923150151968,
+                0.00044999999227002263
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:spring-right",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 192,
+            "bounds": [
+              [
+                0.0345550999045372,
+                2.5095635997131467,
+                -0.00044999999227002263
+              ],
+              [
+                0.040432900190353394,
+                2.53923150151968,
+                0.00044999999227002263
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "bounds": [
+          [
+            -0.042500000447034836,
+            2.5,
+            -0.042500000447034836
+          ],
+          [
+            0.042500000447034836,
+            2.5450000017881393,
+            0.042500000447034836
+          ]
+        ],
+        "settledPoses": []
+      },
+      "spatial": {
+        "bottom": 2.5,
+        "top": 2.545
+      }
+    },
+    {
+      "mode": "http",
+      "state": "resized",
+      "file": "http-resized.glb",
+      "fixture": {
+        "id": "model-pilot",
+        "cx": 0,
+        "cy": 0,
+        "rot": 0,
+        "flip": false,
+        "type": "downlight_labot_ip65_7w",
+        "name": "拉伯塔 IP65防水筒灯 · 7W全白4000K",
+        "w": 95.2,
+        "d": 91.80000000000001,
+        "color": "#f4f4f0",
+        "mountHeight": 2500,
+        "frontClearance": 0,
+        "brand": "拉伯塔/LABOT",
+        "model": "IP65防水筒灯 · 7W全白4000K · JD10087901407535",
+        "sourceUrl": "https://item.jd.com/10087901407535.html",
+        "h": 48.6
+      },
+      "scene": [
+        {
+          "id": "model-pilot",
+          "cx": 0,
+          "cy": 0,
+          "rot": 0,
+          "flip": false,
+          "type": "downlight_labot_ip65_7w",
+          "name": "拉伯塔 IP65防水筒灯 · 7W全白4000K",
+          "w": 95.2,
+          "d": 91.80000000000001,
+          "color": "#f4f4f0",
+          "mountHeight": 2500,
+          "frontClearance": 0,
+          "brand": "拉伯塔/LABOT",
+          "model": "IP65防水筒灯 · 7W全白4000K · JD10087901407535",
+          "sourceUrl": "https://item.jd.com/10087901407535.html",
+          "h": 48.6
+        }
+      ],
+      "geometry": {
+        "parts": [
+          {
+            "key": "explicit:downlight-labot-ip65-v1:diffuser",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 1140,
+            "bounds": [
+              [
+                -0.027775999158620834,
+                2.5324000008404255,
+                -0.026784000918269157
+              ],
+              [
+                0.027775999158620834,
+                2.533263999968767,
+                0.026784000918269157
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 105.6923415416983
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:face-ring",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 3456,
+            "bounds": [
+              [
+                -0.047600001096725464,
+                2.5,
+                -0.045899998396635056
+              ],
+              [
+                0.047600001096725464,
+                2.50215999991633,
+                0.045899998396635056
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:rear-cap",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 1140,
+            "bounds": [
+              [
+                -0.03774400055408478,
+                2.546440001577139,
+                -0.036396000534296036
+              ],
+              [
+                0.03774400055408478,
+                2.547520000487566,
+                0.036396000534296036
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:rear-fins",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 324,
+            "bounds": [
+              [
+                -0.02755199931561947,
+                2.547520000487566,
+                -0.033479999750852585
+              ],
+              [
+                0.02755199931561947,
+                2.548599999397993,
+                0.033479999750852585
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:rear-housing",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 2880,
+            "bounds": [
+              [
+                -0.03920000046491623,
+                2.50215999991633,
+                -0.03779999911785126
+              ],
+              [
+                0.03920000046491623,
+                2.546440001577139,
+                0.03779999911785126
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:reflector-cup",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 2880,
+            "bounds": [
+              [
+                -0.03807999938726425,
+                2.5019440000178292,
+                -0.036720000207424164
+              ],
+              [
+                0.03807999938726425,
+                2.5324000008404255,
+                0.036720000207424164
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:spring-cover-left",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 36,
+            "bounds": [
+              [
+                -0.04479999840259552,
+                2.510800000280142,
+                -0.00431999983265996
+              ],
+              [
+                -0.04255999997258186,
+                2.5270000007003546,
+                0.00431999983265996
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:spring-cover-right",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 36,
+            "bounds": [
+              [
+                0.04255999997258186,
+                2.510800000280142,
+                -0.00431999983265996
+              ],
+              [
+                0.04479999840259552,
+                2.5270000007003546,
+                0.00431999983265996
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:spring-left",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 192,
+            "bounds": [
+              [
+                -0.04528484866023064,
+                2.5103286877274513,
+                -0.00048600000445730984
+              ],
+              [
+                -0.03870171308517456,
+                2.542370021343231,
+                0.00048600000445730984
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:spring-right",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 192,
+            "bounds": [
+              [
+                0.03870171308517456,
+                2.5103286877274513,
+                -0.00048600000445730984
+              ],
+              [
+                0.04528484866023064,
+                2.542370021343231,
+                0.00048600000445730984
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "bounds": [
+          [
+            -0.047600001096725464,
+            2.5,
+            -0.045899998396635056
+          ],
+          [
+            0.047600001096725464,
+            2.548599999397993,
+            0.045899998396635056
+          ]
+        ],
+        "settledPoses": []
+      },
+      "spatial": {
+        "bottom": 2.5,
+        "top": 2.5486
+      }
+    },
+    {
+      "mode": "file",
+      "state": "nominal",
+      "file": "file-nominal.glb",
+      "fixture": {
+        "id": "model-pilot",
+        "cx": 0,
+        "cy": 0,
+        "rot": 0,
+        "flip": false,
+        "type": "downlight_labot_ip65_7w",
+        "name": "拉伯塔 IP65防水筒灯 · 7W全白4000K",
+        "w": 85,
+        "d": 85,
+        "color": "#f4f4f0",
+        "mountHeight": 2500,
+        "frontClearance": 0,
+        "brand": "拉伯塔/LABOT",
+        "model": "IP65防水筒灯 · 7W全白4000K · JD10087901407535",
+        "sourceUrl": "https://item.jd.com/10087901407535.html",
+        "h": 45
+      },
+      "scene": [
+        {
+          "id": "model-pilot",
+          "cx": 0,
+          "cy": 0,
+          "rot": 0,
+          "flip": false,
+          "type": "downlight_labot_ip65_7w",
+          "name": "拉伯塔 IP65防水筒灯 · 7W全白4000K",
+          "w": 85,
+          "d": 85,
+          "color": "#f4f4f0",
+          "mountHeight": 2500,
+          "frontClearance": 0,
+          "brand": "拉伯塔/LABOT",
+          "model": "IP65防水筒灯 · 7W全白4000K · JD10087901407535",
+          "sourceUrl": "https://item.jd.com/10087901407535.html",
+          "h": 45
+        }
+      ],
+      "geometry": {
+        "parts": [
+          {
+            "key": "explicit:downlight-labot-ip65-v1:diffuser",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 1140,
+            "bounds": [
+              [
+                -0.024800000712275505,
+                2.5299999993294477,
+                -0.024800000712275505
+              ],
+              [
+                0.024800000712275505,
+                2.530799999833107,
+                0.024800000712275505
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 132.58047322990632
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:face-ring",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 3456,
+            "bounds": [
+              [
+                -0.042500000447034836,
+                2.5,
+                -0.042500000447034836
+              ],
+              [
+                0.042500000447034836,
+                2.502000000094995,
+                0.042500000447034836
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:rear-cap",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 1140,
+            "bounds": [
+              [
+                -0.03370000049471855,
+                2.543000001460314,
+                -0.03370000049471855
+              ],
+              [
+                0.03370000049471855,
+                2.5439999997615814,
+                0.03370000049471855
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:rear-fins",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 324,
+            "bounds": [
+              [
+                -0.02459999918937683,
+                2.5439999997615814,
+                -0.03099999949336052
+              ],
+              [
+                0.02459999918937683,
+                2.5450000017881393,
+                0.03099999949336052
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:rear-housing",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 2880,
+            "bounds": [
+              [
+                -0.03500000014901161,
+                2.502000000094995,
+                -0.03500000014901161
+              ],
+              [
+                0.03500000014901161,
+                2.543000001460314,
+                0.03500000014901161
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:reflector-cup",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 2880,
+            "bounds": [
+              [
+                -0.03400000184774399,
+                2.50179999996908,
+                -0.03400000184774399
+              ],
+              [
+                0.03400000184774399,
+                2.5299999993294477,
+                0.03400000184774399
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:spring-cover-left",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 36,
+            "bounds": [
+              [
+                -0.03999999910593033,
+                2.5099999997764826,
+                -0.004000000189989805
+              ],
+              [
+                -0.03799999877810478,
+                2.525000000372529,
+                0.004000000189989805
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:spring-cover-right",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 36,
+            "bounds": [
+              [
+                0.03799999877810478,
+                2.5099999997764826,
+                -0.004000000189989805
+              ],
+              [
+                0.03999999910593033,
+                2.525000000372529,
+                0.004000000189989805
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:spring-left",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 192,
+            "bounds": [
+              [
+                -0.040432900190353394,
+                2.5095635997131467,
+                -0.00044999999227002263
+              ],
+              [
+                -0.0345550999045372,
+                2.53923150151968,
+                0.00044999999227002263
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "key": "explicit:downlight-labot-ip65-v1:spring-right",
+            "id": "model-pilot",
+            "version": 3,
+            "kind": "BufferGeometry",
+            "count": 192,
+            "bounds": [
+              [
+                0.0345550999045372,
+                2.5095635997131467,
+                -0.00044999999227002263
+              ],
+              [
+                0.040432900190353394,
+                2.53923150151968,
+                0.00044999999227002263
+              ]
+            ],
+            "alphas": [
+              1
+            ],
+            "materials": [
+              {
+                "unlit": false,
+                "physical": {
+                  "KHR_materials_emissive_strength": {
+                    "emissiveStrength": 0
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "bounds": [
+          [
+            -0.042500000447034836,
+            2.5,
+            -0.042500000447034836
+          ],
+          [
+            0.042500000447034836,
+            2.5450000017881393,
+            0.042500000447034836
+          ]
+        ],
+        "settledPoses": []
+      },
+      "spatial": {
+        "bottom": 2.5,
+        "top": 2.545
+      }
+    }
+  ]
+}

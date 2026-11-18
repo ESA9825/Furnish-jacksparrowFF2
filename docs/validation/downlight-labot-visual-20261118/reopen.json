@@ -1,0 +1,23 @@
+{
+  "passed": true,
+  "profile": "downlight-labot-ip65",
+  "blender": "5.3.0",
+  "source": "downloaded-render-blend",
+  "results": [
+    {
+      "case": "front",
+      "parts": 10,
+      "boundsAndAlpha": true
+    },
+    {
+      "case": "oblique",
+      "parts": 10,
+      "boundsAndAlpha": true
+    },
+    {
+      "case": "detail",
+      "parts": 10,
+      "boundsAndAlpha": true
+    }
+  ]
+}

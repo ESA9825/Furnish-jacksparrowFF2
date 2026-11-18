@@ -25,6 +25,7 @@ const LIB = [
     ['bath_heater_aopu_se2','奥普 SE2 风暖浴霸',300,600,'#f5f5f3',undefined,products.height({type:'bath_heater_aopu_se2'})],
     ['bath_heater_300x600','风暖浴霸 · 300×600通用占位',300,600,'#f5f5f0',undefined,products.height({type:'bath_heater_300x600'})],
     ["downlight_philips_dl269","飞利浦品焕筒灯 DL269",85,85,"#f4f4f0",undefined,45],
+    ["downlight_labot_ip65_7w","拉伯塔 IP65防水筒灯 · 7W全白4000K",85,85,"#f4f4f0",undefined,45],
     ['heating_manifold','地暖分水器（路数可调）',products.definition('heating_manifold').manifold.width,products.definition('heating_manifold').manifold.depth,'#c6a258',undefined,products.height({type:'heating_manifold'})],
     ['electrical_box_strong','强电箱（尺寸自定）',300,120,'#eceeea',undefined,400],
     ['electrical_box_weak','弱电箱（尺寸自定）',400,120,'#eceeea',undefined,400],
@@ -281,7 +282,7 @@ const navigationTypeGroups={
  'appliances/laundry':['washer','washer_littleswan_tg10k60w','dryer'],
  'appliances/climate':['fan_airmate_fa18_x231','aircon','aircon_midea_ultra_2hp','acwall','acwall_midea_mxc3p','waterheater','waterheater_flat','bath_heater_aopu_se2','bath_heater_300x600'],
  'appliances/services':['heating_manifold','electrical_box_strong','electrical_box_weak'],
- 'decor/lighting':['cove_light','surface_light','desk_lamp_mijia_pro','floorlamp','pendant','panel_light_300x600','downlight_philips_dl269']
+ 'decor/lighting':['cove_light','surface_light','desk_lamp_mijia_pro','floorlamp','pendant','panel_light_300x600','downlight_philips_dl269','downlight_labot_ip65_7w']
 };
 function navigationCategory(it,cat){
  if(it[7])return 'other/custom';

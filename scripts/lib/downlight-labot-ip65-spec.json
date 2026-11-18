@@ -1,0 +1,8 @@
+{
+  "type":"downlight_labot_ip65_7w",
+  "global":"FurnishLabotIP65Asset",
+  "size":[85,45,85],
+  "parts":["face-ring","reflector-cup","diffuser","rear-housing","rear-cap","rear-fins","spring-left","spring-right","spring-cover-left","spring-cover-right"],
+  "sourceUrl":"https://item.jd.com/10087901407535.html",
+  "notes":"JD selected 7W white 4000K. Detail diagram labels diameter 85, height 45 and cutout 75–80 mm. Cup depth, rim thickness, rear fins and folded spring shape are visual estimates. IP65 is a seller claim, not a model certification. Luminous flux/IES unknown; preview uses explicitly estimated 500lm/100deg."
+}

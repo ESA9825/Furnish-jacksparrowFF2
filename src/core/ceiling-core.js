@@ -403,7 +403,17 @@ function intersection(subject,boundary){let out=subject,sign=area(boundary)>0?1:
 function downlightHoles(c,bodies){
  if(c.kind!=='flat')return [];
  const P=root.FurnishProducts||require('./product-rules.js'),seen=new Set(),holes=[];
+ // A published lamp has several production solids. Installation uses the
+ // entire lamp's bottom, never whichever named mesh happens to be first.
+ const lamps=new Map();
  for(const {f,vertical} of bodies){
+  if(!P.definition(f)?.downlight||f.obj)continue;
+  const item=lamps.get(f.id);
+  if(!item)lamps.set(f.id,{f,vertical:vertical?{...vertical}:null});
+  else if(!vertical)item.vertical=null;
+  else if(item.vertical){item.vertical.bottom=Math.min(item.vertical.bottom,vertical.bottom);item.vertical.top=Math.max(item.vertical.top,vertical.top);}
+ }
+ for(const {f,vertical} of lamps.values()){
   if(seen.has(f.id))continue;seen.add(f.id);const spec=!f.obj&&P.definition(f)?.downlight;
   if(!spec||!vertical||Math.abs(f.w-spec.diameter)>eps()||Math.abs(f.d-spec.diameter)>eps()||Math.abs(P.height(f)-P.definition(f).height)>eps()||Math.abs(vertical.bottom+spec.rim-c.height)>eps())continue;
   const r=spec.cutout/2,center=[f.cx,f.cy];if(!inside(center,c.polygon,false))continue;

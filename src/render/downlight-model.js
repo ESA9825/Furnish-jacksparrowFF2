@@ -5,6 +5,7 @@ const products=()=>root.FurnishProducts||require('../core/product-rules.js');
 const lighting=()=>root.FurnishLighting||require('../core/lighting-core.js');
 const supported=f=>!!products().definition(f)?.downlight&&!f.obj;
 function build(T,f){
+ if(products().definition(f).downlight.asset)return buildAsset(T,f);
  const result=new T.Group(),body=new T.Group();result.add(body);
  const spec=products().downlightSpec(f);
  body.position.y=products().value(f,'mountHeight')/1000;
@@ -30,6 +31,16 @@ function build(T,f){
  const lightGroup=new T.Group();lightGroup.position.y=products().value(f,'mountHeight')/1000;
  lamp.position.y=-.001;target.position.y=-1;lamp.target=target;lamp.userData.downlightLight=true;lamp.castShadow=true;lamp.shadow.mapSize.set(512,512);lamp.shadow.bias=-.0001;lightGroup.add(lamp,target);result.add(lightGroup);
  return result;
+}
+function buildAsset(T,f){
+ const P=products(),def=P.definition(f).downlight,spec=P.downlightSpec(f),asset=root.FurnishLabotIP65Asset||(typeof require==='function'?require('../data/downlight-labot-ip65-blender-asset.js'):null);
+ const g=(root.FurnishStaticAssetModel||require('./static-asset-model.js')).build(T,asset,{...f,h:P.height(f)},P.value(f,'mountHeight'));
+ if(!T.SpotLight||!T.Object3D)return g;
+ const mesh=g.children.find(o=>o.name==='diffuser'),radius=def.emitterRadius*f.w/85/1000,base=P.value(f,'mountHeight')/1000,emitter=base+def.emitterHeight*P.height(f)/45/1000;
+ const angle=spec.beam*Math.PI/360,intensity=spec.previewLumens/(2*Math.PI*(1-Math.cos(angle))),radiance=lighting().panel(intensity,2*radius,2*radius);
+ mesh.material.emissive.set(spec.color);mesh.material.emissiveIntensity=radiance;Object.assign(mesh.material.userData,{downlightEmitter:true,emissionOn:radiance});
+ (g.userData.lightingRects||=[]).push({name:'diffuser',position:[0,emitter,0],width:2*radius,height:2*radius,u:[1,0,0],v:[0,0,-1],normal:[0,-1,0],radiance,color:spec.color,material:mesh.material});
+ const lamp=new T.SpotLight(spec.color,lighting().radiometric(intensity),12,angle,.3,2),target=new T.Object3D();lamp.position.set(0,emitter-.0005,0);target.position.set(0,emitter-1,0);lamp.target=target;Object.assign(lamp.userData,{downlightLight:true,radiometricLight:true});lamp.castShadow=true;lamp.shadow.mapSize.set(512,512);lamp.shadow.bias=-.0001;g.add(lamp,target);return g;
 }
 function setLights(group,on,{night=false}={}){group?.traverse(o=>{if(o.userData.downlightLight||o.userData.ceilingPanelLight)o.visible=o.userData.previewLightEnabled=on;if(o.userData.pathLight)o.visible=o.userData.previewLightEnabled=on&&night;if(o.material?.userData?.downlightEmitter||o.material?.userData?.ceilingPanelEmitter)o.material.emissiveIntensity=on?(o.material.userData.emissionOn??1.5):0;if(o.material?.userData?.pathLightEmitter)o.material.emissiveIntensity=on&&night?.8:0;});}
 // WebGL forward lighting compiles every enabled light into each material. Keep
