@@ -7,7 +7,7 @@
  class Material{constructor(){this.color={set(){}};}clone(){return new Material();}}
  class Node{constructor(geometry=null){this.geometry=geometry;this.isMesh=!!geometry;this.isGroup=!geometry;this.children=[];this.userData={};this.position=new Position();this.rotation=new Position();this.material=new Material();}add(...nodes){for(const n of nodes){n.parent=this;this.children.push(n);}}traverse(fn){fn(this);for(const n of this.children)n.traverse(fn);}}
  class Shape{constructor(){this.points=[];this.holes=[];}moveTo(x,y){this.points.push([x,y]);}lineTo(x,y){this.points.push([x,y]);}closePath(){}absarc(){}}
- class Geometry{constructor(shape,options){this.shape=shape;this.depth=options?.depth;this.angle=0;}dispose(){}rotateX(angle){this.angle=angle;}}
+ class Geometry{constructor(shape,options){this.shape=shape;this.depth=options?.depth;this.angle=0;}dispose(){}rotateX(angle){this.angle=angle;}rotateY(){this.axis="x";}}
  const recorder={Group:Node,Shape,Path:Shape,ExtrudeGeometry:Geometry,SphereGeometry:class{dispose(){}},Color:class{}};
  function boards(f,{includeStatic=false,...options}={}){
   C();const Model=root.FurnishCabinetModel||require('../render/cabinet-model.js');
@@ -19,6 +19,15 @@
    for(let n=node;n;n=n.parent){const m=n.userData.motion;if(m)moving=n;offset=offset.map((v,i)=>v+[n.position.x,n.position.y,m?.axis==='z'?m.closedZ:n.position.z][i]);}
    if(!moving&&!includeStatic)return;
    let poly,bottom,top;const g=node.geometry;
+   // Side-plane outlines become convex prisms of the actual YZ polygon. Keep
+   // their vertices so a curved opening stays empty in height-clipped queries.
+   if(g.shape&&g.axis==='x'){
+    const rings=[g.shape.points,...g.shape.holes.map(h=>h.points)],inside=p=>Z().inside(p,rings[0])&&!rings.slice(1).some(r=>Z().inside(p,r));
+    for(const outline of Z().decompose(rings,inside)){
+     const vertices=[0,g.depth].flatMap(x=>outline.map(([q,y])=>[(x+offset[0])*1000,(y+offset[1])*1000,(-q+offset[2])*1000]));
+     result.push({boardIndex:result.length,vertices,poly:hull(vertices.map(v=>[v[0],v[2]])),bottom:Math.min(...vertices.map(v=>v[1])),top:Math.max(...vertices.map(v=>v[1])),metadata:{...node.userData},phase:0});
+    }return;
+   }
    if(g.box){const [w,h,d]=g.box;if(Math.min(w,h,d)<=0)return;poly=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]];bottom=-h/2;top=h/2;}
    else if(g.shape&&Math.abs(g.angle-Math.PI/2)<1e-8){poly=g.shape.points;bottom=-g.depth;top=0;}
    else if((includeStatic||moving)&&g.shape&&!g.angle){const xs=g.shape.points.map(p=>p[0]),ys=g.shape.points.map(p=>p[1]);poly=[[Math.min(...xs),0],[Math.max(...xs),0],[Math.max(...xs),g.depth],[Math.min(...xs),g.depth]];bottom=Math.min(...ys);top=Math.max(...ys);}
@@ -86,7 +95,7 @@ result.push({boardIndex:result.length,poly:poly.map(([x,z])=>[(x+offset[0])*1000
    // Decomposition preserves notched lids instead of filling their concavities.
    for(const poly of z.decompose([board.poly],p=>z.inside(p,board.poly))){
     const piece={...board,poly},points=board.motion?B.vertices(piece,board.phase||0):[board.bottom,board.top].flatMap(y=>poly.map(([x,q])=>[x,y,q]));
-    const vertices=points.map(([x,y,q])=>{const p=transform([x,q]);return [p[0],y+base,p[1]];});
+    const vertices=(board.vertices||points).map(([x,y,q])=>{const p=transform([x,q]);return [p[0],y+base,p[1]];});
     records.push({vertices,boardKey:prefix+'board:'+board.boardIndex,boardName:part,actualBoard:true,...(data.cabinetBuilder?{componentId:data.cabinetBuilder.componentId,boxId:data.cabinetBuilder.boxId}:{}),...(data.cabinetFoldDoor?{foldDoor:true,leaf:data.cabinetPart?.leaf}:{})});
    }
   };

@@ -1,0 +1,76 @@
+{
+  "source": "/Users/makinami/Documents/GitHub/Furnish/.local/mcp-exports/41a696fa68139946-cfdea442721a016b.glb",
+  "sha256": "cfdea442721a016b4e177c0e7b56f4c845c414eaecf876281907602189d05fa6",
+  "productionParts": 324,
+  "sidePanels": [
+    {
+      "key": "named:[\"call:cabinet-model.js:generator-call-25\",\"call:profile:far_south:south_finish:0\",\"call:model-primitives:site-2\",\"call:model-primitives:site-1\"]",
+      "id": "fmvvt0mto1",
+      "version": 3,
+      "kind": "BoxGeometry",
+      "count": 24,
+      "bounds": [
+        [
+          -4.610499994277955,
+          0.05999996852874756,
+          0.29200000038743007
+        ],
+        [
+          -3.998500005722047,
+          2.194000031471252,
+          0.3099999996125698
+        ]
+      ],
+      "alphas": [
+        1
+      ],
+      "materials": [
+        {
+          "unlit": false,
+          "physical": {}
+        }
+      ]
+    },
+    {
+      "key": "named:[\"call:cabinet-model.js:generator-call-25\",\"call:profile:cat_far_south:cat_far_south_right_finish:0\",\"call:model-primitives:site-2\",\"call:model-primitives:site-1\"]",
+      "id": "fmvvt0mto1",
+      "version": 3,
+      "kind": "ExtrudeGeometry",
+      "count": 1236,
+      "bounds": [
+        [
+          -4.610499997615815,
+          2.194,
+          0.29200000077486027
+        ],
+        [
+          -3.9985000090599065,
+          2.699999982357025,
+          0.31
+        ]
+      ],
+      "alphas": [
+        1
+      ],
+      "materials": [
+        {
+          "unlit": false,
+          "physical": {}
+        }
+      ]
+    }
+  ],
+  "openingTriangleCheck": "pass: open at 200/417 mm; material at 450 mm and rear strip",
+  "frontClosedBounds": [
+    [
+      -4.61049999961257,
+      0.05999996852874756,
+      -0.05799999701976802
+    ],
+    [
+      -3.600499994039536,
+      2.7000000008940694,
+      4.081000000372529
+    ]
+  ]
+}

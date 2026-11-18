@@ -147,7 +147,7 @@ const syncIdentity=root.FurnishPartIdentity||(typeof require==='function'?requir
    if(options.outlines!==false)g.traverse(o=>{
     if(!o.isMesh)return;
     const data=o.userData,accessory=data.cabinetPart&&!data.cabinetDoorSize&&!data.cabinetDrawerBoard&&!data.cabinetPart.lid;
-    if(accessory||data.cabinetSection==='light')return;
+    if(accessory||data.cabinetSection==='light'||data.cabinetSmoothSide)return;
     const hint=options.removableHints&&data.cabinetRemovable,dashed=hint&&data.cabinetIgnoreCollision,Material=dashed?THREE.LineDashedMaterial:THREE.LineBasicMaterial;
     const edge=new THREE.LineSegments(new THREE.EdgesGeometry(o.geometry),new Material({color:hint?0x7c3aed:0x493b2d,transparent:true,opacity:hint?1:data.cabinetRemovable ? .2 : data.cabinetIgnorePick ? .15 : .65,...(dashed?{dashSize:.025,gapSize:.015}:{})}));if(dashed)edge.computeLineDistances();
     edge.userData.cabinetOwnMaterial=true;edge.userData.cabinetOutline=true;edge.raycast=()=>{};o.add(edge);
