@@ -1,5 +1,51 @@
 /* Shared-model preview: structure picking, constrained drags and dimension overlays. */
 (function(root){
+ // Build a separate, unfiltered production model so view settings and pick
+ // highlights never change the inventory. Measure each mesh in its local axes.
+ function inventory(THREE,box,f,{furniture,plan}){
+  const options={furniture,plan,doors:'normal'},rows=[],dimensions=new THREE.Vector3();
+  const model=f.kitchen?root.FurnishKitchenModel.build(THREE,f,box,options):root.FurnishCabinetModel.build(THREE,f,box,options);
+  const scopeLabels=f.kitchen?new Map(root.FurnishCabinetAssembly.modules(f).map(row=>[row.id,row.label])):new Map();
+  const slab=new THREE.Box3();
+  const mm=bounds=>bounds.getSize(dimensions).toArray().map(v=>Number((v*1000).toFixed(2)));
+  function visit(node,scope='',boxId=''){
+   const d=node.userData;
+   if(d.cabinetAssembly==='sink')return;
+   if(d.kitchenModule!==undefined)scope=scopeLabels.get('base:'+d.kitchenModule)??'地柜模块 '+(d.kitchenModule+1);
+   if(d.cabinetAssembly)scope=scopeLabels.get(d.cabinetAssembly)??d.cabinetAssembly;
+   boxId=d.cabinetBuilder?.boxId??boxId;
+   if(node.isMesh&&node.geometry.attributes.position?.count){
+    node.geometry.computeBoundingBox();
+    const bounds=node.geometry.boundingBox;
+    if(d.kitchenSlab){slab.union(bounds);return;}
+    const part=d.cabinetBuilder,inspect=d.cabinetInspect;
+    const kind=d.cabinetDoorSize||d.cabinetFoldDoor?'门板':d.cabinetDrawerBoard==='front'?'抽面':d.cabinetDrawerBoard?'抽屉板':
+     d.cabinetHardware?'把手／旋钮':d.cabinetServicePart?.startsWith('leg-')?'地脚':d.cabinetServicePart?.startsWith('clip-')?'踢脚卡扣':
+     d.cabinetHangingRod?'挂衣杆':d.kitchenEdge?'台面挡水／收边':d.kitchenCornerPlinth||d.cabinetSection==='plinth'?'踢脚':
+     d.kitchenCornerBoard||d.laundrySidePanel||d.laundryNotchBoard||d.cabinetEndPanel||d.cabinetSideClosure||d.cabinetTopClosure?'结构／收口板':
+     d.cabinetShelf||inspect?.kind==='shelf'?'层板':d.cabinetDivider||inspect?.kind==='divider'?'隔板':d.cabinetBack?'背板':d.cabinetSide?'侧板':
+     d.cabinetTop||d.cabinetSection==='top'?'顶板':d.cabinetSection==='bottom'?'底板':
+     root.FurnishCabinetBuilder.palette.find(item=>item.kind===part?.kind&&item.kind!=='box')?.name??'其他柜体构件';
+    const color=node.material?.color?.getHexString();
+    const finish=[d.cabinetSurface==='walnut'?'胡桃木纹':'',color?'#'+color:''].filter(Boolean).join(' ');
+    rows.push([[scope,boxId].filter(Boolean).join(' / ')||'整组',kind,...mm(bounds),finish,part?.componentId??'',d.serviceCuts?.length?'有管线切口':'']);
+   }
+   for(const child of node.children)visit(child,scope,boxId);
+  }
+  try{
+   visit(model);
+   // A bevel or flush recess can produce several overlapping slab meshes.
+   if(!slab.isEmpty())rows.unshift(['整组','连续台面',...mm(slab),'','','按整体包络，轮廓与开孔需复核']);
+   return rows;
+  }finally{
+   const materials=new Set();
+   model.traverse(node=>{
+    node.geometry?.dispose();
+    if(node.userData.cabinetOwnMaterial)materials.add(node.material);
+   });
+   for(const material of materials)material?.dispose();
+  }
+ }
  // Shared SVG projection, collision avoidance and dimension-line styling.
  function projectDimensionLabels({THREE,cam,canvas,labels,centerPoint,rulers,rulerPath,occupied=[],blocked=[]}){
   const rect=canvas.getBoundingClientRect(),width=rect.width,height=rect.height,paths=[];
@@ -93,7 +139,7 @@
   const gesture=componentGesture({THREE,canvas,camera:()=>camera,controls:()=>controls,rayAt,hitAt:r=>{const h=componentHit(r),data=h?.object.userData;return data?{pick:data.cabinetBuilder,point:h.point,part:data.cabinetPart?{...data.cabinetPart}:null,kind:B.selection(current,data.cabinetBuilder).component?.kind}:null;},infoOf:editInfo,settings:()=>({...settings,doors:doorView}),actions:{...actions,selected:()=>selected,size:()=>[current.w,current.h,current.d]},isPlacing:actions.isPlacing,onState:value=>drag=value,resetDown:()=>down=null,afterEnd:d=>{if(d.size.some((v,i)=>v!==[current.w,current.h,current.d][i]))fit();}});
   const placingGhost=placementGhost({THREE,scene,box,host,furniture,plan,current:()=>current,zoneBox});
   const observer=new ResizeObserver(resize);observer.observe(host);update(f);function loop(){if(dead)return;frame=requestAnimationFrame(loop);if(!drag)controls.update();renderer.render(scene,camera);if(settings.dimensions){const blocked=[];model.traverse(o=>{if(!o.isMesh||!o.visible||!o.userData.cabinetPart&&!B.horizontalSelection(current,o.userData.cabinetBuilder))return;const b=new THREE.Box3().setFromObject(o),points=[];for(const x of [b.min.x,b.max.x])for(const y of [b.min.y,b.max.y])for(const z of [b.min.z,b.max.z]){const p=new THREE.Vector3(x,y,z).project(camera);points.push({x:(p.x+1)*host.clientWidth/2,y:(1-p.y)*host.clientHeight/2});}blocked.push({left:Math.min(...points.map(p=>p.x))-8,right:Math.max(...points.map(p=>p.x))+8,top:Math.min(...points.map(p=>p.y))-8,bottom:Math.max(...points.map(p=>p.y))+8});});projectDimensionLabels({THREE,cam:camera,canvas,labels,blocked,centerPoint:new THREE.Vector3(0,current.h/2000,0),rulers,rulerPath,occupied:readout.hidden?[]:[{left:8,top:8,right:Math.min(host.clientWidth-8,700),bottom:40}]});}}loop();
-  return {update,projectPoint,selectPart:value=>{selected=value;highlight();dimensions();},cancelDrag:()=>endDrag(true),focus:()=>canvas.focus({preventScroll:true}),setView:options=>{Object.assign(settings,options);const next=options.front??front;doorView=options.doors??doorView;const changed=next!==front;if(changed){front=next;controls.dispose();camera=front?new THREE.OrthographicCamera(-1,1,1,-1,.01,100):new THREE.PerspectiveCamera(38,1,.01,100);controls=new OrbitControls(camera,canvas);}update(current,{reframe:changed});},ghost:placingGhost.show,dispose:()=>{dead=true;drag=null;if(tinted){tinted.mesh.material=tinted.original;tinted.material.dispose();tinted=null;}cancelAnimationFrame(frame);observer.disconnect();disposeModel(ghost);disposeModel(model);if(helper){helper.geometry.dispose();helper.material.dispose();}placingGhost.clear();controls.dispose();renderer.dispose();host.replaceChildren();}};
+  return {update,inventory:value=>inventory(THREE,box,value,{furniture,plan}),projectPoint,selectPart:value=>{selected=value;highlight();dimensions();},cancelDrag:()=>endDrag(true),focus:()=>canvas.focus({preventScroll:true}),setView:options=>{Object.assign(settings,options);const next=options.front??front;doorView=options.doors??doorView;const changed=next!==front;if(changed){front=next;controls.dispose();camera=front?new THREE.OrthographicCamera(-1,1,1,-1,.01,100):new THREE.PerspectiveCamera(38,1,.01,100);controls=new OrbitControls(camera,canvas);}update(current,{reframe:changed});},ghost:placingGhost.show,dispose:()=>{dead=true;drag=null;if(tinted){tinted.mesh.material=tinted.original;tinted.material.dispose();tinted=null;}cancelAnimationFrame(frame);observer.disconnect();disposeModel(ghost);disposeModel(model);if(helper){helper.geometry.dispose();helper.material.dispose();}placingGhost.clear();controls.dispose();renderer.dispose();host.replaceChildren();}};
  }
  function create({THREE,OrbitControls,box,host,f,actions,background,furniture=[],plan=null,elevation=null}){
   if(f.cabinet?.version===2)return createBuilder({THREE,OrbitControls,box,host,f,actions,background,furniture,plan});
@@ -448,7 +494,7 @@
   const projectPoint=(x,y)=>{if(splitRoot){for(const panel of splitPanels){const p=panel.preview.projectPoint(x,y);if(p)return {...p,elevation:panel.meta.run};}return null;}const rect=cv.getBoundingClientRect();if(!settings.front||x<rect.left||x>rect.right||y<rect.top||y>rect.bottom)return null;const out=new THREE.Vector3();return rayAt({clientX:x,clientY:y}).ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,0,1),0),out)?{x:out.x*1000*(current.flip?-1:1),y:out.y*1000}:null;};
   const observer=new ResizeObserver(resize);observer.observe(host);update(f);fit();resize();
   function render(){if(disposed)return;if(!splitRoot){if(!drag&&!drawerDrag)controls.update();r.render(sc,cam);projectSelection();projectLabels();projectDrawers();}frame=requestAnimationFrame(render);}render();
-  return {projectPoint,ghost:(value,pick,options)=>{if(splitRoot){for(const panel of splitPanels)panel.preview.ghost(options?.elevation===panel.meta.run?value:null,pick,options);}else placingGhost.show(value,pick,options);},cancelDrag:()=>builderGesture.end(true)||splitPanels.some(p=>p.preview.cancelDrag()),
+  return {inventory:value=>inventory(THREE,box,value.kitchen?{...value,mountHeight:0}:value,{furniture,plan}),projectPoint,ghost:(value,pick,options)=>{if(splitRoot){for(const panel of splitPanels)panel.preview.ghost(options?.elevation===panel.meta.run?value:null,pick,options);}else placingGhost.show(value,pick,options);},cancelDrag:()=>builderGesture.end(true)||splitPanels.some(p=>p.preview.cancelDrag()),
    update:value=>{const dims=v=>[C.assemblyBounds(v),v.w,v.d,v.kitchen?(Object.keys(root.FurnishKitchen.assemblyConfig(v)).length?FurnishKitchen.laundryHeight(v):FurnishKitchen.overallHeight(v)):v.h,v.kitchen?.shape,v.kitchen?.corner],changed=JSON.stringify(dims(value))!==JSON.stringify(dims(current));update(value);if(changed)fit();},
    selectPart:part=>{const oldPart=JSON.stringify(selected);selected=part;const old=activeColumn;activeColumn=part?.column??null;highlight();if(old!==activeColumn||oldPart!==JSON.stringify(part))dimensions();else markActive();},focus:()=>cv.focus({preventScroll:true}),
    partDimensions:()=>{const mesh=selectedMesh(),size=mesh?.userData.cabinetDoorSize??mesh?.userData.cabinetDrawerSize;return size?{width:size.width,height:size.height}:null;},

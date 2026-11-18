@@ -486,3 +486,18 @@
 .cab-elevation{flex:1 0 auto}
 
 #corner-builder .builder-workspace{overflow:auto}#corner-builder [data-corner-view]{position:relative;min-height:230px;overflow:hidden;touch-action:none}#corner-builder [data-corner-view] canvas{display:block}#corner-builder [data-corner-tree]{overflow:auto;min-height:0}#corner-builder [data-corner-tree] button{display:block;width:100%;text-align:left;margin:4px 0;font-size:12px}#corner-builder .cab-elevation{flex:none}#corner-builder [data-corner-plan]{flex:none;background:#fffaf2}#corner-builder [data-corner-error]:empty{display:none}
+
+.builder-inventory {
+  box-sizing:border-box; width:min(860px,calc(100vw - 24px)); max-width:none; max-height:calc(100dvh - 24px);
+  padding:20px; border:1px solid var(--line); border-radius:12px; color:var(--ink); background:var(--panel,#fffdf9);
+}
+.builder-inventory::backdrop {background:rgba(22,25,28,.55)}
+.builder-inventory-heading {display:flex; justify-content:space-between; align-items:center; gap:12px}
+.builder-inventory h3 {margin:0; color:var(--ink); font-size:18px}
+.builder-inventory p {margin:10px 0}
+.builder-inventory-table {overflow:auto; max-height:50dvh; border:1px solid var(--line); border-radius:8px}
+.builder-inventory table {border-collapse:collapse; width:100%; font-size:13px; text-align:left}
+.builder-inventory :is(th,td) {padding:8px 10px; white-space:nowrap; border-bottom:1px solid var(--line)}
+.builder-inventory th {position:sticky; top:0; background:var(--panel,#fffdf9)}
+.builder-inventory td:nth-child(n+3):nth-child(-n+5) {text-align:right; font-variant-numeric:tabular-nums}
+.builder-inventory-actions {display:flex; justify-content:flex-end; margin-top:14px}
