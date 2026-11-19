@@ -13,7 +13,7 @@ const MATS = {
   terrazzo:{name:'水磨石', price:280, sw:'#e6dfd3'},
   carpet:  {name:'满铺地毯', price:200, sw:'#c9c3d3'},
 };
-// 家具库：[类型, 名称, 宽, 深, 颜色, 参考单价 ¥]
+// 家具库：[类型, 名称, 宽, 深, 颜色, 参考单价 ¥, 高, 自定义ID, 帘型, 柜体模板, 组合配置, 商品资料]
 const LIB = [
   {cat:'占位体', items:[
     ['block','方块占位体',1000,1000,'#a8b6c4',undefined,products.height({type:'block'})]
@@ -91,7 +91,7 @@ const LIB = [
     ["armchair_yeswood_berlin","源氏木语 柏林单人沙发椅（含腰枕）",710,850,"#bd915f",undefined,products.height({type:"armchair_yeswood_berlin"})],
     ["armchair_yeswood_y09hs","源氏木语 单人沙发椅（亚麻色）",725,900,"#be9465",undefined,products.height({type:"armchair_yeswood_y09hs"})],
     ["sofa_yeswood_cherry","源氏木语 樱桃木三人沙发 2.16m（梨白）",2160,892,"#eee9df",0,products.height({type:"sofa_yeswood_cherry"})],
-    ["sofa_yeswood_cherry","源氏木语 樱桃木三人沙发 2.16m（灯芯绒松绿）",2160,892,"#53634b",0,products.height({type:"sofa_yeswood_cherry"})],
+    ["sofa_yeswood_cherry","源氏木语 樱桃木三人沙发 2.16m（灯芯绒松绿）",2160,892,"#53634b",0,products.height({type:"sofa_yeswood_cherry"}),null,null,null,null,{brand:'源氏木语/YESWOOD',model:'Y102H11 · 樱桃木 2.16 米三人位 · 灯芯绒松绿',sourceUrl:'https://www.hoihome.tw/SalePage/Index/11062200'}],
     ["sofa","三人沙发",2400,900,"#b7c4b0",5200],
     ["sofa","双人沙发",1700,880,"#c3cbd6",3600],
     ["cornersofa","转角沙发",2800,1700,"#b7c4b0",7800],
@@ -133,6 +133,7 @@ const LIB = [
     ['stool_citylong_370','禧天龙 软包叠放方凳 · 37cm',370,370,'#eee9dc',undefined,467],
     ["bench_yeswood_oak","源氏木语 橡木软包换鞋凳 · 80cm",800,300,"#bd925f",0,products.height({type:"bench_yeswood_oak"})],
     ['chair_ikea_vihals','宜家 VIHALS 维哈斯折叠椅（白色／展开）',430,470,'#eeeee7',undefined,products.height({type:'chair_ikea_vihals'})],
+    ['chair_ikea_vihals','宜家 VIHALS 维哈斯折叠椅（绿色）',430,470,'#74856b',undefined,products.height({type:'chair_ikea_vihals'}),null,null,null,null,{brand:'宜家/IKEA',model:'VIHALS 维哈斯 · 805.927.53 · 绿色',sourceUrl:'https://www.ikea.cn/cn/zh/p/vihals-folding-chair-green-80592753/'}],
     ['chair_yeswood_s05118','源氏木语 S05118 书椅（原木／奶茶色）',660,660,'#be9568',undefined,products.height({type:'chair_yeswood_s05118'})],
     ["chair","椅子",450,480,"#cfc6b8",400],
     ["chair","餐椅",450,480,"#cfc6b8",450],
@@ -331,12 +332,13 @@ function itemHeight(it){
  const f={type:it[0],name:it[1],w:it[2],d:it[3],h:it[6]};
  return products.height(f)??(cabinets.supported(f)?cabinets.height(f):undefined);
 }
+const itemIdentity=it=>it[11]??products.definition(it[0])?.identity;
 function matches(it,{query='',maxWidth=0,maxDepth=0,use='all'}={},extra={}){
- const identity=products.definition(it[0])?.identity||{};
+ const identity=itemIdentity(it)||{};
  const text=[products.kind(it[0]),it[1],...itemUses(it).map(id=>uses.find(u=>u[0]===id).slice(1).join(' ')),identity.brand,identity.model,extra.name,extra.brand,extra.model].join(' ').toLowerCase();
  return query.trim().toLowerCase().split(/\s+/).every(word=>text.includes(word))&&(!maxWidth||it[2]<=maxWidth)&&(!maxDepth||it[3]<=maxDepth)&&(use==='all'||itemUses(it).includes(use));
 }
-const api={materials:MATS,library:LIB,typePrices:TYPE_PRICE,findItem,browseLibrary,navigation,uses,itemUses,itemKey,itemHeight,matches};
+const api={materials:MATS,library:LIB,typePrices:TYPE_PRICE,findItem,browseLibrary,navigation,uses,itemUses,itemKey,itemHeight,itemIdentity,matches};
 if(typeof module==='object'&&module.exports)module.exports=api;
 else root.FurnishCatalogData=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

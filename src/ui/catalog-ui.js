@@ -1,7 +1,7 @@
 /* Search specifications and preview a catalog replacement before committing. */
 (function(){
  const P=FurnishProject,D=FurnishDesign;
- const source=it=>({...FurnishProducts.definition(it[0])?.identity,...((store.custom||[]).find(c=>c.id===it[7])||{}),...FurnishKitchen.catalogSpec(it),type:it[0],name:it[1],w:it[2],d:it[3],color:it[4],price:it[5],h:it[6],...(it[9]?{cabinet:FurnishCabinet.preset(it[9]).cabinet}:{}),...(FurnishProducts.supports({type:it[0]},'curtainStyle')?{curtainStyle:it[8]||'double'}:{})});
+ const source=it=>({...FurnishCatalogData.itemIdentity(it),...((store.custom||[]).find(c=>c.id===it[7])||{}),...FurnishKitchen.catalogSpec(it),type:it[0],name:it[1],w:it[2],d:it[3],color:it[4],price:it[5],h:it[6],...(it[9]?{cabinet:FurnishCabinet.preset(it[9]).cabinet}:{}),...(FurnishProducts.supports({type:it[0]},'curtainStyle')?{curtainStyle:it[8]||'double'}:{})});
  function matches(it,q,w,d){return FurnishCatalogData.matches(it,{query:q,maxWidth:w,maxDepth:d},{...source(it),name:nm(it[1])});}
  const density=document.createElement('button');density.id='catalog-density';density.className='btn';
  const syncDensity=()=>{const compact=panes.catalogCompact===true;$('#lib').classList.toggle('catalog-compact',compact);density.textContent=tr(compact?'卡片视图':'紧凑列表',compact?'Card view':'Compact list');density.setAttribute('aria-pressed',String(compact));};

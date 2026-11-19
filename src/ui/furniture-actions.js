@@ -192,7 +192,7 @@ function createCatalogFurniture(it,x,y){
   const [type,name,w,d,color,price,h]=it,f=F(type,name,x,y,w,d,0,color);
   if(FurnishKitchen.isLaundryAreaItem(it))return FurnishCabinetAssembly.createLaundryCabinet(f,uid,it[10].endsWith('left')?'left':'right');
   if(h!==undefined)f.h=h;
-  Object.assign(f,FurnishDesign.products().initial(f));
+  Object.assign(f,FurnishDesign.products().initial(f),FurnishCatalogData.itemIdentity(it));
   if(FurnishCabinet.supported(f)&&!f.kitchen)Object.assign(f,FurnishCabinet.upgradeDesign(f));
   if(FurnishCabinet.supported(f)&&!f.kitchen&&it[9])Object.assign(f,FurnishCabinet.preset(it[9]));
   Object.assign(f,FurnishKitchen.catalogSpec(it));

@@ -1,5 +1,7 @@
 # 宜家 VIHALS 维哈斯白色折叠椅
 
+2026-11-19：家具库新增[绿色 805.927.53](https://www.ikea.cn/cn/zh/p/vihals-folding-chair-green-80592753/)，[京东同款列表](https://www.jd.com/jiage/15248655955b8f32e5b9d.html?catID=30525&electedExtAttrSet=&extAttrValue=expand_name%2C&sort_type=sort_default)列出白、绿、红款。绿色条目以 `#74856b` 近似预览，复用原展开／折叠模型，含独立商品编号及链接。未比较实物色样。
+
 2026-11-04。独立类型 `chair_ikea_vihals`，家具库搜索“VIHALS／维哈斯”，椅子分类及餐厅／书房用途可见。属性中的“折叠椅状态”切换展开／折叠，“颜色”调整预览配色，“底部离地／承托面”设置柜底板或层板高度。当前生产源为v2；v1展开静态资产保留。
 
 ## 折叠与收纳增量

@@ -4,6 +4,14 @@ module.exports=async(p,V)=>{
  const root=path.join(V.artifact(''),'workspace'),call=(name,args={})=>V.mode==='desktop'?Mcp.callDesktop(root,name,args):p.evaluate(({name,args})=>FurnishMcp.execute(name,args),{name,args}),read=()=>call('get_current_plan',{includeDetails:true});let seq=0;
  const args=c=>({planId:c.plan.id,revision:c.revision,requestId:'automation-'+(++seq)});
  let c=await read();const original=c.activeDesign?.id;const a=await call('copy_design',{...args(c),name:'Automation A'});
+ const green=(await call('list_catalog',{query:'VIHALS'})).items.find(item=>item.name.includes('（绿色）'));
+ const white=(await call('list_catalog',{query:'VIHALS'})).items.find(item=>item.name.includes('（白色／展开）'));
+ const added=await call('add_furniture',{...args(await read()),catalogKey:white.catalogKey,cx:3000,cy:3500});
+ const chairId=added.addedIds[0];
+ const recolored=await call('configure_furniture',{...args(await read()),updates:[{id:chairId,parameters:{replacementCatalogKey:green.catalogKey}}]});
+ assert(recolored.persisted);
+ const chair=(await call('get_product_info',{ids:[chairId]})).items[0];
+ assert.equal(chair.model,'VIHALS 维哈斯 · 805.927.53 · 绿色');assert.match(chair.sourceUrl,/80592753\/$/);
  await p.evaluate(()=>{let f=FurnishCabinetBuilder.create({id:'automation-cabinet',cx:3000,cy:3000,rot:0});f=FurnishCabinetBuilder.add(f,'shelf',{boxId:'box1'}).furniture;f=FurnishCabinetBuilder.add(f,'door',{boxId:'box1'}).furniture;mutate(()=>state.furniture.push(f));});await p.evaluate(()=>repositoryClient.flush());
  const components=await call('get_cabinet_components',{id:'automation-cabinet'}),box=components.modules[0].boxes[0],shelf=box.components.find(c=>c.kind==='shelf'),pick={boxId:box.id,componentId:shelf.id};
  const production=()=>p.evaluate(()=>FurnishCabinetMotion.boards(getF('automation-cabinet'),{includeStatic:true}).map(b=>({bottom:b.bottom,top:b.top,poly:b.poly})));
