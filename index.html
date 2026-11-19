@@ -254,7 +254,7 @@
       <button class="btn" data-plan-mode="electrical" aria-pressed="false" data-en="Sockets">插座</button>
       <button class="btn" data-plan-mode="ceiling" aria-pressed="false" data-en="Ceiling">吊顶</button>
     </div>
-    <button class="btn" id="electrical-list" aria-haspopup="dialog" data-en="Socket list">插座清单</button>
+    <button class="btn" id="electrical-list" aria-controls="electrical-list-dock" aria-expanded="false" data-en="Socket list">插座清单</button>
   </section>
 
   <aside class="lib">
@@ -289,6 +289,7 @@
     <div id="lib"></div>
   </aside>
 
+  <div id="view-workspace">
   <main id="stage">
     <svg id="plan" class="tool-select" font-family="-apple-system,'PingFang SC','Microsoft YaHei',sans-serif">
       <defs id="defs"></defs>
@@ -364,6 +365,14 @@
     <div class="modehint" id="modehint"></div>
     <div id="fab"></div>
   </main>
+    <aside id="electrical-list-dock" aria-labelledby="electrical-list-title" hidden>
+      <div class="electrical-dock-heading">
+        <b id="electrical-list-title" data-en="Sockets and switch plates">插座与面板清单</b>
+        <button type="button" class="btn" id="electrical-list-close" aria-label="收起插座清单" data-en-aria="Hide socket list"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button>
+      </div>
+      <div id="electrical-list-rows"></div>
+    </aside>
+  </div>
 
   <aside class="right"><div id="panel"></div></aside>
 

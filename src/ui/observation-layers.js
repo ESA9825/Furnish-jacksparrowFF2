@@ -125,7 +125,7 @@ globalThis.FurnishObservationLayers=(()=>{
   let panel=document.getElementById('layer-sidebar');if(panel)return panel;
   panel=document.createElement('section');panel.id='layer-sidebar';panel.className='layer-sidebar';panel.hidden=true;panel.setAttribute('aria-label',tr('图层管理','Layer manager'));
   panel.innerHTML=`<div class="layer-sidebar-head"><b>${tr('图层管理','Layer manager')}</b><button class="btn" id="layer-sidebar-close" aria-label="${tr('收起图层面板','Hide layers')}">×</button></div><div class="layer-sidebar-body"><div id="layer-manager"></div></div><div id="layer-resize" role="separator" tabindex="0" aria-orientation="vertical" aria-label="${tr('调整图层侧栏宽度','Resize layer sidebar')}" title="${tr('拖动调整宽度；方向键微调','Drag to resize; arrow keys to adjust')}"></div>`;
-  document.querySelector('.app').insertBefore(panel,document.getElementById('stage'));panel.querySelector('#layer-sidebar-close').onclick=close;installResize(panel);panel.addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();close();document.getElementById('tgLayers')?.focus();}});return panel;
+  document.querySelector('.app').insertBefore(panel,document.getElementById('view-workspace'));panel.querySelector('#layer-sidebar-close').onclick=close;installResize(panel);panel.addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();close();document.getElementById('tgLayers')?.focus();}});return panel;
  }
  function remember(shown){panes.showLayers=shown;try{localStorage.setItem(PANES,JSON.stringify(panes));}catch{}}
  function open(){document.getElementById('showMenu').open=false;if(narrow())closeDrawers();ensureSidebar().hidden=false;remember(true);draw();syncSidebarButton();}

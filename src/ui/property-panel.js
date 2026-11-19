@@ -9,6 +9,7 @@ function renderPanel(){
   peek.hidden=!ui.sel;peek.dataset.kind=ui.sel?.kind||'';
   peek.innerHTML=`<div><b>${esc(name)}</b>${f?furnitureDimensionSummary(f):''}</div><button class="btn" data-peek-scope="object" aria-expanded="${$('aside.right').classList.contains('open')}" aria-controls="panel">${tr('展开属性','Expand properties')}</button>`;
   window.FurnishObservationLayers?.afterRender();
+  window.FurnishElectricalUI?.selectionChanged();
 }
 function panelSelectionName(){
  const sel=ui.sel;if(!sel)return tr('未选择对象','No selection');

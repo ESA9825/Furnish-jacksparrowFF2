@@ -200,7 +200,7 @@ main.drawer-panel #fab-editor{visibility:hidden}
 .app{grid-template-rows:auto auto minmax(0,1fr) 34px}
 .app>header{grid-row:1}
 .app>.design-bar{grid-row:2}
-.app>main,.app>aside.lib,.app>aside.right{grid-row:3}
+.app>#view-workspace,.app>aside.lib,.app>aside.right{grid-row:3}
 .app>footer{grid-row:4}
 .design-bar{grid-column:1/-1;min-width:0;margin-bottom:8px;display:flex;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--s-line);border-radius:12px;background:var(--s-overlay);color:var(--s-ink);box-shadow:var(--shadow-md)}
 .design-bar .btn{flex:none;white-space:nowrap;min-height:34px;color:var(--s-ink)}
@@ -213,6 +213,7 @@ main.drawer-panel #fab-editor{visibility:hidden}
 .plan-display .btn{min-height:30px;padding:4px 14px;border-radius:7px}
 .plan-display .btn[aria-pressed="true"]{background:var(--action-bg);color:var(--on-action)}
 .m3d #electrical-list{margin-inline-start:auto}
+.design-bar #electrical-list[aria-expanded="true"]{background:var(--action-bg);color:var(--on-action)}
 #plan-display-note{margin:8px 0 0;color:var(--muted);font-size:11px}
 #placement-status{animation:none}
 #placement-status:not(:empty){position:absolute;top:10px;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 24px);padding:6px 10px;border:1px solid var(--s-line);border-radius:8px;background:var(--s-overlay);color:var(--s-ink);font-size:12px;pointer-events:none;z-index:5}
@@ -226,7 +227,6 @@ main.drawer-panel #fab-editor{visibility:hidden}
 }
 
 .design-record{padding:12px;margin:10px 0;border:1px solid var(--line);border-radius:10px;overflow-wrap:anywhere}
-@media(max-width:1100px){.app>main,.app>aside.lib,.app>aside.right{grid-row:3}}
 @media print{.design-bar{display:none!important}}
 
 .layer-tree{display:grid;gap:5px}
@@ -269,7 +269,7 @@ main.drawer-panel #fab-editor{visibility:hidden}
  .app.layers-open.layers-overlay.hide-lib{grid-template-columns:0 minmax(0,1fr) var(--panel-w)}
  .app.layers-open.layers-overlay.hide-panel{grid-template-columns:var(--lib-w) minmax(0,1fr) 0}
  .app.layers-open.layers-overlay.hide-lib.hide-panel{grid-template-columns:0 minmax(0,1fr) 0}
- .app.layers-open.layers-overlay>main{grid-column:2}
+ .app.layers-open.layers-overlay>#view-workspace{grid-column:2}
  .app.layers-open.layers-overlay>aside.right{grid-column:3}
  .app.layers-overlay>.layer-sidebar{grid-column:2;align-self:start;justify-self:start;z-index:12;width:min(var(--layer-sidebar-width,330px),calc(100% - 24px));max-height:calc(100% - 24px);margin:12px;box-shadow:var(--shadow-lg,var(--shadow-md))}
  .app{--layer-available:calc(100vw - var(--lib-w) - var(--panel-w) - 520px)}

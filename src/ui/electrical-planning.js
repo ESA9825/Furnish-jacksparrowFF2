@@ -36,6 +36,7 @@ globalThis.FurnishElectricalUI=(()=>{
   const status=$('#placement-status'),message=active()&&adding?tr('点击画布放置面板，按 Esc 取消','Click the plan to place the socket. Press Esc to cancel.'):'';
   if(status.textContent!==message)status.textContent=message;
   if(active())draw();else {document.querySelector('#gElectrical')?.remove();for(const n of document.querySelectorAll('#gFurn > [data-fid]'))n.removeAttribute('pointer-events');}
+  refreshList();
  }
  function pointer(e){
   if(!active()||!adding||e.button!==0||spaceDown)return false;
@@ -63,10 +64,9 @@ globalThis.FurnishElectricalUI=(()=>{
    return `<div class="electrical-list-group"><h4>${esc(location)} <small>${items.length}</small></h4><ul>${items.join('')}</ul></div>`;
   }).join('')}</div>`;
  }
- function locate(id,dialog){
+ function locate(id){
   const f=getF(id);
   if(!E.panel(f)||switching)return;
-  if(dialog)closeDialog();
   if(!FurnishLayers.visible(state,FurnishLayers.furnitureKey(f))){
    toast(tr('所在图层已隐藏，请先在图层管理中显示。','This layer is hidden. Show it in Layer manager first.'),{label:tr('图层管理','Layers'),fn:()=>FurnishObservationLayers.open()});
    return;
@@ -79,17 +79,34 @@ globalThis.FurnishElectricalUI=(()=>{
   if(is3D())window.View3D?.focusSelection({itemId:id});
   else zoomToBox(groupBox([f]),550);
  }
- function bindList(host,dialog=false){
-  host.querySelectorAll('[data-electrical-id]').forEach(b=>b.onclick=()=>locate(b.dataset.electricalId,dialog));
+ function bindList(host){
+  host.querySelectorAll('[data-electrical-id]').forEach(b=>b.onclick=()=>locate(b.dataset.electricalId));
  }
- function openList(){
-  if(switching)return;
-  const rows=E.points(state,canvasEffectivePlan());
-  openDialog({
-   title:tr('插座与面板清单','Sockets and switch plates'),
-   body:`<div id="electrical-list-rows">${listRows(rows)}</div>`,
-   onOpen:()=>bindList($('#electrical-list-rows'),true)
-  });
+ function selectionChanged(){
+  if($('#electrical-list-dock').hidden)return;
+  const id=ui.sel?.kind==='furn'?ui.sel.id:null;
+  for(const row of $('#electrical-list-rows').querySelectorAll('[data-electrical-id]')){
+   if(row.dataset.electricalId===id)row.setAttribute('aria-current','true');
+   else row.removeAttribute('aria-current');
+  }
+ }
+ function refreshList(){
+  if($('#electrical-list-dock').hidden)return;
+  const host=$('#electrical-list-rows'),scroll=host.scrollTop;
+  const focus=host.contains(document.activeElement)?document.activeElement.dataset.electricalId:null;
+  host.innerHTML=listRows(E.points(state,canvasEffectivePlan()));
+  bindList(host);
+  host.scrollTop=scroll;
+  if(focus)[...host.querySelectorAll('[data-electrical-id]')].find(b=>b.dataset.electricalId===focus)?.focus({preventScroll:true});
+ }
+ function setListOpen(open){
+  const dock=$('#electrical-list-dock'),button=$('#electrical-list'),restoreFocus=dock.contains(document.activeElement);
+  if(open)closeDrawers();
+  dock.hidden=!open;
+  $('.app').classList.toggle('electrical-list-open',open);
+  button.setAttribute('aria-expanded',String(open));
+  if(open){refreshList();$('#electrical-list-close').focus({preventScroll:true});}
+  else if(restoreFocus)button.focus({preventScroll:true});
  }
  function panel(p){
   if(!active())return false;
@@ -121,7 +138,14 @@ globalThis.FurnishElectricalUI=(()=>{
   if(f.cabinet?.version===3){const next=FurnishCornerCabinet.setOpening(f,open);mutate(()=>Object.assign(getF(f.id),next),{sceneFirst:true});return;}
   throw Error('此组合柜请使用三维逐扇开合');
  }
- window.addEventListener('load',()=>{document.querySelectorAll('[data-plan-mode]').forEach(b=>b.onclick=()=>setMode(b.dataset.planMode));$('#electrical-list').onclick=openList;afterRender();if(active())renderPanel();});
+ window.addEventListener('load',()=>{
+  document.querySelectorAll('[data-plan-mode]').forEach(b=>b.onclick=()=>setMode(b.dataset.planMode));
+  const dock=$('#electrical-list-dock');
+  $('#electrical-list').onclick=()=>setListOpen(dock.hidden);
+  $('#electrical-list-close').onclick=()=>setListOpen(false);
+  dock.addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();setListOpen(false);}});
+  afterRender();if(active())renderPanel();
+ });
  document.addEventListener('keydown',e=>{if(active()&&e.key==='Escape'&&adding){adding=false;renderPanel();afterRender();}},true);
- return {active,blocked,physicalLocked,assertEditable,setMode,selection,draw,afterRender,pointer,panel};
+ return {active,blocked,physicalLocked,assertEditable,setMode,selection,selectionChanged,draw,afterRender,pointer,panel};
 })();
