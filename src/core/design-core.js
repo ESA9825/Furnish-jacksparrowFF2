@@ -431,10 +431,16 @@
  }
  function sceneHourValid(hour,solar){return Number.isFinite(hour)&&hour>=(solar?0:7)&&hour<=(solar?24:18);}
  function validateSceneSettings(s){
-  if(!s||typeof s!=='object'||Array.isArray(s)||!sceneHourValid(s.hour,s.solar)||![1.2,2.8].includes(s.cut)||['furn','labels','night'].some(k=>typeof s[k]!=='boolean')||['lamps','wallNumbers','clearances'].some(k=>s[k]!==undefined&&typeof s[k]!=='boolean'))throw Error('三维展示设置无效');
+  if(!s||typeof s!=='object'||Array.isArray(s)||!sceneHourValid(s.hour,s.solar)||![1.2,2.8].includes(s.cut)||['furn','labels','night'].some(k=>typeof s[k]!=='boolean')||['lamps','nightLights','wallNumbers','clearances'].some(k=>s[k]!==undefined&&typeof s[k]!=='boolean'))throw Error('三维展示设置无效');
   if(s.solar!==undefined)(root.FurnishDrawing||require('./drawing-core.js')).solarSettings(s.solar);
  }
- function sceneSettings(value){const v=value||{},solar=v.solar===undefined?undefined:(root.FurnishDrawing||require('./drawing-core.js')).solarSettings(v.solar);return {cut:[1.2,2.8].includes(v.cut)?v.cut:2.8,furn:typeof v.furn==='boolean'?v.furn:true,labels:typeof v.labels==='boolean'?v.labels:true,wallNumbers:typeof v.wallNumbers==='boolean'?v.wallNumbers:true,clearances:typeof v.clearances==='boolean'?v.clearances:true,lamps:typeof v.lamps==='boolean'?v.lamps:true,night:typeof v.night==='boolean'?v.night:false,hour:Number.isFinite(v.hour)&&sceneHourValid(v.hour,solar)?v.hour:10,...(solar?{solar}:{})};}
+ function patchSceneSettings(value,patch){
+  const current=sceneSettings(value),next={...current,...patch};
+  // Preserve the nightlight preference when first changing the legacy shared switch.
+  if(next.nightLights===undefined&&next.lamps!==current.lamps)next.nightLights=current.lamps;
+  return sceneSettings(next);
+ }
+ function sceneSettings(value){const v=value||{},solar=v.solar===undefined?undefined:(root.FurnishDrawing||require('./drawing-core.js')).solarSettings(v.solar);return {cut:[1.2,2.8].includes(v.cut)?v.cut:2.8,furn:typeof v.furn==='boolean'?v.furn:true,labels:typeof v.labels==='boolean'?v.labels:true,wallNumbers:typeof v.wallNumbers==='boolean'?v.wallNumbers:true,clearances:typeof v.clearances==='boolean'?v.clearances:true,lamps:typeof v.lamps==='boolean'?v.lamps:true,night:typeof v.night==='boolean'?v.night:false,...(typeof v.nightLights==='boolean'?{nightLights:v.nightLights}:{}),hour:Number.isFinite(v.hour)&&sceneHourValid(v.hour,solar)?v.hour:10,...(solar?{solar}:{})};}
  function manageDesign(list,planId,action,{id,name,work,note,editable,now=Date.now()}={}){
   const copy=JSON.parse(JSON.stringify(list)),current=copy.find(d=>d.id===id&&d.planId===planId),local=copy.filter(d=>d.planId===planId);
   if(!['create','rename','update','duplicate','delete'].includes(action))throw Error('未知方案操作');
@@ -462,7 +468,7 @@
   workspace.designs=manageDesign(workspace.designs,planId,'create',{name,work,editable:true});
   (workspace.activeDesigns||={})[planId]=workspace.designs.at(-1).id;
  }
- root.FurnishDesign={applyInventoryArray,inventoryMembers,attachInventoryArray,editInventoryArray,validateInventoryArrays,normalizeInventoryArrays,transformFurniture,products,showerInstallation,laundryStack,normalizeLaundryStacks,uses,inferUse,styleFloor,bounds,resizeAnchors,resizeAnchorPosition,cabinetResizeAnchors,resizeAnchorChoices,resizeFurniture,replaceFurniture,expandGroups,groupFurniture,ungroupFurniture,pasteFurniture,catalogSnapshot,catalogSource,restoreNotes,restoreFurniture,deliveryBounds,measurementGeometry,wallGaps,furnitureVerticalBounds,furnitureHeightMeasurements,planFurnitureOrder,waterheaterClearances,placeAtGap,placeAtDirectionalGap,placeSelectionAtDirectionalGap,sceneSettings,validateSceneSettings,manageDesign,activeDesign,saveActiveDesign,preserveCurrentDesign};
+ root.FurnishDesign={applyInventoryArray,inventoryMembers,attachInventoryArray,editInventoryArray,validateInventoryArrays,normalizeInventoryArrays,transformFurniture,products,showerInstallation,laundryStack,normalizeLaundryStacks,uses,inferUse,styleFloor,bounds,resizeAnchors,resizeAnchorPosition,cabinetResizeAnchors,resizeAnchorChoices,resizeFurniture,replaceFurniture,expandGroups,groupFurniture,ungroupFurniture,pasteFurniture,catalogSnapshot,catalogSource,restoreNotes,restoreFurniture,deliveryBounds,measurementGeometry,wallGaps,furnitureVerticalBounds,furnitureHeightMeasurements,planFurnitureOrder,waterheaterClearances,placeAtGap,placeAtDirectionalGap,placeSelectionAtDirectionalGap,sceneSettings,patchSceneSettings,validateSceneSettings,manageDesign,activeDesign,saveActiveDesign,preserveCurrentDesign};
  root.FurnishDesign.applyCabinetTemplate=applyCabinetTemplate;
  if(typeof module!=='undefined')module.exports=root.FurnishDesign;
 })(typeof window==='undefined'?globalThis:window);

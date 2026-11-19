@@ -4,12 +4,37 @@ module.exports=async(p,V)=>{
  const call=(name,args={})=>p.evaluate(({name,args})=>FurnishMcp.execute(name,args),{name,args});
  if(V.mode!=='desktop'){const source=require('../../scripts/workspace-files.cjs').create(require('node:path').resolve(__dirname,'../..')).read().workspace;source.work={[source.planId]:source.work[source.planId]};source.designs=source.designs.filter(d=>d.id===source.activeDesigns?.[source.planId]);source.customPlans=source.customPlans.filter(d=>d.id===source.planId);source.updatedAt=Date.now();await p.evaluate(async source=>{try{localStorage.setItem('huxing-design-v'+source.v,JSON.stringify(source));}catch{}await FurnishStorage.write(source);},source);await p.reload();await p.waitForFunction(()=>!repositoryBooting);}
  if(V.mode!=='desktop'){
+  const menu=p.locator('#showMenu'),summary=menu.locator('summary');
+  const showMenu=async open=>{if(await menu.evaluate(e=>e.open)!==open)await summary.click();};
   const ids=await p.evaluate(()=>{const entries=libAll().flatMap(c=>c.items),soft=createCatalogFurniture(entries.find(it=>it[0]==='surface_light'),8410,4168)[0],night=createCatalogFurniture(entries.find(it=>it[0]==='panel_bull_g12'),5000,5425)[0];Object.assign(soft,{w:800,d:450,h:50,mountHeight:2590});Object.assign(night,{panelVariant:'nightlight',mountHeight:300});mutate(()=>{state.furniture.push(soft,night);state.scene3d=FurnishDesign.sceneSettings({night:true,lamps:true,labels:false,wallNumbers:false,clearances:false});});return [soft.id,night.id];});
   await p.evaluate(async()=>{await setView('3d');await View3D.automationCamera({view:'3d',mode:'orbit',horizontalFov:70,position:{x:8400,y:6100,z:1660},target:{x:8400,y:3500,z:1750}});});await V.screenshot('main-lights');
-  await p.locator('#showMenu > summary').click();await p.locator('[data-t="lamps"]').click();await p.locator('#showMenu > summary').click();await p.evaluate(async()=>{await View3D.automationCamera({view:'3d',mode:'orbit',horizontalFov:75,position:{x:6150,y:6000,z:1450},target:{x:4600,y:5540,z:500}});await View3D.automationReady();});await V.screenshot('path-only');
-  const saved=await p.evaluate(ids=>state.furniture.filter(f=>ids.includes(f.id)),ids);await p.evaluate(async()=>{save();await FurnishStorage.write(store);});await p.reload();await p.waitForFunction(()=>!repositoryBooting);assert.deepEqual(await p.evaluate(ids=>state.furniture.filter(f=>ids.includes(f.id)),ids),saved);assert.deepEqual(errors,[]);return ['production surface light and nightlight display through ordinary fixture mutate, top-light UI toggles, independent cache save/reload, no runtime errors'];
+  await showMenu(true);await p.locator('[data-t="lamps"]').click();await showMenu(false);await p.evaluate(async()=>{await View3D.automationCamera({view:'3d',mode:'orbit',horizontalFov:75,position:{x:6150,y:6000,z:1450},target:{x:4600,y:5540,z:500}});await View3D.automationReady();});await V.screenshot('path-only');
+  const settings=()=>p.evaluate(()=>FurnishDesign.sceneSettings(state.scene3d));
+  const pathOnly=await settings();assert.equal(pathOnly.lamps,false);assert.equal(pathOnly.nightLights,true);
+  const before=await p.evaluate(()=>View3D.highQualitySignature());assert(before);
+  await showMenu(true);await p.locator('[data-t="nightLights"]').click();await showMenu(false);
+  assert.equal((await settings()).nightLights,false);
+  const off=await p.evaluate(()=>View3D.highQualitySignature());assert(off);assert.notEqual(off,before);
+  await p.locator('#undo').click();assert.equal((await settings()).nightLights,true);
+  await p.locator('#redo').click();assert.equal((await settings()).nightLights,false);
+  await p.locator('#undo').click();assert.equal((await settings()).nightLights,true);
+  const saved=await p.evaluate(ids=>state.furniture.filter(f=>ids.includes(f.id)),ids);
+  await p.evaluate(async()=>{save();await FurnishStorage.write(store);});
+  await p.reload();await p.waitForFunction(()=>!repositoryBooting);
+  assert.deepEqual(await p.evaluate(ids=>state.furniture.filter(f=>ids.includes(f.id)),ids),saved);
+  assert.deepEqual(await settings(),pathOnly);
+  await p.setViewportSize({width:390,height:844});
+  await p.evaluate(async()=>{await setView('3d');await View3D.automationReady();});
+  await showMenu(true);
+  const nightButton=p.locator('[data-t="nightLights"]'),mainButton=p.locator('[data-t="lamps"]');
+  await nightButton.click({trial:true});await mainButton.click({trial:true});
+  assert.equal(await nightButton.getAttribute('aria-pressed'),'true');
+  assert.equal(await mainButton.getAttribute('aria-pressed'),'false');
+  await menu.locator('.showpop').evaluate(e=>Promise.all(e.getAnimations().map(animation=>animation.finished)));
+  await V.screenshot('narrow');
+  assert.deepEqual(errors,[]);return ['independent light controls, undo/redo, preview signature change, cache save/reload and narrow viewport'];
  }
- let current=await call('get_current_plan',{includeDetails:true});const original=current.activeDesign.id;
+ let current=await call('get_current_plan',{includeDetails:true});const original=current.activeDesign?.id;
  const write=()=>({planId:current.plan.id,revision:current.revision,requestId:'lighting-ui-'+Math.random().toString(36).slice(2)});
  current=await call('copy_design',{...write(),name:'照明规划隔离验收'});assert.notEqual(current.activeDesign.id,original);
  const source=current.furniture.length,library=(await call('list_catalog',{query:'柔光吸顶灯'})).items;assert(library.length);
@@ -19,9 +44,9 @@ module.exports=async(p,V)=>{
  const ceiling=await call('get_ceilings');assert(ceiling.measurements.some(m=>m.aboveFloor));
  current=await call('configure_scene',{...write(),settings:{night:true,lamps:true,labels:false,wallNumbers:false,clearances:false,cut:2.8}});await call('set_camera',{...write(),view:'3d',mode:'orbit',horizontalFov:70,position:{x:8400,y:6100,z:1660},target:{x:8400,y:3500,z:1750}});await V.screenshot('main-lights');
  const rendered=await p.evaluate(async ids=>{const T=await import('three'),out=await View3D.blenderScene(),dv=new DataView(out.buffer),json=JSON.parse(new TextDecoder().decode(new Uint8Array(out.buffer,20,dv.getUint32(12,true))));return {ids:[...new Set(json.nodes.map(n=>n.extras?.furnishId).filter(id=>ids.includes(id)))],meshes:json.meshes.length};},[soft,night]);assert.deepEqual(rendered.ids.sort(),[soft,night].sort());assert(rendered.meshes>0);
- current=await call('get_current_plan',{includeDetails:true});current=await call('configure_scene',{...write(),settings:{night:true,lamps:false}});await call('set_camera',{...write(),view:'3d',mode:'orbit',horizontalFov:75,position:{x:6150,y:6000,z:1450},target:{x:4600,y:5540,z:500}});await V.screenshot('path-only');
+ current=await call('get_current_plan',{includeDetails:true});current=await call('configure_scene',{...write(),settings:{night:true,lamps:false,nightLights:true}});assert(current.persisted);await call('set_camera',{...write(),view:'3d',mode:'orbit',horizontalFov:75,position:{x:6150,y:6000,z:1450},target:{x:4600,y:5540,z:500}});await V.screenshot('path-only');
  const saved=(await call('get_current_plan',{includeDetails:true})).work;assert(saved.furniture.some(f=>f.id===night&&f.mountHeight===300));assert(saved.furniture.some(f=>f.id===soft&&f.w===800&&f.mountHeight===2590));assert.equal(saved.furniture.length,source+2);
- await p.reload();await p.waitForFunction(()=>!repositoryBooting);const restored=await call('get_current_plan',{includeDetails:true});assert.deepEqual(restored.work.furniture,saved.furniture);assert.equal(restored.work.scene3d.night,true);assert.equal(restored.work.scene3d.lamps,false);
+ await p.reload();await p.waitForFunction(()=>!repositoryBooting);const restored=await call('get_current_plan',{includeDetails:true});assert.deepEqual(restored.work.furniture,saved.furniture);assert.equal(restored.work.scene3d.night,true);assert.equal(restored.work.scene3d.lamps,false);assert.equal(restored.work.scene3d.nightLights,true);
  await p.setViewportSize({width:390,height:844});await call('set_camera',{planId:restored.plan.id,revision:restored.revision,requestId:'lighting-ui-narrow-'+V.mode,view:'3d',preset:'whole'});await V.screenshot('narrow');assert.equal(await p.locator('#stage').evaluate(e=>e.scrollWidth<=e.clientWidth+1),true);assert.deepEqual(errors,[]);
  checks.push('MCP copied design preserves original; actual generic soft light and existing 86 nightlight added/configured; day/night top-light switch, production GLB generation, save/reload and narrow viewport without runtime errors');return checks;
 };

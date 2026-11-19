@@ -27,6 +27,10 @@ Object.assign(solarCapture.scene,{hour:23,solar:{latitude:40,date:'2026-12-21'}}
 const solarProject=P.pack({planId:plan.id,current:three,designs:[],catalog:[]});
 assert.equal(solarProject.version,100);
 assert.deepEqual(P.unpack(solarProject).current.presentation.pages[0].capture,solarCapture);
+solarCapture.scene.nightLights=false;
+const nightlightProject=P.pack({planId:plan.id,current:three,designs:[],catalog:[]});
+assert.equal(nightlightProject.version,101);
+assert.equal(P.unpack(nightlightProject).current.presentation.pages[0].capture.scene.nightLights,false);
 solarCapture.scene.solar.date='2026-02-29';
 assert.throws(()=>C.validate(three.presentation),/日照/);
 console.log('PASS presentation validation, image restrictions, live reference loss, source/document versions, stale confirmations, v94 project/design/repository/cache round trips, old defaults and repeated restoration');

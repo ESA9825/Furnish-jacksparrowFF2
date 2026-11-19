@@ -42,7 +42,16 @@ function buildAsset(T,f){
  (g.userData.lightingRects||=[]).push({name:'diffuser',position:[0,emitter,0],width:2*radius,height:2*radius,u:[1,0,0],v:[0,0,-1],normal:[0,-1,0],radiance,color:spec.color,material:mesh.material});
  const lamp=new T.SpotLight(spec.color,lighting().radiometric(intensity),12,angle,.3,2),target=new T.Object3D();lamp.position.set(0,emitter-.0005,0);target.position.set(0,emitter-1,0);lamp.target=target;Object.assign(lamp.userData,{downlightLight:true,radiometricLight:true});lamp.castShadow=true;lamp.shadow.mapSize.set(512,512);lamp.shadow.bias=-.0001;g.add(lamp,target);return g;
 }
-function setLights(group,on,{night=false}={}){group?.traverse(o=>{if(o.userData.downlightLight||o.userData.ceilingPanelLight)o.visible=o.userData.previewLightEnabled=on;if(o.userData.pathLight)o.visible=o.userData.previewLightEnabled=on&&night;if(o.material?.userData?.downlightEmitter||o.material?.userData?.ceilingPanelEmitter)o.material.emissiveIntensity=on?(o.material.userData.emissionOn??1.5):0;if(o.material?.userData?.pathLightEmitter)o.material.emissiveIntensity=on&&night?.8:0;});}
+function setLights(group,on,{night=false,nightLights=on}={}){
+ const pathOn=nightLights&&night;
+ group?.traverse(o=>{
+  const flags=o.userData,material=o.material,emission=material?.userData;
+  if(flags.downlightLight||flags.ceilingPanelLight)o.visible=flags.previewLightEnabled=on;
+  if(flags.pathLight)o.visible=flags.previewLightEnabled=pathOn;
+  if(emission?.downlightEmitter||emission?.ceilingPanelEmitter)material.emissiveIntensity=on?(emission.emissionOn??1.5):0;
+  if(emission?.pathLightEmitter)material.emissiveIntensity=pathOn?.8:0;
+ });
+}
 // WebGL forward lighting compiles every enabled light into each material. Keep
 // a bounded local preview; emissive faces and all production geometry remain.
 function limitLights(scene,camera,{lights=24,shadows=6,maxFragmentUniforms=1024,maxTextures=16}={}){

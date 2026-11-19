@@ -28,7 +28,7 @@ MCP 连接正在运行的 Furnish 桌面主窗口。它读取的是当前画布�
 | `get_ceilings` | 读取完整区域、实际生产构件、完成面净高／距顶范围和新建截面示例。 |
 | `configure_ceilings` | 按完整区域批量新增／替换，或按区域 ID 删除；调用 `setRegion/removeRegion` 重新生成生产构件，一次 `mutate` 和正式保存。 |
 | `remove_furniture` | 删除明确指定的家具并清理图层分配；锁定／重复／不存在的 ID 整批拒绝，不隐式级联。 |
-| `configure_scene` | 编辑原 `scene3d` 的昼夜、灯具总开关、日照、剖切及标注设置；原撤销／保存链，不新增展示字段。 |
+| `configure_scene` | 编辑原 `scene3d` 的昼夜、独立的主灯和夜灯、日照、剖切及标注设置，沿原撤销与保存链。 |
 
 输入使用 mm，`cx/cy` 是户型模型坐标中的家具中心，`w/d` 是家具局部宽深，`h` 是机身高度，`rot` 是角度。屏幕旋转、缩放、镜像不改变这些输入的解释。尺寸调整复用 `resizeFurniture` 及原尺寸基准；尺寸可能联动中心或关联家具，调用者应读取返回的实际结果。省略字段保持原值，不把缺失高度补成厂家尺寸。安装高度、开合、灯光和柜体／厨房结构由参数接口按原产品能力编辑；墙体编辑和新材质节点仍不在此接口范围。
 
@@ -123,7 +123,7 @@ get_furniture_parameters返回只写动作replacementCatalogKey。configure_furn
 
 `remove_furniture` 只删明确指定的ID，沿现有家具删除与图层清理语义，不自动扩大到其它家具。操作前应先读完整组合，列出需要一起删除的成员。
 
-`configure_scene.settings` 仅包含 `night/lamps/hour/cut/furn/labels/wallNumbers/clearances` 的任意非空子集，复用原默认值和项目校验。与相机接口不同，此操作修改原scene3d并可撤销和保存；不新增持久字段，不改变单灯参数，也不表示真实照度、感应范围或电气联动已验证。
+`configure_scene.settings` 接收 `night/lamps/nightLights/hour/cut/furn/labels/wallNumbers/clearances` 的任意非空子集。 `lamps` 控制常规照明，`nightLights` 独立控制夜景中的低位灯。显式夜灯开关随方案保存，可撤销，使用 v101。旧方案首次调整主灯时保留旧夜灯偏好。
 
 上述编辑工具沿已有revision/requestId鉴权、请求去重、排队及flush回执。编辑器打开时写操作拒绝；applied:true/persisted:false仍必须报告未保存，不换请求ID重试。专项回归包含区域增删改、错误整批回滚、锁定、撤销重做、保存刷新与正式文件隔离。
 

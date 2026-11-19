@@ -123,7 +123,7 @@
   }
   else if(name==='configure_ceilings')applyCeilings(args);
   else if(name==='configure_scene'){
-   const scene3d=FurnishDesign.sceneSettings({...FurnishDesign.sceneSettings(state.scene3d),...args.settings});FurnishProject.validateWork({...state,scene3d});mutate(()=>{state.scene3d=scene3d;});
+   const scene3d=FurnishDesign.patchSceneSettings(state.scene3d,args.settings);FurnishProject.validateWork({...state,scene3d});mutate(()=>{state.scene3d=scene3d;});
   }else if(name==='remove_furniture'){
    for(const id of args.ids){const f=getF(id);if(!f)throw Error('家具不存在：'+id);if(furnitureLocked(f))throw Error('家具或所在图层已锁定：'+id);}
    const ids=new Set(args.ids),work=clone(state);work.furniture=work.furniture.filter(f=>!ids.has(f.id));if(work.objectLayers)for(const id of ids)delete work.objectLayers.assignments['furniture:'+id];applyWork(work);ui.sel=null;
