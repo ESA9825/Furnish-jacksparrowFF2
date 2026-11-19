@@ -91,6 +91,7 @@ const LIB = [
     ["armchair_yeswood_berlin","源氏木语 柏林单人沙发椅（含腰枕）",710,850,"#bd915f",undefined,products.height({type:"armchair_yeswood_berlin"})],
     ["armchair_yeswood_y09hs","源氏木语 单人沙发椅（亚麻色）",725,900,"#be9465",undefined,products.height({type:"armchair_yeswood_y09hs"})],
     ["sofa_yeswood_cherry","源氏木语 樱桃木三人沙发 2.16m（梨白）",2160,892,"#eee9df",0,products.height({type:"sofa_yeswood_cherry"})],
+    ["sofa_yeswood_cherry","源氏木语 樱桃木三人沙发 2.16m（灯芯绒松绿）",2160,892,"#53634b",0,products.height({type:"sofa_yeswood_cherry"})],
     ["sofa","三人沙发",2400,900,"#b7c4b0",5200],
     ["sofa","双人沙发",1700,880,"#c3cbd6",3600],
     ["cornersofa","转角沙发",2800,1700,"#b7c4b0",7800],

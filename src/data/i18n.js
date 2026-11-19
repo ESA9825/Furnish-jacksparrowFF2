@@ -55,6 +55,7 @@ const NAMES_EN = {
   '书架':'Bookshelf', '飘窗垫':'Bay Cushion', '三人沙发':'3-Seat Sofa', '双人沙发':'Loveseat', '转角沙发':'Corner Sofa',
   '单人沙发':'Armchair', '懒人沙发':'Beanbag', '茶几':'Coffee Table', '边几':'Side Table', '电视柜':'TV Stand', '地毯':'Rug',
   '源氏木语 樱桃木三人沙发 2.16m（梨白）':'YESWOOD Cherry 3-Seat Sofa 2.16m (Pear White)',
+  '源氏木语 樱桃木三人沙发 2.16m（灯芯绒松绿）':'YESWOOD Cherry 3-Seat Sofa 2.16m (Pine Green Corduroy)',
   '鞋柜':'Shoe Cabinet', '玄关柜':'Entry Cabinet', '玄关柜 · 洞洞板换鞋区':'Entry Cabinet · Pegboard Niche', '玄关柜二 · 置物台与鞋柜':'Entry Cabinet 2 · Console and Shoes', '落地灯':'Floor Lamp', '绿植':'Plant', '大绿植':'Large Plant',
   '餐桌':'Dining Table', '六人餐桌':'6-Seat Dining Table', '圆桌':'Round Table', '餐椅':'Dining Chair', '岛台':'Kitchen Island',
   '吧椅':'Bar Stool', '橱柜台面':'Kitchen Counter', '燃气灶':'Gas Stove', '方太燃气灶 TH36B-T':'FOTILE TH36B-T Gas Hob', '方太抽油烟机 JCD10TA':'FOTILE JCD10TA Range Hood', '水槽':'Sink', '箭牌日式集渣水槽 · 680':'ARROW Side-drain Sink · 680', '箭牌日式集渣水槽 · 750':'ARROW Side-drain Sink · 750', '冰箱':'Fridge', '纯平四门冰箱（双抽屉）':'Flush four-door fridge (two drawers)', '餐边柜':'Sideboard',
