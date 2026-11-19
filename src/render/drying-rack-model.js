@@ -3,10 +3,15 @@
 'use strict';
 function build(T,f){
  const products=root.FurnishProducts||require('../core/product-rules.js');
- const {asset:assetName}=products.definition(f).dryingRack;
+ const rule=products.definition(f);
+ const loader=root.FurnishStaticAssetModel||require('./static-asset-model.js');
+ if(rule.dryingCrank){
+  const crank=root.FurnishHotataY024CrankAsset||require('../data/crank-hotata-y024-2m-blender-asset.js');
+  return loader.build(T,crank,{...f,h:products.height(f)},products.value(f,'mountHeight'));
+ }
+ const {asset:assetName}=rule.dryingRack;
  const asset=root[assetName]||(assetName==='FurnishHotataY024TwoMetreAsset'?
   require('../data/drying-rack-hotata-y024-2m-blender-asset.js'):require('../data/drying-rack-hotata-y024-blender-asset.js'));
- const loader=root.FurnishStaticAssetModel||require('./static-asset-model.js');
  const {bottom,drop}=products.dryingRackLayout(f);
  const group=loader.build(T,asset,{...f,h:asset.sizeMm[1]},bottom);
  for(const part of group.children){

@@ -179,6 +179,7 @@ function hotataRack(length,width,sku,asset){
   solidModel:{global:'FurnishDryingRackModel',module:'drying-rack',geometryVersion:1},
   identity:{brand:'好太太/Hotata',model:`Y024 · 米粉${length}米 · 四杆`,sourceUrl:`https://item.jd.com/${sku}.html`}};
 }
+const hotataCrank={width:96,depth:64,height:160,pivotHeight:112,lineExitHeight:158,lineExitDepth:-23};
 const types={
  desk:{defaults:{deskLampVisible:true},fields:['deskLampVisible'],deskDecoration:{formatVersion:90}},
  track_socket_bull_gb50k:{
@@ -192,6 +193,10 @@ const types={
  art_glass_partition:{kind:'玻璃隔断',family:'art-glass',height:2400,anchor:'bottom',defaultFrontClearance:0,defaults:{mountHeight:0,artGlassPattern:'fluted'},fields:['mountHeight','artGlassPattern'],create:['mountHeight','artGlassPattern'],glass:{minWidth:100,minDepth:3,maxDepth:30,minHeight:100,maxSize:6000},solidModel:{global:'FurnishArtGlassModel',module:'art-glass',geometryVersion:1}},
  drying_rack_hotata_y024:hotataRack('2.4',2444,'100220349957','FurnishHotataY024Asset'),
  drying_rack_hotata_y024_2m:hotataRack('2',2030,'100294066834','FurnishHotataY024TwoMetreAsset'),
+ crank_hotata_y024_2m:{kind:'壁装手摇器',family:'manual-drying-rack-crank',height:hotataCrank.height,anchor:'bottom',
+  defaultFrontClearance:0,defaults:{mountHeight:838},fields:['mountHeight'],create:['mountHeight'],dryingCrank:hotataCrank,
+  solidModel:{global:'FurnishDryingRackModel',module:'drying-rack',geometryVersion:1},
+  identity:{brand:'好太太/Hotata',model:'Y024 · 米粉2米 · 随机手摇器',sourceUrl:'https://item.jd.com/100294066834.html'}},
  balcony_plant_rack:{kind:'置物架',height:1600,defaultFrontClearance:0,garden:{kind:'rack',post:30,board:20,minWidth:600,minDepth:200,minHeight:800},solidModel:{global:'FurnishBalconyGardenModel',module:'balcony-garden',geometryVersion:1}},
  balcony_plant_rack_step:{kind:'置物架',height:1300,defaultFrontClearance:0,defaults:{rackLowerHeight:800,rackUpperDepth:300,rackPost:30,rackBoard:20,rackSlatGap:8},fields:['rackLowerHeight','rackUpperDepth','rackPost','rackBoard','rackSlatGap'],create:['rackLowerHeight','rackUpperDepth','rackPost','rackBoard','rackSlatGap'],garden:{kind:'rack',stepped:true,minWidth:600,minDepth:400,minHeight:1000},solidModel:{global:'FurnishBalconyGardenModel',module:'balcony-garden',geometryVersion:1}},
  plant_clivia:{kind:'绿植',height:650,anchor:'bottom',defaultFrontClearance:0,garden:{kind:'clivia',potDiameter:260,potHeight:230},defaults:{mountHeight:0},fields:['mountHeight'],create:['mountHeight'],solidModel:{global:'FurnishBalconyGardenModel',module:'balcony-garden',geometryVersion:2}},

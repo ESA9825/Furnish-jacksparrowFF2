@@ -2,12 +2,12 @@
   "format": 2,
   "description": "Generated repository index; paths relative to repository root. This is metadata, not the application loading manifest.",
   "counts": {
-    "blenderModels": 57,
+    "blenderModels": 58,
     "parametricVerificationConfigurations": 92,
-    "verificationConfigurations": 149,
-    "catalogEntries": 192,
-    "catalogTypes": 162,
-    "productDossiers": 84,
+    "verificationConfigurations": 150,
+    "catalogEntries": 193,
+    "catalogTypes": 163,
+    "productDossiers": 85,
     "referenceImages": 365,
     "missingReferences": 20
   },
@@ -1252,6 +1252,47 @@
       "references": [
         "assets/models/drying-rack-hotata-y024-2m/references/product-page/jd-100294066834.jpg"
       ]
+    },
+    {
+      "profile": "crank-hotata-y024-2m",
+      "type": "crank_hotata_y024_2m",
+      "name": "好太太 Y024 2米款 · 壁装手摇器",
+      "sizeMm": [
+        96,
+        64,
+        160
+      ],
+      "parts": 8,
+      "runtimeVersion": 1,
+      "runtime": {
+        "path": "src/data/crank-hotata-y024-2m-blender-asset.js",
+        "sha256": "3c59ad96580829c797ac53b0a4ae062727c26eb670fd81cfbca32144f6022fcb",
+        "normalization": "utf8-lf"
+      },
+      "sourceSha256": "e12b15d9b184167b7bb8459a1e04280305828741d4fedf6dbc792c02e509be36",
+      "current": {
+        "blend": "assets/models/crank-hotata-y024-2m/v1/crank-hotata-y024-2m-v1.blend",
+        "glb": "assets/models/crank-hotata-y024-2m/v1/crank-hotata-y024-2m-v1.glb"
+      },
+      "document": "docs/DRYING-RACK-HOTATA-Y024.md",
+      "constructor": "src/render/drying-rack-model.js",
+      "author": "scripts/blender-model-crank-hotata-y024-2m.py",
+      "files": [
+        {
+          "path": "assets/models/crank-hotata-y024-2m/v1/crank-hotata-y024-2m-v1.blend",
+          "role": "published-source",
+          "sha256": "5a62397e0b18376435b7fe7c3e3ec9b9540ef898256b1c18e25741945f08e0ee",
+          "bytes": 131602
+        },
+        {
+          "path": "assets/models/crank-hotata-y024-2m/v1/crank-hotata-y024-2m-v1.glb",
+          "role": "published-source",
+          "sha256": "e12b15d9b184167b7bb8459a1e04280305828741d4fedf6dbc792c02e509be36",
+          "bytes": 188036
+        }
+      ],
+      "dossier": "assets/models/crank-hotata-y024-2m/asset.json",
+      "references": []
     },
     {
       "profile": "acwall-midea-mxc3p",
@@ -6587,6 +6628,31 @@
       ],
       "manifest": "assets/models/corner-bookcase-580/asset.json",
       "readme": "assets/models/corner-bookcase-580/README.md"
+    },
+    {
+      "format": 1,
+      "id": "crank-hotata-y024-2m",
+      "name": "好太太 Y024 2 米款 · 壁装手摇器",
+      "types": [
+        "crank_hotata_y024_2m"
+      ],
+      "route": "blender",
+      "document": "docs/DRYING-RACK-HOTATA-Y024.md",
+      "sourceLinks": [
+        "https://item.jd.com/100294066834.html",
+        "https://img30.360buyimg.com/n0/jfs/t1/570634/38/8190/80305/6af6a0cfFb251948f/0083320320082c30.jpg"
+      ],
+      "references": [],
+      "missingReferences": [],
+      "validation": [
+        "docs/validation/crank-hotata-y024-2m-visual-20261119/README.md"
+      ],
+      "notes": [
+        "原图已在 2 米四杆主架档案存档。",
+        "随主架配套，独立家具条目用于墙面定位。外包和握柄行程为布局估算。"
+      ],
+      "manifest": "assets/models/crank-hotata-y024-2m/asset.json",
+      "readme": "assets/models/crank-hotata-y024-2m/README.md"
     },
     {
       "format": 1,
@@ -12774,6 +12840,15 @@
       "w": 1400,
       "d": 550,
       "module": "legacy-furniture"
+    },
+    {
+      "category": "生活用品",
+      "type": "crank_hotata_y024_2m",
+      "name": "好太太 Y024 2米款 · 壁装手摇器",
+      "w": 96,
+      "d": 64,
+      "h": 160,
+      "module": "drying-rack"
     },
     {
       "category": "生活用品",

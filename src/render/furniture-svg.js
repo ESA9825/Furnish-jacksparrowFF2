@@ -321,6 +321,8 @@ if(t==='pocketdoor_double'||t==='pocketdoor_triple'){
     case 'mirror': return rc(x,y,w,d,c,'rx="14"')
       + `<line x1="${x+w*.28}" y1="${y+d*.15}" x2="${x+w*.68}" y2="${y+d*.85}" stroke="#fff" stroke-width="9" opacity=".7" vector-effect="non-scaling-stroke"/>`
       + `<line x1="${x+w*.44}" y1="${y+d*.1}" x2="${x+w*.78}" y2="${y+d*.58}" stroke="#fff" stroke-width="5" opacity=".5" vector-effect="non-scaling-stroke"/>`;
+    case 'crank_hotata_y024_2m':
+      return rc(x,y,w,d*0.52,c,'rx="5"')+rc(-w*.13,y+d*.52,w*.26,d*.48,'#e7a7a7','rx="4"');
     case 'drying_rack_hotata_y024_2m':
     case 'drying_rack_hotata_y024': {
       const spec=products.definition(t).dryingRack;

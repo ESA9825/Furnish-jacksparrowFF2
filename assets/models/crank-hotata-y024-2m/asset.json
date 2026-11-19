@@ -1,0 +1,23 @@
+{
+  "format": 1,
+  "id": "crank-hotata-y024-2m",
+  "name": "好太太 Y024 2 米款 · 壁装手摇器",
+  "types": [
+    "crank_hotata_y024_2m"
+  ],
+  "route": "blender",
+  "document": "docs/DRYING-RACK-HOTATA-Y024.md",
+  "sourceLinks": [
+    "https://item.jd.com/100294066834.html",
+    "https://img30.360buyimg.com/n0/jfs/t1/570634/38/8190/80305/6af6a0cfFb251948f/0083320320082c30.jpg"
+  ],
+  "references": [],
+  "missingReferences": [],
+  "validation": [
+    "docs/validation/crank-hotata-y024-2m-visual-20261119/README.md"
+  ],
+  "notes": [
+    "原图已在 2 米四杆主架档案存档。",
+    "随主架配套，独立家具条目用于墙面定位。外包和握柄行程为布局估算。"
+  ]
+}

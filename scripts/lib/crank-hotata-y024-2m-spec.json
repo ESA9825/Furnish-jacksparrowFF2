@@ -1,0 +1,6 @@
+{
+  "type": "crank_hotata_y024_2m",
+  "size": [96, 160, 64],
+  "global": "FurnishHotataY024CrankAsset",
+  "parts": ["wall-base", "housing", "face-ring", "hub", "crank-arm", "grip-spindle", "grip", "wire-guide"]
+}

@@ -10,6 +10,7 @@ assetTypes['downlight-labot-ip65']='downlight_labot_ip65_7w';
 assetTypes['desk-lamp-mijia-pro']='desk_lamp_mijia_pro';
 assetTypes['drying-rack-hotata-y024']='drying_rack_hotata_y024';
 assetTypes['drying-rack-hotata-y024-2m']='drying_rack_hotata_y024_2m';
+assetTypes['crank-hotata-y024-2m']='crank_hotata_y024_2m';
 assetTypes['acwall-midea-mxc3p']='acwall_midea_mxc3p';
 assetTypes['track-socket-bull-gb50k']='track_socket_bull_gb50k';
 const suites={
