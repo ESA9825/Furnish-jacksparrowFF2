@@ -1078,8 +1078,19 @@ button.replacement-product:focus-visible{outline:2px solid var(--accent);outline
 .electrical-panel select,.electrical-panel input { width:100%; min-width:0; }
 .electrical-panel form { margin-top:16px; }
 .electrical-panel .actions { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
-.electrical-row { display:block; width:100%; text-align:left; margin:5px 0; white-space:normal; overflow-wrap:anywhere; }
-.electrical-row small { display:block; opacity:.7; }
-.electrical-row[aria-current="true"] { border-color:var(--action-bg); box-shadow:inset 3px 0 var(--action-bg); }
+.electrical-list-groups { display:grid; gap:14px; }
+.electrical-list-group { overflow:hidden; border:1px solid var(--line); border-radius:10px; }
+.electrical-list-group h4 { display:flex; align-items:baseline; gap:8px; margin:0; padding:7px 9px; background:var(--soft); color:var(--ink); font-size:12px; letter-spacing:normal; }
+.electrical-list-group ul { list-style:none; margin:0; padding:0; }
+.electrical-list-group li { border-top:1px solid var(--line); }
+.electrical-list-group small { color:var(--muted); font-size:11px; font-weight:400; }
+.electrical-list-group .electrical-row { display:grid; grid-template-columns:minmax(4ch,max-content) minmax(0,1fr) max-content; align-items:start; gap:7px; width:100%; padding:8px 9px; border:0; border-radius:0; text-align:left; white-space:normal; line-height:1.35; }
+.electrical-row-number { color:var(--muted); font-family:var(--mono); font-weight:700; }
+.electrical-row-description { overflow-wrap:anywhere; }
+.electrical-row small { display:block; margin-top:2px; }
+.electrical-row-height { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.electrical-row[aria-current="true"] { background:var(--soft); box-shadow:inset 3px 0 var(--action-bg); }
+.electrical-row:focus-visible { outline-offset:-2px; }
+.dlg-box:has(#electrical-list-rows) .dlg-actions[hidden] { display:none; }
 @media(max-width:600px){.electrical-panel .form { grid-template-columns:repeat(2,minmax(0,1fr)); }}
 #panel .electrical-panel .actions .btn.primary{background:var(--action-bg);color:var(--on-action);border-color:transparent}

@@ -43,15 +43,25 @@ globalThis.FurnishElectricalUI=(()=>{
   adding=false;addItem(item,p.x,p.y);return true;
  }
  function listRows(rows){
-  return rows.map(r=>{
-   const f=getF(r.id),room=roomAt(f.cx,f.cy),selected=ui.sel?.kind==='furn'&&ui.sel.id===r.id;
+  if(!rows.length)return `<p class="muted">${tr('当前方案没有插座或开关面板。','There are no sockets or switch plates in this design.')}</p>`;
+  const groups=new Map(),current=ui.sel?.kind==='furn'?ui.sel.id:null;
+  for(const r of rows){
+   const f=getF(r.id),room=roomAt(f.cx,f.cy),key=room?.id??null;
+   if(!groups.has(key))groups.set(key,{room,items:[]});
    const hidden=!FurnishLayers.visible(state,FurnishLayers.furnitureKey(f));
+   const name=nm(r.name).trim(),prefix=name.match(/^(E\d+)(?:\s*[·・:：]\s*|\s+|$)/);
+   const label=prefix?.[1]===r.number?name.slice(prefix[0].length):name;
+   const elevation=r.finishedBottom===null?tr('待核对','Unknown'):height(r.finishedBottom)+' mm';
+   groups.get(key).items.push(`<li><button type="button" class="btn electrical-row" data-electrical-id="${esc(r.id)}" ${current===r.id?'aria-current="true"':''}>
+     <span class="electrical-row-number">${r.number}</span>
+     <span class="electrical-row-description"><b>${esc(label||r.variant.label)}</b>${label&&label!==r.variant.label?`<small>${esc(r.variant.label)}</small>`:''}${hidden?`<small>${tr('图层已隐藏','Layer hidden')}</small>`:''}</span>
+     <span class="electrical-row-height"><b>${elevation}</b><small>${tr('底高','Bottom height')}</small></span>
+    </button></li>`);
+  }
+  return `<div class="electrical-list-groups">${[...groups.values()].map(({room,items})=>{
    const location=room?nm(state.rooms[room.id]?.name||room.name):tr('未归属房间','No room assigned');
-   const elevation=r.finishedBottom===null?tr('底高待核对','Bottom height unknown'):tr('底高 ','Bottom ')+height(r.finishedBottom)+' mm';
-   const info=[location,r.variant.label,elevation];
-   if(hidden)info.push(tr('图层已隐藏','Layer hidden'));
-   return `<button type="button" class="btn electrical-row" data-electrical-id="${esc(r.id)}" ${selected?'aria-current="true"':''}><b>${r.number} · ${esc(nm(r.name))}</b><small>${esc(info.join(' · '))}</small></button>`;
-  }).join('')||`<p class="muted">${tr('当前方案没有插座或开关面板。','There are no sockets or switch plates in this design.')}</p>`;
+   return `<div class="electrical-list-group"><h4>${esc(location)} <small>${items.length}</small></h4><ul>${items.join('')}</ul></div>`;
+  }).join('')}</div>`;
  }
  function locate(id,dialog){
   const f=getF(id);
