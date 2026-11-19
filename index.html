@@ -254,6 +254,7 @@
       <button class="btn" data-plan-mode="electrical" aria-pressed="false" data-en="Sockets">插座</button>
       <button class="btn" data-plan-mode="ceiling" aria-pressed="false" data-en="Ceiling">吊顶</button>
     </div>
+    <button class="btn" id="electrical-list" aria-haspopup="dialog" data-en="Socket list">插座清单</button>
   </section>
 
   <aside class="lib">
@@ -679,7 +680,7 @@ window.View3D = {
   load, enter:() => load().then(() => impl.enter()), exit:() => impl?.exit(),
   sync:() => impl?.sync(), relang:() => impl?.relang(), replan:() => impl?.replan(), retheme:() => impl?.retheme(),
   shot:() => impl?.shot(), groundAt:(x, y) => impl?.groundAt(x, y) ?? null, flyToRoom:id => impl?.flyToRoom(id),
-  image:() => globalThis.FurnishWorkflowTools?.styleId()?null:impl?.image()||null, focusSelection:() => impl?.focusSelection(),
+  image:() => globalThis.FurnishWorkflowTools?.styleId()?null:impl?.image()||null, focusSelection:options => impl?.focusSelection(options),
   furnitureScreenPoint:f => impl?.furnitureScreenPoint(f)??null,
   highlightIssue:(item,volumes) => impl?.highlightIssue(item,volumes),
   tileRoomAt:(x,y) => impl?.tileRoomAt(x,y)??null, refreshTileInspection:()=>impl?.refreshTileInspection(), refreshObservationLayers:()=>impl?.refreshObservationLayers(),
@@ -1708,10 +1709,12 @@ function flyToBox(box){
   const dist = (size*1.3 + 2.2)*framingScale()/Math.min(1,camera.aspect);
   flyTo(pose(t, new THREE.Vector3(t.x + dir.x*dist*.7, dist*1.05, t.z + dir.z*dist*.7)));
 }
-function focusSelection(){
- if(!active||anim||opt.mode!=='orbit')return;
+function focusSelection({itemId}={}){
+ if(!active||anim)return;
+ if(itemId&&opt.mode==='walk')setMode('orbit');
+ if(opt.mode!=='orbit')return;
  if(ui.sel?.kind==='furn'){
-  const ids=selIds();if(!ids.length)return;
+  const selected=selIds(),ids=itemId&&selected.includes(itemId)?[itemId]:selected;if(!ids.length)return;
   observationTarget=[...ids];observationSelection=JSON.stringify(ui.sel);
   $('#vRestoreWalls').hidden=false;syncHint3d();frameObservation(true);return;
  }

@@ -42,12 +42,52 @@ globalThis.FurnishElectricalUI=(()=>{
   const p=toMM(e),item=LIB.flatMap(c=>c.items).find(i=>FurnishProducts.supports({type:i[0]},'panelVariant'));if(!item)return false;
   adding=false;addItem(item,p.x,p.y);return true;
  }
+ function listRows(rows){
+  return rows.map(r=>{
+   const f=getF(r.id),room=roomAt(f.cx,f.cy),selected=ui.sel?.kind==='furn'&&ui.sel.id===r.id;
+   const hidden=!FurnishLayers.visible(state,FurnishLayers.furnitureKey(f));
+   const location=room?nm(state.rooms[room.id]?.name||room.name):tr('未归属房间','No room assigned');
+   const elevation=r.finishedBottom===null?tr('底高待核对','Bottom height unknown'):tr('底高 ','Bottom ')+height(r.finishedBottom)+' mm';
+   const info=[location,r.variant.label,elevation];
+   if(hidden)info.push(tr('图层已隐藏','Layer hidden'));
+   return `<button type="button" class="btn electrical-row" data-electrical-id="${esc(r.id)}" ${selected?'aria-current="true"':''}><b>${r.number} · ${esc(nm(r.name))}</b><small>${esc(info.join(' · '))}</small></button>`;
+  }).join('')||`<p class="muted">${tr('当前方案没有插座或开关面板。','There are no sockets or switch plates in this design.')}</p>`;
+ }
+ function locate(id,dialog){
+  const f=getF(id);
+  if(!E.panel(f)||switching)return;
+  if(dialog)closeDialog();
+  if(!FurnishLayers.visible(state,FurnishLayers.furnitureKey(f))){
+   toast(tr('所在图层已隐藏，请先在图层管理中显示。','This layer is hidden. Show it in Layer manager first.'),{label:tr('图层管理','Layers'),fn:()=>FurnishObservationLayers.open()});
+   return;
+  }
+  const wasAdding=adding;
+  adding=false;
+  closeDrawers();
+  selectIds([id]);
+  if(wasAdding)afterRender();
+  if(is3D())window.View3D?.focusSelection({itemId:id});
+  else zoomToBox(groupBox([f]),550);
+ }
+ function bindList(host,dialog=false){
+  host.querySelectorAll('[data-electrical-id]').forEach(b=>b.onclick=()=>locate(b.dataset.electricalId,dialog));
+ }
+ function openList(){
+  if(switching)return;
+  const rows=E.points(state,canvasEffectivePlan());
+  openDialog({
+   title:tr('插座与面板清单','Sockets and switch plates'),
+   body:`<div id="electrical-list-rows">${listRows(rows)}</div>`,
+   onOpen:()=>bindList($('#electrical-list-rows'),true)
+  });
+ }
  function panel(p){
   if(!active())return false;
   const f=selItems().length===1&&selItems()[0],rows=E.points(state,canvasEffectivePlan()),locked=f&&physicalLocked(f);
-  p.innerHTML=`<section class="electrical-panel"><h3>插座布置 <span class="muted">${rows.length} 个点位</span></h3><p class="muted">家具、墙体和柜体结构只读。开合柜门可查看柜内点位；面板可贴墙或贴柜体板面。</p><div class="actions"><button class="btn primary" id="electrical-add">${adding?'取消放置':'＋ 添加面板'}</button><button class="btn" id="electrical-exit">返回家具布局</button></div>${f?editor(f,rows.find(r=>r.id===f.id),locked):'<p>点选图中编号编辑面板，或从下方列表选择。</p>'}<details ${poseHost?'open':''}><summary>柜门／抽屉开合</summary><label>选择柜体<select id="electrical-host"><option value="">请选择</option>${state.furniture.filter(f=>(f.cabinet||f.kitchen)&&FurnishLayers.visible(state,'furniture:'+f.id)).map(f=>`<option value="${esc(f.id)}" ${poseHost===f.id?'selected':''}>${esc(f.name)}</option>`).join('')}</select></label><div class="actions"><button class="btn" id="electrical-open">全部打开</button><button class="btn" id="electrical-close">全部关闭</button><button class="btn" id="electrical-3d">三维逐扇开合</button></div><small>仅改变开启状态；柜体尺寸、位置和结构保持。原来锁定的柜体仍受保护。</small></details><details ${f?'':'open'}><summary>面板清单 · 编号随方案内顺序生成</summary>${rows.map(r=>`<button class="btn electrical-row" data-electrical-id="${esc(r.id)}"><b>${r.number}</b> ${esc(r.name)}<small>${esc(r.variant.label)} · 底 ${height(r.finishedBottom)} mm</small></button>`).join('')}</details><p id="electrical-error" class="project-error" role="alert"></p></section>`;
+  const listOpen=p.querySelector('#electrical-panel-list')?.open??!f;
+  p.innerHTML=`<section class="electrical-panel"><h3>插座布置 <span class="muted">${rows.length} 个点位</span></h3><p class="muted">家具、墙体和柜体结构只读。开合柜门可查看柜内点位；面板可贴墙或贴柜体板面。</p><div class="actions"><button class="btn primary" id="electrical-add">${adding?'取消放置':'＋ 添加面板'}</button><button class="btn" id="electrical-exit">返回家具布局</button></div>${f?editor(f,rows.find(r=>r.id===f.id),locked):'<p>点选图中编号编辑面板，或从下方列表选择。</p>'}<details ${poseHost?'open':''}><summary>柜门／抽屉开合</summary><label>选择柜体<select id="electrical-host"><option value="">请选择</option>${state.furniture.filter(f=>(f.cabinet||f.kitchen)&&FurnishLayers.visible(state,'furniture:'+f.id)).map(f=>`<option value="${esc(f.id)}" ${poseHost===f.id?'selected':''}>${esc(f.name)}</option>`).join('')}</select></label><div class="actions"><button class="btn" id="electrical-open">全部打开</button><button class="btn" id="electrical-close">全部关闭</button><button class="btn" id="electrical-3d">三维逐扇开合</button></div><small>仅改变开启状态；柜体尺寸、位置和结构保持。原来锁定的柜体仍受保护。</small></details><details id="electrical-panel-list" ${listOpen?'open':''}><summary>面板清单</summary>${listRows(rows)}</details><p id="electrical-error" class="project-error" role="alert"></p></section>`;
   p.querySelector('#electrical-add').onclick=()=>{adding=!adding;renderPanel();afterRender();};p.querySelector('#electrical-exit').onclick=()=>setMode('furniture');
-  p.querySelectorAll('[data-electrical-id]').forEach(b=>b.onclick=()=>focusItem(b.dataset.electricalId));
+  bindList(p);
   p.querySelector('#electrical-host').onchange=e=>{poseHost=e.target.value;};
   const report=fn=>{try{fn();}catch(e){p.querySelector('#electrical-error').textContent=e.message;}};
   p.querySelector('#electrical-open').onclick=()=>report(()=>opening(true));p.querySelector('#electrical-close').onclick=()=>report(()=>opening(false));
@@ -71,7 +111,7 @@ globalThis.FurnishElectricalUI=(()=>{
   if(f.cabinet?.version===3){const next=FurnishCornerCabinet.setOpening(f,open);mutate(()=>Object.assign(getF(f.id),next),{sceneFirst:true});return;}
   throw Error('此组合柜请使用三维逐扇开合');
  }
- window.addEventListener('load',()=>{document.querySelectorAll('[data-plan-mode]').forEach(b=>b.onclick=()=>setMode(b.dataset.planMode));afterRender();if(active())renderPanel();});
+ window.addEventListener('load',()=>{document.querySelectorAll('[data-plan-mode]').forEach(b=>b.onclick=()=>setMode(b.dataset.planMode));$('#electrical-list').onclick=openList;afterRender();if(active())renderPanel();});
  document.addEventListener('keydown',e=>{if(active()&&e.key==='Escape'&&adding){adding=false;renderPanel();afterRender();}},true);
  return {active,blocked,physicalLocked,assertEditable,setMode,selection,draw,afterRender,pointer,panel};
 })();
