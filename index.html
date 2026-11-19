@@ -788,8 +788,14 @@ function init(){
   updateProjection();
   orbit = new OrbitControls(camera, renderer.domElement);
   FurnishNavigation.bindOrbit(renderer.domElement,()=>orbit);
-  orbit.enableDamping = true; orbit.maxPolarAngle = Math.PI*.995; orbit.minDistance = 1.5; orbit.maxDistance = 45;
-  orbit.addEventListener('change',invalidate);
+  orbit.enableDamping = false; orbit.maxPolarAngle = Math.PI*.995; orbit.minDistance = 1.5; orbit.maxDistance = 45;
+  let orbitGesture = false;
+  orbit.addEventListener('start', () => { orbitGesture = true; });
+  orbit.addEventListener('end', () => { orbitGesture = false; });
+  orbit.addEventListener('change', () => {
+    if (orbitGesture) fly = null;
+    invalidate();
+  });
   walkCtl = new PointerLockControls(camera, document.body);
   walkCtl.addEventListener('change', invalidate);
   walkCtl.addEventListener('lock', () => { $('#walkOverlay').style.display = 'none'; $('#cross').style.display = 'block'; });
@@ -2336,10 +2342,9 @@ async function automationCamera(options){
   if(options.roomId)flyToRoom(options.roomId);
   if(options.position||options.preset){
    fly=null;if(!options.position||!options.focusIds?.length)clearObservation();
-   const damping=orbit.enableDamping;orbit.enableDamping=false;orbit.update();
    const point=p=>new THREE.Vector3(wx(p.x),M(p.z),wz(p.y));
    setPose(options.position?pose(point(options.target),point(options.position)):options.preset==='top'?topWhole():isoWhole());
-   if(mode==='orbit')orbit.update();orbit.enableDamping=damping;invalidate(true);
+   if(mode==='orbit')orbit.update();invalidate(true);
   }
   await automationReady();
  }
