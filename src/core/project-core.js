@@ -297,7 +297,7 @@
   const x=f.w/2,front=f.d/2,back=-front,opening=box(-x,front,x,front+spec.extension),vent=box(-x-spec.sideClearance,back,-x,front),whole=box(-x,back,x,front+spec.extension);
   const checks=[],add=(kind,ok,message,extra={})=>checks.push({kind,id:f.id,name:f.name,ok,pending:ok===null,message,...extra}),label=o=>o.name||o.id||'未命名障碍',mm=n=>String(Math.round(n*100)/100);
   const items=furniture.filter(o=>o.id!==f.id&&!products.modelError(o));
-  const parts=rigidBodies??items.filter(o=>!['rug','plant','curtain'].includes(o.type)&&!design().products().definition(o)?.covering?.soft).flatMap(o=>G.bodyParts(o,plan,furniture).map(p=>({f:o,...p})));
+  const parts=rigidBodies??items.filter(o=>!['rug','plant','curtain'].includes(o.type)&&!products.softCoveringOnly(o)).flatMap(o=>G.bodyParts(o,plan,furniture).map(p=>({f:o,...p})));
   const obstacles=parts.filter(o=>o.f.id!==f.id).map(o=>({p:o.p.map(local),vertical:o.vertical,kind:'furniture',id:o.f.id,name:o.f.name}));
   (plan.walls||[]).forEach((w,i)=>obstacles.push({p:rect(w).map(local),vertical:finishes().vertical(w,plan),kind:'wall',id:'w'+i,name:'墙体 '+(i+1)}));
   (plan.wins||[]).forEach((w,i)=>obstacles.push({p:rect(w.rect).map(local),vertical:Number.isFinite(w.sill)&&Number.isFinite(w.head)?{bottom:w.sill*1000,top:w.head*1000}:null,kind:'window',id:'w'+i,name:'窗 '+(i+1)}));
@@ -384,7 +384,7 @@
   const bodies=furniture.filter(f=>!ignored.has(f.type)&&!design().products().definition(f)?.covering?.soft&&!(root.FurnishProducts||(typeof require==='function'?require('./product-rules.js'):null))?.definition(f)?.embedded).map(f=>{const shapes=(root.FurnishGeometry||require('./layout-geometry.js')).footprints(f,{plan,furniture});return shapes.map(p=>({f,p,box:[Math.min(...p.map(v=>v[0])),Math.min(...p.map(v=>v[1])),Math.max(...p.map(v=>v[0])),Math.max(...p.map(v=>v[1]))]}));}).flat(),walls=plan.walls.map(rect),issues=broken;
   // Beam bodies and opening obstacles share the same rigid-object height envelopes.
   // Wall-mounted objects are exempt from floor-footprint checks, not overhead collisions.
-  const rigidBodies=[];for(const f of furniture){yield;if(!['rug','plant','curtain'].includes(f.type)&&!design().products().definition(f)?.covering?.soft)rigidBodies.push(...(root.FurnishGeometry||require('./layout-geometry.js')).bodyParts(f,plan,furniture).map(part=>({f,...part})));}
+  const rigidBodies=[];for(const f of furniture){yield;if(!['rug','plant','curtain'].includes(f.type)&&!products.softCoveringOnly(f))rigidBodies.push(...(root.FurnishGeometry||require('./layout-geometry.js')).bodyParts(f,plan,furniture).map(part=>({f,...part})));}
   const openingBox=p=>[Math.min(...p.map(v=>v[0])),Math.min(...p.map(v=>v[1])),Math.max(...p.map(v=>v[0])),Math.max(...p.map(v=>v[1]))];
   const openingObstacles=rigidBodies.map(b=>({...b,box:openingBox(b.p)}));
   yield;broken.push(...ceilings().checks(plan,rigidBodies,{focusIds:targets}).filter(i=>!targets||targets.has(i.id)));yield;

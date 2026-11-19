@@ -6,7 +6,7 @@
 
 更新：`node scripts/index-model-assets.cjs --write`；核对：`node scripts/index-model-assets.cjs --check`。
 
-85份产品／设计档案，365张参考图，20张历史原图待补；58组Blender模型。参数化验证配置92组，全部家具库193条目／163种类型。
+86份产品／设计档案，368张参考图，20张历史原图待补；59组Blender模型。参数化验证配置92组，全部家具库194条目／164种类型。
 
 | 产品／设计资料 | 参考图 | 输出／构造 | 待补原图 |
 |---|---|---|---|
@@ -31,6 +31,7 @@
 | [源氏木语-Y00Y06-0.45米转角书柜](corner-bookcase/README.md) | 1 | [BLEND](corner-bookcase/v1/corner-bookcase-v1.blend) · [GLB](corner-bookcase/v1/corner-bookcase-v1.glb) | 0 |
 | [源氏木语-Y00Y06058-0.58米转角书柜](corner-bookcase-580/README.md) | 1 | [BLEND](corner-bookcase-580/v1/corner-bookcase-580-v1.blend) · [GLB](corner-bookcase-580/v1/corner-bookcase-580-v1.glb) | 0 |
 | [好太太 Y024 2 米款 · 壁装手摇器](crank-hotata-y024-2m/README.md) | 0 | [BLEND](crank-hotata-y024-2m/v1/crank-hotata-y024-2m-v1.blend) · [GLB](crank-hotata-y024-2m/v1/crank-hotata-y024-2m-v1.glb) | 0 |
+| [米家智能窗帘 3 Pro · MJZNCL08LM](curtain-mijia-3-pro-motor/README.md) | 3 | [BLEND](curtain-mijia-3-pro-motor/v1/curtain-mijia-3-pro-motor-v1.blend) · [GLB](curtain-mijia-3-pro-motor/v1/curtain-mijia-3-pro-motor-v1.glb) | 0 |
 | [窗帘与窗饰](curtain-references/README.md) | 1 | 参考资料 | 0 |
 | [米家桌面学习灯 Pro · MJTD07YL](desk-lamp-mijia-pro/README.md) | 7 | [BLEND](desk-lamp-mijia-pro/v1-final/desk-lamp-mijia-pro-v1.blend) · [GLB](desk-lamp-mijia-pro/v1-final/desk-lamp-mijia-pro-v1.glb) | 0 |
 | [米家-台式5套洗碗机](dishwasher/README.md) | 0 | [BLEND](dishwasher/dishwasher-v1.blend) · [GLB](dishwasher/dishwasher-v1.glb) | 3 |

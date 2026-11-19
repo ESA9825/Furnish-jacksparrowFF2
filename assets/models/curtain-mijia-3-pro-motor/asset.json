@@ -1,0 +1,47 @@
+{
+  "format": 1,
+  "id": "curtain-mijia-3-pro-motor",
+  "name": "米家智能窗帘 3 Pro · MJZNCL08LM",
+  "types": [
+    "curtain_mijia_3_pro"
+  ],
+  "route": "blender",
+  "document": "docs/CURTAIN-MIJIA-3-PRO.md",
+  "sourceLinks": [
+    "https://item.jd.com/100341996966.html",
+    "https://www.mi.com/shop/buy/detail?product_id=23885"
+  ],
+  "references": [
+    {
+      "path": "references/dimensions.jpg",
+      "kind": "product-page",
+      "url": "https://img.ithome.com/newsuploadfiles/2026/4/6f4b315f-c7e7-4b0f-bbba-016f94d4c92a.jpg",
+      "sha256": "f211a80c0d9aeb72d03fd679d67238029353538cf300a334070c044a99e72bea",
+      "bytes": 111841,
+      "legacyPaths": []
+    },
+    {
+      "path": "references/drive-track.jpg",
+      "kind": "product-page",
+      "url": "https://img.ithome.com/newsuploadfiles/2026/4/45e8ce52-2498-4af2-b445-1deaac8f691d.jpg",
+      "sha256": "0e5cabf313589eb43dab117ffa4a9b3a99ebc6734cda990c87454299d1f8f313",
+      "bytes": 112305,
+      "legacyPaths": []
+    },
+    {
+      "path": "references/installation.jpg",
+      "kind": "product-page",
+      "url": "https://img.ithome.com/newsuploadfiles/2026/4/4792bc3c-5fcc-46b9-92e1-59608f3ecaf7.jpg",
+      "sha256": "9c46d7e7b4f1d8980c6e537270f7d0fe3d12e7dd95e52c1b66ee9873a8858673",
+      "bytes": 480147,
+      "legacyPaths": []
+    }
+  ],
+  "missingReferences": [],
+  "validation": [
+    "docs/validation/curtain-mijia-3-pro-20261119/README.md"
+  ],
+  "notes": [
+    "111 × 59 × 93 mm 为固定电机外包；轨道与帘布由生产模型按实例尺寸构造。"
+  ]
+}

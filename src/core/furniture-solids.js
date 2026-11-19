@@ -4,7 +4,7 @@
 (function(root){
  'use strict';
  const adapter=()=>root.FurnishModelSolidRecorder||(typeof require==='function'?require('./model-solid-recorder.js'):null);
- const labels={leg:'凳腿','seat-apron':'座框','seat-end':'端框','shelf-end':'层架端撑','shoe-rod':'鞋架横杆',cushion:'软包',piping:'包边',strap:'织带','strap-top':'上织带','top-substrate':'木台面','white-stone':'岩板','leg-wing':'弯曲腿板','side-inlay':'桌腿中脊','leg-inner-cleat':'内侧横撑','leg-mount-block':'固定块','leg-fastener':'连接件',shelf:'层板','drawer-front':'抽屉前板','drawer-back':'抽屉背板','drawer-bottom':'抽屉底板','drawer-side':'抽屉侧板','finger-rebate':'指扣','shelf-seam':'拼缝'};
+ const labels={'motor-housing':'窗帘电机','curtain-rail':'窗帘导轨',leg:'凳腿','seat-apron':'座框','seat-end':'端框','shelf-end':'层架端撑','shoe-rod':'鞋架横杆',cushion:'软包',piping:'包边',strap:'织带','strap-top':'上织带','top-substrate':'木台面','white-stone':'岩板','leg-wing':'弯曲腿板','side-inlay':'桌腿中脊','leg-inner-cleat':'内侧横撑','leg-mount-block':'固定块','leg-fastener':'连接件',shelf:'层板','drawer-front':'抽屉前板','drawer-back':'抽屉背板','drawer-bottom':'抽屉底板','drawer-side':'抽屉侧板','finger-rebate':'指扣','shelf-seam':'拼缝'};
  const rule=f=>(root.FurnishProducts||require('./product-rules.js')).definition(f)?.solidModel;
  const supported=f=>!!f&&!f.obj&&!!rule(f);
  // Dense meshes vary widely in size. Limit both retained records and their
@@ -61,7 +61,7 @@
    const {T,Box,Rounded,transform}=adapter(),built=model.build(T,products.elevationSource(f),r.sliding?{corner}:r.rounded?Rounded:Box);
    const records=[];
    built.traverse(node=>{
-    const g=node.geometry;if(!g)return;const data=g.attributes.position.array,min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];for(let i=0;i<data.length;i++){const axis=i%3;min[axis]=Math.min(min[axis],data[i]);max[axis]=Math.max(max[axis],data[i]);}if(min.some((v,i)=>max[i]-v<1e-10))return;const a=data,toWorld=transform(node),pool=new Map(),vertices=Array.from({length:a.length/3},(_,i)=>{const point=a.slice(i*3,i*3+3),key=point.map(v=>Object.is(v,-0)?'-0':String(v)).join(',');let vertex=pool.get(key);if(!vertex){vertex=toWorld(point).map(v=>v*1000);pool.set(key,vertex);}return vertex;}),name=Object.entries(node.userData).find(([key,v])=>key.endsWith('Part')&&typeof v==='string')?.[1]||'结构';
+    const g=node.geometry;if(!g||node.userData.coveringPart==='fabric-panel')return;const data=g.attributes.position.array,min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];for(let i=0;i<data.length;i++){const axis=i%3;min[axis]=Math.min(min[axis],data[i]);max[axis]=Math.max(max[axis],data[i]);}if(min.some((v,i)=>max[i]-v<1e-10))return;const a=data,toWorld=transform(node),pool=new Map(),vertices=Array.from({length:a.length/3},(_,i)=>{const point=a.slice(i*3,i*3+3),key=point.map(v=>Object.is(v,-0)?'-0':String(v)).join(',');let vertex=pool.get(key);if(!vertex){vertex=toWorld(point).map(v=>v*1000);pool.set(key,vertex);}return vertex;}),name=node.userData.coveringPart||Object.entries(node.userData).find(([key,v])=>key.endsWith('Part')&&typeof v==='string')?.[1]||'结构';
     const add=(vs,faces)=>records.push({vertices:vs,faces,boardName:labels[name]||'结构件',partRole:name,actualBoard:true});
     if(g.userData.bentBoard){
      // Separate the inward bend into narrow convex strips, preserving the void.

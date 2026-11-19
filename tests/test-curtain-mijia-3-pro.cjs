@@ -1,0 +1,51 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs');
+const P=require('../src/core/product-rules.js'),D=require('../src/core/design-core.js');
+const G=require('../src/core/layout-geometry.js'),J=require('../src/core/project-core.js');
+const SVG=require('../src/render/furniture-svg.js'),M=require('../src/render/window-covering-model.js');
+const type='curtain_mijia_3_pro',candidate={type,name:'米家智能窗帘 3 Pro',w:2400,d:100,h:2400,color:'#d6b99a'};
+const old={id:'cloth',type:'curtain',name:'布帘',cx:2273,cy:2487,w:2866.5,d:100,h:2700,mountHeight:120,rot:37,flip:true,color:'#a56840',bottomPhysical:true,curtainStyle:'double',curtainOpen:.63};
+const f=D.replaceFurniture(old,candidate,{anchor:'center'});
+for(const key of ['id','cx','cy','w','d','h','rot','flip','color','mountHeight','bottomPhysical','curtainOpen'])assert.equal(f[key],old[key],key);
+assert(!('curtainStyle' in f));
+assert.equal(D.replaceFurniture({...old,curtainStyle:'single'},candidate).w,candidate.w);
+const legacy=D.replaceFurniture({...old,mountHeight:undefined,bottomPhysical:undefined},candidate);
+assert.equal(legacy.mountHeight,0);
+assert.equal(legacy.bottomPhysical,false);
+for(const sizes of [{w:299},{d:58},{h:149}])assert.throws(()=>P.validate({...f,...sizes}));
+assert.doesNotThrow(()=>P.validate({...f,w:300,d:59,h:150}));
+assert(SVG.render(type,f.w,f.d,f.color,{ink:'#333'},f).includes('data-covering-motor="true"'));
+
+const near=(a,b)=>assert(Math.abs(a-b)<.025,`${a} != ${b}`);
+(async()=>{
+ const imports=JSON.parse(fs.readFileSync(require.resolve('../index.html'),'utf8').match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports,T=await import(imports.three);
+ for(const [rot,flip] of [[0,false],[37,true],[180,false]])for(const curtainOpen of [0,.5,1]){
+  const state={...f,rot,flip,curtainOpen},l=P.coveringLayout(state),model=M.build(T,state);
+  const hardware=model.children.find(child=>child.userData.furnishAsset);
+  const local=new T.Box3().setFromObject(hardware,true);
+  local.getSize(new T.Vector3()).toArray().forEach((v,i)=>near(v*1000,[111,93,59][i]));
+  near(local.min.x*1000,l.motor.x-111/2);
+  near(local.min.y*1000,l.motor.bottom);
+  const rigid=G.bodyParts(state),motor=rigid.filter(part=>part.partRole==='motor-housing');
+  assert.equal(motor.length,5);assert(rigid.some(part=>part.partRole==='curtain-rail'));
+  near(Math.min(...motor.map(p=>p.vertical.bottom)),l.motor.bottom+state.mountHeight+P.elevationDelta(state));
+  near(Math.max(...rigid.map(p=>p.vertical.top)),P.vertical(state).top);
+  const panels=model.children.filter(child=>child.userData.coveringPart==='fabric-panel');
+  assert.equal(panels.length,2);
+  panels.forEach(panel=>near(panel.scale.x,1-.84*curtainOpen));
+  const driveSidePanel=new T.Box3().setFromObject(panels[0],true);
+  assert(driveSidePanel.min.x>local.max.x,'fabric intersects drive casing');
+  const profile={planId:'test',current:{furniture:[state]},designs:[{name:'test',work:{furniture:[state]}}],catalog:[]};
+  assert.deepEqual(J.unpack(J.pack(profile)).designs[0].work.furniture,[JSON.parse(JSON.stringify(state))]);
+ }
+ const straight={...f,rot:0,flip:false},l=P.coveringLayout(straight);
+ const probe={id:'probe',type:'block',cx:f.cx+l.motor.x,cy:f.cy,w:20,d:20,h:50,rot:0,mountHeight:l.motor.bottom+f.mountHeight};
+ assert(G.collisions([straight,probe]).some(pair=>pair.includes(straight.id)));
+ assert.equal(G.collisions([straight,{...probe,mountHeight:900}]).length,0);
+ assert.equal(G.collisions([{...straight,flip:true},probe]).length,0);
+ const plan={rooms:[],walls:[],doors:[]},issue={kind:'overlap'};
+ const key=J.checkFingerprint(issue,plan,[straight]);
+ assert.equal(J.checkFingerprint(issue,plan,[{...straight,color:'#ff0000',price:900}]),key);
+ assert.notEqual(J.checkFingerprint(issue,plan,[{...straight,flip:true}]),key);
+ console.log('PASS MJZNCL08LM retrofit, 111 × 93 × 59 mm fixed motor, rotation, mirror, mounting datum, collision, 2D and project roundtrip');
+})().catch(error=>{console.error(error);process.exitCode=1;});

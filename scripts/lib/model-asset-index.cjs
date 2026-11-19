@@ -12,6 +12,7 @@ docs['crank-hotata-y024-2m']=docs['drying-rack-hotata-y024']=docs['drying-rack-h
 docs['downlight-labot-ip65']='DOWNLIGHT-LABOT-IP65.md';
 docs['desk-lamp-mijia-pro']='DESK-LAMP-MIJIA-PRO.md';
 docs['acwall-midea-mxc3p']='ACWALL-MIDEA-MXC3P.md';
+docs['curtain-mijia-3-pro-motor']='CURTAIN-MIJIA-3-PRO.md';
 docs['track-socket-bull-gb50k']='TRACK-SOCKET-BULL-GB50K.md';
 docs['panel-bull-g12']='PANEL-BULL-G12.md';docs['panel-xiaomi-switch2']='PANEL-XIAOMI-SWITCH2.md';
 const supplies=require('./storage-supply-specs.json');for(const id of Object.keys(supplies))docs[id]='STORAGE-CABINET-2400.md';

@@ -154,6 +154,7 @@
  }
  function replaceFurniture(f,c,{anchor='current'}={}){
   if(!['current','center','back'].includes(anchor))throw Error('替换定位基准无效');
+  c=products().coveringRetrofit(f,c);
   const base=products().replacementResizeSource(f,c);delete base.cabinet;delete base.kitchen;
   // Explicit positioning bypasses the source product's implicit resize datum.
   if(anchor!=='current')base.resizeAnchor='center';

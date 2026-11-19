@@ -1,0 +1,5 @@
+{
+  "global": "FurnishMijiaCurtain3ProMotorAsset",
+  "size": [111, 93, 59],
+  "parts": ["housing", "drive-neck", "second-drive-cap", "base-seam", "indicator"]
+}

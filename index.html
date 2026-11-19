@@ -445,6 +445,7 @@
 <script src="src/render/kitchen-model.js"></script>
 <script src="src/core/hood-motion-core.js"></script>
 <template id="model-assets">
+  <script data-src="src/data/curtain-mijia-3-pro-motor-blender-asset.js" data-asset="FurnishMijiaCurtain3ProMotorAsset"></script>
   <script data-src="src/data/hood-blender-asset.js" data-asset="FurnishHoodBlenderAsset"></script>
   <script data-src="src/data/downlight-labot-ip65-blender-asset.js" data-asset="FurnishLabotIP65Asset"></script>
   <script data-src="src/data/se2-blender-asset.js" data-asset="FurnishSE2BlenderAsset"></script>
@@ -1292,7 +1293,7 @@ const syncIdentity=FurnishPartIdentity;
     case 'pocketdoor_triple': case 'pocketdoor_double': case 'slidingdoor': case 'telescopicdoor20': case 'doubleslidingdoor': case 'tripleslidingdoor': case 'tripleslidingwindow': {
       const model=slidingModels.build(f,{furniture,...context});g.add(...model.children.slice());g.userData.slidingDoor=model.userData.slidingDoor;break;
     }
-    case 'curtain_sheer': case 'blind_venetian': case 'blind_honeycomb': case 'blind_zebra': case 'blind_bamboo': case 'blind_roller': {
+    case 'curtain_mijia_3_pro': case 'curtain_sheer': case 'blind_venetian': case 'blind_honeycomb': case 'blind_zebra': case 'blind_bamboo': case 'blind_roller': {
       const model=FurnishWindowCoveringModel.build(THREE,f);g.add(...model.children.slice());g.userData.covering=model.userData.covering;break;
     }
     case 'curtain': {
