@@ -239,7 +239,10 @@ const LIB = [
     ["pet_feeder_mijia_2","米家智能宠物喂食器 2",220,324,"#efeee8",0,products.height({type:"pet_feeder_mijia_2"})],
     ["litter_box","封闭式猫砂盆",440,510,"#eeede5",0,products.height({type:"litter_box"})],
     ["dryingrack","晾衣架",1400,550,"#cfd6d9",500],
-    ['drying_rack_hotata_y024','好太太手摇升降晾衣架 Y024 · 米粉2.4米四杆',2444,530,'#e5d6ac',undefined,products.height({type:'drying_rack_hotata_y024'})]
+    ...[['drying_rack_hotata_y024','2.4'],['drying_rack_hotata_y024_2m','2']].map(([type,length])=>{
+      const rule=products.definition(type),{width,depth}=rule.dryingRack;
+      return [type,`好太太手摇升降晾衣架 Y024 · 米粉${length}米四杆`,width,depth,'#e5d6ac',undefined,rule.height];
+    })
   ]},
   {cat:'柜体搭建',items:[['cabinet','乐高式柜体 · 拖入组件搭建',600,450,'#f3f1ec',undefined,720,null,null,'builder']]},
 ];
@@ -316,7 +319,7 @@ const useTypes={
  dining:['chair_ikea_vihals','table','table_folding_1100','table_folding_1200','table_folding_1300','roundtable','chair','barstool','island','cabinet','pendant'],
  study:['chair_ikea_vihals','quartz_sill','window_surround','chair_yeswood_s05118','stool_citylong_370','desk','chair','officechair','bookshelf','bookshelf_yeswood_y52y09','bookshelf_yeswood_y00y06','bookshelf_yeswood_y00y06058','armchair','floorlamp'],
  kitchen:['panel_light_300x600','stove','stove_fotile_th36b','rangehood_fotile_jcd10ta','fridge','fridge_french_drawer','dishwasher','dishwasher_mijia_countertop','water_purifier_mijia_1200g','ksink','sink_arrow_680','sink_arrow_750','ovencol','kitchenwall','island'],
- laundry:['washer_littleswan_tg10k60w','washer','dryer','dryingrack','drying_rack_hotata_y024','robot_p20max','robot_p20max_tank','robot_p20max_plumbed'],
+ laundry:['washer_littleswan_tg10k60w','washer','dryer','dryingrack','drying_rack_hotata_y024','drying_rack_hotata_y024_2m','robot_p20max','robot_p20max_tank','robot_p20max_plumbed'],
  bathroom:['bath_heater_aopu_se2','bath_heater_300x600','vanity','toilet','shower','shower_arrow_cream','bathtub','waterheater','waterheater_flat'],
  entry:['electrical_box_strong','electrical_box_weak','shoecab','bench_yeswood_oak','bench','mirror'],pet:[...petTypes]
 };

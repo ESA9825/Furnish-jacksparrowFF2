@@ -9,7 +9,10 @@ from mathutils import Vector
 args = sys.argv[sys.argv.index('--') + 1:]
 out = pathlib.Path(args[0])
 out.mkdir(parents=True, exist_ok=True)
-profile = 'drying-rack-hotata-y024'
+profile = args[args.index('--profile')+1] if '--profile' in args else 'drying-rack-hotata-y024'
+spec = json.loads((pathlib.Path(__file__).parent/'lib'/(profile+'-spec.json')).read_text(encoding='utf-8'))
+half_width = spec['size'][0] / 2
+hole_count = 25 if profile == 'drying-rack-hotata-y024-2m' else 31
 bpy.ops.wm.read_factory_settings(use_empty=True)
 scene = bpy.context.scene
 scene.unit_settings.system = 'METRIC'
@@ -69,9 +72,9 @@ def cylinder(center, radius, length, axis=(0, 1, 0), segments=24):
 
 
 def hang_rail(name, z):
-    rail = box((0, 404, z), (2428, 42, 16))
-    holes = [cylinder(((index - 15) * 76, 403, z), 10, 24, (0, 0, 1), 12)
-             for index in range(31)]
+    rail = box((0, 404, z), (2 * (half_width - 8), 42, 16))
+    holes = [cylinder(((index - (hole_count - 1) / 2) * 76, 403, z), 10, 24, (0, 0, 1), 12)
+             for index in range(hole_count)]
     bpy.ops.object.select_all(action='DESELECT')
     for hole in holes:
         hole.select_set(True)
@@ -90,11 +93,11 @@ def hang_rail(name, z):
 for side, z in [('window', -225), ('room', 225)]:
     moving = 'moving-' + side + '-'
     hang_rail(moving + 'hang-rail', z)
-    finish(cylinder((0, 12.5, z), 12.5, 2428, (1, 0, 0)), moving + 'quilt-rail', cream)
+    finish(cylinder((0, 12.5, z), 12.5, 2 * (half_width - 8), (1, 0, 0)), moving + 'quilt-rail', cream)
     for end, sign in [('left', -1), ('right', 1)]:
-        finish(box((sign * 1209, 209, z), (10, 394, 12)), moving + 'link-' + end, cream)
-        finish(cylinder((sign * 1218, 404, z), 22, 8, (1, 0, 0)), moving + 'hang-cap-' + end, pink)
-        finish(cylinder((sign * 1218, 12.5, z), 12.5, 8, (1, 0, 0)), moving + 'quilt-cap-' + end, pink)
+        finish(box((sign * (half_width - 13), 209, z), (10, 394, 12)), moving + 'link-' + end, cream)
+        finish(cylinder((sign * (half_width - 4), 404, z), 22, 8, (1, 0, 0)), moving + 'hang-cap-' + end, pink)
+        finish(cylinder((sign * (half_width - 4), 12.5, z), 12.5, 8, (1, 0, 0)), moving + 'quilt-cap-' + end, pink)
         x = sign * 800
         finish(cylinder((x, 453, z), 40, 14), f'ceiling-{side}-{end}', cream)
         # Open hook above the perforated bar.

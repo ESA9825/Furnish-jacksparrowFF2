@@ -1,0 +1,28 @@
+{
+  "format": 1,
+  "id": "drying-rack-hotata-y024-2m",
+  "name": "好太太手摇升降晾衣架 Y024 · 米粉2米四杆",
+  "types": [
+    "drying_rack_hotata_y024_2m"
+  ],
+  "route": "blender",
+  "document": "docs/DRYING-RACK-HOTATA-Y024.md",
+  "sourceLinks": [
+    "https://item.jd.com/100294066834.html",
+    "https://img30.360buyimg.com/n0/jfs/t1/570634/38/8190/80305/6af6a0cfFb251948f/0083320320082c30.jpg"
+  ],
+  "references": [
+    {
+      "path": "references/product-page/jd-100294066834.jpg",
+      "kind": "product-page",
+      "url": "https://img30.360buyimg.com/n0/jfs/t1/570634/38/8190/80305/6af6a0cfFb251948f/0083320320082c30.jpg",
+      "sha256": "65ae5d5c28e9394ea0324c884100b170f7a298e8c5977a209892ae2b7895d75e",
+      "bytes": 115022,
+      "legacyPaths": []
+    }
+  ],
+  "missingReferences": [],
+  "validation": [
+    "docs/validation/drying-rack-hotata-y024-2m-visual-20261119/README.md"
+  ]
+}

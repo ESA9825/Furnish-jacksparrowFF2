@@ -3,7 +3,9 @@
 'use strict';
 function build(T,f){
  const products=root.FurnishProducts||require('../core/product-rules.js');
- const asset=root.FurnishHotataY024Asset||require('../data/drying-rack-hotata-y024-blender-asset.js');
+ const {asset:assetName}=products.definition(f).dryingRack;
+ const asset=root[assetName]||(assetName==='FurnishHotataY024TwoMetreAsset'?
+  require('../data/drying-rack-hotata-y024-2m-blender-asset.js'):require('../data/drying-rack-hotata-y024-blender-asset.js'));
  const loader=root.FurnishStaticAssetModel||require('./static-asset-model.js');
  const {bottom,drop}=products.dryingRackLayout(f);
  const group=loader.build(T,asset,{...f,h:asset.sizeMm[1]},bottom);

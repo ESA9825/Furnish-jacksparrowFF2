@@ -172,7 +172,13 @@ function mijiaCeiling(model,asset,global,lumens,sourceUrl){
   panelLight:{asset,global,color:'#fff1dc',previewCandela:lumens/Math.PI,round},
   identity:{brand:'小米/米家',model,sourceUrl}};
 }
-const dryingRackSpec={width:2444,depth:530,raisedHeight:460,maxDrop:1500,rowSpacing:450,seatSpacing:1600,seatDiameter:80};
+function hotataRack(length,width,sku,asset){
+ const dryingRack={width,depth:530,raisedHeight:460,maxDrop:1500,rowSpacing:450,seatSpacing:1600,seatDiameter:80,asset};
+ return {kind:'手摇晾衣架',family:'manual-drying-rack',height:dryingRack.raisedHeight,anchor:'bottom',floorPassageAbove:2100,
+  defaultFrontClearance:0,defaults:{mountHeight:2180},fields:['mountHeight'],create:['mountHeight'],dryingRack,
+  solidModel:{global:'FurnishDryingRackModel',module:'drying-rack',geometryVersion:1},
+  identity:{brand:'好太太/Hotata',model:`Y024 · 米粉${length}米 · 四杆`,sourceUrl:`https://item.jd.com/${sku}.html`}};
+}
 const types={
  desk:{defaults:{deskLampVisible:true},fields:['deskLampVisible'],deskDecoration:{formatVersion:90}},
  track_socket_bull_gb50k:{
@@ -184,10 +190,8 @@ const types={
  },
  panel_bull_g12:{kind:'86开关插座面板',family:'wall-panel',clearanceReview:'missing',height:86,anchor:'bottom',footprintMin:{w:20,d:2},defaultFrontClearance:0,defaults:{mountHeight:0,panelVariant:'socket5-diagonal'},fields:['mountHeight','panelVariant'],create:['mountHeight','panelVariant'],nightLight:{variant:'nightlight',part:'diffuser',color:'#ffe2aa',previewCandela:.6,reach:1800},solidModel:{global:'FurnishPanelBullG12Model',module:'panel-bull-g12',geometryVersion:1},identity:{brand:'公牛/BULL',model:'G12 · 暮雪白 · 86型面板',sourceUrl:'https://item.jd.com/100071863715.html'}},
  art_glass_partition:{kind:'玻璃隔断',family:'art-glass',height:2400,anchor:'bottom',defaultFrontClearance:0,defaults:{mountHeight:0,artGlassPattern:'fluted'},fields:['mountHeight','artGlassPattern'],create:['mountHeight','artGlassPattern'],glass:{minWidth:100,minDepth:3,maxDepth:30,minHeight:100,maxSize:6000},solidModel:{global:'FurnishArtGlassModel',module:'art-glass',geometryVersion:1}},
- drying_rack_hotata_y024:{kind:'手摇晾衣架',family:'manual-drying-rack',height:dryingRackSpec.raisedHeight,anchor:'bottom',floorPassageAbove:2100,
-  defaultFrontClearance:0,defaults:{mountHeight:2180},fields:['mountHeight'],create:['mountHeight'],dryingRack:dryingRackSpec,
-  solidModel:{global:'FurnishDryingRackModel',module:'drying-rack',geometryVersion:1},
-  identity:{brand:'好太太/Hotata',model:'Y024 · 米粉2.4米 · 四杆',sourceUrl:'https://item.jd.com/100220349957.html'}},
+ drying_rack_hotata_y024:hotataRack('2.4',2444,'100220349957','FurnishHotataY024Asset'),
+ drying_rack_hotata_y024_2m:hotataRack('2',2030,'100294066834','FurnishHotataY024TwoMetreAsset'),
  balcony_plant_rack:{kind:'置物架',height:1600,defaultFrontClearance:0,garden:{kind:'rack',post:30,board:20,minWidth:600,minDepth:200,minHeight:800},solidModel:{global:'FurnishBalconyGardenModel',module:'balcony-garden',geometryVersion:1}},
  balcony_plant_rack_step:{kind:'置物架',height:1300,defaultFrontClearance:0,defaults:{rackLowerHeight:800,rackUpperDepth:300,rackPost:30,rackBoard:20,rackSlatGap:8},fields:['rackLowerHeight','rackUpperDepth','rackPost','rackBoard','rackSlatGap'],create:['rackLowerHeight','rackUpperDepth','rackPost','rackBoard','rackSlatGap'],garden:{kind:'rack',stepped:true,minWidth:600,minDepth:400,minHeight:1000},solidModel:{global:'FurnishBalconyGardenModel',module:'balcony-garden',geometryVersion:1}},
  plant_clivia:{kind:'绿植',height:650,anchor:'bottom',defaultFrontClearance:0,garden:{kind:'clivia',potDiameter:260,potHeight:230},defaults:{mountHeight:0},fields:['mountHeight'],create:['mountHeight'],solidModel:{global:'FurnishBalconyGardenModel',module:'balcony-garden',geometryVersion:2}},
@@ -819,7 +823,7 @@ function nativeVertical(f){
  if(!def?.anchor)return null;if(def.anchor==='mixer'){const {bottom,top}=showerInstallation(f);return {bottom,top,source:'model'};}
  const bottom=value(f,'mountHeight');return {bottom,top:bottom+height(f),source:f.h===undefined||f.type==='tripleslidingwindow'?'model':'recorded'};
 }
-function retainReplacementField(previous,next,key){return key==='groupId'||supports(next,key)&&supports(previous,key)&&(key==='floorTrack'||key==='slidingTrackOrder'||previous.type===next.type||family(previous,'laundry')&&family(next,'laundry'));}
+function retainReplacementField(previous,next,key){return key==='groupId'||supports(next,key)&&supports(previous,key)&&(key==='floorTrack'||key==='slidingTrackOrder'||previous.type===next.type||family(previous,'laundry')&&family(next,'laundry')||key==='mountHeight'&&definition(previous)?.dryingRack&&definition(next)?.dryingRack);}
 // Remove incompatible parameters before checking the replacement's outer size.
 function customSinkCandidate(next,candidate){
  if(next.type!=='ksink')return;
@@ -845,7 +849,7 @@ function replacement(previous,next,candidate){
  }
  if(supports(next,'paperArray')&&(candidate.paperArray||previous.type===next.type&&previous.paperArray))Object.assign(next,editPaperArray(next,candidate.paperArray||previous.paperArray));
  if(definition(next)?.dryingRack){
-  if(previous.type===next.type)next.h=height(previous);
+  if(definition(previous)?.dryingRack)next.h=height(previous);
   next.frontClearance=candidate.frontClearance??definition(next).defaultFrontClearance;
  }
  if(definition(next)?.dryingRack||definition(next)?.washerProfile||definition(next)?.ceilingPanel||definition(next)?.downlight||definition(next)?.manifold||family(next,'floor-aircon')||family(next,'wall-aircon')||family(next,'tea-bar')||family(next,'placeholder')||family(next,'under-sink-purifier')||family(next,'pipe-box')||family(next,'art-glass')||family(next,'window-lining')||family(next,'folding-table')||family(next,'arrow-sink')||['stove_fotile_th36b','rangehood_fotile_jcd10ta','aquarium_mijia_2pro','dishwasher_mijia_countertop'].includes(next.type)){for(const [key,v] of Object.entries(initial(next)))if(next[key]===undefined||key==='brand'||key==='model'||key==='sourceUrl'&&!next[key])next[key]=v;}
