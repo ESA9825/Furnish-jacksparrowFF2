@@ -27,7 +27,8 @@ suites['acwall-midea-mxc3p']=['acwall-midea'];
 suites['track-socket-bull-gb50k']=['track-socket-bull-gb50k'];
 suites['desk-lamp-mijia-pro']=['desk-lamp'];suites.cove_light=['cove-light'];
 const mijiaCeilingLights=require('./mijia-ceiling-light-specs.json');
-for(const [id,spec] of Object.entries(mijiaCeilingLights))assetTypes[id]=spec.type;
+for(const [id,spec] of Object.entries(mijiaCeilingLights)){assetTypes[id]=spec.type;suites[id]=['lighting-preview'];}
+suites.surface_light=['lighting-preview','lighting-planning'];
 const copy=o=>JSON.parse(JSON.stringify(o));
 assetTypes['panel-xiaomi-switch2']='panel_bull_g12';suites['panel-xiaomi-switch2']=['panel-xiaomi-switch2'];
 assetTypes['panel-bull-g12']='panel_bull_g12';suites['panel-bull-g12']=['panel-bull-g12'];

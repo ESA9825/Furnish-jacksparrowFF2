@@ -16,7 +16,7 @@ fs.writeFileSync(fixture,JSON.stringify(P.pack({planId:draft.id,current:{furnitu
   const context=await browser.newContext({viewport:{width:1400,height:1000}}),page=await context.newPage();
   page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept());
   await page.goto((verification.fileBase+'index.html'));
-  await page.locator('#planBtn').click();const chooser=page.waitForEvent('filechooser');await page.locator('#gallery-import').click();await(await chooser).setFiles(fixture);await page.getByRole('button',{name:'加载并编辑',exact:true}).click();
+  await page.locator('#planBtn').click();const chooser=page.waitForEvent('filechooser');await page.locator('#gallery-import').click();await(await chooser).setFiles(fixture);await page.getByRole('button',{name:'导入并打开',exact:true}).click();
   const snapshot=()=>page.evaluate(()=>({draft:state.architecture.draft,rooms:PLAN.rooms,settings:state.rooms,walls:PLAN.walls,wins:PLAN.wins,net:FurnishProject.quantities(PLAN).net}));
   const before=await snapshot();await page.evaluate(()=>select({kind:'win',id:0}));
   await page.locator('#window-height').fill('1753');assert.equal(await page.locator('#window-head').inputValue(),'2203');

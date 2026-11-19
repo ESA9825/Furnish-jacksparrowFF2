@@ -67,7 +67,7 @@ const {pathToFileURL}=require('node:url'),V=require('../scripts/lib/browser-veri
     await page.keyboard.press('Escape');assert.equal(await page.locator('#'+id).getAttribute('open'),null);assert(await page.locator('#'+id+'>summary').evaluate(el=>el===document.activeElement));
    }
   }
-  await page.reload();await page.locator('#repository-loading').waitFor({state:'hidden'});assert(await page.locator('#saved').isVisible());assert(await page.locator('#bar-manage-designs').isVisible());
+  await page.reload();await page.locator('#repository-loading').waitFor({state:'hidden'});assert(await page.locator('#saved').isVisible());await page.locator('#design-actions-menu>summary').click();assert(await page.locator('#design-actions-menu [data-design-command="manage"]').isVisible());
   if(protocol==='file')assert.equal(requests,0);assert.deepEqual(errors,[]);await context.close();console.log('PASS '+protocol+': split save/export/more, save failure/retry, downloads, recovery/undo, reset, keyboard and responsive bounds');
  }}finally{await browser.close();await server.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

@@ -16,7 +16,12 @@ async(page,V)=>{
    await p.evaluate(()=>mutate(()=>{let next=FurnishLayers.create(state,'merge_lock','多选验收锁定层');next=FurnishLayers.assign(next,['ceiling:'+state.ceilings.items.find(c=>c.regionId==='merge_a').id],'merge_lock');Object.assign(state,FurnishLayers.update(next,'merge_lock',{locked:true}));}));
    await open();await subtract('merge_a');await count(0);await add('merge_a');await count(0);if(!(await p.locator('[data-design-error]').innerText()).includes('锁定'))throw Error('Locked region added');await p.locator('[data-design-action="cancel"]').click();
    await p.evaluate(()=>mutate(()=>Object.assign(state,FurnishLayers.update(state,'merge_lock',{locked:false}))));
-   await open();await area('merge_a').click();await add('merge_b');await add('merge_c');await count(3);await add('merge_b');await count(3);
+   await open();await area('merge_a').click();await add('merge_b');
+   if(await p.locator('.ceiling-pointer-menu').count())throw Error('Ctrl add opened a boundary context menu');
+   await add('merge_c');await count(3);await add('merge_b');await count(3);
+   await p.locator('[data-design-edge="0"]').click({button:'right',force:true});
+   await p.getByRole('menuitem',{name:'在此增加节点'}).waitFor();
+   await p.keyboard.press('Escape');await count(3);
    await subtract('merge_b');await count(2);await merge.click();
    if(!(await p.locator('[data-design-error]').innerText()).includes('共边'))throw Error('Disconnected selection must be rejected');
    if(await p.locator('[data-design="region"] option').count()!==3)throw Error('Rejected merge changed draft');

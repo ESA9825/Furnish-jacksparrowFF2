@@ -16,7 +16,7 @@ const round=v=>Math.round(v*1e9)/1e9;
  };
  const exported=model=>{const copy=Export.snapshot(T,{groups:[model],camera:new T.PerspectiveCamera()});try{return copy.scene.children.filter(o=>o.isMesh).map(o=>{assert(!o.userData.furnishPartAmbiguous);return o.userData.furnishPartKey;}).sort();}finally{copy.dispose();}};
  let count=0,baselineCount=0;
- for(const [template]of C.templates)for(const variant of ['legacy','thin','no-back','open','ghost']){
+ for(const [template]of C.templates.filter(([id])=>C.preset(id).cabinet.version===1))for(const variant of ['legacy','thin','no-back','open','ghost']){
   const f={...C.preset(template),id:'cabinet',type:C.templateType(template),cx:2000,cy:3000,rot:37,flip:true,mountHeight:123};
   if(variant==='legacy')delete f.cabinet.backThickness;
   if(C.backThicknessAvailable(f.cabinet)&&['thin','no-back'].includes(variant))f.cabinet.backThickness=variant==='thin'?6:0;

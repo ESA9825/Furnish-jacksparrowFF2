@@ -1,7 +1,7 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const nodes=new Map(),$=s=>{if(!nodes.has(s))nodes.set(s,{innerHTML:''});return nodes.get(s);};
 const base={h:[0,0],c:[1,0],o:[0,1],len:900,entry:false,rect:[0,0,900,200]};
-const ctx=vm.createContext({$,window:{},ui:{guides:null},state:{open:{d:{}},rooms:{},demolished:[],furniture:[]},DOORS:[{...base,h:[...base.h],c:[...base.c],o:[...base.o]}],WINS:[],SLIDES:[],PAL:{winLine:'#000',ink:'#000',leaf:'#fff'}});
+const ctx=vm.createContext({$,cancelAnimationFrame(){},clearTimeout,window:{},ui:{guides:null},state:{open:{d:{}},rooms:{},demolished:[],furniture:[]},DOORS:[{...base,h:[...base.h],c:[...base.c],o:[...base.o]}],WINS:[],SLIDES:[],PAL:{winLine:'#000',ink:'#000',leaf:'#fff'}});
 ctx.FurnishGeometry=require('../src/core/layout-geometry.js');
 vm.runInContext(fs.readFileSync(require.resolve('../src/render/plan-renderer.js'),'utf8'),ctx);
 // Preserve the real renderAll/renderOpenings and opening button handlers.

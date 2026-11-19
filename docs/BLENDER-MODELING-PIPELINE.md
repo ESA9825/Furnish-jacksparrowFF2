@@ -25,7 +25,7 @@ node scripts/verify/verify-model-pipeline.cjs fridge,corner-bookcase,table_foldi
 
 设备可选`auto`／`gpu`／`cpu`，报告区分请求与实际设备。显式`FURNISH_BLENDER`优先，其次Scoop `apps/blender/current/blender.exe`，商店入口为备选，不固定版本目录。不自动更换Blender版本重试。
 
-运行目录为`output/model-pipeline/all-<随机后缀>/`或`selection-<随机后缀>/`。批次只有一个私有工作副本；各配置拥有独立运行目录、阶段日志、报告和导出产物。失败配置不标为通过，继续检查其余配置，批次最终返回失败。此前失败或中断的目录保留。
+运行目录为`output/model-pipeline/all-<随机后缀>/`或`selection-<随机后缀>/`。批次只有一个私有工作副本；各配置拥有独立运行目录、阶段日志、报告和导出产物。失败配置不标为通过，继续检查其余配置，批次最终返回失败。此前失败或中断的目录保留阶段结果和原方案。已清理的运行副本在核对原输入后重建。
 
 ```powershell
 # 只在程序、应用／验证代码、设备及输入校验一致时续跑。

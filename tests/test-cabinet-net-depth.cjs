@@ -3,7 +3,7 @@ const C=require('../src/core/cabinet-core.js'),M=require('../src/core/cabinet-mo
 const near=(a,b)=>assert(Math.abs(a-b)<.001,`${a} != ${b}`);
 (async()=>{
  const html=fs.readFileSync(require.resolve('../index.html'),'utf8'),THREE=await import(JSON.parse(html.match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports.three);
- const ctx=vm.createContext({FurnishCabinet:C,FurnishPartIdentity:require('../src/core/part-identity.js')});vm.runInContext(fs.readFileSync(require.resolve('../src/render/cabinet-model.js'),'utf8'),ctx);
+ const ctx=require('./helpers/production-source.cjs').createModelContext({FurnishCabinet:C,FurnishPartIdentity:require('../src/core/part-identity.js')});vm.runInContext(fs.readFileSync(require.resolve('../src/render/cabinet-model.js'),'utf8'),ctx);
  const box=(w,h,d,color,x,y,z)=>{const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color}));mesh.position.set(x,y+h/2,z);return mesh;};
  for(const backCase of [undefined,'legacy-off',0,6,9.5,36,50])for(const door of ['double','none'])for(const overlay of ['full','half','inset'])for(const construction of ['shared','independent']){
   const f={...C.preset('storage'),id:'depth',type:'cabinet',cx:2000,cy:3000,d:350,mountHeight:150,rot:0};

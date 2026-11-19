@@ -14,7 +14,7 @@ const assetIndex=require('../assets/models/index.json'),references=assetIndex.pr
 for(const record of [...archive.preserved,...archive.previewTemplates]){
  const target=path.resolve(root,record.retained);assert.ok(target.startsWith(root+path.sep));
  if(!fs.existsSync(target)){
-  const successors=references.filter(r=>r.reference.legacyPaths.includes(record.retained));assert.equal(successors.length,1,'Missing or ambiguous archived source: '+record.retained);
+  const successors=references.filter(r=>r.reference.legacyPaths?.includes(record.retained));assert.equal(successors.length,1,'Missing or ambiguous archived source: '+record.retained);
   require('../scripts/lib/model-asset-index.cjs').referenceFile(successors[0].directory,successors[0].reference);
  }
 }

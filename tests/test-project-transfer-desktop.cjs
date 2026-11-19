@@ -13,9 +13,17 @@ const {_electron}=require('playwright'),root=path.resolve(__dirname,'..'),A=requ
  try{
  app=await _electron.launch({executablePath:require('../scripts/launch-desktop.cjs').desktopExecutable(root),env,timeout:60000});const page=await app.firstWindow();page.setDefaultTimeout(45000);
  await page.waitForFunction(()=>typeof repositoryBooting!=='undefined'&&!repositoryBooting&&!!window.FurnishRepository);
+ await page.evaluate(()=>{
+  if(!store.designs.some(d=>d.planId===PLAN.id&&d.editable===true))FurnishDesignUI.createDesign('项目传输回归方案');
+ });
  const counts=await page.evaluate(()=>({designs:store.designs.filter(d=>d.planId===PLAN.id&&d.editable===true).length,history:store.designs.filter(d=>d.planId===PLAN.id&&d.editable!==true).length}));assert(counts.designs>0);
  const exported=path.join(run,'1601-full-project.furnish.json');
- await app.evaluate(({BrowserWindow},file)=>{globalThis.transferDownload=new Promise(resolve=>BrowserWindow.getAllWindows()[0].webContents.session.once('will-download',(_e,item)=>{item.setSavePath(file);item.once('done',(_e,state)=>resolve(state));}));},exported);
+ await app.evaluate(({BrowserWindow},file)=>{globalThis.transferDownload=new Promise(resolve=>{
+  const session=BrowserWindow.getAllWindows()[0].webContents.session;
+  const timeout=setTimeout(()=>{session.removeListener('will-download',onDownload);resolve('timeout');},45000);
+  function onDownload(_event,item){item.setSavePath(file);item.once('done',(_event,state)=>{clearTimeout(timeout);resolve(state);});}
+  session.once('will-download',onDownload);
+ });},exported);
  await page.locator('#fileMenu>summary').click();await page.waitForFunction(n=>document.querySelector('#file-project-scope').textContent.includes(n+' 个设计方案'),counts.designs);await page.waitForTimeout(250);
  await page.screenshot({path:path.join(run,'desktop-menu.png')});await page.locator('#file-backup').click();assert.equal(await app.evaluate(()=>globalThis.transferDownload),'completed');
  await page.locator('#fileMenu>summary').click();const chooser=page.waitForEvent('filechooser');await page.locator('#file-import').click();await (await chooser).setFiles(exported);

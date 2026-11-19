@@ -147,8 +147,8 @@ function open({session,selectionId}={}){
  at('map').onpointerdown=e=>{
   if(e.button!==0&&e.button!==1)return;e.preventDefault();at('map').focus({preventScroll:true});setView('plan');const p=normalPoint(e),r=selected();
   // Shift on an editing handle temporarily disables snapping; region fills
-  // retain Shift deselection, and Ctrl retains additive region selection.
-  if(s.tool==='select'&&e.button===0&&(e.ctrlKey||(e.shiftKey&&!e.target.closest('[data-design-edge],[data-design-vertex]')))){
+  // retain Shift deselection, and Ctrl or Command adds a region.
+  if(s.tool==='select'&&e.button===0&&(e.ctrlKey||e.metaKey||(e.shiftKey&&!e.target.closest('[data-design-edge],[data-design-vertex]')))){
    if(timer)rebuild();
    const point=normalPoint(e,false),target=e.target.closest('[data-design-region]'),onHandle=e.target.closest('[data-design-edge],[data-design-vertex]'),hit=[...s.drafts].reverse().find(r=>C.inside(point,r.polygon,false))||(target?s.drafts.find(r=>r.id===target.dataset.designRegion):onHandle?r:[...s.drafts].reverse().find(r=>C.inside(point,r.polygon)));
    if(!hit)return;
@@ -172,7 +172,10 @@ function open({session,selectionId}={}){
   const region=e.target.closest('[data-design-region]');if(region&&e.button===0){changeSelection(region.dataset.designRegion);return;}
   snapHit=null;const start={x:e.clientX,y:e.clientY,box:copy(s.box)},svg=at('map').querySelector('svg'),m=svg.getScreenCTM(),scale=Math.hypot(m.a,m.b);drag(e,ev=>{s.box=[start.box[0]-(ev.clientX-start.x)/scale,start.box[1]-(ev.clientY-start.y)/scale,start.box[2],start.box[3]];renderCanvas();},()=>{});
  };
- at('map').oncontextmenu=e=>{const r=selected(),node=e.target.closest('[data-design-vertex]'),edge=e.target.closest('[data-design-edge]');if(!r)return;if(node){s.vertex=Number(node.dataset.designVertex);fillVertex();FurnishCeilingUI.pointerMenu(e,[{label:'删除节点',disabled:locked(r.id)||r.polygon.length<=3,action:()=>deleteVertex()}]);}else if(edge){const index=Number(edge.dataset.designEdge),point=normalPoint(e,false);FurnishCeilingUI.pointerMenu(e,[{label:'在此增加节点',disabled:locked(r.id),action:()=>insertVertex(index,point)}]);}};at('map').addEventListener('keydown',e=>{if(['Delete','Backspace'].includes(e.key)&&!e.target.matches('input,select,textarea')){e.preventDefault();e.stopPropagation();deleteVertex();}});
+ at('map').oncontextmenu=e=>{
+  // macOS also sends contextmenu for the primary Ctrl click used to add a region.
+  if(s.tool==='select'&&e.ctrlKey&&e.button===0){e.preventDefault();return;}
+  const r=selected(),node=e.target.closest('[data-design-vertex]'),edge=e.target.closest('[data-design-edge]');if(!r)return;if(node){s.vertex=Number(node.dataset.designVertex);fillVertex();FurnishCeilingUI.pointerMenu(e,[{label:'删除节点',disabled:locked(r.id)||r.polygon.length<=3,action:()=>deleteVertex()}]);}else if(edge){const index=Number(edge.dataset.designEdge),point=normalPoint(e,false);FurnishCeilingUI.pointerMenu(e,[{label:'在此增加节点',disabled:locked(r.id),action:()=>insertVertex(index,point)}]);}};at('map').addEventListener('keydown',e=>{if(['Delete','Backspace'].includes(e.key)&&!e.target.matches('input,select,textarea')){e.preventDefault();e.stopPropagation();deleteVertex();}});
  at('map').onpointermove=e=>{if(s.layoutMode==='pick'&&!dragCleanup){s.layoutHover=layoutPoint(e,normalPoint(e,false));renderCanvas();return;}if(s.tool==='poly'&&s.points.length&&!dragCleanup){s.hover=normalPoint(e);renderCanvas();}};at('map').ondblclick=e=>{if(s.layoutMode){e.preventDefault();return;}if(s.tool==='poly'){e.preventDefault();finish();return;}const edge=e.target.closest('[data-design-edge]');if(edge){e.preventDefault();insertVertex(Number(edge.dataset.designEdge),normalPoint(e,false));}};
  at('map').addEventListener('wheel',e=>{e.preventDefault();const action=FurnishNavigation.wheel(e),svg=at('map').querySelector('svg');if(action.kind==='pan')s.box=FurnishNavigation.panBox(s.box,svg,action.x,action.y);else{const p=normalPoint(e,false),factor=1/action.factor,w=s.box[2]*factor;if(w<100||w>100000)return;s.box=[p[0]+(s.box[0]-p[0])*factor,p[1]+(s.box[1]-p[1])*factor,w,s.box[3]*factor];}renderCanvas();},{passive:false});
  host.addEventListener('keydown',e=>{if(e.key==='Escape'&&s.tool!=='select'){e.preventDefault();e.stopPropagation();s.points=[];s.hover=null;s.tool='select';renderCanvas();status();}});

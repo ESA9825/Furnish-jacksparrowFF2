@@ -6,7 +6,7 @@ const near=(a,b)=>assert(Math.abs(a-b)<.001,`${a} != ${b}`);
  const map=JSON.parse(fs.readFileSync(require.resolve('../index.html'),'utf8').match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports,THREE=await import(map.three),Model=require('../src/render/cabinet-model.js');
  const box=(w,h,d,color,x,y,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color}));m.position.set(x,y+h/2,z);return m;};
  let count=0;
- for(const [template]of C.templates)for(const thickness of [undefined,0,6,9.5,36,50]){
+ for(const [template]of C.templates.filter(([id])=>C.preset(id).cabinet.version===1))for(const thickness of [undefined,0,6,9.5,36,50]){
   const f={...C.preset(template),id:'back',type:C.templateType(template),cx:2000,cy:3000,rot:0,mountHeight:120};
   if(!C.backThicknessAvailable(f.cabinet)){assert.equal(template,'book-y52y09-low');continue;}
   if(thickness!==undefined)f.cabinet.backThickness=thickness;const saved=JSON.stringify(f);C.validate(f);

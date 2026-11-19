@@ -187,7 +187,7 @@ function renderFurn(){
 function syncModelErrors(){
  const errors=state.furniture.filter(f=>furnitureError(f)),badge=$('#modelErrors');if(!badge)return;
  badge.hidden=!errors.length;badge.textContent=tr(`${errors.length} 件家具模型异常 · 原数据已保留 · 点击定位修复`,`${errors.length} model error(s) · data retained · click to repair`);
- badge.onclick=()=>focusItem(errors[0].id);
+ badge.onclick=()=>{drawer('panel',true);focusItem(errors[0].id);};
 }
 // 一件家具都没有时，画布中央给出下一步建议
 function syncEmpty(){
@@ -481,7 +481,10 @@ function renderSelectedGeometry(){
     if(ui.layers.clear&&(!drag||drag.kind==='move'))s+=clearanceSVG(items,k);
   } else if (ids.length === 1){
     const f = getF(ids[0]);
-    if (f){
+    if(f&&furnitureError(f)){
+      // Recovery can select a retained record whose production geometry is invalid.
+      s+=`<rect transform="${furnT(f)}" x="${-f.w/2}" y="${-f.d/2}" width="${f.w}" height="${f.d}" fill="none" ${A} stroke-width="2" stroke-dasharray="5 3" pointer-events="none"/>`;
+    }else if (f){
       // 触屏上手柄更大、离家具更远，并各带一圈透明的大热区；锁定的家具不显示手柄
       const p = 5*k, hs = COARSE ? 1.7 : 1, ro = (COARSE ? 40 : 26)*k, hit = (COARSE ? 24 : 11)*k;
       const sx = f.w/2+p, sy = f.d/2+p, outline=FurnishGeometry.localOutline(f,{furniture:state.furniture,plan:canvasEffectivePlan()});

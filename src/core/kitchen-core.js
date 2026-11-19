@@ -541,10 +541,10 @@ const cutout=f=>sinkProducts().vesselSink(f)?{w:sinkProducts().definition(f).ves
 function openingRing(f,spec=cutout(f)){if(f.sinkNotch&&!sinkProducts().vesselSink(f)){const n=f.sinkNotch;return notchedRing(spec.w,spec.d,{...n,width:n.width,depth:n.depth});}const {w,d}=spec,r=Math.max(0,Math.min(spec.r||0,w/2,d/2)),p=[];for(const [x,y,start] of [[w/2-r,d/2-r,0],[-w/2+r,d/2-r,90],[-w/2+r,-d/2+r,180],[w/2-r,-d/2+r,270]])for(let j=0;j<=8;j++){const a=(start+j*90/8)*Math.PI/180;p.push([x+r*Math.cos(a),y+r*Math.sin(a)]);}return p;}
 function surfaceGeometry(host){if(host.kitchen&&!hasCountertop(host))return {poly:[],polys:[],rings:[]};const poly=[[-host.w/2,-host.d/2],[host.w/2,-host.d/2],[host.w/2,host.d/2],[-host.w/2,host.d/2]];return host.kitchen?topGeometry(host):{poly,polys:[poly],rings:[poly]};}
 function onSurface(f,host){
- if(host.type!=='counter'||host.obj||host.id===f.id)return false;
+ if(host.type!=='counter'||host.obj||host===f||host.id&&host.id===f.id)return false;
  try{if(host.kitchen)validate(host);const Z=zones(),surface=surfaceGeometry(host),rect=notchedRing(f.w,f.d,sinkProducts().vesselSink(f)?undefined:f.sinkNotch).map(p=>local(host,...world(f,...p))),pieces=Z.decompose([rect,...surface.polys],p=>Z.inside(p,rect)&&!surface.polys.some(poly=>Z.inside(p,poly)));return Z.area(pieces)<.01;}catch{return false;}
 }
-function support(f,list){const hosts=list.filter(h=>onSurface(f,h));return hosts.find(h=>h.id===f.counterLink?.hostId)||hosts[0]||null;}
+function support(f,list){const hosts=list.filter(h=>onSurface(f,h));return (f.counterLink&&hosts.find(h=>h.id===f.counterLink.hostId))||hosts[0]||null;}
 // A measuring cell is a module's strip of the actual top, not the full run.
 // It is derived only; neither module membership nor measuring edges are saved.
 function measurementSurface(f,host){
@@ -553,13 +553,21 @@ function measurementSurface(f,host){
   const n=runNormal(m),extensionDepth=m.index>=host.kitchen.modules.length?extension(host,m.run).depth:null,over=extensionDepth===null?runCounterDepth(host,m.run)-runDepth(host,m.run):extensionDepth-m.depth;
   return {...m,x:m.x+n[0]*over/2,y:m.y+n[1]*over/2,w:m.w+Math.abs(n[0])*over,d:m.d+Math.abs(n[1])*over,moduleKey:'module:'+m.index};
  }),corners=cornerLayout(host).map(m=>({...m,moduleKey:'corner:'+m.index})),contains=m=>point[0]>=m.x-m.w/2-1e-6&&point[0]<=m.x+m.w/2+1e-6&&point[1]>=m.y-m.d/2-1e-6&&point[1]<=m.y+m.d/2+1e-6;
- const candidates=rows.filter(contains),m=candidates.find(m=>f.counterLink?.hostId===host.id&&m.index===f.counterLink.module)||candidates[0]||corners.find(contains);
+ const candidates=rows.filter(contains),m=candidates.find(m=>host.id&&f.counterLink?.hostId===host.id&&m.index===f.counterLink.module)||candidates[0]||corners.find(contains);
  if(!m)return {...surface,moduleKey:null};
  const rect=rectPoly(m),geometry=Z.outline(Z.decompose([rect,...surface.polys],p=>Z.inside(p,rect)&&surface.polys.some(poly=>Z.inside(p,poly))));
  return {...geometry,moduleKey:m.moduleKey,moduleIndex:m.index,moduleName:m.moduleKey.startsWith('corner:')?'转角 '+(m.index+1):'模块 '+(m.index+1)};
 }
 function relativeDevices(list,base){return base?list.map(f=>isDevice(f)?{...f,counterElevation:(sinkProducts().value(f,'counterElevation')??862)-base}:f):list;}
-function deviceOpenings(host,list){list=[host,...list.filter(v=>v.id!==host.id),...laundryParts(host).filter(p=>p.key==='sink').map(p=>p.furniture)];const surfaceTop=host.kitchen?host.kitchen.baseHeight+host.kitchen.thickness+baseElevation(host):860;return list.filter(f=>!f.obj&&(f.counterLink?.hostId===host.id||isDevice(f)&&support(f,list)?.id===host.id&&(isSink(f)||Math.abs((sinkProducts().value(f,'counterElevation')??862)-surfaceTop)<.5))).map(f=>{const m=!f.id?.endsWith(':sink')&&f.counterLink?.hostId===host.id&&host.kitchen?layout(host)[f.counterLink.module]:null,pose=m?{...f,...linkedPlacement(f,host,m)}:f;return {device:f,ring:openingRing(f).map(p=>local(host,...world(pose,...p)))};});}
+function deviceOpenings(host,list){
+ const linked=f=>!!host.id&&f.counterLink?.hostId===host.id;
+ list=[host,...list.filter(v=>v!==host&&(!host.id||v.id!==host.id)),...laundryParts(host).filter(p=>p.key==='sink').map(p=>p.furniture)];
+ const surfaceTop=host.kitchen?host.kitchen.baseHeight+host.kitchen.thickness+baseElevation(host):860;
+ return list.filter(f=>!f.obj&&isDevice(f)&&(linked(f)||support(f,list)===host&&(isSink(f)||Math.abs((sinkProducts().value(f,'counterElevation')??862)-surfaceTop)<.5))).map(f=>{
+  const m=!f.id?.endsWith(':sink')&&linked(f)&&host.kitchen?layout(host)[f.counterLink.module]:null,pose=m?{...f,...linkedPlacement(f,host,m)}:f;
+  return {device:f,ring:openingRing(f).map(p=>local(host,...world(pose,...p)))};
+ });
+}
 // Only fixed top boards are opened. Lower shelves, drawers and hardware remain
 // actual solids and must be checked against the appliance rather than erased.
 function deviceTopBoard(metadata,bottom,top,cabinetTop){return !!metadata.cabinetTop||!metadata.cabinetPart&&top-bottom<=50&&Math.abs(top-cabinetTop)<.1&&(metadata.cabinetBuilder?.kind==='board'||metadata.cabinetBuilder?.kind==='panel'||['top','baseTop'].includes(metadata.cabinetSection));}

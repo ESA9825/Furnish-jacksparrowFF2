@@ -14,7 +14,7 @@ assert.equal(new Set(index.products.map(p=>p.id)).size,index.products.length);
 for(const p of index.products){
  assert(!JSON.stringify(p).includes('Users/SPH'));assert(!/"[A-Za-z]:[\\/]/.test(JSON.stringify(p)));
  for(const r of p.references)assert(fs.existsSync(path.join(root,'assets/models',p.id,r.path)));
- for(const r of p.missingReferences){assert.equal(r.status,'not-found-locally');assert(fs.existsSync(path.join(root,r.document)));}
+ for(const r of p.missingReferences){if(typeof r==='string')assert(r.trim().length);else{assert.equal(r.status,'not-found-locally');assert(fs.existsSync(path.join(root,r.document)));}}
 }
 for(const m of index.models){assert(index.products.some(p=>p.id===m.profile));assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(root,m.current.glb))).digest('hex'),m.sourceSha256);}
 assert.equal(index.products.find(p=>p.id==='chair-s05118').references.length,6);

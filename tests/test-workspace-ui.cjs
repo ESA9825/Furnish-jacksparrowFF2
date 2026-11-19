@@ -24,27 +24,26 @@ async function main(){
   const resize=async width=>{await desktop.evaluate(({BrowserWindow},w)=>BrowserWindow.getAllWindows()[0].setContentSize(w,960),width);await page.waitForFunction(w=>Math.abs(innerWidth-w)<=1,width);await page.waitForTimeout(400);};
   await resize(1280);
   const designs=await page.evaluate(()=>({active:FurnishDesign.activeDesign(store,PLAN.id)?.id,ids:store.designs.filter(d=>d.planId===PLAN.id&&d.editable).map(d=>d.id)}));
-  if(designs.active&&designs.ids.length>1){const other=designs.ids.find(id=>id!==designs.active);await page.locator('#design-select').selectOption(other);assert.equal(await page.evaluate(()=>FurnishDesign.activeDesign(store,PLAN.id).id),other);await page.locator('#design-select').selectOption(designs.active);await page.locator('[data-workspace-mode]').first().waitFor();pass('scheme selector switches both ways through the original save path');}
+  if(designs.active&&designs.ids.length>1){const other=designs.ids.find(id=>id!==designs.active);await page.locator('#design-select').selectOption(other);assert.equal(await page.evaluate(()=>FurnishDesign.activeDesign(store,PLAN.id).id),other);await page.locator('#design-select').selectOption(designs.active);await page.locator('#design-select').waitFor({state:'attached'});pass('scheme selector switches both ways through the original save path');}
   const initial=await page.evaluate(()=>snap());
   await page.evaluate(()=>{drawer('lib',true);drawer('panel',true);FurnishObservationLayers.open();});
   await page.waitForTimeout(500);
   assert.ok(await page.locator('.app').evaluate(el=>el.classList.contains('layers-overlay')));
   assert.ok((await page.locator('#stage').boundingBox()).width>=510);
   await page.screenshot({path:path.join(run,'01-panels.png')});pass('1280px: layers float instead of compressing the drawing');
-  await page.locator('[data-workspace-mode="arrange"]').click();await page.waitForTimeout(400);
+  await page.evaluate(()=>FurnishObservationLayers.close());await page.locator('#tgPanel').click();await page.waitForTimeout(400);
   assert.ok((await page.locator('#stage').boundingBox()).width>950);
   await page.locator('#catalog-density').click();assert.ok(await page.locator('#lib').evaluate(el=>el.classList.contains('catalog-compact')));
   await page.screenshot({path:path.join(run,'02-arrange.png')});
   await page.evaluate(()=>FurnishRepository.flush());await page.reload({waitUntil:'domcontentloaded',timeout:60000});await page.waitForFunction(()=>!repositoryBooting);assert.ok(await page.locator('#lib').evaluate(el=>el.classList.contains('catalog-compact')));
-  assert.equal(await page.evaluate(()=>snap()),initial);pass('arrange shortcut and compact catalog persist without changing the design');
-  await page.locator('[data-workspace-mode="review"]').click();await page.waitForTimeout(400);
+  assert.equal(await page.evaluate(()=>snap()),initial);pass('independent panel controls and compact catalog persist without changing the design');
+  await page.locator('#tgSpace').click();await page.waitForTimeout(400);
   await page.locator('[data-space-filter="pending"]').click();assert.ok(await page.locator('[data-space-filter="pending"]').textContent());
   assert.ok((await page.locator('#panel').textContent()).includes('信息不足'));
   await page.screenshot({path:path.join(run,'03-review.png')});
   await page.locator('[data-tab="overview"]').click();assert.ok(await page.locator('.review-summary').isVisible());
   assert.equal(await page.locator('.overview-budget').getAttribute('open'),null);
   await page.locator('.overview-budget>summary').click();assert.ok(await page.locator('.price-summary').isVisible());pass('review categories share the badge counts; purchasing is folded in overview');
-  await page.locator('[data-workspace-mode="detail"]').click();
   await page.evaluate(()=>FurnishObservationLayers.open());
   await page.locator('[data-layer-select="0"]').click();assert.ok(await page.locator('.layer-branch .observation-row').count());
   assert.equal(await page.locator('.layer-assignment').isVisible(),false);
@@ -64,7 +63,7 @@ async function main(){
   assert.equal(await page.evaluate(id=>getF(id).color,edit.id),'#738e85');pass('furniture edits retain undo/redo, formal save and reload');
   for(const width of [1920,1101,390]){
    console.log('STEP resize '+width);await resize(width);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
-   await page.locator('[data-workspace-mode="detail"]').click();await page.waitForTimeout(400);
+   if(await page.locator('#tgPanel').getAttribute('aria-expanded')!=='true')await page.locator('#tgPanel').click();await page.waitForTimeout(400);
    if(width===390){const box=await page.locator('aside.right').boundingBox(),actual=await page.evaluate(()=>innerWidth);assert.ok(box.x>=0&&box.x+box.width<=actual+1);}
    await page.screenshot({path:path.join(run,`04-detail-${width}.png`)});
   }
@@ -74,7 +73,7 @@ async function main(){
   await page.locator('#vCamera').click();await page.locator('#cameraPanel').waitFor({state:'visible'});await page.keyboard.press('Escape');assert.ok(await page.locator('#vCamera').evaluate(el=>el===document.activeElement));pass('3D camera panel opens and returns keyboard focus on Escape');
   browser=await chromium.launch({headless:true,channel:'chrome'});const local=await browser.newPage();local.on('pageerror',e=>errors.push(e.message));
   await local.context().setOffline(true);await local.goto(pathToFileURL(path.join(isolated,'index.html')).href);await local.waitForFunction(()=>!!window.FurnishWorkflowTools&&!repositoryBooting);
-  await local.locator('[data-workspace-mode="review"]').click();assert.ok(await local.locator('[data-space-filter]').count());pass('offline file:// entry retains the workspace controls');
+  await local.locator('#tgSpace').click();assert.ok(await local.locator('[data-space-filter]').count());pass('offline file:// entry retains the workspace controls');
   assert.deepEqual(errors,[]);assert.equal(hash(source),before);
   fs.writeFileSync(path.join(run,'results.json'),JSON.stringify({checks,errors,sourceUnchanged:true},null,2));console.log('RESULTS '+run);
  }catch(e){console.error(e);throw e;}finally{if(browser)await browser.close();if(desktop){const child=desktop.process();let timer;try{await Promise.race([desktop.close(),new Promise(r=>{timer=setTimeout(()=>{child.kill();r();},5000);})]);}finally{clearTimeout(timer);}}assert.equal(hash(source),before);}

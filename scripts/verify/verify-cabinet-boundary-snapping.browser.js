@@ -16,8 +16,7 @@ async(page,V)=>{
      mutate(()=>state.furniture=wall?[f]:[f,target]);selectIds([f.id]);renderAll();zoomToBox([1500,1500,7000,7000],90);
      return {u,expected:f[axis]+150,original:f[axis],anchor:[f.cx-f.w/2*c+f.d/2*s,f.cy-f.w/2*s-f.d/2*c]};
     },{rot,flip,axis});
-    await p.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));const handle=p.locator(`#gSel [data-handle="size"][data-axis="${axis}"] rect`).last(),box=await handle.boundingBox();check(box,'resize handle '+JSON.stringify(await p.evaluate(()=>({selection:ui.sel,items:state.furniture.map(f=>({id:f.id,type:f.type,locked:furnitureLocked(f)})),svg:document.querySelector('#gSel').innerHTML.slice(0,350)}))));
-    const scale=await p.evaluate(()=>view.s),start={x:box.x+box.width/2,y:box.y+box.height/2};
+    const start=await V.canvasResizeGrip(p,axis),scale=await p.evaluate(()=>view.s);
     await p.mouse.move(start.x,start.y);await p.mouse.down();await p.mouse.move(start.x+data.u[0]*130*scale,start.y+data.u[1]*130*scale,{steps:5});await p.waitForFunction(()=>!canvasPointerFrame);
     check(await p.evaluate(()=>ui.guides.some(g=>g.line)),'visible boundary guide');
     if(rot===90&&flip&&axis==='w')await p.screenshot({path:V.output('playwright/cabinet-boundary-snapping/'+mode+'-rotated-resize.png')});

@@ -15,7 +15,7 @@ const original={id:'legacy',type:'wardrobe',name:'小衣柜',w:1200,d:550,cx:150
 const before=JSON.stringify(original);
 for(const t of C.templates){
  const f=D.applyCabinetTemplate(original,t[0]);
- assert.equal(f.cabinet.template,t[0]);assert.equal(f.type,C.templateType(t[0]));
+ if(t[0]==='corner90')assert(require('../src/core/corner-cabinet-core.js').is(f));else assert.equal(f.cabinet.template,t[0]);assert.equal(f.type,C.templateType(t[0]));
  for(const key of ['id','cx','cy','rot','flip','price','referencePrice','purchaseStatus','groupId'])assert.equal(f[key],original[key]);
  assert.deepEqual(P.validateWork({furniture:[f]}).furniture[0],f);
  const payload={planId:'demo',current:{furniture:[f]},designs:[{id:'named',name:'柜体方案',planId:'demo',work:{furniture:[f]}}],catalog:[]};

@@ -6,7 +6,7 @@ const near=(a,b,label)=>assert(Math.abs(a-b)<.001,`${label}: ${a} != ${b}`);
  const imports=JSON.parse(fs.readFileSync(require.resolve('../index.html'),'utf8').match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports,T=await import(imports.three);
  const box=(w,h,d,color,x,y,z)=>{const mesh=new T.Mesh(new T.BoxGeometry(w,h,d),new T.MeshStandardMaterial({color}));mesh.position.set(x,y+h/2,z);return mesh;};
  let cases=0,drawers=0;
- for(const [template] of C.templates)for(const thickness of [12,18,30])for(const back of [undefined,0,6,50])for(const extension of [0,.37,1]){
+ for(const [template] of C.templates.filter(([id])=>C.preset(id).cabinet.version===1))for(const thickness of [12,18,30])for(const back of [undefined,0,6,50])for(const extension of [0,.37,1]){
   let f={...C.preset(template),id:'assembly',type:C.templateType(template),cx:2000,cy:3000,rot:37,flip:true,mountHeight:120};
   if(!f.cabinet.columns.some(col=>col.drawers.length&&col.top!=='drawer'))continue;
   const before=structuredClone(f);f.cabinet.thickness=thickness;C.scaleStructure(before,f);

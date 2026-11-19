@@ -8,7 +8,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('nod
  // Furniture uses the direct manipulation overlay; never recreate a card on
  // top of the selected model. Full interactive DOM is covered separately.
  let selected=[];ctx.selectionTransform={cancel(){},setSelection(ids){selected=[...ids];}};
- const saved=JSON.stringify(item);ctx.buildSelectionElevation(['f']);assert.equal(elevationG.children.length,0);assert.deepEqual(selected,['f']);
+ const saved=JSON.stringify(item);ctx.ui.sceneMove=false;ctx.buildSelectionElevation(['f']);assert.deepEqual(selected,[]);ctx.ui.sceneMove=true;ctx.buildSelectionElevation(['f']);assert.equal(elevationG.children.length,0);assert.deepEqual(selected,['f']);
  ctx.annotationLabel(elevationG,'Height detail',0,1,0,'scene-elevation');
  const volumes=[{poly:[[0,0],[1000,0],[1000,1000],[0,1000]],ranges:[[500,1500]]}];ctx.highlightIssue({id:'f',pending:true},volumes);assert.equal(issueG.children.length,2);assert(issueG.children[1].element.className.includes('pending'));assert(issueG.children[0].material.depthTest===false);const issuePos=issueG.children[0].geometry.attributes.position.array,ys=Array.from(issuePos).filter((_,i)=>i%3===1);assert.equal(Math.min(...ys),.5);assert.equal(Math.max(...ys),1.5);
  ctx.stage={getBoundingClientRect:()=>({left:10,right:380,top:90,bottom:800})};

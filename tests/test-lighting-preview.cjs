@@ -4,6 +4,13 @@ const near=(a,b)=>assert(Math.abs(a-b)<1e-8,`${a} != ${b}`);
 (async()=>{
  const T=await import(JSON.parse(fs.readFileSync(require.resolve('../index.html'),'utf8').match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports.three);
  near(L.photometric(L.radiometric(100)),100);near(L.panel(100,.59,.39)*.59*.39,100/683);assert.throws(()=>L.panel(10,0,1));assert.equal(L.environment(true).exposure,10);
+ for(const spec of Object.values(require('../scripts/lib/mijia-ceiling-light-specs.json'))){
+  const [w,h,d]=spec.size,f={type:spec.type,w,h,d,mountHeight:2450,color:'#fff'},lamp=H.build(T,f);
+  assert.deepEqual(lamp.children.filter(o=>o.isMesh).map(o=>o.name).sort(),[...spec.parts].sort());
+  const box=new T.Box3().setFromObject(lamp),size=box.getSize(new T.Vector3());for(const [actual,mm] of [[size.x,w],[size.y,h],[size.z,d]])assert(Math.abs(actual*1000-mm)<.1);
+  D.setLights(lamp,true);const [face]=L.collect(T,[lamp]).rects;assert(face?.radiance>0&&face.position[1]<2.45&&face.normal[1]<-.999);
+  D.setLights(lamp,false);assert.equal(L.collect(T,[lamp]).rects.length,0);
+ }
  const scene=new T.Scene(),camera=new T.PerspectiveCamera(),items=[];
  for(let i=0;i<28;i++){
   const f={id:'f'+i,type:'surface_light',w:600,d:400,h:50,mountHeight:2590,color:'#fff'},g=H.build(T,f);g.userData.fid=f.id;g.position.set(i, .06,0);g.rotation.y=i*Math.PI/11;g.scale.x=i%2?-1:1;D.setLights(g,true);scene.add(g);items.push(g);

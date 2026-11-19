@@ -9,6 +9,11 @@ let host=K.configure(old,{...K.defaults(old),shape:'L',modules:[{run:0,width:900
 assert.deepEqual([host.w,host.d],[2400,2100]);assert.equal(K.slabs(host).reduce((a,s)=>a+s.w*s.d,0),2400*600+1500*600);
 const sink={id:'sink',type:'ksink',name:'水槽',cx:0,cy:0,w:760,d:450,rot:0,color:'#eee'},hob={id:'hob',type:'stove',name:'灶具',cx:0,cy:0,w:750,d:450,rot:0,color:'#eee'};
 let items=[host,K.attach(sink,host,0),K.attach(hob,host,2)];K.normalize(items);K.validateList(items);
+const unnamedHost={...items[0]},unnamedSink={...items[1]};delete unnamedHost.id;delete unnamedSink.id;delete unnamedSink.counterLink;
+assert.deepEqual(K.deviceOpenings(unnamedHost,[unnamedHost]),[],'anonymous preview cabinets cannot cut an opening into themselves');
+assert.equal(K.measurementSurface(unnamedSink,unnamedHost).moduleIndex,0);
+assert.equal(K.deviceOpenings(unnamedHost,[unnamedSink])[0].device,unnamedSink,'an independent preview sink still cuts its actual supporting countertop');
+assert.equal(K.deviceOpenings(unnamedHost,[{...unnamedSink,cx:90000}]).length,0);
 assert.equal(items[1].counterElevation,860);assert.equal(items[2].rot,270);
 const saved=P.unpack(P.pack(fixture(items)));assert.deepEqual(saved.current.furniture,items);assert.deepEqual(saved.designs[0].work.furniture,items);
 for(let i=0;i<3;i++)items=D.restoreFurniture(items,{makeId:()=> 'new',colorFor:()=> '#eee'});assert.deepEqual(items,saved.current.furniture,'repeated restore has no drift');
@@ -35,7 +40,7 @@ const wall={id:'wall',type:'kitchenwall',name:'吊柜',cx:0,cy:0,w:800,d:350,rot
 assert.deepEqual(S.local(wall,{...pipe,at:[0,0]}).vertical,{bottom:-1480,top:1320});
 for(const m of K.layout(host).filter(m=>m.role!=='empty'))C.validate(K.moduleFurniture(host,m));
 (async()=>{
- const imports=JSON.parse(fs.readFileSync(require.resolve('../index.html'),'utf8').match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports,THREE=await import(imports.three),ctx=vm.createContext(Object.assign({FurnishPartIdentity:require("../src/core/part-identity.js"),syncIdentity:require("../src/core/part-identity.js")},{FurnishKitchen:K,FurnishCabinet:C}));
+ const imports=JSON.parse(fs.readFileSync(require.resolve('../index.html'),'utf8').match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports,THREE=await import(imports.three),ctx=require('./helpers/production-source.cjs').createModelContext(Object.assign({FurnishPartIdentity:require("../src/core/part-identity.js"),syncIdentity:require("../src/core/part-identity.js")},{FurnishKitchen:K,FurnishCabinet:C}));
  for(const file of ['cabinet-model','kitchen-model'])vm.runInContext(fs.readFileSync(require.resolve('../src/render/'+file+'.js'),'utf8'),ctx);
  const box=(w,h,d,color,x,y,z)=>{const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshStandardMaterial({color}));mesh.position.set(x,y+h/2,z);return mesh;};
  for(const shape of ['straight','L']){

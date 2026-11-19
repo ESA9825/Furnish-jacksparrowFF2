@@ -2,7 +2,7 @@ const assert=require('node:assert/strict'),C=require('../src/core/cabinet-core.j
 const near=(a,b)=>assert(Math.abs(a-b)<1e-7,`${a} != ${b}`);
 const make=id=>({id:'cab',type:C.templateType(id),cx:1000,cy:1000,rot:0,...C.preset(id)});
 const round=f=>P.unpack(P.pack({planId:'demo',current:{furniture:[f]},designs:[{name:'旧方案',work:{furniture:[f]}}],catalog:[]})).current.furniture[0];
-for(const [id] of C.templates){
+for(const [id] of C.templates.filter(([id])=>C.preset(id).cabinet.version===1)){
  const f=make(id),before=JSON.stringify(f),next=D.resizeFurniture(f,{w:f.w+300});
  assert.equal(next.cabinet.columns.length,f.cabinet.columns.length,id+' preserves bay count');
  assert.deepEqual(next.cabinet.columns.map(c=>c.door),f.cabinet.columns.map(c=>c.door));

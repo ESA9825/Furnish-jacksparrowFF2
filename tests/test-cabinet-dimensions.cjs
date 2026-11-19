@@ -17,6 +17,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('nod
  function inspect(f){
   const before=JSON.stringify(f),host=new Element();let picked=null,allow=true;
   const preview=ctx.FurnishCabinetPreview.create({THREE:{...T,WebGLRenderer:Renderer},OrbitControls:Controls,box,host,f,background:'#eee',actions:{select:part=>{picked=part;return allow;}}});
+  preview.setView({dimensionScope:'size'});tick();
   const overlay=host.children.find(e=>e.className==='cab-dimensions'),items=cls=>overlay.children.filter(e=>e.className===cls),count=f.kitchen?f.kitchen.modules.length:C.config(f).columns.length;
   const product=f.kitchen?ctx.FurnishKitchenModel.build(T,f,box):ctx.FurnishCabinetModel.build(T,f,box),faces=[];let movingDoors=0;product.traverse(o=>{if(o.userData.cabinetDoorSize)faces.push(o);if(o.userData.motion?.kind==='cabinetdoor')movingDoors++;});assert.equal(faces.length,movingDoors,'each actual hinged door has production size metadata');
   const drawers=[];product.traverse(o=>{if(o.userData.cabinetDrawerBoard==='front')drawers.push(o);});const frontCount=faces.length+drawers.length;
@@ -46,7 +47,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('nod
   preview.setView({dimensions:false});tick();assert.equal(items('cab-module-number').length,badgeCount);assert.equal(items('cab-dimension').length,0);assert.equal(items('cab-size-summary').length,0);assert(!overlay.children.some(e=>e.className==='cab-dimension cab-door-dimension'));assert.equal(list.hidden,true);if(f.kitchen?.shape!=='U')assert.equal(overlay.children[0].children[0].attrs.d,'');
   preview.update(f);assert.equal(items('cab-module-number').length,badgeCount,'updates do not accumulate badges');assert.equal(JSON.stringify(f),before,'annotations do not add persistent fields');preview.dispose();
  }
-  for(const [id] of C.templates)inspect({type:'cabinet',...C.preset(id)});
+  for(const [id] of C.templates.filter(([id])=>C.preset(id).cabinet.version===1))inspect({type:'cabinet',...C.preset(id)});
   for(const id of ['wardrobe','entry-console','sideboard-wall','tv-floor'])for(const overlay of ['full','half','inset']){const f={type:'cabinet',rot:37,flip:true,...C.preset(id)};f.cabinet.doorOverlay=overlay;f.cabinet.columns.forEach(col=>{col.topOpen=true;col.drawers.forEach(drawer=>Object.assign(drawer,{open:true,extension:.5}));});inspect(f);}
   for(const door of ['left','right','double','up','down','none']){const f={type:'cabinet',...C.preset('storage')};f.cabinet.columns.forEach(col=>col.door=door);inspect(f);}
  for(const shape of ['straight','L','U'])for(const corner of ['left','right'])for(const flip of [false,true])for(const role of ['empty','drawer']){

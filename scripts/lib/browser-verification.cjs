@@ -27,6 +27,16 @@ async function setCabinetOverall(page,key,value){
  const input=page.locator('[data-builder-overall="'+key+'"]');
  await input.fill(String(value));await input.press('Tab');
 }
+async function canvasResizeGrip(page,axis){
+ const grip=await page.waitForFunction(axis=>{
+  const selector=`#gSel [data-handle="size"][data-axis="${axis}"]:not([data-resize-x="-1"],[data-resize-y="-1"])`;
+  const handle=document.querySelector(selector),rect=handle?.querySelector('rect')?.getBoundingClientRect();
+  if(!rect?.width||!rect.height)return null;
+  const x=rect.x+rect.width/2,y=rect.y+rect.height/2;
+  return document.elementFromPoint(x,y)?.closest(selector)===handle?{x,y}:null;
+ },axis);
+ try{return await grip.jsonValue();}finally{await grip.dispose();}
+}
 async function fillCeilingField(page,key,value){
  const input=page.locator('[data-design="'+key+'"]');
  if(await input.isHidden()){
@@ -44,7 +54,7 @@ function configuration(env=process.env){
  const url=new URL(env.FURNISH_VERIFY_URL||'http://127.0.0.1:8765/');
  if(url.protocol!=='http:'||!['127.0.0.1','localhost','[::1]'].includes(url.hostname)||url.username||url.password||url.pathname!=='/'||url.search||url.hash)throw Error('FURNISH_VERIFY_URL must be a loopback HTTP origin, for example http://127.0.0.1:9000/');
  const output=relative=>{const target=path.resolve(root,'output',relative);if(!target.startsWith(path.join(root,'output')+path.sep))throw Error('Output path escapes output/');fs.mkdirSync(path.dirname(target),{recursive:true});return target.replaceAll('\\','/');};
- return {root:root.replaceAll('\\','/')+'/',baseURL:url.href,fileBase:pathToFileURL(root+path.sep).href,output,editFurnitureField,openDistanceControls,clickCanvasTool,cabinetSpace,setCabinetOverall,fillCeilingField,setCeilingStyle,
+ return {root:root.replaceAll('\\','/')+'/',baseURL:url.href,fileBase:pathToFileURL(root+path.sep).href,output,editFurnitureField,openDistanceControls,clickCanvasTool,cabinetSpace,setCabinetOverall,canvasResizeGrip,fillCeilingField,setCeilingStyle,
   waitForDialogAction:page=>page.waitForFunction(()=>!document.querySelector('#dlg .dlg-box[aria-busy="true"]')),
   waitForCache:async page=>{try{await page.waitForFunction(()=>{try{const sorted=v=>v&&typeof v==='object'?Array.isArray(v)?v.map(sorted):Object.fromEntries(Object.keys(v).sort().map(k=>[k,sorted(v[k])])):v,cached=JSON.parse(localStorage.getItem(STORE));return !savePending&&!saveErr&&savedAt>0&&JSON.stringify(sorted(cached.work[PLAN.id]))===JSON.stringify(sorted(state));}catch{return false;}});}catch(error){const detail=await page.evaluate(()=>{const cached=JSON.parse(localStorage.getItem(STORE)||'null')?.work?.[PLAN.id];return {savePending,saveErr,savedAt,planId:PLAN.id,differences:[...new Set([...Object.keys(cached||{}),...Object.keys(state)])].filter(k=>JSON.stringify(cached?.[k])!==JSON.stringify(state[k])).map(k=>({key:k,cachedBytes:JSON.stringify(cached?.[k])?.length,currentBytes:JSON.stringify(state[k])?.length}))};});throw Error(error.message+'\nCache detail: '+JSON.stringify(detail));}},
   fixture:name=>path.join(root,'tests/fixtures/browser',name),

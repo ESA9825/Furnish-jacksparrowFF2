@@ -11,9 +11,9 @@ const near=(a,b)=>assert(Math.abs(a-b)<.001,`${a} != ${b}`);
  const T=await import(JSON.parse(fs.readFileSync(require.resolve('../index.html'),'utf8').match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports.three);
  for(const dimensions of [{},{w:360,d:540,h:140},{mountHeight:0},{h:1}])for(const rot of [0,37,90,180])for(const flip of [false,true]){
   const item={...f,...dimensions,rot,flip},model=M.build(T,item),old=M.buildLegacySE2(T,item);
-  assert.equal(model.userData.furnishAsset,'bath-heater-aopu-se2@1');assert.equal(model.children.length,old.children.length);
+  assert.equal(model.userData.furnishAsset,'bath-heater-aopu-se2@1');const meshes=model.children.filter(o=>o.isMesh);assert.equal(meshes.length,old.children.length);
   for(const group of [model,old]){group.rotation.y=-rot*Math.PI/180;group.scale.x=flip?-1:1;group.updateMatrixWorld(true);}
-  for(const mesh of model.children){const previous=old.children.find(m=>m.name===mesh.name);assert(previous);assert.equal(mesh.userData.furnishStablePart,previous.userData.furnishStablePart);const a=new T.Box3().setFromObject(mesh),b=new T.Box3().setFromObject(previous);for(const axis of ['x','y','z']){near(a.min[axis]*1000,b.min[axis]*1000);near(a.max[axis]*1000,b.max[axis]*1000);}assert(mesh.geometry.index.count>0);}
+  for(const mesh of meshes){const previous=old.children.find(m=>m.name===mesh.name);assert(previous);assert.equal(mesh.userData.furnishStablePart,previous.userData.furnishStablePart);const a=new T.Box3().setFromObject(mesh),b=new T.Box3().setFromObject(previous);for(const axis of ['x','y','z']){near(a.min[axis]*1000,b.min[axis]*1000);near(a.max[axis]*1000,b.max[axis]*1000);}assert(mesh.geometry.index.count>0);}
   assert.equal(model.children.find(m=>m.name==='face').material.color.getHexString(),'badaee');
  }
  for(const rot of [0,37,90,180])for(const flip of [false,true]){

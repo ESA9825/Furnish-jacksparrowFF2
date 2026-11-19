@@ -139,7 +139,7 @@ function openFabEditor(kind){
   const items=selItems(),f=items.length===1&&items[0];if(!items.length)return;
   if(kind==='size'){
     if(!f||furnitureLocked(f)||furnitureError(f))return;
-    if(furnitureUsesDetailedDesign(f)){FurnishCabinetBuilderUI.open(f.id);return;}
+    if(furnitureUsesDetailedDesign(f)){FurnishCabinetBuilderUI.open(f.id,{showOverallSize:true});return;}
   }
   const before=snap(),planId=PLAN.id,ids=selIds().join('\n');
   const boxSize=kind==='size'&&FurnishProducts.definition(f)?.wallRecess;

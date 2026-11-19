@@ -18,7 +18,7 @@ for(const rot of [0,37,90])for(const flip of [false,true]){
   const restored=R.parse(JSON.parse(R.text(data)));assert.deepEqual(restored.work[planId].furniture[0].cabinet,ignored.cabinet);assert.deepEqual(restored.designs[0].work.furniture[0].cabinet,ignored.cabinet);assert.deepEqual(restored.custom[0].cabinet,preset.cabinet);assert.deepEqual(R.parse(JSON.parse(R.text(restored))),restored);
   const packed=P.pack({planId,current:work,designs:[],catalog:[asset]});assert.equal(packed.version,77);assert.deepEqual(P.unpack(packed).current.furniture[0].cabinet,ignored.cabinet);assert.equal(P.formatVersion([],[asset]),77);
   for(const bad of [null,1,'true',{},[]])assert.throws(()=>B.markShelfRemovable(f,pick,bad),/布尔/);
-  const bad=structuredClone(marked),p=B.selection(bad,pick).component;p[pick.board?pick.board+'Removable':'removable']='yes';assert.throws(()=>B.validate(bad),/布尔/);
+  const bad=structuredClone(marked),p=B.selection(bad,pick).component;p[pick.board?pick.board+'Removable':'removable']='yes';assert.throws(()=>B.validate(bad),/可拆卸或碰撞开关须为布尔值|拆卸或地脚开关无效/);
   const removed=B.remove(marked,pick);assert.equal(M.boards(removed,{includeStatic:true}).length,M.boards(f,{includeStatic:true}).length-1);assert.notDeepEqual(B.spatial(removed),B.spatial(f));
  }
  assert.equal(JSON.stringify(f),snapshot,'input and old defaults remain unchanged');

@@ -22,6 +22,7 @@ async(page,verification)=>{
    await p.setViewportSize({width:1450,height:1000});
    await p.getByRole('button',{name:'3D 场景',exact:true}).click();await p.waitForFunction(()=>is3D()&&!switching);
    await p.evaluate(()=>select({kind:'furn',id:'height-cab'}));
+   await p.locator('#fab [data-scene-move]').click();
    await p.locator('.scene-transform [data-transform-axis="z"] .transform-hit').first().click();await p.getByRole('button',{name:'显示高度详情',exact:true}).click();const label=p.locator('.scene-transform-details');await label.waitFor();
    const checkLabel=async(top,gap)=>{await p.waitForFunction(({top,gap})=>{const rows=[...document.querySelectorAll('.scene-transform-details .scene-height-row')].map(el=>el.textContent);return rows.length===3&&rows[0]==='顶部距地面'+top+' mm'&&rows[1]==='顶部距房顶'+gap+' mm';},{top,gap});};
    await checkLabel(2500,240);

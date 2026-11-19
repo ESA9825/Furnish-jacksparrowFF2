@@ -36,7 +36,7 @@ console.log(`PASS ${count} shelf clearance edits: actual adjacent faces, both di
 
 (async()=>{
  const fs=require('node:fs'),vm=require('node:vm'),imports=JSON.parse(fs.readFileSync(require.resolve('../index.html'),'utf8').match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports,T=await import(imports.three);
- const ctx=vm.createContext({FurnishCabinet:C,FurnishPartIdentity:require('../src/core/part-identity.js')});
+ const ctx=require('./helpers/production-source.cjs').createModelContext({FurnishCabinet:C,FurnishPartIdentity:require('../src/core/part-identity.js')});
  vm.runInContext(fs.readFileSync(require.resolve('../src/render/cabinet-model.js'),'utf8'),ctx);
  const box=(w,h,d,color,x,y,z)=>{const mesh=new T.Mesh(new T.BoxGeometry(w,h,d),new T.MeshStandardMaterial({color}));mesh.position.set(x,y+h/2,z);return mesh;};
  for(const id of ['pantry500','sideboard-open','sideboard-wall','entry-pegboard']){
