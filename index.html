@@ -1560,7 +1560,6 @@ function syncReplacementFootprint(work){
 // 只重建变化的部分
 function sync(force){
   if (!inited || (!active && !force)) return;
-  cancelElevationGesture();
   H=FurnishProject.ceilingHeight(state)/1000;
   const settings=FurnishDesign.sceneSettings(state.scene3d);
   const preview=opt.sunPreview;
@@ -1570,10 +1569,14 @@ function sync(force){
   Object.assign(opt,{solar:undefined},settings);
   if(opt.mode==='walk')opt.cut=2.8;
   const north=JSON.stringify(state.drawing?.northAngle??null);
-  if(changed||force||sigNorth!==north){sigNorth=north;syncCutBtns();document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('on',!!opt[b.dataset.t]));furnG.visible=opt.furn&&!globalThis.FurnishTilePresetUI?.inspecting();showLabels(opt.labels&&opt.mode==='orbit'&&!anim);applyLight();}
+  const displayChanged=force||changed||sigNorth!==north;
+  if(displayChanged){sigNorth=north;syncCutBtns();document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('on',!!opt[b.dataset.t]));furnG.visible=opt.furn&&!globalThis.FurnishTilePresetUI?.inspecting();showLabels(opt.labels&&opt.mode==='orbit'&&!anim);applyLight();}
   const furnitureWork=globalThis.FurnishWardrobePlannerUI?.previewWork()||globalThis.FurnishCatalog?.previewWork()||state;
   const a = JSON.stringify([state.styleAppearance,globalThis.FurnishWorkflowTools?.styleKey(),state.rooms, state.demolished, state.open, PLAN.beams, opt.cut,opt.lamps,H, PLAN.markers,state.furniture.filter(f=>(FurnishDesign.products().definition(f)?.downlight||FurnishDesign.products().definition(f)?.ceilingPanel)&&!f.obj).map(f=>[f.id,f.type,f.cx,f.cy,f.w,f.d,f.h,f.rot,f.flip,f.mountHeight]),state.furnitureDatum,state.wallFinishes,state.floorFinishes,state.wallTiling,state.ceilings,state.tileGrout,typeof FurnishWallFinish==='undefined'?[]:FurnishWallFinish.serviceOpenings(PLAN,state),typeof FurnishElectricalBox==='undefined'?[]:FurnishElectricalBox.cuts(FurnishProject.effectivePlan(PLAN,state),state.furniture)]), f = JSON.stringify([furnitureWork.furniture.map(({price,referencePrice,priceDate,purchaseStatus,purchaseNote,sourceUrl,...shape})=>shape),PLAN.markers,state.rooms,H,globalThis.FurnishWorkflowTools?.styleKey(),state.wallFinishes,state.floorFinishes,state.furnitureDatum]), l = JSON.stringify([state.rooms, opt.cut,H,PLAN.beams,state.wallFinishes,state.floorFinishes,state.wallTiling]);
-  if(force||a!==sigArch||f!==sigFurn){sceneMeasure?.clear();buildHeaterClearances(furnitureWork);clearSceneIssue();selKey=null;}
+  const geometryChanged=force||a!==sigArch||f!==sigFurn;
+  // Read-only scene polling must not reset a pointer gesture on the current models.
+  if(displayChanged||geometryChanged)cancelElevationGesture();
+  if(geometryChanged){sceneMeasure?.clear();buildHeaterClearances(furnitureWork);clearSceneIssue();selKey=null;}
   if (force || a !== sigArch){ sigArch = a; buildArch(); invalidate(true); }
   if (force || f !== sigFurn){ sigFurn = f; buildFurn(furnitureWork); invalidate(true); }
   if (force || l !== sigLabels){ sigLabels = l; buildLabels(); }
@@ -2244,7 +2247,7 @@ function syncCeilingModeButtons(){document.querySelectorAll('[data-ceiling-displ
 function blenderScene(options={}, {observationCeilings=false,includeLighting=false}={}){
  if(globalThis.FurnishCatalog?.active())throw Error('请先确认或取消家具替换，再导出三维场景。');
  if(!inited||!active||anim||fly)throw Error(tr('请等待三维视角稳定后重试。','Wait for the 3D camera to settle and retry.'));
- sync();
+ cancelElevationGesture();sync();
  if(furnitureRenderErrors.size)throw Error(tr('请先修复三维模型错误再导出。','Resolve 3D model errors before exporting.'));
  let tvPicturePending=false;furnG.traverse(o=>{if(o.userData.tvScreenOwnMaterial&&!o.material.userData.tvImageReady)tvPicturePending=true;});
  const veneerPending=FurnishCabinetModel.pendingVeneers(furnG);
@@ -2261,7 +2264,7 @@ function blenderScene(options={}, {observationCeilings=false,includeLighting=fal
   return includeLighting?encoded.then(data=>({...data,lighting})):encoded;
  }finally{display?.clear();applyObservationLayers();}
 }
-function blenderSyncSignature(){if(globalThis.FurnishCatalog?.active())return null;if(!inited||!active||anim||fly)return null;sync();return JSON.stringify([PLAN.id,sigArch,sigFurn,state.objectLayers?.assignments,state.objectLayers?.layers?.map(l=>[l.id,l.visible]),opt.furn,opt.lamps]);}
+function blenderSyncSignature(){if(globalThis.FurnishCatalog?.active())return null;if(!inited||!active||anim||fly||selectionTransform?.dragging())return null;sync();return JSON.stringify([PLAN.id,sigArch,sigFurn,state.objectLayers?.assignments,state.objectLayers?.layers?.map(l=>[l.id,l.visible]),opt.furn,opt.lamps]);}
 let highQualityState='',highQualityRevision=0;
 function highQualitySignature(){
  const signature=blenderSyncSignature();if(!signature)return null;

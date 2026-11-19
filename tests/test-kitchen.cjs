@@ -14,6 +14,15 @@ assert.deepEqual(K.deviceOpenings(unnamedHost,[unnamedHost]),[],'anonymous previ
 assert.equal(K.measurementSurface(unnamedSink,unnamedHost).moduleIndex,0);
 assert.equal(K.deviceOpenings(unnamedHost,[unnamedSink])[0].device,unnamedSink,'an independent preview sink still cuts its actual supporting countertop');
 assert.equal(K.deviceOpenings(unnamedHost,[{...unnamedSink,cx:90000}]).length,0);
+assert.equal(K.deviceBodyCuts(host,items).length,0,'surface-only legacy fixtures cannot submit a cutter with an unknown depth');
+const deepSink={...items[1],sinkBowlHeight:200};
+assert.deepEqual(K.deviceBodyCuts(host,[host,deepSink]).map(({bottom,top})=>[bottom,top]),[[660,860]]);
+const rule=R.cabinetBuilder.deviceOpenings;
+assert.equal(K.spatialConfig(host,[host]).deviceOpeningRule,rule.version);
+assert.equal(K.spatialConfig(host,items).deviceOpeningRule,rule.legacyDeviceDepthVersion);
+assert.equal(K.spatialConfig(host,[host,{...deepSink,counterLink:undefined,cx:90000}]).deviceOpeningRule,rule.version);
+let partId=0;const [laundry]=K.createLaundryCabinet(old,()=> 'laundry'+ ++partId);
+const [basinCut]=K.deviceBodyCuts(laundry,[]);assert.equal(basinCut.top-basinCut.bottom,R.sinkBodyDepth(basinCut.device));
 assert.equal(items[1].counterElevation,860);assert.equal(items[2].rot,270);
 const saved=P.unpack(P.pack(fixture(items)));assert.deepEqual(saved.current.furniture,items);assert.deepEqual(saved.designs[0].work.furniture,items);
 for(let i=0;i<3;i++)items=D.restoreFurniture(items,{makeId:()=> 'new',colorFor:()=> '#eee'});assert.deepEqual(items,saved.current.furniture,'repeated restore has no drift');

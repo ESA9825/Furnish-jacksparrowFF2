@@ -99,7 +99,7 @@
    if(!editing)return;const box2=svg.getBBox(),bounds={left:screen.x+box2.x-10,right:screen.x+box2.x+box2.width+10,top:screen.y+box2.y-10,bottom:screen.y+box2.y+box2.height+10},size=dock.getBoundingClientRect(),position=toolbarPosition(r,bounds,size,dockSide);dockSide=position.side;dock.dataset.side=dockSide;dock.style.left=(position.left-r.left)+'px';dock.style.top=(position.top-r.top)+'px';
 
   }
-  return {setSelection,cancel,update,dispose(){cancel();overlay.remove();}};
+  return {setSelection,cancel,update,dragging:()=>!!gesture,dispose(){cancel();overlay.remove();}};
  }
  root.FurnishSceneTransform={create,toolbarPosition,ringFacing};if(typeof module!=='undefined')module.exports=root.FurnishSceneTransform;
 })(typeof globalThis==='undefined'?this:globalThis);

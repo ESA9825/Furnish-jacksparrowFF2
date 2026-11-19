@@ -23,20 +23,20 @@ function create({THREE,stage,canvas,camera,hitAt,available,navigationHeld,invali
   enabled=!!value;if(enabled)onStart();else {shift=false;clear();}panel.hidden=!enabled;
   button.classList.toggle('on',enabled);button.setAttribute('aria-pressed',String(enabled));canvas.style.cursor=enabled?'crosshair':'';status();update();invalidate();
  }
- function project(p){const v=p.clone().project(camera);return {x:(v.x+1)*stage.clientWidth/2,y:(1-v.y)*stage.clientHeight/2,shown:v.z>=-1&&v.z<=1};}
+ function project(p,rect){const v=p.clone().project(camera);return {x:rect.left+(v.x+1)*rect.width/2,y:rect.top+(1-v.y)*rect.height/2,shown:v.z>=-1&&v.z<=1};}
  function point(e){
   const hit=hitAt(e);if(!hit)return null;
-  const pos=hit.object.geometry?.attributes.position,mouse={x:e.clientX-stage.getBoundingClientRect().left,y:e.clientY-stage.getBoundingClientRect().top};
+  const pos=hit.object.geometry?.attributes.position,rect=canvas.getBoundingClientRect();
   let best=hit.point.clone(),limit=10,snapped=false;
   // Only vertices on the picked face plane may attract the cursor: a back-side
   // or hidden vertex must not replace the surface the user actually pointed at.
   if(pos&&hit.face){const normal=hit.face.normal.clone().applyMatrix3(new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld)).normalize();
-   for(let i=0;i<pos.count;i++){const v=new THREE.Vector3().fromBufferAttribute(pos,i).applyMatrix4(hit.object.matrixWorld);if(Math.abs(v.clone().sub(hit.point).dot(normal))>.0001)continue;const p=project(v),distance=Math.hypot(p.x-mouse.x,p.y-mouse.y);if(p.shown&&distance<limit){best=v;limit=distance;snapped=true;}}
+   for(let i=0;i<pos.count;i++){const v=new THREE.Vector3().fromBufferAttribute(pos,i).applyMatrix4(hit.object.matrixWorld);if(Math.abs(v.clone().sub(hit.point).dot(normal))>.0001)continue;const p=project(v,rect),distance=Math.hypot(p.x-e.clientX,p.y-e.clientY);if(p.shown&&distance<limit){best=v;limit=distance;snapped=true;}}
   }
   if(snapped){
    // Sample just inside the picked face: a ray exactly through a silhouette
    // vertex can miss both triangles because of floating-point edge rounding.
-   const probe=best.clone().lerp(hit.point,.02),screen=project(probe),r=stage.getBoundingClientRect(),check=hitAt({clientX:r.left+screen.x,clientY:r.top+screen.y});
+   const probe=best.clone().lerp(hit.point,.02),screen=project(probe,rect),check=hitAt({clientX:screen.x,clientY:screen.y});
    if(!check||check.point.distanceTo(probe)>.0001){best=hit.point.clone();snapped=false;}
   }
   return {p:best,snapped};
@@ -46,7 +46,9 @@ function create({THREE,stage,canvas,camera,hitAt,available,navigationHeld,invali
   if(enabled&&!available()){set(false);return;}
   overlay.replaceChildren();if(!enabled)return;
   const add=(tag,attrs,text)=>{const el=document.createElementNS(ns,tag);for(const [k,v]of Object.entries(attrs))el.setAttribute(k,v);if(text)el.textContent=text;overlay.append(el);};
-  const raw=b||hover?.p,end=endpoint(raw),pa=a&&project(a),pb=end&&project(end),reference=raw&&project(raw);
+  const rect=canvas.getBoundingClientRect(),layer=overlay.getBoundingClientRect();
+  const place=p=>{const {x,y,shown}=project(p,rect);return {x:x-layer.left,y:y-layer.top,shown};};
+  const raw=b||hover?.p,end=endpoint(raw),pa=a&&place(a),pb=end&&place(end),reference=raw&&place(raw);
   if(pa?.shown&&pb?.shown){add('line',{'data-measure-main':'',x1:pa.x,y1:pa.y,x2:pb.x,y2:pb.y});const x=Math.max(60,Math.min(stage.clientWidth-60,(pa.x+pb.x)/2)),y=Math.max(22,Math.min(stage.clientHeight-12,(pa.y+pb.y)/2-12));add('text',{x,y,'text-anchor':'middle'},`${locked()?tr('垂直 ','Vertical '):''}${fmt(a.distanceTo(end))} mm`);}
   if(locked()&&pb?.shown&&reference?.shown&&raw.distanceTo(end)>.0001){add('line',{'data-measure-reference':'',x1:pb.x,y1:pb.y,x2:reference.x,y2:reference.y,'stroke-dasharray':'4 4',opacity:.65});add('circle',{cx:reference.x,cy:reference.y,r:3,opacity:.65});}
   for(const p of [pa,pb])if(p?.shown)add('circle',{cx:p.x,cy:p.y,r:5});

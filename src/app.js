@@ -73,8 +73,13 @@ store.customPlans = (Array.isArray(store.customPlans) ? store.customPlans : []).
 let customArchDraft = null, customArchPlanId = '';
 function syncCustomArchitecture({replan=true}={}){
   if (!state.architecture) return;
-  if (state.architecture.draft === customArchDraft && PLAN.id === customArchPlanId) return;
-  const p = FurnishDraft.build(state.architecture.draft);
+  const draft=state.architecture.draft;
+  if(PLAN.id===customArchPlanId){
+    if(draft===customArchDraft)return;
+    // Undo and redo clone the work, including drafts for unchanged architecture.
+    if(JSON.stringify(draft)===JSON.stringify(customArchDraft)){customArchDraft=draft;return;}
+  }
+  const p = FurnishDraft.build(draft);
   if (p.id !== PLAN.id) throw new Error('Custom plan identity mismatch');
   Object.assign(PLAN, p); applyPlanData();
   if(ui.sel?.kind==='room'&&!ROOMS.some(r=>r.id===ui.sel.id))ui.sel=null;
@@ -956,7 +961,7 @@ async function setView(m){
     console.error(e);
     viewMode = '2d'; document.body.classList.remove('m3d');
     toast(tr('3D 引擎加载失败', 'Failed to load the 3D engine'));
-  } finally { switching = false; document.body.classList.remove('busy');queueFabPosition();window.FurnishCatalog?.afterRender();window.FurnishCatalog?.afterView(); }
+  } finally { switching = false; document.body.classList.remove('busy');renderFab();window.FurnishCatalog?.afterRender();window.FurnishCatalog?.afterView(); }
 }
 document.querySelectorAll('.menu-pop .btn').forEach(b => b.addEventListener('click', () => {
   const menu = b.closest('details.menu');
