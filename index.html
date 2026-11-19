@@ -431,7 +431,64 @@
 <script src="src/core/kitchen-core.js"></script>
 <script src="src/render/kitchen-model.js"></script>
 <script src="src/core/hood-motion-core.js"></script>
-<script src="src/data/hood-blender-asset.js"></script>
+<template id="model-assets">
+  <script data-src="src/data/hood-blender-asset.js" data-asset="FurnishHoodBlenderAsset"></script>
+  <script data-src="src/data/downlight-labot-ip65-blender-asset.js" data-asset="FurnishLabotIP65Asset"></script>
+  <script data-src="src/data/se2-blender-asset.js" data-asset="FurnishSE2BlenderAsset"></script>
+  <script data-src="src/data/pet-bowl-blender-asset.js" data-asset="FurnishPetBowlBlenderAsset"></script>
+  <script data-src="src/data/litter-bag-blender-asset.js" data-asset="FurnishLitterBagBlenderAsset"></script>
+  <script data-src="src/data/storage-toolbox-blender-asset.js" data-asset="FurnishStorageToolboxAsset"></script>
+  <script data-src="src/data/medicine-box-blender-asset.js" data-asset="FurnishMedicineBoxAsset"></script>
+  <script data-src="src/data/toilet-paper-pack-blender-asset.js" data-asset="FurnishToiletPaperPackAsset"></script>
+  <script data-src="src/data/tissue-pack-blender-asset.js" data-asset="FurnishTissuePackAsset"></script>
+  <script data-src="src/data/heartlink-roll-layer-blender-asset.js" data-asset="FurnishHeartlinkRollLayerAsset"></script>
+  <script data-src="src/data/heartlink-tissue-layer-blender-asset.js" data-asset="FurnishHeartlinkTissueLayerAsset"></script>
+  <script data-src="src/data/wet-wipes-pack-blender-asset.js" data-asset="FurnishWetWipesPackAsset"></script>
+  <script data-src="src/data/cat-food-2kg-blender-asset.js" data-asset="FurnishCatFood2kgAsset"></script>
+  <script data-src="src/data/storage-bin-shallow-large-blender-asset.js" data-asset="FurnishStorageBinShallowLargeAsset"></script>
+  <script data-src="src/data/storage-bin-deep-medium-blender-asset.js" data-asset="FurnishStorageBinDeepMediumAsset"></script>
+  <script data-src="src/data/storage-bin-deep-large-blender-asset.js" data-asset="FurnishStorageBinDeepLargeAsset"></script>
+  <script data-src="src/data/storage-bin-deeper-medium-blender-asset.js" data-asset="FurnishStorageBinDeeperMediumAsset"></script>
+  <script data-src="src/data/storage-bin-deeper-large-blender-asset.js" data-asset="FurnishStorageBinDeeperLargeAsset"></script>
+  <script data-src="src/data/storage-bin-ultradeep-medium-blender-asset.js" data-asset="FurnishStorageBinUltradeepMediumAsset"></script>
+  <script data-src="src/data/storage-bin-ultradeep-large-blender-asset.js" data-asset="FurnishStorageBinUltradeepLargeAsset"></script>
+  <script data-src="src/data/toolbox-jiabangshou-390-blender-asset.js" data-asset="FurnishJiabangshouToolboxAsset"></script>
+  <script data-src="src/data/toolbox-shimoyama-9l-blender-asset.js" data-asset="FurnishShimoyamaToolbox9lAsset"></script>
+  <script data-src="src/data/trolley-ikea-raskog-large-blender-asset.js" data-asset="FurnishRaskogLargeAsset"></script>
+  <script data-src="src/data/freeze-dry-bucket-6l-blender-asset.js" data-asset="FurnishFreezeDryBucket6lAsset"></script>
+  <script data-src="src/data/beverage-can-330-blender-asset.js" data-asset="FurnishBeverageCan330Asset"></script>
+  <script data-src="src/data/beverage-can-500-blender-asset.js" data-asset="FurnishBeverageCan500Asset"></script>
+  <script data-src="src/data/garment-short-down-blender-asset.js" data-asset="FurnishGarmentShortDownAsset"></script>
+  <script data-src="src/data/garment-long-down-blender-asset.js" data-asset="FurnishGarmentLongDownAsset"></script>
+  <script data-src="src/data/garment-autumn-jacket-blender-asset.js" data-asset="FurnishGarmentAutumnJacketAsset"></script>
+  <script data-src="src/data/panel-bull-g12-blender-asset.js" data-asset="FurnishPanelBullG12Asset"></script>
+  <script data-src="src/data/panel-xiaomi-switch2-blender-asset.js" data-asset="FurnishPanelXiaomiSwitch2Asset"></script>
+  <script data-src="src/data/armchair-blender-asset.js" data-asset="FurnishArmchairBlenderAsset"></script>
+  <script data-src="src/data/armchair-berlin-blender-asset.js" data-asset="FurnishBerlinArmchairBlenderAsset"></script>
+  <script data-src="src/data/chair-s05118-blender-asset.js" data-asset="FurnishS05118BlenderAsset"></script>
+  <script data-src="src/data/fan-x231-blender-asset.js" data-asset="FurnishX231BlenderAsset"></script>
+  <script data-src="src/data/chair-vihals-blender-asset.js" data-asset="FurnishVihalsBlenderAsset"></script>
+  <script data-src="src/data/sofa-bed-blender-asset.js" data-asset="FurnishSofaBedBlenderAsset"></script>
+  <script data-src="src/data/corner-bookcase-blender-asset.js" data-asset="FurnishCornerBookcaseBlenderAsset"></script>
+  <script data-src="src/data/corner-bookcase-580-blender-asset.js" data-asset="FurnishCornerBookcase580BlenderAsset"></script>
+  <script data-src="src/data/stack-stool-blender-asset.js" data-asset="FurnishStackStoolBlenderAsset"></script>
+  <script data-src="src/data/mijia-ceiling-l90-blender-asset.js" data-asset="FurnishMijiaCeilingL90"></script>
+  <script data-src="src/data/mijia-ceiling-l60-blender-asset.js" data-asset="FurnishMijiaCeilingL60"></script>
+  <script data-src="src/data/mijia-ceiling-d40-blender-asset.js" data-asset="FurnishMijiaCeilingD40"></script>
+  <script data-src="src/data/mijia-ceiling-d30-blender-asset.js" data-asset="FurnishMijiaCeilingD30"></script>
+  <script data-src="src/data/mijia-ceiling-d20-blender-asset.js" data-asset="FurnishMijiaCeilingD20"></script>
+  <script data-src="src/data/desk-lamp-mijia-pro-blender-asset.js" data-asset="FurnishMijiaDeskLampAsset"></script>
+  <script data-src="src/data/acwall-midea-mxc3p-blender-asset.js" data-asset="FurnishMXC3PAsset"></script>
+  <script data-src="src/data/track-socket-bull-gb50k-blender-asset.js" data-asset="FurnishBullGB50KAsset"></script>
+  <script data-src="src/data/fridge-blender-asset.js" data-asset="FurnishFridgeBlenderAsset"></script>
+  <script data-src="src/data/washer-blender-asset.js" data-asset="FurnishWasherBlenderAsset"></script>
+  <script data-src="src/data/washer-tg10k60w-blender-asset.js" data-asset="FurnishTG10K60WBlenderAsset"></script>
+  <script data-src="src/data/side-table-blender-asset.js" data-asset="FurnishSideTableBlenderAsset"></script>
+  <script data-src="src/data/dishwasher-blender-asset.js" data-asset="FurnishDishwasherBlenderAsset"></script>
+  <script data-src="src/data/cat-tower-blender-asset.js" data-asset="FurnishCatTowerBlenderAsset"></script>
+  <script data-src="src/data/y52y09-blender-asset.js" data-asset="FurnishY52Y09BlenderAsset"></script>
+</template>
+<script src="src/io/model-assets.js"></script>
 <script src="src/render/hood-asset-model.js"></script>
 <script src="src/render/fotile-model.js"></script>
 <script src="src/data/wood-veneers.js"></script>
@@ -444,94 +501,42 @@
 <script src="src/core/ceiling-core.js"></script>
 <script src="src/core/navigation-input.js"></script>
 <script src="src/render/ceiling-model.js"></script>
-<script src="src/data/downlight-labot-ip65-blender-asset.js"></script>
 <script src="src/render/downlight-model.js"></script>
-<script src="src/data/se2-blender-asset.js"></script>
 <script src="src/render/static-asset-model.js"></script>
-<script src="src/data/pet-bowl-blender-asset.js"></script>
-<script src="src/data/litter-bag-blender-asset.js"></script>
 <script src="src/render/pet-supply-model.js"></script>
-<script src="src/data/storage-toolbox-blender-asset.js"></script>
-<script src="src/data/medicine-box-blender-asset.js"></script>
-<script src="src/data/toilet-paper-pack-blender-asset.js"></script>
-<script src="src/data/tissue-pack-blender-asset.js"></script>
-<script src="src/data/heartlink-roll-layer-blender-asset.js"></script>
-<script src="src/data/heartlink-tissue-layer-blender-asset.js"></script>
-<script src="src/data/wet-wipes-pack-blender-asset.js"></script>
-<script src="src/data/cat-food-2kg-blender-asset.js"></script>
-<script src="src/data/storage-bin-shallow-large-blender-asset.js"></script>
-<script src="src/data/storage-bin-deep-medium-blender-asset.js"></script>
-<script src="src/data/storage-bin-deep-large-blender-asset.js"></script>
-<script src="src/data/storage-bin-deeper-medium-blender-asset.js"></script>
-<script src="src/data/storage-bin-deeper-large-blender-asset.js"></script>
-<script src="src/data/storage-bin-ultradeep-medium-blender-asset.js"></script>
-<script src="src/data/storage-bin-ultradeep-large-blender-asset.js"></script>
-<script src="src/data/toolbox-jiabangshou-390-blender-asset.js"></script>
-<script src="src/data/toolbox-shimoyama-9l-blender-asset.js"></script>
-<script src="src/data/trolley-ikea-raskog-large-blender-asset.js"></script>
-<script src="src/data/freeze-dry-bucket-6l-blender-asset.js"></script>
-<script src="src/data/beverage-can-330-blender-asset.js"></script>
-<script src="src/data/beverage-can-500-blender-asset.js"></script>
-<script src="src/data/garment-short-down-blender-asset.js"></script>
-<script src="src/data/garment-long-down-blender-asset.js"></script>
-<script src="src/data/garment-autumn-jacket-blender-asset.js"></script>
 <script src="src/render/storage-supply-model.js"></script>
-<script src="src/data/panel-bull-g12-blender-asset.js"></script>
-<script src="src/data/panel-xiaomi-switch2-blender-asset.js"></script>
 <script src="src/render/panel-bull-g12-model.js"></script>
 <script src="src/core/pet-feeding-core.js"></script>
 <script src="src/render/pet-feeding-frame-model.js"></script>
-<script src="src/data/armchair-blender-asset.js"></script>
-<script src="src/data/armchair-berlin-blender-asset.js"></script>
-<script src="src/data/chair-s05118-blender-asset.js"></script>
 <script src="src/render/armchair-model.js"></script>
-<script src="src/data/fan-x231-blender-asset.js"></script>
 <script src="src/render/circulator-model.js"></script>
-<script src="src/data/chair-vihals-blender-asset.js"></script>
 <script src="src/core/folding-chair-core.js"></script>
 <script src="src/render/folding-chair-model.js"></script>
 <script src="src/core/sofa-bed-core.js"></script>
-<script src="src/data/sofa-bed-blender-asset.js"></script>
 <script src="src/render/sofa-bed-model.js"></script>
 <script src="src/core/corner-bookcase-core.js"></script>
-<script src="src/data/corner-bookcase-blender-asset.js"></script>
-<script src="src/data/corner-bookcase-580-blender-asset.js"></script>
 <script src="src/render/corner-bookcase-model.js"></script>
-<script src="src/data/stack-stool-blender-asset.js"></script>
 <script src="src/render/stack-stool-model.js"></script>
 <script src="src/render/window-lining-model.js"></script>
 <script src="src/render/art-glass-model.js"></script>
-<script src="src/data/mijia-ceiling-l90-blender-asset.js"></script>
-<script src="src/data/mijia-ceiling-l60-blender-asset.js"></script>
-<script src="src/data/mijia-ceiling-d40-blender-asset.js"></script>
-<script src="src/data/mijia-ceiling-d30-blender-asset.js"></script>
-<script src="src/data/mijia-ceiling-d20-blender-asset.js"></script>
 <script src="src/render/bath-heater-model.js"></script>
-<script src="src/data/desk-lamp-mijia-pro-blender-asset.js"></script>
 <script src="src/render/desk-lamp-model.js"></script>
-<script src="src/data/acwall-midea-mxc3p-blender-asset.js"></script>
 <script src="src/render/acwall-midea-model.js"></script>
-<script src="src/data/track-socket-bull-gb50k-blender-asset.js"></script>
 <script src="src/render/track-socket-bull-gb50k-model.js"></script>
 <script src="src/render/cove-light-model.js"></script>
 <script src="src/render/model-primitives.js"></script>
 <script src="src/render/basic-furniture-model.js"></script>
 <script src="src/render/legacy-furniture-model.js"></script>
 <script src="src/render/window-covering-model.js"></script>
-<script src="src/data/fridge-blender-asset.js"></script>
 <script src="src/render/fridge-model.js"></script>
 <script src="src/core/washer-motion-core.js"></script>
-<script src="src/data/washer-blender-asset.js"></script>
-<script src="src/data/washer-tg10k60w-blender-asset.js"></script>
 <script src="src/render/washer-model.js"></script>
 <script src="src/core/side-table-core.js"></script>
-<script src="src/data/side-table-blender-asset.js"></script>
 <script src="src/render/side-table-model.js"></script>
 <script src="src/render/appliance-model.js"></script>
 <script src="src/render/sliding-opening-model.js"></script>
 <script src="src/render/aquarium-model.js"></script>
 <script src="src/core/dishwasher-fold-core.js"></script>
-<script src="src/data/dishwasher-blender-asset.js"></script>
 <script src="src/render/dishwasher-asset-model.js"></script>
 <script src="src/render/dishwasher-model.js"></script>
 <script src="src/render/water-purifier-model.js"></script>
@@ -543,7 +548,6 @@
 <script src="src/render/manifold-model.js"></script>
 <script src="src/render/shoe-bench-model.js"></script>
 <script src="src/render/cherry-coffee-table-model.js"></script>
-<script src="src/data/cat-tower-blender-asset.js"></script>
 <script src="src/render/cat-tower-model.js"></script>
 <script src="src/render/cat-tree-model.js"></script>
 <script src="src/render/folding-table-model.js"></script>
@@ -551,7 +555,6 @@
 <script src="src/core/wall-distance-core.js"></script>
 <script src="src/core/placement-suggestions.js"></script>
 <script src="src/io/dxf-export.js"></script>
-<script src="src/data/y52y09-blender-asset.js"></script>
 <script src="src/render/bookcase-asset-model.js"></script>
 <script src="src/data/wood-veneer-textures.js"></script>
 <script src="src/render/cabinet-model.js"></script>
@@ -736,6 +739,8 @@ const opt = {...FurnishDesign.sceneSettings(), mode:'orbit'};
 
 let inited = false, active = false, raf = 0, anim = null, fly = null;
 let capturedImage=null,capturedState='';
+const GRAPHICS_IDLE_MS=20000;
+let graphicsIdleTimer=0,graphicsParked=false,graphicsExtension=null,parkedPose=null;
 let renderer, labelRenderer, scene, camera, orbit, walkCtl, hemi, sun, ground, glassMat, wallMat, capMat, frameMat;
 let archFloor, archUp, furnG, clearanceG, labelG, wallLabelG, lampG, colliders = [], selKey = null, selHelper = null;
 let elevationG,issueG,sceneIssue=null,issueTimer=0,selectionTransform=null,sceneMeasure=null;
@@ -763,6 +768,7 @@ function init(){
   renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;
   renderer.localClippingEnabled=true;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+  graphicsExtension=renderer.getContext().getExtension('WEBGL_lose_context');
   host.prepend(renderer.domElement);
   labelRenderer = new CSS2DRenderer();
   labelRenderer.setSize(SW(), SH());
@@ -793,7 +799,7 @@ function init(){
   ground.rotation.x = -Math.PI/2; ground.position.y = -0.015; ground.receiveShadow = true;
   scene.add(hemi, sun, sun.target, ground);
 
-  const pm = new THREE.PMREMGenerator(renderer); envTex = pm.fromScene(new RoomEnvironment(), .04).texture; pm.dispose();
+  buildEnvironment();
   glassMat = new THREE.MeshPhysicalMaterial({color:0xcfe6ef, roughness:.05, transparent:true, opacity:.28, depthWrite:false, side:THREE.DoubleSide});
   themeMats();
 
@@ -877,6 +883,7 @@ function init(){
   });
   cv.addEventListener('dblclick', e => { if(opt.mode!=='orbit'||anim)return;const hit=pick(e);if(hit?.ceiling)return window.FurnishCeilingUI.selectObject(hit.ceiling,true); });
   new ResizeObserver(() => {
+    if(graphicsParked)return;
     renderer.setSize(SW(), SH()); labelRenderer.setSize(SW(), SH());
     refreshCameraProjection(!!FurnishNavigation.cameraCalibration()?.orbitEnabled);
     if(observationTarget&&active&&!anim)frameObservation();invalidate();
@@ -886,7 +893,21 @@ function init(){
 
 /* ======================= 材质 ======================= */
 const matCache = new Map();
-let envTex = null, envK = 1;
+let envTex = null, envTarget = null, envK = 1;
+function buildEnvironment(){
+  const generator=new THREE.PMREMGenerator(renderer),room=new RoomEnvironment();
+  try{
+    const oldTexture=envTex;
+    envTarget=generator.fromScene(room,.04);
+    envTex=envTarget.texture;
+    if(oldTexture)for(const material of matCache.values()){
+      if(material.envMap===oldTexture)material.envMap=envTex;
+    }
+  }finally{
+    generator.dispose();
+    room.dispose();
+  }
+}
 function mat(color, o = {}){
   const key = color + JSON.stringify(o);
   if (!matCache.has(key)){
@@ -1681,14 +1702,67 @@ function updateObservation(){
 }
 
 /* ======================= 进入 / 退出 3D ======================= */
+function parkGraphics(){
+  if(active||graphicsParked||!graphicsExtension||renderer.getContext().isContextLost())return;
+  clearObservation();
+  clearSceneIssue();
+  clearAnnotations(elevationG);
+  if(selHelper){clearAnnotations(selHelper);scene.remove(selHelper);selHelper=null;}
+  if(replacementFootprint){
+    replacementFootprint.geometry.dispose();
+    replacementFootprint.material.dispose();
+    scene.remove(replacementFootprint);
+    replacementFootprint=null;
+    replacementFootprintKey='';
+  }
+  for(const group of [furnG,archFloor,archUp,clearanceG,labelG,wallLabelG,lampG])clearGroup(group);
+  doors.length=0;
+  slidingDoors.length=0;
+  colliders=[];
+  selKey=null;
+  sigArch=sigFurn=sigLabels=sigNorth='';
+  renderer.renderLists.dispose();
+  sun.shadow.dispose();
+  sun.shadow.map=null;
+  sun.shadow.mapPass=null;
+  envTarget?.dispose();
+  envTarget=null;
+  graphicsParked=true;
+  graphicsExtension.loseContext();
+}
+
+async function restoreGraphics(){
+  if(!graphicsParked)return null;
+  const canvas=renderer.domElement;
+  if(renderer.getContext().isContextLost()){
+    await new Promise((resolve,reject)=>{
+      const restored=()=>{clearTimeout(timer);resolve();};
+      const timer=setTimeout(()=>{
+        canvas.removeEventListener('webglcontextrestored',restored);
+        reject(Error('恢复主三维画布超时'));
+      },5000);
+      canvas.addEventListener('webglcontextrestored',restored,{once:true});
+      graphicsExtension.restoreContext();
+    });
+  }
+  graphicsExtension=renderer.getContext().getExtension('WEBGL_lose_context');
+  buildEnvironment();
+  invalidate(true);
+  graphicsParked=false;
+  const pose=parkedPose;
+  parkedPose=null;
+  return pose;
+}
 async function enter(){
-  init(); active = true;
+  clearTimeout(graphicsIdleTimer);
+  init();
+  const restoredPose=await restoreGraphics();
+  active = true;
   opt.mode = 'orbit';
   renderer.setSize(SW(), SH()); labelRenderer.setSize(SW(), SH()); updateProjection();
-  // Keep the production scene while in 2D; signatures rebuild only edited inputs.
   sync();
   opt.mode = 'orbit'; orbit.enabled = false; showLabels(false);
-  const A = planPose(), B = isoFrom(A);
+  const A = planPose(), B = restoredPose || isoFrom(A);
   setPose(A);
   stage.classList.add('animating');
   startLoop(); renderScene();
@@ -1707,6 +1781,7 @@ async function exit(){
   selectionTransform?.update(false);
   closeCameraPanel();
   capturedImage=image();capturedState=JSON.stringify(state);
+  parkedPose=opt.mode==='orbit'?curPose():null;
   clearObservation();
   if (opt.mode === 'walk'){ walkCtl.unlock(); stopTouchWalk(); $('#hint3d').textContent = ''; $('#walkOverlay').style.display = 'none'; $('#cross').style.display = 'none';
     const dir = new THREE.Vector3(); camera.getWorldDirection(dir); orbit.target.copy(camera.position).addScaledVector(dir, 3).setY(0); opt.mode = 'orbit'; syncModeBtns(); }
@@ -1717,6 +1792,7 @@ async function exit(){
   await wait(160);
   active = false; cancelAnimationFrame(raf); raf = 0;
   stage.classList.remove('animating');
+  graphicsIdleTimer=setTimeout(parkGraphics,GRAPHICS_IDLE_MS);
 }
 
 /* ======================= 选择 / 拾取 ======================= */
@@ -2214,13 +2290,13 @@ async function automationCamera(options){
 function shot(){ const a = document.createElement('a'); a.download = tr('户型装修方案', 'floor-plan-design') + '-3D.png'; a.href = renderer.domElement.toDataURL('image/png'); a.click(); }
 function image(){if(globalThis.FurnishCatalog?.active())return null;if(globalThis.FurnishWorkflowTools?.styleId()||!inited||anim||stage.classList.contains('animating'))return null;if(!active)return capturedState===JSON.stringify(state)?capturedImage:null;renderScene();return renderer.domElement.toDataURL('image/png');}
 
-function relang(){ syncWalkTexts(); if (inited){updateProjection();buildLabels();buildHeaterClearances();} }
+function relang(){ syncWalkTexts(); if (inited&&!graphicsParked){updateProjection();buildLabels();buildHeaterClearances();} }
 // 户型切换后：重算中心、清空缓存签名，进入时强制重建
 function replan(){
   ui.sceneMove=false;
   clearObservation();
   clearSceneIssue();clearAnnotations(elevationG);selKey=null;
-  capturedImage=null;capturedState='';
+  capturedImage=null;capturedState='';parkedPose=null;
   computeCenter();
   sigArch = sigFurn = sigLabels = ''; fly = null;
   if (active) sync(true);

@@ -7,9 +7,41 @@
  const labels={leg:'凳腿','seat-apron':'座框','seat-end':'端框','shelf-end':'层架端撑','shoe-rod':'鞋架横杆',cushion:'软包',piping:'包边',strap:'织带','strap-top':'上织带','top-substrate':'木台面','white-stone':'岩板','leg-wing':'弯曲腿板','side-inlay':'桌腿中脊','leg-inner-cleat':'内侧横撑','leg-mount-block':'固定块','leg-fastener':'连接件',shelf:'层板','drawer-front':'抽屉前板','drawer-back':'抽屉背板','drawer-bottom':'抽屉底板','drawer-side':'抽屉侧板','finger-rebate':'指扣','shelf-seam':'拼缝'};
  const rule=f=>(root.FurnishProducts||require('./product-rules.js')).definition(f)?.solidModel;
  const supported=f=>!!f&&!f.obj&&!!rule(f);
- // Keep only the current shape/pose per live object beyond the bounded LRUs.
- // Values, not identity alone, validate every hit; removed instances can collect.
- const cache=new Map(),worldCache=new Map(),instanceCache=new WeakMap();
+ // Dense meshes vary widely in size. Limit both retained records and their
+ // estimated array storage. Per-instance reuse must not pin evicted meshes.
+ function meshCache(maxEntries,maxBytes){
+  const entries=new Map();
+  let bytes=0;
+  return {
+   get(key){
+    const entry=entries.get(key);
+    if(entry){entries.delete(key);entries.set(key,entry);}
+    return entry;
+   },
+   set(key,entry){
+    if(entry.bytes>maxBytes)return;
+    if(entries.has(key)){bytes-=entries.get(key).bytes;entries.delete(key);}
+    entries.set(key,entry);bytes+=entry.bytes;
+    while(entries.size>maxEntries||bytes>maxBytes){
+     const oldest=entries.keys().next().value;
+     bytes-=entries.get(oldest).bytes;
+     entries.delete(oldest);
+    }
+   }
+  };
+ }
+ const MiB=1024*1024;
+ const cache=meshCache(32,32*MiB),worldCache=meshCache(128,64*MiB);
+ const instanceCache=typeof WeakRef==='function'?new WeakMap():null;
+ function remember(f,key,local,worldKey,world){
+  if(instanceCache)instanceCache.set(f,{key,local:local&&new WeakRef(local),worldKey,world:new WeakRef(world)});
+ }
+ function estimateBytes(records){
+  // Estimate array headers, vertex triples, face arrays and reference slots.
+  // Counting shared arrays here deliberately keeps the budget conservative.
+  return records.reduce((total,{vertices,faces})=>total+192+vertices.length*56+
+   faces.reduce((bytes,face)=>bytes+32+face.length*8,0),0);
+ }
  function parts(f,{furniture=[],plan}={}){
   if(!supported(f))return null;
   if(f.pose3D){const R=root.FurnishProductPose||require('./product-pose.js');return R.parts(f,parts(R.source(f),{furniture,plan}));}
@@ -17,14 +49,17 @@
   // A world hit already contains the production vertices. Consult it before
   // rebuilding a local record evicted from the smaller geometry LRU.
   const worldKey=JSON.stringify([key,f.cx,f.cy,f.rot,f.flip]);
-  const instance=instanceCache.get(f);
-  if(instance?.worldKey===worldKey)return instance.result;
-  if(worldCache.has(worldKey)){const hit=worldCache.get(worldKey);worldCache.delete(worldKey);worldCache.set(worldKey,hit);instanceCache.set(f,{key,records:instance?.key===key?instance.records:cache.get(key),worldKey,result:hit});return hit;}
-  let records=instance?.key===key?instance.records:cache.get(key);
-  if(records){cache.delete(key);cache.set(key,records);if(cache.size>32)cache.delete(cache.keys().next().value);}
-  if(!records){
+  const instance=instanceCache?.get(f);
+  const hit=worldCache.get(worldKey)||(instance?.worldKey===worldKey?instance.world.deref():null);
+  if(hit){
+   if(instance?.worldKey!==worldKey)remember(f,key,cache.get(key),worldKey,hit);
+   return hit.parts;
+  }
+  let local=cache.get(key)||(instance?.key===key?instance.local?.deref():null);
+  if(!local){
    const model=root[r.global]||(typeof require==='function'?require('../render/'+r.module+'-model.js'):null);if(!model)throw Error('家具实体模型未加载：'+r.global);
-   const {T,Box,Rounded,transform}=adapter(),built=model.build(T,products.elevationSource(f),r.sliding?{corner}:r.rounded?Rounded:Box);records=[];
+   const {T,Box,Rounded,transform}=adapter(),built=model.build(T,products.elevationSource(f),r.sliding?{corner}:r.rounded?Rounded:Box);
+   const records=[];
    built.traverse(node=>{
     const g=node.geometry;if(!g)return;const data=g.attributes.position.array,min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];for(let i=0;i<data.length;i++){const axis=i%3;min[axis]=Math.min(min[axis],data[i]);max[axis]=Math.max(max[axis],data[i]);}if(min.some((v,i)=>max[i]-v<1e-10))return;const a=data,toWorld=transform(node),pool=new Map(),vertices=Array.from({length:a.length/3},(_,i)=>{const point=a.slice(i*3,i*3+3),key=point.map(v=>Object.is(v,-0)?'-0':String(v)).join(',');let vertex=pool.get(key);if(!vertex){vertex=toWorld(point).map(v=>v*1000);pool.set(key,vertex);}return vertex;}),name=Object.entries(node.userData).find(([key,v])=>key.endsWith('Part')&&typeof v==='string')?.[1]||'结构';
     const add=(vs,faces)=>records.push({vertices:vs,faces,boardName:labels[name]||'结构件',partRole:name,actualBoard:true});
@@ -36,7 +71,8 @@
     else if(g.faces)add(vertices,g.faces);
     else{const index=g.index||[];add(vertices,Array.from({length:index.length/3},(_,i)=>index.slice(i*3,i*3+3)));}
    });
-   cache.set(key,records);if(cache.size>32)cache.delete(cache.keys().next().value);
+   local={parts:records,bytes:estimateBytes(records)};
+   cache.set(key,local);
   }
   // Repeated plan labels, clearances and collisions share immutable world
   // records. Use the production key plus every world transform input.
@@ -45,9 +81,11 @@
   // Records are immutable. Share repeated triples without changing vertex order,
   // face indices, double precision or the public arrays' cardinality.
   const transformed=new WeakMap();
-  const result=records.map((r,i)=>{let bottom=Infinity,top=-Infinity;const vertices=r.vertices.map(point=>{let vertex=transformed.get(point);if(!vertex){let [x,y,z]=point;x*=f.flip?-1:1;vertex=[(f.cx||0)+x*c-z*s,y+base,(f.cy||0)+x*s+z*c];transformed.set(point,vertex);}bottom=Math.min(bottom,vertex[1]);top=Math.max(top,vertex[1]);return vertex;});return {...r,vertices,boardKey:'furniture:'+i,p:M.section({vertices,faces:r.faces},null),vertical:{bottom,top,source:'production-mesh'}};});
-  instanceCache.set(f,{key,records,worldKey,result});
-  worldCache.set(worldKey,result);if(worldCache.size>128)worldCache.delete(worldCache.keys().next().value);return result;
+  const result=local.parts.map((r,i)=>{let bottom=Infinity,top=-Infinity;const vertices=r.vertices.map(point=>{let vertex=transformed.get(point);if(!vertex){let [x,y,z]=point;x*=f.flip?-1:1;vertex=[(f.cx||0)+x*c-z*s,y+base,(f.cy||0)+x*s+z*c];transformed.set(point,vertex);}bottom=Math.min(bottom,vertex[1]);top=Math.max(top,vertex[1]);return vertex;});return {...r,vertices,boardKey:'furniture:'+i,p:M.section({vertices,faces:r.faces},null),vertical:{bottom,top,source:'production-mesh'}};});
+  const world={parts:result,bytes:local.bytes+result.reduce((bytes,part)=>bytes+part.p.length*48,0)};
+  worldCache.set(worldKey,world);
+  remember(f,key,local,worldKey,world);
+  return result;
  }
  const api={supported,parts};root.FurnishFurnitureSolids=api;if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
