@@ -432,6 +432,12 @@ function bindFurnPanel(f){
    const heading=document.querySelector('.furniture-property-card h3');
    heading?.insertAdjacentHTML('afterend',`<div class="form" data-bottom-elevation><label class="full">${tr('底部离地高度','Bottom above floor')} (mm)<input id="fBottomElevation" type="number" min="0" max="20000" step="1" value="${FurnishProducts.bottomHeight(f)}" ${furnitureLocked(f)?'disabled':''}></label>${FurnishProducts.bottomMode(f)==='surface'&&f.counterLink?`<p class="muted full">${tr('修改后解除台面跟随，保留设备并单独调整安装高度。','Changing this detaches countertop following and adjusts the device height independently.')}</p>`:''}</div>`);
   }
+  const rack=FurnishProducts.dryingRackLayout(f);
+  if(rack){
+   const heading=document.querySelector('.furniture-property-card h3');
+   const limit=FurnishProducts.definition(f).dryingRack.maxDrop;
+   heading?.insertAdjacentHTML('afterend',`<div class="form"><label class="full">${tr('晾杆下降量（顶座固定）','Rack drop (ceiling seats stay fixed)')} (mm)<input id="fDryingRackDrop" type="number" min="0" max="${Math.min(limit,rack.bottom+rack.drop)}" step="1" value="${rack.drop}" ${furnitureLocked(f)?'disabled':''}></label></div>`);
+  }
   groupFurnitureDimensions(f);
   document.querySelectorAll('[data-paper-array]').forEach(el=>el.onchange=()=>{try{const current=getF(f.id);if(furnitureLocked(current))throw Error('家具已锁定，请先解锁');if(!el.value.trim())throw Error('请输入有效参数');const key=el.dataset.paperArray,value=el.tagName==='SELECT'?el.value:Number(el.value),patch=['count','layers','rows','columns'].includes(key)?FurnishProducts.arrayQuantityEdit(FurnishProducts.paperArrayConfig(current).count,FurnishProducts.paperArrayConfig(current),key,value,FurnishProducts.definition(current).paperArray):{[key]:value};if(!Object.keys(patch).length)return;const next=FurnishProducts.editPaperArray(current,patch);upd(g=>Object.assign(g,next));}catch(error){toast(error.message);renderPanel();}});
   if(f.paperArray)for(const el of document.querySelectorAll('#fW,#fD,#fH')){el.disabled=true;el.title='通过纸品阵列参数调整整体尺寸';}
@@ -472,6 +478,7 @@ function bindFurnPanel(f){
   const priceField=$('#fP');if(priceField)priceField.onchange=e=>{const text=e.target.value.trim(),value=Number(text);if(text!==''&&(!Number.isFinite(value)||value<0)){toast(tr('请输入非负单价，留空恢复参考价或待填写状态','Enter a nonnegative price; clear to restore reference or unknown price'));renderPanel();return;}upd(g=>{if(text==='')delete g.price;else g.price=Math.round(value);});};
   const embedWall=$('#fEmbedWall');if(embedWall)embedWall.onclick=()=>{try{if(furnitureLocked(getF(f.id)))throw Error('家具已锁定，请先解锁');upd(g=>Object.assign(g,FurnishElectricalBox.embed(g,FurnishProject.effectivePlan(PLAN,state))));}catch(e){toast(e.message);}};
   num('#fGlassDepth',(g,v)=>Object.assign(g,FurnishDesign.resizeFurniture(g,{d:v})));
+  num('#fDryingRackDrop',(g,v)=>{if(furnitureLocked(g))throw Error('家具已锁定，请先解锁');Object.assign(g,FurnishProducts.editDryingRackDrop(g,v));});
   num('#fH', (g,v) => {if(g.type==='mirror'&&v<50)throw Error('穿衣镜高度须为 50–20000 mm');Object.assign(g,FurnishDesign.resizeFurniture(g,{h:g.type.startsWith('robot_p20max')?Math.round(v*10)/10:Math.round(v)}));});
   num('#fShowerMixerHeight',(g,v)=>{FurnishDesign.products().validateField(g,'showerMixerHeight',v);g.showerMixerHeight=v;delete g.mountHeight;});
   num('#fShowerRise',(g,v)=>{FurnishDesign.products().validateField(g,'showerRise',v);g.showerRise=v;});

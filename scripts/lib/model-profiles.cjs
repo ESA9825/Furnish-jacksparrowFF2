@@ -8,6 +8,7 @@ const originalTypes=new Set('bed crib nightstand wardrobe dresser desk chest cha
 const assetTypes={'pet-bowl':'pet_bowl_petstar_180','litter-bag':'cat_litter_yanxuan_25kg','cat-tower':'cat_tower_jd_10141711472484','fan-x231':'fan_airmate_fa18_x231','chair-vihals':'chair_ikea_vihals','chair-s05118':'chair_yeswood_s05118','sofa-bed':'sofa_bed_yeswood_y107h03',se2:'bath_heater_aopu_se2',y52y09:'bookshelf_yeswood_y52y09',fridge:'fridge_french_drawer',dishwasher:'dishwasher_mijia_countertop',hood:'rangehood_fotile_jcd10ta',washer:'washer','washer-tg10k60w':'washer_littleswan_tg10k60w','side-table':'sidetable_tmall_635382906309',armchair:'armchair_yeswood_y09hs','armchair-berlin':'armchair_yeswood_berlin','stack-stool':'stool_citylong_370'};
 assetTypes['downlight-labot-ip65']='downlight_labot_ip65_7w';
 assetTypes['desk-lamp-mijia-pro']='desk_lamp_mijia_pro';
+assetTypes['drying-rack-hotata-y024']='drying_rack_hotata_y024';
 assetTypes['acwall-midea-mxc3p']='acwall_midea_mxc3p';
 assetTypes['track-socket-bull-gb50k']='track_socket_bull_gb50k';
 const suites={
@@ -25,6 +26,7 @@ const suites={
 suites['downlight-labot-ip65']=['downlight-labot'];
 suites['acwall-midea-mxc3p']=['acwall-midea'];
 suites['track-socket-bull-gb50k']=['track-socket-bull-gb50k'];
+suites['drying-rack-hotata-y024']=['drying-rack-hotata'];
 suites['desk-lamp-mijia-pro']=['desk-lamp'];suites.cove_light=['cove-light'];
 const mijiaCeilingLights=require('./mijia-ceiling-light-specs.json');
 for(const [id,spec] of Object.entries(mijiaCeilingLights)){assetTypes[id]=spec.type;suites[id]=['lighting-preview'];}
@@ -52,6 +54,7 @@ function itemFixture(item){const f={type:item[0],name:item[1],w:item[2],d:item[3
 function operate(f){
  f=copy(f);const d=P.definition(f)||{};
  if(d.circulator)Object.assign(f,{h:d.circulator.presets[0],mountHeight:760});
+ else if(d.dryingRack)return P.editDryingRackDrop(f,900);
  else if(d.feedingFrame)f.petTrayOpen=true;
  else if(d.foldingChairProfile)f.foldingChairFolded=true;
  else if(d.sofaBedProfile)f.sofaBedOpen=true;
@@ -104,7 +107,7 @@ function profiles(){
  out.push({id:'kitchen--tall',type:'counter',route:'parametric',fixture:kitchen,tests:['kitchen-tall','kitchen']});
  for(const shape of ['L','U']){const modules=[{run:0,width:900,role:'hob'},{run:0,width:600,role:'drawer'},{run:1,width:700,role:'door'},{run:1,width:500,role:'door'},...(shape==='U'?[{run:2,width:900,role:'sink'}]:[])],f=K.configure({id:'model-pilot',name:shape+'形厨房',type:'counter',cx:0,cy:0,rot:0,color:'#f3f1ec'},{version:1,shape,depth:600,counterDepth:630,baseHeight:820,thickness:20,modules});out.push({id:'kitchen--'+shape,type:'counter',route:'parametric',fixture:f,tests:['kitchen-u','kitchen-resize','kitchen-corner-fit']});}
  const vessel=items.find(i=>i[10]==='vessel-sink');out.push({id:'sink--vessel',type:'ksink',route:'parametric',fixture:{...itemFixture(vessel),...K.catalogSpec(vessel)},tests:['sink','sink-surface','laundry-resize-vessel']});
- for(const p of out){p.fixture={id:'model-pilot',cx:0,cy:0,rot:0,flip:false,...p.fixture};if(!p.fixture.h)p.fixture.h=P.height(p.fixture);p.fixture=copy(p.fixture);if(P.definition(p.fixture)?.ceilingPanel||P.definition(p.fixture)?.downlight||P.definition(p.fixture)?.panelLight?.asset)p.detailView='underside';p.resizePolicy=p.type==='tv'?'coupled-screen':'independent';p.alternate=operate(p.fixture);p.alternateKind=p.id==='stack-stool'?'nested-stack':JSON.stringify(p.fixture)!==JSON.stringify(p.alternate)?'operating':'back';for(const name of p.tests)if(!fs.existsSync(path.join(root,'tests/test-'+name+'.cjs')))throw Error('Missing suite '+name);}
+ for(const p of out){p.fixture={id:'model-pilot',cx:0,cy:0,rot:0,flip:false,...p.fixture};if(!p.fixture.h)p.fixture.h=P.height(p.fixture);p.fixture=copy(p.fixture);if(P.definition(p.fixture)?.dryingRack||P.definition(p.fixture)?.ceilingPanel||P.definition(p.fixture)?.downlight||P.definition(p.fixture)?.panelLight?.asset)p.detailView='underside';p.resizePolicy=p.type==='tv'?'coupled-screen':'independent';p.alternate=operate(p.fixture);p.alternateKind=p.id==='stack-stool'?'nested-stack':JSON.stringify(p.fixture)!==JSON.stringify(p.alternate)?'operating':'back';for(const name of p.tests)if(!fs.existsSync(path.join(root,'tests/test-'+name+'.cjs')))throw Error('Missing suite '+name);}
  return out;
 }
 module.exports={profiles,sourceFiles,operate,originalTypes,assetTypes};

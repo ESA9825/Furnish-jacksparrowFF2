@@ -6,7 +6,7 @@
 
 更新：`node scripts/index-model-assets.cjs --write`；核对：`node scripts/index-model-assets.cjs --check`。
 
-82份产品／设计档案，363张参考图，20张历史原图待补；55组Blender模型。参数化验证配置92组，全部家具库188条目／160种类型。
+83份产品／设计档案，364张参考图，20张历史原图待补；56组Blender模型。参数化验证配置92组，全部家具库191条目／161种类型。
 
 | 产品／设计资料 | 参考图 | 输出／构造 | 待补原图 |
 |---|---|---|---|
@@ -35,6 +35,7 @@
 | [米家-台式5套洗碗机](dishwasher/README.md) | 0 | [BLEND](dishwasher/dishwasher-v1.blend) · [GLB](dishwasher/dishwasher-v1.glb) | 3 |
 | [飞利浦-DL269-筒灯](downlight-dl269/README.md) | 8 | 参数化 | 0 |
 | [拉伯塔IP65防水筒灯7W全白4000K](downlight-labot-ip65/README.md) | 21 | [BLEND](downlight-labot-ip65/v1/downlight-labot-ip65-v1.blend) · [GLB](downlight-labot-ip65/v1/downlight-labot-ip65-v1.glb) | 3 |
+| [好太太手摇升降晾衣架 Y024 · 米粉2.4米四杆](drying-rack-hotata-y024/README.md) | 1 | [BLEND](drying-rack-hotata-y024/v1/drying-rack-hotata-y024-v1.blend) · [GLB](drying-rack-hotata-y024/v1/drying-rack-hotata-y024-v1.glb) | 0 |
 | [定制玄关置物台柜](entry-console/README.md) | 1 | 参考资料 | 0 |
 | [定制玄关洞洞板柜](entry-pegboard/README.md) | 1 | 参考资料 | 0 |
 | [艾美特 小暴风 PRO FA18-X231 空气循环扇](fan-x231/README.md) | 3 | [BLEND](fan-x231/v2/fan-x231-v1.blend) · [GLB](fan-x231/v2/fan-x231-v1.glb) | 0 |

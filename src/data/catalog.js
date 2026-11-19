@@ -238,7 +238,8 @@ const LIB = [
     ['cat_litter_yanxuan_25kg','网易严选 猫砂2.5kg袋 · 250×220×80',250,220,'#eeede8',undefined,80],
     ["pet_feeder_mijia_2","米家智能宠物喂食器 2",220,324,"#efeee8",0,products.height({type:"pet_feeder_mijia_2"})],
     ["litter_box","封闭式猫砂盆",440,510,"#eeede5",0,products.height({type:"litter_box"})],
-    ["dryingrack","晾衣架",1400,550,"#cfd6d9",500]
+    ["dryingrack","晾衣架",1400,550,"#cfd6d9",500],
+    ['drying_rack_hotata_y024','好太太手摇升降晾衣架 Y024 · 米粉2.4米四杆',2444,530,'#e5d6ac',undefined,products.height({type:'drying_rack_hotata_y024'})]
   ]},
   {cat:'柜体搭建',items:[['cabinet','乐高式柜体 · 拖入组件搭建',600,450,'#f3f1ec',undefined,720,null,null,'builder']]},
 ];
@@ -299,7 +300,7 @@ function navigationCategory(it,cat){
  if(it[0]==='vanity')return 'cabinetry/vanity';
  if(['counter','kitchenwall','ovencol'].includes(it[0]))return 'cabinetry/custom';
  if(['ksink','sink_arrow_680','sink_arrow_750'].includes(it[0]))return 'fixtures/sinks';
- if(it[0]==='dryingrack')return 'other/drying';
+ if(it[0]==='dryingrack'||products.definition(it[0])?.dryingRack)return 'other/drying';
  for(const [id,types]of Object.entries(navigationTypeGroups))if(types.includes(it[0]))return id;
  return {'床':'furniture/beds','沙发':'furniture/sofas','桌 · 台':'furniture/tables','椅 · 凳':'furniture/seating','柜体':'cabinetry/storage','柜体搭建':'cabinetry/storage','电器':'appliances/living','灯具':'decor/lighting','布艺':'decor/textiles','装饰':'decor/accessories','门窗 · 隔断':'fixtures/openings','卫浴 · 水槽':'fixtures/sanitary','宠物':'other/pets','运动 · 乐器':'other/leisure'}[cat]||'other/general';
 }
@@ -315,7 +316,7 @@ const useTypes={
  dining:['chair_ikea_vihals','table','table_folding_1100','table_folding_1200','table_folding_1300','roundtable','chair','barstool','island','cabinet','pendant'],
  study:['chair_ikea_vihals','quartz_sill','window_surround','chair_yeswood_s05118','stool_citylong_370','desk','chair','officechair','bookshelf','bookshelf_yeswood_y52y09','bookshelf_yeswood_y00y06','bookshelf_yeswood_y00y06058','armchair','floorlamp'],
  kitchen:['panel_light_300x600','stove','stove_fotile_th36b','rangehood_fotile_jcd10ta','fridge','fridge_french_drawer','dishwasher','dishwasher_mijia_countertop','water_purifier_mijia_1200g','ksink','sink_arrow_680','sink_arrow_750','ovencol','kitchenwall','island'],
- laundry:['washer_littleswan_tg10k60w','washer','dryer','dryingrack','robot_p20max','robot_p20max_tank','robot_p20max_plumbed'],
+ laundry:['washer_littleswan_tg10k60w','washer','dryer','dryingrack','drying_rack_hotata_y024','robot_p20max','robot_p20max_tank','robot_p20max_plumbed'],
  bathroom:['bath_heater_aopu_se2','bath_heater_300x600','vanity','toilet','shower','shower_arrow_cream','bathtub','waterheater','waterheater_flat'],
  entry:['electrical_box_strong','electrical_box_weak','shoecab','bench_yeswood_oak','bench','mirror'],pet:[...petTypes]
 };

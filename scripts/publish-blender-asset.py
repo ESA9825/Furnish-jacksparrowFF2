@@ -14,7 +14,7 @@ import sys
 
 def publish(source, target, profile='se2', spec=None):
     supply=json.loads((pathlib.Path(__file__).parent/'lib/storage-supply-specs.json').read_text(encoding='utf-8')).get(profile)
-    if profile in ('desk-lamp-mijia-pro','acwall-midea-mxc3p','downlight-labot-ip65','track-socket-bull-gb50k'):supply=json.loads((pathlib.Path(__file__).parent/('lib/'+profile+'-spec.json')).read_text(encoding='utf-8'))
+    if profile in ('desk-lamp-mijia-pro','acwall-midea-mxc3p','downlight-labot-ip65','track-socket-bull-gb50k','drying-rack-hotata-y024'):supply=json.loads((pathlib.Path(__file__).parent/('lib/'+profile+'-spec.json')).read_text(encoding='utf-8'))
     if not supply:
         supply=json.loads((pathlib.Path(__file__).parent/'lib/mijia-ceiling-light-specs.json').read_text()).get(profile)
     if not supply and profile not in ('pet-bowl','litter-bag','se2', 'y52y09', 'fridge', 'dishwasher', 'hood', 'washer', 'washer-tg10k60w', 'side-table', 'armchair', 'armchair-berlin', 'cat-tower', 'fan-x231', 'chair-s05118', 'stack-stool', 'corner-bookcase', 'corner-bookcase-580', 'sofa-bed'):

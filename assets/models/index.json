@@ -2,13 +2,13 @@
   "format": 2,
   "description": "Generated repository index; paths relative to repository root. This is metadata, not the application loading manifest.",
   "counts": {
-    "blenderModels": 55,
+    "blenderModels": 56,
     "parametricVerificationConfigurations": 92,
-    "verificationConfigurations": 147,
-    "catalogEntries": 188,
-    "catalogTypes": 160,
-    "productDossiers": 82,
-    "referenceImages": 363,
+    "verificationConfigurations": 148,
+    "catalogEntries": 191,
+    "catalogTypes": 161,
+    "productDossiers": 83,
+    "referenceImages": 364,
     "missingReferences": 20
   },
   "models": [
@@ -262,7 +262,7 @@
     {
       "profile": "chair-vihals",
       "type": "chair_ikea_vihals",
-      "name": "宜家 VIHALS 维哈斯折叠椅（白色／展开）",
+      "name": "宜家 VIHALS 维哈斯折叠椅（绿色）",
       "sizeMm": [
         430,
         470,
@@ -1165,6 +1165,49 @@
         "assets/models/desk-lamp-mijia-pro/references/product-page/mi-product-5.png",
         "assets/models/desk-lamp-mijia-pro/references/product-page/mi-product-6.png",
         "assets/models/desk-lamp-mijia-pro/references/product-page/mi-product-specs-reproduced.jpg"
+      ]
+    },
+    {
+      "profile": "drying-rack-hotata-y024",
+      "type": "drying_rack_hotata_y024",
+      "name": "好太太手摇升降晾衣架 Y024 · 米粉2.4米四杆",
+      "sizeMm": [
+        2444,
+        530,
+        460
+      ],
+      "parts": 28,
+      "runtimeVersion": 1,
+      "runtime": {
+        "path": "src/data/drying-rack-hotata-y024-blender-asset.js",
+        "sha256": "1b846c159e423059e2a4e0c787bdf3e736ef6d5b421a56d36bff95b4bfe64564",
+        "normalization": "utf8-lf"
+      },
+      "sourceSha256": "7704ff166bf438fa99b36b518fbd243ad319fae7929e4575a12ed1df03710dd7",
+      "current": {
+        "blend": "assets/models/drying-rack-hotata-y024/v1/drying-rack-hotata-y024-v1.blend",
+        "glb": "assets/models/drying-rack-hotata-y024/v1/drying-rack-hotata-y024-v1.glb"
+      },
+      "document": "docs/DRYING-RACK-HOTATA-Y024.md",
+      "constructor": "src/render/drying-rack-model.js",
+      "author": "scripts/blender-model-drying-rack-hotata-y024.py",
+      "files": [
+        {
+          "path": "assets/models/drying-rack-hotata-y024/v1/drying-rack-hotata-y024-v1.blend",
+          "role": "published-source",
+          "sha256": "295009728bddff09f47de7fb7fbe92a024d292d01b707ca9af376d62b79fc09f",
+          "bytes": 135894
+        },
+        {
+          "path": "assets/models/drying-rack-hotata-y024/v1/drying-rack-hotata-y024-v1.glb",
+          "role": "published-source",
+          "sha256": "7704ff166bf438fa99b36b518fbd243ad319fae7929e4575a12ed1df03710dd7",
+          "bytes": 216184
+        }
+      ],
+      "dossier": "assets/models/drying-rack-hotata-y024/asset.json",
+      "references": [
+        "assets/models/drying-rack-hotata-y024/references/product-page/jd-100220349957.jpg"
       ]
     },
     {
@@ -6949,6 +6992,37 @@
     },
     {
       "format": 1,
+      "id": "drying-rack-hotata-y024",
+      "name": "好太太手摇升降晾衣架 Y024 · 米粉2.4米四杆",
+      "types": [
+        "drying_rack_hotata_y024"
+      ],
+      "route": "blender",
+      "document": "docs/DRYING-RACK-HOTATA-Y024.md",
+      "sourceLinks": [
+        "https://item.jd.com/100220349957.html",
+        "https://www.jd.com/xinghao/984715ff66aa6c7ea6e2.html",
+        "https://img30.360buyimg.com/n0/jfs/t1/568134/38/10495/72248/6af6a0d8Fdf546dcb/00833203200afea2.jpg"
+      ],
+      "references": [
+        {
+          "path": "references/product-page/jd-100220349957.jpg",
+          "kind": "product-page",
+          "url": "https://img30.360buyimg.com/n0/jfs/t1/568134/38/10495/72248/6af6a0d8Fdf546dcb/00833203200afea2.jpg",
+          "sha256": "52afa8d87eca260dba0b4ec4a3a4eb7e932cd1b71dac332561b90facd5c419ee",
+          "bytes": 126606,
+          "legacyPaths": []
+        }
+      ],
+      "missingReferences": [],
+      "validation": [
+        "docs/validation/drying-rack-hotata-y024-visual-20261119/README.md"
+      ],
+      "manifest": "assets/models/drying-rack-hotata-y024/asset.json",
+      "readme": "assets/models/drying-rack-hotata-y024/README.md"
+    },
+    {
+      "format": 1,
       "id": "entry-console",
       "name": "定制玄关置物台柜",
       "types": [],
@@ -10567,7 +10641,7 @@
     {
       "id": "sofa_yeswood_cherry",
       "type": "sofa_yeswood_cherry",
-      "name": "源氏木语 樱桃木三人沙发 2.16m（梨白）",
+      "name": "源氏木语 樱桃木三人沙发 2.16m（灯芯绒松绿）",
       "module": "yeswood-sofa"
     },
     {
@@ -11573,6 +11647,15 @@
     },
     {
       "category": "沙发",
+      "type": "sofa_yeswood_cherry",
+      "name": "源氏木语 樱桃木三人沙发 2.16m（灯芯绒松绿）",
+      "w": 2160,
+      "d": 892,
+      "h": 895,
+      "module": "yeswood-sofa"
+    },
+    {
+      "category": "沙发",
       "type": "sofa",
       "name": "三人沙发",
       "w": 2400,
@@ -11841,6 +11924,15 @@
       "category": "椅 · 凳",
       "type": "chair_ikea_vihals",
       "name": "宜家 VIHALS 维哈斯折叠椅（白色／展开）",
+      "w": 430,
+      "d": 470,
+      "h": 800,
+      "module": "folding-chair"
+    },
+    {
+      "category": "椅 · 凳",
+      "type": "chair_ikea_vihals",
+      "name": "宜家 VIHALS 维哈斯折叠椅（绿色）",
       "w": 430,
       "d": 470,
       "h": 800,
@@ -12609,6 +12701,15 @@
       "w": 1400,
       "d": 550,
       "module": "legacy-furniture"
+    },
+    {
+      "category": "生活用品",
+      "type": "drying_rack_hotata_y024",
+      "name": "好太太手摇升降晾衣架 Y024 · 米粉2.4米四杆",
+      "w": 2444,
+      "d": 530,
+      "h": 460,
+      "module": "drying-rack"
     },
     {
       "category": "柜体搭建",

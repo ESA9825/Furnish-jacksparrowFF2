@@ -479,6 +479,7 @@
   <script data-src="src/data/mijia-ceiling-l60-blender-asset.js" data-asset="FurnishMijiaCeilingL60"></script>
   <script data-src="src/data/mijia-ceiling-d40-blender-asset.js" data-asset="FurnishMijiaCeilingD40"></script>
   <script data-src="src/data/mijia-ceiling-d30-blender-asset.js" data-asset="FurnishMijiaCeilingD30"></script>
+  <script data-src="src/data/drying-rack-hotata-y024-blender-asset.js" data-asset="FurnishHotataY024Asset"></script>
   <script data-src="src/data/mijia-ceiling-d20-blender-asset.js" data-asset="FurnishMijiaCeilingD20"></script>
   <script data-src="src/data/desk-lamp-mijia-pro-blender-asset.js" data-asset="FurnishMijiaDeskLampAsset"></script>
   <script data-src="src/data/acwall-midea-mxc3p-blender-asset.js" data-asset="FurnishMXC3PAsset"></script>
@@ -506,6 +507,7 @@
 <script src="src/render/ceiling-model.js"></script>
 <script src="src/render/downlight-model.js"></script>
 <script src="src/render/static-asset-model.js"></script>
+<script src="src/render/drying-rack-model.js"></script>
 <script src="src/render/pet-supply-model.js"></script>
 <script src="src/render/storage-supply-model.js"></script>
 <script src="src/render/panel-bull-g12-model.js"></script>
@@ -1007,6 +1009,7 @@ const syncIdentity=FurnishPartIdentity;
   if(FurnishDownlightModel.supported(f)){const model=FurnishDownlightModel.build(THREE,f);model.position.set(wx(f.cx),0,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.scale.x=f.flip?-1:1;model.userData.fid=f.id;return model;}
   if(FurnishCoveLightModel.supported(f)){const model=FurnishCoveLightModel.build(THREE,f);model.position.set(wx(f.cx),0,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.scale.x=f.flip?-1:1;model.userData.fid=f.id;return model;}
   if(FurnishMideaWallAirconModel.supported(f)){const model=FurnishMideaWallAirconModel.build(THREE,f);model.position.set(wx(f.cx),0,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.scale.x=f.flip?-1:1;model.userData.fid=f.id;return model;}
+  if(FurnishProducts.dryingRackLayout(f)){const model=FurnishDryingRackModel.build(THREE,f);model.position.set(wx(f.cx),0,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.scale.x=f.flip?-1:1;model.userData.fid=f.id;return model;}
   if(FurnishDeskLampModel.supported(f)){const model=FurnishDeskLampModel.build(THREE,f);model.position.set(wx(f.cx),0,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.scale.x=f.flip?-1:1;model.userData.fid=f.id;return model;}
   const furniture=context.furniture||(typeof state!=='undefined'?state.furniture.filter(item=>typeof furnitureError!=='function'||!furnitureError(item)):[]);
   if(f.obj?.positions?.length){

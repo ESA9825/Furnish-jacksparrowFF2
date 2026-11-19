@@ -1,0 +1,39 @@
+{
+  "type": "drying_rack_hotata_y024",
+  "size": [
+    2444,
+    460,
+    530
+  ],
+  "global": "FurnishHotataY024Asset",
+  "parts": [
+    "ceiling-window-left",
+    "ceiling-window-right",
+    "ceiling-room-left",
+    "ceiling-room-right",
+    "moving-window-hang-rail",
+    "moving-window-quilt-rail",
+    "moving-window-link-left",
+    "moving-window-hang-cap-left",
+    "moving-window-quilt-cap-left",
+    "moving-window-hanger-left",
+    "cable-window-left",
+    "moving-window-link-right",
+    "moving-window-hang-cap-right",
+    "moving-window-quilt-cap-right",
+    "moving-window-hanger-right",
+    "cable-window-right",
+    "moving-room-hang-rail",
+    "moving-room-quilt-rail",
+    "moving-room-link-left",
+    "moving-room-hang-cap-left",
+    "moving-room-quilt-cap-left",
+    "moving-room-hanger-left",
+    "cable-room-left",
+    "moving-room-link-right",
+    "moving-room-hang-cap-right",
+    "moving-room-quilt-cap-right",
+    "moving-room-hanger-right",
+    "cable-room-right"
+  ]
+}

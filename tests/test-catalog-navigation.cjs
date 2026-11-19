@@ -11,7 +11,7 @@ assert(leaf('cabinetry/custom').some(it=>it[0]==='counter'&&C.itemUses(it).inclu
 assert(leaf('cabinetry/custom').some(it=>it[0]==='counter'&&C.itemUses(it).includes('kitchen')));
 assert(leaf('fixtures/sinks').some(it=>C.itemUses(it).includes('laundry')));
 assert(leaf('fixtures/sinks').some(it=>it[0]==='sink_arrow_680'));
-assert(leaf('other/drying').every(it=>it[0]==='dryingrack'));
+assert.deepEqual(leaf('other/drying').map(it=>it[0]),['dryingrack','drying_rack_hotata_y024']);
 assert(leaf('cabinetry/storage').every(it=>!['pipebox','vanity','counter'].includes(it[0])));
 const custom=['custom','旧自定义',800,400,'#fff',0,undefined,'c1'],unknown=['new-type','新条目',600,600];
 const extra=C.navigation([{cat:'未来目录',items:[custom,unknown]}]).flatMap(g=>g.children);

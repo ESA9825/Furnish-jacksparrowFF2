@@ -321,6 +321,15 @@ if(t==='pocketdoor_double'||t==='pocketdoor_triple'){
     case 'mirror': return rc(x,y,w,d,c,'rx="14"')
       + `<line x1="${x+w*.28}" y1="${y+d*.15}" x2="${x+w*.68}" y2="${y+d*.85}" stroke="#fff" stroke-width="9" opacity=".7" vector-effect="non-scaling-stroke"/>`
       + `<line x1="${x+w*.44}" y1="${y+d*.1}" x2="${x+w*.78}" y2="${y+d*.58}" stroke="#fff" stroke-width="5" opacity=".5" vector-effect="non-scaling-stroke"/>`;
+    case 'drying_rack_hotata_y024': {
+      const spec=products.definition(t).dryingRack;
+      const seatWidth=spec.seatDiameter*w/spec.width,seatDepth=spec.seatDiameter*d/spec.depth;
+      return [-1,1].map(side=>{
+        const z=side*spec.rowSpacing*d/spec.depth/2;
+        return ln(x,z,x+w,z,'stroke-dasharray="8 3"')+[-1,1].map(end=>
+          ec(end*spec.seatSpacing*w/spec.width/2,z,seatWidth/2,seatDepth/2,c)).join('');
+      }).join('');
+    }
     case 'dryingrack': {
       let s = ln(x,y,x+w,y);
       for (let i = 0; i < 6; i++) s += ln(x+w*(i+.35)/6, y, x+w*(i+.35)/6, y+d*.9);
