@@ -1293,7 +1293,7 @@ const syncIdentity=FurnishPartIdentity;
     case 'pocketdoor_triple': case 'pocketdoor_double': case 'slidingdoor': case 'telescopicdoor20': case 'doubleslidingdoor': case 'tripleslidingdoor': case 'tripleslidingwindow': {
       const model=slidingModels.build(f,{furniture,...context});g.add(...model.children.slice());g.userData.slidingDoor=model.userData.slidingDoor;break;
     }
-    case 'curtain_mijia_3_pro': case 'curtain_sheer': case 'blind_venetian': case 'blind_honeycomb': case 'blind_zebra': case 'blind_bamboo': case 'blind_roller': {
+    case 'curtain_mijia_3_pro_sheer': case 'curtain_mijia_3_pro': case 'curtain_sheer': case 'blind_venetian': case 'blind_honeycomb': case 'blind_zebra': case 'blind_bamboo': case 'blind_roller': {
       const model=FurnishWindowCoveringModel.build(THREE,f);g.add(...model.children.slice());g.userData.covering=model.userData.covering;break;
     }
     case 'curtain': {

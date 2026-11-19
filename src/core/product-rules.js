@@ -162,6 +162,15 @@ const foldingTable={solidModel:{global:'FurnishFoldingTableModel',module:'foldin
 const electricalBox={family:'electrical-box',wallRecess:true,height:400,anchor:'bottom',defaults:{mountHeight:1200},fields:['mountHeight'],create:['mountHeight']};
 // Generic made-to-measure covering assumptions, not a manufacturer's installation specification.
 const covering={defaultFrontClearance:0,family:'window-covering',height:1800,anchor:'bottom',defaults:{mountHeight:900,curtainOpen:0},fields:['mountHeight','curtainOpen'],create:['mountHeight','curtainOpen'],solidModel:{global:'FurnishWindowCoveringModel',module:'window-covering',base:'mountHeight'}};
+function mijiaCurtain(kind,fabric){
+ return {
+  ...covering,kind,height:2400,defaults:{mountHeight:0,curtainOpen:0},
+  footprintMin:{w:300,d:59},clearanceReview:'missing',
+  solidModel:{...covering.solidModel,geometryVersion:1},
+  covering:{kind:fabric,soft:true,motor:{size:[111,93,59],minHeight:150,trackDepth:32,trackHeight:27}},
+  identity:{brand:'米家',model:'米家智能窗帘 3 Pro · MJZNCL08LM',sourceUrl:'https://item.jd.com/100341996966.html'},
+ };
+}
 const coverSpecs={head:50,hem:14,cellPitch:30,slatPitch:38,slatThickness:1.5,band:90,bambooPitch:10,sheet:1};
 function mijiaCeiling(model,asset,global,lumens,sourceUrl){
  const round=model.startsWith('D');
@@ -211,13 +220,8 @@ const types={
  armchair_yeswood_berlin:{height:845,family:'lounge-chair',armchairProfile:'berlin',solidModel:{global:'FurnishArmchairModel',module:'armchair'},identity:{brand:'源氏木语/YESWOOD',model:'柏林休闲沙发椅 · 米色 · 710×850×845'}},
  armchair_yeswood_y09hs:{height:905,armchairProfile:'original',family:'lounge-chair',solidModel:{global:'FurnishArmchairModel',module:'armchair'},identity:{brand:'源氏木语/YESWOOD',model:'单人沙发椅 · 亚麻色 · 725×900×905',sourceUrl:'https://detail.tmall.com/item.htm?id=1013742104698&mi_id=0000YOu__P7FO1Od4DVMBOKIdVmXewhzkN4eAYmXTAOn9nU&skuId=6131810120970&spm=tbpc.boughtlist.suborder_itemtitle.1.24b02e8dUKATHx'}},
  sidetable_tmall_635382906309:{defaultFrontClearance:0,family:'side-table',sideTable:{minWidth:500,minDepth:180,minHeight:560,stone:11,post:42.5,upperClearance:185,travel:220},height:612,defaults:{sideTableUpperOpen:false,sideTableLowerOpen:false},fields:['sideTableUpperOpen','sideTableLowerOpen'],create:['sideTableUpperOpen','sideTableLowerOpen'],solidModel:{global:'FurnishSideTableModel',module:'side-table'},identity:{model:'双抽岩板边几 · 680×300×612',sourceUrl:'https://detail.tmall.com/item.htm?abbucket=0&id=635382906309&mi_id=0000n64ioooJG8d3oTuI_3sSR6yl6NubVt7Jui-6QXW-OA4&rn=1d72a6e371179b1c55984da266deb1b9&skuId=5776584417656&spm=a1z10.3-b-s.w4011-14781637738.244.629a5884FD6Y30'}},
- curtain_mijia_3_pro:{
-  ...covering,kind:'布帘',height:2400,defaults:{mountHeight:0,curtainOpen:0},
-  footprintMin:{w:300,d:59},clearanceReview:'missing',
-  solidModel:{...covering.solidModel,geometryVersion:1},
-  covering:{kind:'cloth',soft:true,motor:{size:[111,93,59],minHeight:150,trackDepth:32,trackHeight:27}},
-  identity:{brand:'米家',model:'米家智能窗帘 3 Pro · MJZNCL08LM',sourceUrl:'https://item.jd.com/100341996966.html'},
- },
+ curtain_mijia_3_pro:mijiaCurtain('布帘','cloth'),
+ curtain_mijia_3_pro_sheer:mijiaCurtain('纱帘','sheer'),
  curtain_sheer:{...covering,height:2400,defaults:{mountHeight:0,curtainOpen:0,curtainStyle:'double'},fields:[...covering.fields,'curtainStyle'],create:[...covering.create,'curtainStyle'],solidModel:undefined,covering:{kind:'sheer',soft:true}},
  blind_venetian:{...covering,defaults:{...covering.defaults,blindAngle:85},fields:[...covering.fields,'blindAngle'],create:[...covering.create,'blindAngle'],covering:{kind:'venetian'}},
  blind_honeycomb:{...covering,covering:{kind:'honeycomb'}},
@@ -334,7 +338,7 @@ for(const [type,profile,kind,height,brand,model,sourceUrl] of [
 // at shared production/spatial boundaries, never inside individual constructors.
 for(const [type,rule] of Object.entries(types)){
  const cloth=rule.covering?.kind==='cloth'||rule.covering?.kind==='sheer';
- types[type]={...rule,...(cloth?{fields:[...(rule.fields||[]),'bottomPhysical'],create:[...(rule.create||[]),'bottomPhysical'],defaults:{...rule.defaults,bottomPhysical:false}}:{}),bottomElevation:{mode:rule.anchor==='mixer'?'mixer':rule.fields?.includes('counterElevation')?'surface':rule.fields?.includes('mountHeight')?'native':'offset',...(cloth?{datumGap:20}:{})}};
+ types[type]={...rule,...(cloth?{physicalEnvelope:f=>[value(f,'mountHeight')+20,value(f,'mountHeight')+height(f)],fields:[...(rule.fields||[]),'bottomPhysical'],create:[...(rule.create||[]),'bottomPhysical'],defaults:{...rule.defaults,bottomPhysical:false}}:{}),bottomElevation:{mode:rule.anchor==='mixer'?'mixer':rule.fields?.includes('counterElevation')?'surface':rule.fields?.includes('mountHeight')?'native':'offset',...(cloth?{datumGap:20}:{})}};
 }
 // Free tilt is a rigid-inventory capability, not an installation override.
 for(const rule of Object.values(types))if(rule.storageSupply||rule.petSupply||rule.family==='placeholder'){rule.fields=[...rule.fields,'pose3D'];rule.freeRotation=true;}
@@ -352,7 +356,6 @@ for(const type of [...Object.keys(types).filter(t=>types[t].storageBin),'block',
  types.pendant.physicalEnvelope=f=>[2120-Math.min(f.w,f.d)*.08,2620];
  types.wallart.physicalEnvelope=f=>{const h=Math.min(950,Math.max(500,f.w*.45));return [1280+h*.13,1280+h*1.5];};
  types.rug.physicalEnvelope=()=>[2,15.5];types.rug.bottomElevation.newBottom=0;
- for(const type of ['curtain','curtain_sheer','curtain_mijia_3_pro'])types[type].physicalEnvelope=f=>[value(f,'mountHeight')+20,value(f,'mountHeight')+height(f)];
 function freeze(v){if(v&&typeof v==='object'&&!Object.isFrozen(v)){Object.values(v).forEach(freeze);Object.freeze(v);}return v;}
 freeze(fields);freeze(types);freeze(artGlassPatterns);
 const definition=f=>Object.hasOwn(types,typeof f==='string'?f:f?.type)?types[typeof f==='string'?f:f.type]:null;
@@ -847,7 +850,9 @@ function nativeVertical(f){
 }
 // A motor retrofit keeps the existing made-to-measure cloth and mounting datum.
 function coveringRetrofit(previous,candidate){
- if(previous.type!=='curtain'||previous.obj||value(previous,'curtainStyle')!=='double'||!definition(candidate)?.covering?.motor||previous.d<definition(candidate).footprintMin.d||previous.w<definition(candidate).footprintMin.w||height(previous)<definition(candidate).covering.motor.minHeight)return candidate;
+ const source=definition(previous)?.covering,target=definition(candidate),motor=target?.covering?.motor;
+ if(!motor||!source?.soft||source.kind!==target.covering.kind||source.motor||previous.obj||value(previous,'curtainStyle')!=='double')return candidate;
+ if(previous.d<target.footprintMin.d||previous.w<target.footprintMin.w||height(previous)<motor.minHeight)return candidate;
  return {...candidate,w:previous.w,d:previous.d,h:height(previous),color:previous.color??candidate.color,curtainOpen:value(previous,'curtainOpen'),mountHeight:value(previous,'mountHeight'),bottomPhysical:value(previous,'bottomPhysical')};
 }
 const softCoveringOnly=f=>!!definition(f)?.covering?.soft&&!definition(f)?.solidModel;

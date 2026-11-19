@@ -28,7 +28,7 @@ const suites={
 };
 suites['downlight-labot-ip65']=['downlight-labot'];
 suites['acwall-midea-mxc3p']=['acwall-midea'];
-suites['curtain-mijia-3-pro-motor']=['curtain-mijia-3-pro','window-coverings'];
+suites.curtain_mijia_3_pro_sheer=suites['curtain-mijia-3-pro-motor']=['curtain-mijia-3-pro','window-coverings'];
 suites['track-socket-bull-gb50k']=['track-socket-bull-gb50k'];
 suites['drying-rack-hotata-y024']=suites['drying-rack-hotata-y024-2m']=['drying-rack-hotata'];
 suites['desk-lamp-mijia-pro']=['desk-lamp'];suites.cove_light=['cove-light'];

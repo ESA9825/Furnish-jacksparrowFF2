@@ -173,6 +173,7 @@ const LIB = [
     ["curtain","单开窗帘 2.4m",2400,180,"#c9d3da",1500,2400,null,"single"],
     ["curtain","双开窗帘 2.4m",2400,180,"#c9d3da",1500,2400,null,"double"],
     ["curtain_mijia_3_pro","米家智能窗帘 3 Pro",2400,100,"#d6b99a",null,2400],
+    ["curtain_mijia_3_pro_sheer","米家智能窗帘 3 Pro · 纱帘",2400,100,"#efe6d8",null,2400],
     ["curtain_sheer","半透光纱帘 · 双开",2400,120,"#f4f1e8",null,2400],
     ["blind_venetian","百叶帘 · 可调叶片",1500,65,"#ded6c7",null,1800],
     ["blind_honeycomb","蜂巢帘 · 折叠升降",1500,60,"#ece3d5",null,1800],
@@ -317,7 +318,7 @@ function navigation(library=browseLibrary()){
 const uses=[['living','客厅','Living'],['bedroom','卧室','Bedroom'],['dining','餐厅','Dining'],['study','书房','Study'],['kitchen','厨房','Kitchen'],['laundry','洗衣家政','Laundry'],['bathroom','卫浴','Bathroom'],['entry','玄关','Entry'],['pet','宠物','Pets']];
 const useTypes={
  living:['art_glass_partition','quartz_sill','window_surround','sofa_bed_yeswood_y107h03','armchair_yeswood_berlin','armchair_yeswood_y09hs','sofa','sofa_yeswood_cherry','cornersofa','armchair','beanbag','coffeetable','coffeetable_yeswood_cherry','roundtable','sidetable','sidetable_tmall_635382906309','tea_table_800','tea_bar_mijia_pro','tv','tvstand','aircon','aircon_midea_ultra_2hp','acwall','acwall_midea_mxc3p','purifier','plant','rug','floorlamp'],
- bedroom:['quartz_sill','window_surround','bed','crib','nightstand','wardrobe','chest','dresser','curtain','curtain_mijia_3_pro','curtain_sheer','blind_venetian','blind_honeycomb','blind_zebra','blind_bamboo','blind_roller','mirror','acwall','acwall_midea_mxc3p'],
+ bedroom:['quartz_sill','window_surround','bed','crib','nightstand','wardrobe','chest','dresser','curtain','curtain_mijia_3_pro','curtain_mijia_3_pro_sheer','curtain_sheer','blind_venetian','blind_honeycomb','blind_zebra','blind_bamboo','blind_roller','mirror','acwall','acwall_midea_mxc3p'],
  dining:['chair_ikea_vihals','table','table_folding_1100','table_folding_1200','table_folding_1300','roundtable','chair','barstool','island','cabinet','pendant'],
  study:['chair_ikea_vihals','quartz_sill','window_surround','chair_yeswood_s05118','stool_citylong_370','desk','chair','officechair','bookshelf','bookshelf_yeswood_y52y09','bookshelf_yeswood_y00y06','bookshelf_yeswood_y00y06058','armchair','floorlamp'],
  kitchen:['panel_light_300x600','stove','stove_fotile_th36b','rangehood_fotile_jcd10ta','fridge','fridge_french_drawer','dishwasher','dishwasher_mijia_countertop','water_purifier_mijia_1200g','ksink','sink_arrow_680','sink_arrow_750','ovencol','kitchenwall','island'],

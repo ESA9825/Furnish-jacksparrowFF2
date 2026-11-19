@@ -3,7 +3,8 @@
   "id": "curtain-mijia-3-pro-motor",
   "name": "米家智能窗帘 3 Pro · MJZNCL08LM",
   "types": [
-    "curtain_mijia_3_pro"
+    "curtain_mijia_3_pro",
+    "curtain_mijia_3_pro_sheer"
   ],
   "route": "blender",
   "document": "docs/CURTAIN-MIJIA-3-PRO.md",

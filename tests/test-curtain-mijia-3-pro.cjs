@@ -16,11 +16,18 @@ for(const sizes of [{w:299},{d:58},{h:149}])assert.throws(()=>P.validate({...f,.
 assert.doesNotThrow(()=>P.validate({...f,w:300,d:59,h:150}));
 assert(SVG.render(type,f.w,f.d,f.color,{ink:'#333'},f).includes('data-covering-motor="true"'));
 
+const originalSheer={...old,id:'sheer',type:'curtain_sheer',name:'暖白纱帘',color:'#efe6d8'};
+const sheer=D.replaceFurniture(originalSheer,{...candidate,type:'curtain_mijia_3_pro_sheer'},{anchor:'center'});
+for(const key of ['id','cx','cy','w','d','h','rot','flip','color','mountHeight','bottomPhysical','curtainOpen'])assert.equal(sheer[key],originalSheer[key],key);
+assert.equal(P.styleRole(sheer),'sheer');
+assert(!('curtainStyle' in sheer));
+assert.equal(D.replaceFurniture(originalSheer,candidate).color,candidate.color);
+
 const near=(a,b)=>assert(Math.abs(a-b)<.025,`${a} != ${b}`);
 (async()=>{
  const imports=JSON.parse(fs.readFileSync(require.resolve('../index.html'),'utf8').match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports,T=await import(imports.three);
- for(const [rot,flip] of [[0,false],[37,true],[180,false]])for(const curtainOpen of [0,.5,1]){
-  const state={...f,rot,flip,curtainOpen},l=P.coveringLayout(state),model=M.build(T,state);
+ for(const item of [f,sheer])for(const [rot,flip] of [[0,false],[37,true],[180,false]])for(const curtainOpen of [0,.5,1]){
+  const state={...item,rot,flip,curtainOpen},l=P.coveringLayout(state),model=M.build(T,state);
   const hardware=model.children.find(child=>child.userData.furnishAsset);
   const local=new T.Box3().setFromObject(hardware,true);
   local.getSize(new T.Vector3()).toArray().forEach((v,i)=>near(v*1000,[111,93,59][i]));
@@ -32,7 +39,12 @@ const near=(a,b)=>assert(Math.abs(a-b)<.025,`${a} != ${b}`);
   near(Math.max(...rigid.map(p=>p.vertical.top)),P.vertical(state).top);
   const panels=model.children.filter(child=>child.userData.coveringPart==='fabric-panel');
   assert.equal(panels.length,2);
-  panels.forEach(panel=>near(panel.scale.x,1-.84*curtainOpen));
+  panels.forEach(panel=>{
+   near(panel.scale.x,1-.84*curtainOpen);
+   assert.equal(panel.material.transparent,item===sheer);
+   assert.equal(panel.castShadow,item!==sheer);
+   if(item===sheer)near(panel.material.opacity,.84);
+  });
   const driveSidePanel=new T.Box3().setFromObject(panels[0],true);
   assert(driveSidePanel.min.x>local.max.x,'fabric intersects drive casing');
   const profile={planId:'test',current:{furniture:[state]},designs:[{name:'test',work:{furniture:[state]}}],catalog:[]};

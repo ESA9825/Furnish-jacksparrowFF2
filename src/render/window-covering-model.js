@@ -45,7 +45,8 @@ function build(T,f){
    for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){const a=j*(cols+1)+i,b=a+cols+1;indices.push(a,b,a+1,b,b+1,a+1);}
    const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(positions,3));geo.setIndex(indices);geo.computeVertexNormals();
    const role=l.motor?'fabric-panel':'sheer-panel';
-   const node=add(mesh(geo,l.motor?cloth:sheer),role,role+'-'+panel);node.position.x=closed+(opened-closed)*l.open;node.scale.x=scale;if(!l.motor)node.castShadow=false;
+   const translucent=l.kind==='sheer',node=add(mesh(geo,translucent?sheer:cloth),role,role+'-'+panel);
+   node.position.x=closed+(opened-closed)*l.open;node.scale.x=scale;if(translucent)node.castShadow=false;
   }
  }else{
   l.parts.forEach((part,i)=>{

@@ -3,10 +3,10 @@
   "description": "Generated repository index; paths relative to repository root. This is metadata, not the application loading manifest.",
   "counts": {
     "blenderModels": 59,
-    "parametricVerificationConfigurations": 92,
-    "verificationConfigurations": 151,
-    "catalogEntries": 194,
-    "catalogTypes": 164,
+    "parametricVerificationConfigurations": 93,
+    "verificationConfigurations": 152,
+    "catalogEntries": 195,
+    "catalogTypes": 165,
     "productDossiers": 86,
     "referenceImages": 368,
     "missingReferences": 20
@@ -6704,7 +6704,8 @@
       "id": "curtain-mijia-3-pro-motor",
       "name": "米家智能窗帘 3 Pro · MJZNCL08LM",
       "types": [
-        "curtain_mijia_3_pro"
+        "curtain_mijia_3_pro",
+        "curtain_mijia_3_pro_sheer"
       ],
       "route": "blender",
       "document": "docs/CURTAIN-MIJIA-3-PRO.md",
@@ -10950,6 +10951,12 @@
       "module": "bath-heater"
     },
     {
+      "id": "curtain_mijia_3_pro_sheer",
+      "type": "curtain_mijia_3_pro_sheer",
+      "name": "米家智能窗帘 3 Pro · 纱帘",
+      "module": "window-covering"
+    },
+    {
       "id": "curtain_sheer",
       "type": "curtain_sheer",
       "name": "半透光纱帘 · 双开",
@@ -12451,6 +12458,15 @@
       "category": "布艺",
       "type": "curtain_mijia_3_pro",
       "name": "米家智能窗帘 3 Pro",
+      "w": 2400,
+      "d": 100,
+      "h": 2400,
+      "module": "window-covering"
+    },
+    {
+      "category": "布艺",
+      "type": "curtain_mijia_3_pro_sheer",
+      "name": "米家智能窗帘 3 Pro · 纱帘",
       "w": 2400,
       "d": 100,
       "h": 2400,
