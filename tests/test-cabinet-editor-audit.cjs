@@ -3,6 +3,30 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('nod
 (async()=>{
  const imports=JSON.parse(fs.readFileSync(require.resolve('../index.html'),'utf8').match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports,T=await import(imports.three),Model=require('../src/render/cabinet-model.js'),box=(w,h,d,color,x,y,z)=>{const n=new T.Mesh(new T.BoxGeometry(w,h,d),new T.MeshStandardMaterial({color}));n.position.set(x,y+h/2,z);return n;};
  const colors=f=>{const g=Model.build(T,f,box);g.updateMatrixWorld(true);const out=[];g.traverse(n=>{if(n.isMesh)out.push({metadata:n.userData,color:n.material.color.getHexString(),bounds:[new T.Box3().setFromObject(n).min.toArray(),new T.Box3().setFromObject(n).max.toArray()]});});return out;};
+ const stack=B.add(B.create({id:'stack-under-doors',color:'#f3f0e8'}),'drawers',{boxId:'box1'});
+ let wardrobe=B.update(stack.furniture,stack.selected,{heights:[191,227],states:[{open:true,extension:.35},{open:false,extension:1}]});
+ const door=B.add(wardrobe,'multiDoor',{boxId:'box1'});
+ wardrobe=door.furniture;
+ const drawerHardware=rows=>rows.filter(n=>n.metadata.cabinetHardware&&n.metadata.cabinetBuilder?.componentId===stack.selected.componentId);
+ const faces=colors(wardrobe).filter(n=>n.metadata.cabinetDrawerBoard==='front');
+ assert.equal(drawerHardware(colors(wardrobe)).length,2);
+ const noHandles=B.update(wardrobe,stack.selected,{handle:'none',surface:'walnut'});
+ const afterHardware=colors(noHandles);
+ assert.equal(drawerHardware(afterHardware).length,0);
+ const doorParts=rows=>rows.filter(n=>n.metadata.cabinetBuilder?.componentId===door.selected.componentId).map(n=>[n.metadata.furnishPartToken,n.bounds,n.color]);
+ assert.deepEqual(doorParts(afterHardware),doorParts(colors(wardrobe)));
+ assert(afterHardware.filter(n=>n.metadata.cabinetDrawerBoard==='front').every(n=>n.metadata.cabinetSurface==='walnut'));
+ assert.equal(C.spatialConfig(noHandles).drawerHandleRule,1);
+ const knobbed=B.update(wardrobe,stack.selected,{handle:'knob'});
+ const knobs=drawerHardware(colors(knobbed));
+ assert.equal(knobs.length,2);
+ assert(knobs.every(n=>Math.abs(n.bounds[1][1]-n.bounds[0][1]-.025)<1e-6));
+ const independent=B.add(wardrobe,'drawerModule',{boxId:'box1',at:.6}).furniture;
+ const part=faces.find(n=>n.metadata.cabinetPart.drawer===1).metadata.cabinetPart;
+ assert.equal(part.componentId,stack.selected.componentId);
+ const opened=C.setPartOpening(independent,part,55);
+ assert.deepEqual(B.drawerStates(B.selection(opened,stack.selected).component),[{open:true,extension:.35},{open:true,extension:.55}]);
+ assert.deepEqual(opened.cabinet.boxes[0].components.filter(p=>p.kind==='drawerModule'),independent.cabinet.boxes[0].components.filter(p=>p.kind==='drawerModule'));
  for(const kind of ['drawers','drawerModule','slidingTop']){const r=B.add(B.create({id:kind,cx:4000,cy:4000,rot:0}),kind,{boxId:'box1'}),before=colors(r.furniture),changed=B.update(r.furniture,r.selected,{color:'#12ab34',finish:'wood'}),after=colors(changed);assert(after.some(n=>n.metadata.cabinetDrawerBoard==='front'));assert(after.filter(n=>n.metadata.cabinetDrawerBoard==='front').every(n=>n.color==='12ab34'));assert.deepEqual(after.map(n=>n.bounds),before.map(n=>n.bounds));assert.deepEqual(C.spatialConfig(changed),C.spatialConfig(r.furniture));assert.deepEqual(M.solidParts(changed),M.solidParts(r.furniture));assert.deepEqual(B.update(changed,r.selected,{color:undefined,finish:undefined}),r.furniture);assert.equal(P.formatVersion([{furniture:[changed]}]),89);const packed=P.pack({planId:'p',current:{furniture:[changed]},designs:[{name:'copy',work:{furniture:[changed]}}],catalog:[B.preset(changed,r.selected,'front')]});assert.deepEqual(P.unpack(packed).current.furniture,[changed]);assert.throws(()=>B.update(changed,r.selected,{finish:'glass'}));assert.throws(()=>B.update(changed,r.selected,{color:['#123456']}));}
  const profiled=require('../src/core/cabinet-component-profiles.js').convert({...C.preset('tv-floor'),id:'profile',type:'cabinet',cx:4000,cy:4000,rot:0}),pb=profiled.cabinet.boxes.find(b=>b.components.some(p=>B.drawerAppearance(p))),pp=pb.components.find(p=>B.drawerAppearance(p)),pick={boxId:pb.id,componentId:pp.id},painted=B.update(profiled,pick,{color:'#1275ab'});assert(colors(painted).filter(v=>v.metadata.cabinetBuilder?.componentId===pp.id&&v.metadata.cabinetDrawerBoard==='front').every(v=>v.color==='1275ab'));assert.deepEqual(M.solidParts(painted),M.solidParts(profiled));
  let serial=0,f=A.editableKitchen(K.createLaundryCabinet({id:'laundry',cx:4000,cy:4000,rot:37,flip:true,color:'#f3f1ec'},()=> 'id'+ ++serial)[0]);const before=structuredClone(f),sink=K.assemblyConfig(f).sink;
