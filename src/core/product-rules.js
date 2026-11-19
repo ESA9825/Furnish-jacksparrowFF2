@@ -59,15 +59,15 @@ const artGlassPatterns={
 };
 // G12 detail-page range; variants with identical fronts retain electrical labels.
 const panelVariants=Object.freeze(Object.fromEntries([
- ...[['1','一'],['2','二'],['3','三'],['4','四']].flatMap(([n,label])=>[['single','单极'],['double','双控'],...(Number(n)<=2?[['intermediate','中途掣']]:[])].map(([mode,text])=>['switch'+n+'-'+mode,{label:label+'位'+text,group:'开关类'}])),
- ...[['socket5','二三极连体'],['socket5-wide','二三极宽体'],['socket16','一位三极（16A）'],['socket5-switch','二三极＋双控开关'],['socket16-switch','三极＋单极开关'],['socket4','二位二极连体'],['socket5-separated','二极＋三极分体'],['socket7','二位二极＋三极连体'],['socket5-3usb','二三极＋三位USB'],['socket5-ac','二三极＋二位USB（A+C）'],['socket5-diagonal','10A斜五孔']].map(([id,label])=>[id,{label,group:'插座类'}]),
+ ...[['1','一'],['2','二'],['3','三'],['4','四']].flatMap(([n,label])=>[['single','单极'],['double','双控'],...(Number(n)<=2?[['intermediate','中途掣']]:[])].map(([mode,text])=>['switch'+n+'-'+mode,{label:label+'位'+text,group:'开关类',control:'conventional'}])),
+ ...[['socket5','二三极连体'],['socket5-wide','二三极宽体'],['socket16','一位三极（16A）'],['socket5-switch','二三极＋双控开关'],['socket16-switch','三极＋单极开关'],['socket4','二位二极连体'],['socket5-separated','二极＋三极分体'],['socket7','二位二极＋三极连体'],['socket5-3usb','二三极＋三位USB'],['socket5-ac','二三极＋二位USB（A+C）'],['socket5-diagonal','10A斜五孔']].map(([id,label])=>[id,{label,group:'插座类',control:'conventional'}]),
  ...[['blank','白板'],['phone','一位电话'],['net5','一位电脑'],['net6','一位电脑（六类）'],['tv','一位电视'],['tv-push','插入式一分支电视'],['phone-net5','一位电话＋电脑'],['phone-net6','一位电话＋电脑（六类）'],['net5-double','二位电脑'],['net6-double','二位电脑（六类）'],['tv-net5','一位电脑＋电视'],['tv-net6','一位电脑＋电视（六类）']].map(([id,label])=>[id,{label,group:'信息类'}]),
- ...[['cable','出线孔'],['doorbell','一位带荧光门铃开关'],['bell','呼叫开关'],['nightlight','人体感应地脚灯']].map(([id,label])=>[id,{label,group:'电子类'}])
+ ...[['cable','出线孔'],['doorbell','一位带荧光门铃开关'],['bell','呼叫开关'],['nightlight','人体感应地脚灯']].map(([id,label])=>[id,{label,group:'电子类',...(id==='nightlight'?{control:'sensor'}:{})}])
 ]));
 // Additional 86 variants share the legacy type; old G12 keys/defaults stay unchanged.
 const xiaomiPanelVariants=Object.freeze(Object.fromEntries(['2','2pro'].flatMap(series=>[1,2,3].flatMap(gangs=>['white','grey'].map(color=>{
  const pro=series==='2pro',name='小米智能开关'+(pro?'2 Pro':'2'),label=name+' · '+['','单开','双开','三开'][gangs]+' · '+(color==='white'?'白色':'深空灰');
- return ['xiaomi-'+series+'-'+gangs+'-'+color,{label,group:name,series,gangs,color,depth:pro?5:7.9,totalDepth:pro?34.8:(gangs===3?34.7:30.7),brand:'小米/Xiaomi',model:name,sourceUrl:'https://item.jd.com/'+(pro?'100434281318':'100313419465')+'.html'}];
+ return ['xiaomi-'+series+'-'+gangs+'-'+color,{label,group:name,control:'smart',series,gangs,color,depth:pro?5:7.9,totalDepth:pro?34.8:(gangs===3?34.7:30.7),brand:'小米/Xiaomi',model:name,sourceUrl:'https://item.jd.com/'+(pro?'100434281318':'100313419465')+'.html'}];
 })))));
 const panelOptions=Object.freeze({...panelVariants,...xiaomiPanelVariants});
 function panelSpec(f){const key=value(f,'panelVariant');return panelOptions[key];}
@@ -185,11 +185,12 @@ const types={
  track_socket_bull_gb50k:{
   kind:'轨道插座',family:'track-socket',height:94,anchor:'bottom',clearanceReview:'missing',
   footprintMin:{w:20,d:2},defaultFrontClearance:0,defaults:{mountHeight:0},fields:['mountHeight'],create:['mountHeight'],
-  trackSocket:{width:500,depth:36,railDepth:13.9,moduleDiameter:68,moduleCenters:[-60,60,180],label:'500 mm轨道 · 三个五孔'},
+  panelLine:['公牛 GN-GB50K','BULL GN-GB50K'],
+  trackSocket:{control:'conventional',width:500,depth:36,railDepth:13.9,moduleDiameter:68,moduleCenters:[-60,60,180],label:'500 mm轨道 · 三个五孔'},
   solidModel:{global:'FurnishBullGB50KModel',module:'track-socket-bull-gb50k',geometryVersion:1},
   identity:{brand:'公牛/BULL',model:'GN-GB50K · 墨云灰 · 50厘米＋3个五孔',sourceUrl:'https://item.jd.com/100396204646.html'}
  },
- panel_bull_g12:{kind:'86开关插座面板',family:'wall-panel',clearanceReview:'missing',height:86,anchor:'bottom',footprintMin:{w:20,d:2},defaultFrontClearance:0,defaults:{mountHeight:0,panelVariant:'socket5-diagonal'},fields:['mountHeight','panelVariant'],create:['mountHeight','panelVariant'],nightLight:{variant:'nightlight',part:'diffuser',color:'#ffe2aa',previewCandela:.6,reach:1800},solidModel:{global:'FurnishPanelBullG12Model',module:'panel-bull-g12',geometryVersion:1},identity:{brand:'公牛/BULL',model:'G12 · 暮雪白 · 86型面板',sourceUrl:'https://item.jd.com/100071863715.html'}},
+ panel_bull_g12:{kind:'86开关插座面板',family:'wall-panel',panelLine:['公牛 G12','BULL G12'],clearanceReview:'missing',height:86,anchor:'bottom',footprintMin:{w:20,d:2},defaultFrontClearance:0,defaults:{mountHeight:0,panelVariant:'socket5-diagonal'},fields:['mountHeight','panelVariant'],create:['mountHeight','panelVariant'],nightLight:{variant:'nightlight',part:'diffuser',color:'#ffe2aa',previewCandela:.6,reach:1800},solidModel:{global:'FurnishPanelBullG12Model',module:'panel-bull-g12',geometryVersion:1},identity:{brand:'公牛/BULL',model:'G12 · 暮雪白 · 86型面板',sourceUrl:'https://item.jd.com/100071863715.html'}},
  art_glass_partition:{kind:'玻璃隔断',family:'art-glass',height:2400,anchor:'bottom',defaultFrontClearance:0,defaults:{mountHeight:0,artGlassPattern:'fluted'},fields:['mountHeight','artGlassPattern'],create:['mountHeight','artGlassPattern'],glass:{minWidth:100,minDepth:3,maxDepth:30,minHeight:100,maxSize:6000},solidModel:{global:'FurnishArtGlassModel',module:'art-glass',geometryVersion:1}},
  drying_rack_hotata_y024:hotataRack('2.4',2444,'100220349957','FurnishHotataY024Asset'),
  drying_rack_hotata_y024_2m:hotataRack('2',2030,'100294066834','FurnishHotataY024TwoMetreAsset'),

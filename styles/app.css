@@ -1087,6 +1087,10 @@ button.replacement-product:focus-visible{outline:2px solid var(--accent);outline
 .electrical-list-group .electrical-row { display:grid; grid-template-columns:minmax(4ch,max-content) minmax(0,1fr) max-content; align-items:start; gap:7px; width:100%; padding:8px 9px; border:0; border-radius:0; text-align:left; white-space:normal; line-height:1.35; }
 .electrical-row-number { color:var(--muted); font-family:var(--mono); font-weight:700; }
 .electrical-row-description { overflow-wrap:anywhere; }
+.electrical-row-product { display:block; color:var(--ink); font-size:12px; }
+.electrical-row-description > b + .electrical-row-product { margin-top:4px; }
+.electrical-control { display:inline-block; padding:1px 5px; border-radius:5px; background:var(--soft); color:var(--ink); font-size:10px; font-weight:700; }
+.electrical-control[data-control="smart"] { background:var(--accent-soft); color:var(--accent-ink); }
 .electrical-row small { display:block; margin-top:2px; }
 .electrical-row-height { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
 .electrical-row[aria-current="true"] { background:var(--soft); box-shadow:inset 3px 0 var(--action-bg); }
