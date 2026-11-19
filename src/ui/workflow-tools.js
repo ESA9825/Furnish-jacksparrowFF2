@@ -148,6 +148,35 @@ function afterRender(){
  if(!checking)syncBadge();else{$('#space-status').textContent=t('空间核对 · 更新中…','Space checks · Updating…');checkTimer=setTimeout(update,180);}
  $('#gWallNet')?.remove();if(ui.sel?.kind==='wall')wallDimensions();
 }
+function openSunSettings(){
+ const drawing=FurnishDrawing.settings(state.drawing),solar=state.scene3d?.solar;
+ const now=new Date(),today=[now.getFullYear(),now.getMonth()+1,now.getDate()].map(v=>String(v).padStart(2,'0')).join('-');
+ openDialog({
+  title:t('日照设置','Sun settings'),
+  body:`<div class="project-grid">
+   <label>${t('纬度（°）','Latitude (°)')}<input id="sun-latitude" type="number" min="-90" max="90" step="any" value="${solar?.latitude??''}"></label>
+   <label>${t('日期','Date')}<input id="sun-date" type="date" value="${solar?.date??today}"></label>
+   <label>${t('真北角度（°）','True north (°)')}<input id="sun-north" type="number" min="0" max="359.999" step="any" value="${drawing.northAngle??''}"></label>
+  </div>
+  <p class="muted">${t('北纬为正，南纬为负。纬度留空时使用示意日照。真北从原始图纸上方顺时针计算，留空时以图纸上方作为北方。','Use positive latitude north of the equator and negative latitude south. Leave latitude blank for illustrative sunlight. True north is measured clockwise from the original drawing top, which serves as north when left blank.')}</p>
+  <p class="muted">${t('时间使用当地太阳时，12:00 为太阳过中天。','The slider uses local solar time. 12:00 is when the sun crosses the local meridian.')}</p>
+  <p id="sun-settings-error" role="alert"></p>`,
+  actions:[{label:t('取消','Cancel')},{label:t('应用','Apply'),cls:'primary',fn:()=>{
+   try{
+    const latitude=$('#sun-latitude'),north=$('#sun-north');
+    if(!latitude.validity.valid||!north.validity.valid)throw Error(t('请输入有效的纬度和真北角度。','Enter a valid latitude and true north angle.'));
+    const solar=FurnishDrawing.solarSettings(latitude.value===''?undefined:{latitude:latitude.valueAsNumber,date:$('#sun-date').value});
+    const nextDrawing=FurnishDrawing.settings({...drawing,northAngle:north.value===''?null:north.valueAsNumber});
+    const scene=FurnishDesign.sceneSettings({...state.scene3d,solar});
+    mutate(()=>{
+     state.scene3d=scene;
+     if(nextDrawing.northAngle!==drawing.northAngle)state.drawing=nextDrawing;
+    });
+    return true;
+   }catch(e){$('#sun-settings-error').textContent=e.message;return false;}
+  }}]
+ });
+}
 function initialize(){
  const localized=(element,zh,en)=>{element.dataset.zh=zh;element.dataset.en=en;element.textContent=t(zh,en);return element;};
  const rail=document.createElement('div');rail.className='canvas-rail';rail.setAttribute('aria-label',t('画布工具','Canvas tools'));rail.setAttribute('role','toolbar');$('#stage').append(rail);rail.append($('#tools'),$('#modes3d'),$('#vIso').parentElement);
@@ -169,7 +198,8 @@ function initialize(){
  document.addEventListener('pointerdown',e=>{if(toolMenu.open&&!toolMenu.contains(e.target)&&!toolPop.contains(e.target))toolMenu.open=false;});
  const pref=document.createElement('details');pref.id='moreMenu';pref.className='menu workspace-preferences';pref.innerHTML=`<summary class="btn">${t('更多','More')}</summary><div class="menu-pop"></div>`;$('#saveMenu').before(pref);pref.lastElementChild.append($('#langSel'),$('#themeQuick'),$('#fullscreen'),$('#more-actions'));$('#more-actions').hidden=false;$('#resetBtn').remove();
  localized(pref.firstElementChild,'更多','More');
- const light=document.createElement('div');light.className='scene-light only3d';light.setAttribute('aria-label',t('日照与夜景','Sunlight and night'));$('#stage').append(light);light.append($('#sun').closest('label'),document.querySelector('[data-t="night"]'));
+ const light=document.createElement('div');light.className='scene-light only3d';light.setAttribute('aria-label',t('日照与夜景','Sunlight and night'));$('#stage').append(light);light.append($('#sun').closest('label'),$('#sunAltitude'),$('#sunSettings'),document.querySelector('[data-t="night"]'));
+ $('#sunSettings').onclick=openSunSettings;
  const badge=document.createElement('button');badge.id='space-status';badge.className='btn space-status';badge.onclick=openSpace;$('#stage').append(badge);syncBadge();
  $('#tgSpace').onclick=openSpace;
  const designMenu=$('#design-actions-menu');

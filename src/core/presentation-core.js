@@ -33,8 +33,8 @@
    if(p.capture!==undefined){const c=p.capture;keys(c,['kind','image','sourceKey','createdAt','camera','scene']);
     if(!['2d','3d'].includes(c.kind))fail('图片类型无效');key(c.sourceKey);date(c.createdAt);
     if(typeof c.image!=='string'||c.image.length>limits.image||c.image.length<60||!/^data:image\/(jpeg|png);base64,[A-Za-z0-9+/]+={0,2}$/.test(c.image)||!/^data:image\/(?:jpeg;base64,\/9j\/|png;base64,iVBORw0KGgo)/.test(c.image))fail('图片须为受限的内嵌 PNG/JPEG');
-    bytes+=c.image.length;if(c.kind==='3d'){camera(c.camera);keys(c.scene,['hour','cut','furn','labels','night','lamps','wallNumbers','clearances']);
-     if(!finite(c.scene.hour)||c.scene.hour<7||c.scene.hour>18||![1.2,2.8].includes(c.scene.cut)||['furn','labels','night'].some(k=>typeof c.scene[k]!=='boolean')||['lamps','wallNumbers','clearances'].some(k=>c.scene[k]!==undefined&&typeof c.scene[k]!=='boolean'))fail('视角场景设置无效');
+    bytes+=c.image.length;if(c.kind==='3d'){camera(c.camera);keys(c.scene,['hour','cut','furn','labels','night','lamps','wallNumbers','clearances','solar']);
+     try{(root.FurnishDesign||require('./design-core.js')).validateSceneSettings(c.scene);}catch(e){fail(e.message);}
     }else if(c.camera!==undefined||c.scene!==undefined)fail('平面图不包含三维视角');
    }
   }

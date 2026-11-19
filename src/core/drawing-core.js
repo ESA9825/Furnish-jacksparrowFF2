@@ -70,6 +70,30 @@ function dimensions(plan,input={}){
 }
 function drawingBounds(plan,input={}){const all=(plan.walls||[]).flatMap(w=>[[w[0],w[1]],[w[2],w[3]]]);for(const d of dimensionLayout(dimensions(plan,input),{rotation:settings(input).rotation})){all.push(d.a,d.b,...d.refs);if(d.label)all.push([d.label.box[0],d.label.box[1]],[d.label.box[2],d.label.box[3]]);}const b=plan.bounds||{x:0,y:0,w:1000,h:1000};if(!all.length)return b;const xs=all.map(p=>p[0]),ys=all.map(p=>p[1]),pad=350,x=Math.min(b.x,Math.min(...xs)-pad),y=Math.min(b.y,Math.min(...ys)-pad);return {x,y,w:Math.max(b.x+b.w,Math.max(...xs)+pad)-x,h:Math.max(b.y+b.h,Math.max(...ys)+pad)-y};}
 function sun(horizontal,input={}){return rotate(horizontal,settings(input).northAngle??0);}
+const solarFormatVersion=100;
+function solarSettings(input){
+ if(input===undefined)return;
+ const {latitude,date}=input||{};
+ if(!finite(latitude)||Math.abs(latitude)>90||typeof date!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(date)||date.startsWith('0000-')||Object.keys(input).some(k=>k!=='latitude'&&k!=='date'))throw Error('日照纬度或日期无效');
+ const day=new Date(date);
+ if(!Number.isFinite(+day)||day.toISOString().slice(0,10)!==date)throw Error('日照日期无效');
+ return {latitude,date};
+}
+function solarPosition({latitude,date},hour,drawing){
+ // NOAA's seasonal declination approximation, evaluated at noon for the date.
+ const day=new Date(date),year=day.getUTCFullYear(),start=new Date(day);
+ start.setUTCMonth(0,1);
+ const leap=year%4===0&&(year%100!==0||year%400===0);
+ const g=2*Math.PI*(day-start)/86400000/(leap?366:365);
+ const d=.006918-.399912*Math.cos(g)+.070257*Math.sin(g)-.006758*Math.cos(2*g)+.000907*Math.sin(2*g)-.002697*Math.cos(3*g)+.00148*Math.sin(3*g);
+ const rad=Math.PI/180,lat=latitude*rad,ha=(hour-12)*15*rad;
+ const east=-Math.cos(d)*Math.sin(ha);
+ const north=Math.cos(lat)*Math.sin(d)-Math.sin(lat)*Math.cos(d)*Math.cos(ha);
+ const up=Math.sin(lat)*Math.sin(d)+Math.cos(lat)*Math.cos(d)*Math.cos(ha);
+ // Plan right is +X and plan down is +Z in the production Three.js scene.
+ const [x,z]=sun([east,-north],drawing);
+ return {direction:[x,up,z],altitude:Math.atan2(up,Math.hypot(east,north))/rad};
+}
 function rasterSize(box){
  if(!box||!finite(box.w)||!finite(box.h)||box.w<=0||box.h<=0)throw Error('导出范围无效');
  const width=3200,height=width*box.h/box.w,scale=Math.min(1,8192/width,8192/height,Math.sqrt(16e6/(width*height)));
@@ -131,5 +155,5 @@ function netSpans(room,point){
  const span=axis=>{const cross=1-axis,values=[];for(const ring of rings)for(let i=0;i<ring.length;i++){const a=ring[i],b=ring[(i+1)%ring.length],delta=b[cross]-a[cross];if(Math.abs(delta)<eps){if(Math.abs(point[cross]-a[cross])<eps)values.push(a[axis],b[axis]);continue;}const t=(point[cross]-a[cross])/delta;if(t>=-eps&&t<=1+eps)values.push(a[axis]+t*(b[axis]-a[axis]));}const left=values.filter(v=>v<point[axis]-eps),right=values.filter(v=>v>point[axis]+eps);if(!left.length||!right.length)return null;const a=[...point],b=[...point];a[axis]=Math.max(...left);b[axis]=Math.min(...right);return {a,b,value:b[axis]-a[axis],h:axis===0};};
  const horizontal=span(0),vertical=span(1);return horizontal&&vertical?{at:[...point],horizontal,vertical}:null;
 }
-const api={settings,rotate,clearanceFrame,bounds,dimensions,drawingBounds,sun,rasterSize,dimensionLayout,roomLabels,furnitureLabels,furnitureDirections,selectionFurnitureDirections,textWidth,netSpans,textAngle};if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishDrawing=api;
+const api={settings,rotate,clearanceFrame,bounds,dimensions,drawingBounds,sun,solarFormatVersion,solarSettings,solarPosition,rasterSize,dimensionLayout,roomLabels,furnitureLabels,furnitureDirections,selectionFurnitureDirections,textWidth,netSpans,textAngle};if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishDrawing=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

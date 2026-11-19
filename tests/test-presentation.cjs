@@ -21,4 +21,12 @@ assert.equal(Cache.candidates({read:k=>k==='huxing-design-v93'?JSON.stringify({.
 const restore=W.create({makeId:()=> 'id',colorFor:()=> '#fff',materials:{}}),restored=restore.restore(clone(work),{...plan,defaults:[]});assert.deepEqual(restored.presentation,work.presentation);assert.deepEqual(restore.restore(clone(restored),{...plan,defaults:[]}),restored);
 for(const mutate of [p=>p.pages.push(clone(p.pages[0])),p=>p.pages[0].capture.image='https://evil.invalid/image.png',p=>p.pages[0].capture.image='data:image/svg+xml;base64,YWJj',p=>p.issues[0].basis='',p=>p.release.sourceKey='bad',p=>p.pages[0].unknown=true,p=>p.pages[0].capture.sourceKey='bad',p=>p.pages[0].capture.createdAt='unknown',p=>p.pages[0].capture.image='data:image/jpeg;base64,'+'a'.repeat(C.limits.image)]){const bad=clone(work);mutate(bad.presentation);assert.throws(()=>P.validateWork(bad),/方案讲解/);assert.throws(()=>restore.restore(bad,{...plan,defaults:[]}),/方案讲解/);}
 const three=clone(work);three.presentation.pages[0].capture={...captured,kind:'3d',camera:{mode:'orbit',position:{x:0,y:0,z:3000},target:{x:0,y:3000,z:0},horizontalFov:60,focusIds:[]},scene:{hour:12,cut:2.8,furn:true,labels:false,night:false}};C.validate(three.presentation);three.presentation.pages[0].capture.camera.position.z=Infinity;assert.throws(()=>C.validate(three.presentation),/视角/);
+const solarCapture=three.presentation.pages[0].capture;
+solarCapture.camera.position.z=3000;
+Object.assign(solarCapture.scene,{hour:23,solar:{latitude:40,date:'2026-12-21'}});
+const solarProject=P.pack({planId:plan.id,current:three,designs:[],catalog:[]});
+assert.equal(solarProject.version,100);
+assert.deepEqual(P.unpack(solarProject).current.presentation.pages[0].capture,solarCapture);
+solarCapture.scene.solar.date='2026-02-29';
+assert.throws(()=>C.validate(three.presentation),/日照/);
 console.log('PASS presentation validation, image restrictions, live reference loss, source/document versions, stale confirmations, v94 project/design/repository/cache round trips, old defaults and repeated restoration');

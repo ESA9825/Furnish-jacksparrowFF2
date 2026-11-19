@@ -175,7 +175,9 @@
             <button class="btn chip on" data-ceiling-display="ghost" aria-pressed="true" title="俯视25%不透明度，仰视保留实体" data-en-title="25% opacity from above; solid from below" data-en="See-through">透视</button>
             <button class="btn chip" data-ceiling-display="hidden" aria-pressed="false" data-en="Hidden">隐藏</button>
           </div>
-          <label class="range"><span data-en="Sun">日照</span> <input type="range" id="sun" min="7" max="18" step=".25" value="10"><span id="sunT">10:00</span></label>
+          <label class="range"><span id="sunMode" data-en="Sun">日照</span> <input type="range" id="sun" min="7" max="18" step=".25" value="10"><span id="sunT">10:00</span></label>
+          <output id="sunAltitude" for="sun" hidden></output>
+          <button class="btn" id="sunSettings" data-en="Sun settings">日照设置</button>
         </div>
         <div class="showsec"><b data-en="Appearance">外观</b>
           <div class="chiprow"><button class="btn chip" id="themeBtn"></button></div>
@@ -1496,8 +1498,9 @@ function buildFurn(work=state){
   }
   furnG.children.slice().forEach(o => { if (!keep.has(o.userData.fid)){ clearGroup(o); furnG.remove(o); } });
   furnG.visible = opt.furn&&!globalThis.FurnishTilePresetUI?.inspecting(); selKey = null; applyGrow();
-  FurnishDownlightModel.setLights(furnG,opt.lamps,{night:opt.night});
-  FurnishLighting.cabinetContours(furnG,FurnishLighting.environment(opt.night,opt.hour));
+  const light=sceneSun();
+  FurnishDownlightModel.setLights(furnG,opt.lamps,{night:light.night});
+  FurnishLighting.cabinetContours(furnG,light.environment);
   syncModelErrors();
 }
 
@@ -1559,11 +1562,15 @@ function sync(force){
   if (!inited || (!active && !force)) return;
   cancelElevationGesture();
   H=FurnishProject.ceilingHeight(state)/1000;
-  const settings=FurnishDesign.sceneSettings(state.scene3d),changed=Object.keys(settings).some(k=>opt[k]!==settings[k]);
-  Object.assign(opt,settings);
+  const settings=FurnishDesign.sceneSettings(state.scene3d);
+  const preview=opt.sunPreview;
+  if(preview?.work===state&&preview.scene===state.scene3d)settings.hour=preview.hour;
+  else opt.sunPreview=undefined;
+  const changed=Object.keys(settings).some(k=>k!=='solar'&&opt[k]!==settings[k])||opt.solar?.latitude!==settings.solar?.latitude||opt.solar?.date!==settings.solar?.date;
+  Object.assign(opt,{solar:undefined},settings);
   if(opt.mode==='walk')opt.cut=2.8;
   const north=JSON.stringify(state.drawing?.northAngle??null);
-  if(changed||force||sigNorth!==north){sigNorth=north;syncCutBtns();document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('on',!!opt[b.dataset.t]));$('#sun').value=opt.hour;furnG.visible=opt.furn&&!globalThis.FurnishTilePresetUI?.inspecting();showLabels(opt.labels&&opt.mode==='orbit'&&!anim);applyLight();}
+  if(changed||force||sigNorth!==north){sigNorth=north;syncCutBtns();document.querySelectorAll('[data-t]').forEach(b=>b.classList.toggle('on',!!opt[b.dataset.t]));furnG.visible=opt.furn&&!globalThis.FurnishTilePresetUI?.inspecting();showLabels(opt.labels&&opt.mode==='orbit'&&!anim);applyLight();}
   const furnitureWork=globalThis.FurnishWardrobePlannerUI?.previewWork()||globalThis.FurnishCatalog?.previewWork()||state;
   const a = JSON.stringify([state.styleAppearance,globalThis.FurnishWorkflowTools?.styleKey(),state.rooms, state.demolished, state.open, PLAN.beams, opt.cut,opt.lamps,H, PLAN.markers,state.furniture.filter(f=>(FurnishDesign.products().definition(f)?.downlight||FurnishDesign.products().definition(f)?.ceilingPanel)&&!f.obj).map(f=>[f.id,f.type,f.cx,f.cy,f.w,f.d,f.h,f.rot,f.flip,f.mountHeight]),state.furnitureDatum,state.wallFinishes,state.floorFinishes,state.wallTiling,state.ceilings,state.tileGrout,typeof FurnishWallFinish==='undefined'?[]:FurnishWallFinish.serviceOpenings(PLAN,state),typeof FurnishElectricalBox==='undefined'?[]:FurnishElectricalBox.cuts(FurnishProject.effectivePlan(PLAN,state),state.furniture)]), f = JSON.stringify([furnitureWork.furniture.map(({price,referencePrice,priceDate,purchaseStatus,purchaseNote,sourceUrl,...shape})=>shape),PLAN.markers,state.rooms,H,globalThis.FurnishWorkflowTools?.styleKey(),state.wallFinishes,state.floorFinishes,state.furnitureDatum]), l = JSON.stringify([state.rooms, opt.cut,H,PLAN.beams,state.wallFinishes,state.floorFinishes,state.wallTiling]);
   if(force||a!==sigArch||f!==sigFurn){sceneMeasure?.clear();buildHeaterClearances(furnitureWork);clearSceneIssue();selKey=null;}
@@ -1587,21 +1594,43 @@ function applyGrow(){
 }
 
 /* ======================= 日照 / 夜景 ======================= */
-function applyLight(){
-  const lighting=FurnishLighting.environment(opt.night,opt.hour);sun.userData.radiometricLight=true;
-  FurnishLighting.cabinetContours(furnG,lighting);
-  FurnishDownlightModel.setLights(furnG,opt.lamps,{night:opt.night});
+function sceneSun(){
+  if(opt.solar){
+    const {direction,altitude}=FurnishDrawing.solarPosition(opt.solar,opt.hour,state.drawing);
+    const night=opt.night||altitude<=0,daylight=Math.max(0,direction[1]);
+    const environment=FurnishLighting.environment(night,12,daylight);
+    return {position:direction.map(v=>v*24),altitude,night,environment,warm:1-daylight};
+  }
   const t = (opt.hour - 6) / 12, az = Math.PI * (.15 + t*.7), el = Math.sin(Math.PI*t) * 1.05 + .15, warm = 1 - Math.sin(Math.PI*t);
-  const horizontal=globalThis.FurnishDrawing?FurnishDrawing.sun([Math.cos(az)*18,-Math.sin(az)*10+8],state.drawing):[Math.cos(az)*18,-Math.sin(az)*10+8];
-  sun.position.set(horizontal[0], Math.sin(el)*20 + 3, horizontal[1]); sun.target.position.set(0, 0, 0);
+  const [x,z]=FurnishDrawing.sun([Math.cos(az)*18,-Math.sin(az)*10+8],state.drawing);
+  return {position:[x,Math.sin(el)*20+3,z],night:opt.night,environment:FurnishLighting.environment(opt.night,opt.hour),warm};
+}
+function applyLight(){
+  const {position,altitude,night,environment:lighting,warm}=sceneSun();
+  sun.userData.radiometricLight=true;
+  FurnishLighting.cabinetContours(furnG,lighting);
+  FurnishDownlightModel.setLights(furnG,opt.lamps,{night});
+  sun.position.set(...position); sun.target.position.set(0, 0, 0);
   sun.color.setHSL(.09, .5 + warm*.4, .92 - warm*.12);
   sun.intensity = lighting.sun;
   hemi.intensity = lighting.ambient;
-  scene.background = new THREE.Color(opt.night ? 0x1c2130 : DK() ? 0x121110 : 0xf5f2ea);
-  ground.material.color.set(opt.night ? 0x2a2e38 : DK() ? 0x26231e : 0xf2eee7);
+  scene.background = new THREE.Color(night ? 0x1c2130 : DK() ? 0x121110 : 0xf5f2ea);
+  ground.material.color.set(night ? 0x2a2e38 : DK() ? 0x26231e : 0xf2eee7);
   renderer.toneMappingExposure = lighting.exposure;
   envK = lighting.reflection; matCache.forEach(m => { if (m.envMap) m.envMapIntensity = m.userData.env*envK; });
-  const h = Math.floor(opt.hour), m = Math.round((opt.hour - h)*60);
+  const range=$('#sun'),mode=$('#sunMode'),readout=$('#sunAltitude');
+  range.min=opt.solar?0:7;range.max=opt.solar?24:18;range.value=opt.hour;
+  mode.dataset.zh=opt.solar?'太阳时':'日照';
+  mode.dataset.en=opt.solar?'Solar time':'Sun';
+  mode.textContent=tr(mode.dataset.zh,mode.dataset.en);
+  readout.hidden=altitude===undefined;
+  if(altitude!==undefined){
+    const degrees=altitude.toFixed(1)+'°';
+    readout.dataset.zh='高度 '+degrees;
+    readout.dataset.en='Alt. '+degrees;
+    readout.textContent=tr(readout.dataset.zh,readout.dataset.en);
+  }
+  const minutes=Math.round(opt.hour*60),h=Math.floor(minutes/60),m=minutes%60;
   $('#sunT').textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
   invalidate(true);
 }
@@ -2160,8 +2189,13 @@ function bindUI(){
     if (k === 'lamps') sync();
     if (k === 'night' || k === 'lamps') applyLight();
   });
-  $('#sun').oninput = e => { opt.hour = +e.target.value;applyLight(); };
-  $('#sun').onchange = () => remember();
+  $('#sun').oninput = e => { opt.hour = +e.target.value;opt.sunPreview={work:state,scene:state.scene3d,hour:opt.hour};applyLight(); };
+  $('#sun').onchange = e => {
+    const hour=+e.target.value;
+    opt.sunPreview=undefined;
+    mutate(()=>{state.scene3d=FurnishDesign.sceneSettings({...state.scene3d,hour});});
+  };
+  $('#sun').onpointercancel = () => {opt.sunPreview=undefined;sync();};
 }
 
 /* ======================= 主循环 ======================= */
@@ -2223,7 +2257,7 @@ function blenderScene(options={}, {observationCeilings=false,includeLighting=fal
   // encode clones synchronously before its asynchronous GLB serialization.
   // Only the live observation snapshot receives view overrides; regular GLB,
   // independent HD and Blender keep the original production materials/occluders.
-  const encoded=FurnishBlenderExport.encode(THREE,{groups:[archFloor,archUp,furnG,lampG],camera,sun,material:o=>display?o.material:observation.material(o),...options,meta:{plan:PLAN.name,planId:PLAN.id,originMm:[OX,OY],cut:opt.cut,temporaryFocusClipping:false,lighting:FurnishLighting.environment(opt.night,opt.hour),...options.meta}});
+  const encoded=FurnishBlenderExport.encode(THREE,{groups:[archFloor,archUp,furnG,lampG],camera,sun,material:o=>display?o.material:observation.material(o),...options,meta:{plan:PLAN.name,planId:PLAN.id,originMm:[OX,OY],cut:opt.cut,temporaryFocusClipping:false,lighting:sceneSun().environment,...options.meta}});
   return includeLighting?encoded.then(data=>({...data,lighting})):encoded;
  }finally{display?.clear();applyObservationLayers();}
 }
@@ -2233,7 +2267,7 @@ function highQualitySignature(){
  const signature=blenderSyncSignature();if(!signature)return null;
  if(signature!==highQualityState){highQualityState=signature;highQualityRevision++;}
  camera.updateWorldMatrix(true,false);
- return JSON.stringify([FurnishLighting.VERSION,highQualityRevision,PLAN.id,FurnishDesign.activeDesign(store,PLAN.id)?.id,opt.night,opt.hour,opt.cut,ui.ceilingMode,camera.matrixWorld.elements,camera.projectionMatrix.elements]);
+ return JSON.stringify([FurnishLighting.VERSION,highQualityRevision,PLAN.id,FurnishDesign.activeDesign(store,PLAN.id)?.id,opt.night,opt.hour,opt.solar,sigNorth,opt.cut,ui.ceilingMode,camera.matrixWorld.elements,camera.projectionMatrix.elements]);
 }
 function productionMotionPending(){return doors.some(d=>d.cur!==(d.open?d.a1:d.a0))||[...slidingDoors,...furnG.children.map(g=>g.userData.slidingDoor).filter(Boolean)].some(d=>d.cur!==(d.open?1:0))||furnG.children.map(g=>g.userData.curtain).filter(Boolean).some(d=>d.cur!==(d.target??(d.open?1:0)));}
 function progressiveState(){
@@ -2244,7 +2278,7 @@ function progressiveState(){
 function progressiveScene(){return highQualityScene({cameraIndependent:true});}
 async function highQualityScene({cameraIndependent=false}={}){
  const initial=progressiveState(),signature=highQualitySignature();if(!signature)throw Error('请等待三维视角稳定后重试。');
- const environment=FurnishLighting.environment(opt.night,opt.hour);
+ const {environment}=sceneSun();
  const data=await blenderScene({includeCeilings:true,expandInstances:true,meta:{plan:PLAN.name,planId:PLAN.id,lighting:environment}},{observationCeilings:cameraIndependent,includeLighting:true});
  if(cameraIndependent?progressiveState()?.sceneKey!==initial?.sceneKey:highQualitySignature()!==signature)throw Error('场景已改变，请重新预览。');
  return {...data,environment,signature};

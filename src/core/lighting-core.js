@@ -4,9 +4,9 @@
 const PHOTOMETRIC=683,VERSION=1;
 const radiometric=cd=>cd/PHOTOMETRIC,photometric=value=>value*PHOTOMETRIC;
 function panel(candela,width,height){if(!(width>0&&height>0&&candela>=0))throw Error('Invalid luminous face');return radiometric(candela)/(width*height);}
-function environment(night,hour=12){
- const daylight=Math.max(0,Math.sin(Math.PI*(hour-6)/12));
- return night?{exposure:10,ambient:.015,reflection:.015,sun:radiometric(.05),background:'#1c2130',world:[.015,.015,.015]}:
+function environment(night,hour=12,solarDaylight){
+ const daylight=solarDaylight??Math.max(0,Math.sin(Math.PI*(hour-6)/12));
+ return night?{exposure:10,ambient:.015,reflection:.015,sun:solarDaylight===undefined?radiometric(.05):0,background:'#1c2130',world:[.015,.015,.015]}:
   {exposure:1.05,ambient:1.1,reflection:1,sun:1.4+daylight*1.6,background:'#f5f2ea',world:[.35,.38,.44]};
 }
 const isPreviewLight=o=>!!(o.userData.downlightLight||o.userData.ceilingPanelLight||o.userData.pathLight||o.userData.ceilingStripLight);
