@@ -22,6 +22,7 @@
     }
     // Preserve the caller's work object and extra project fields, as before.
     function restore(work, plan){(root.FurnishStyles||require('./style-core.js')).validateAppearance(work.styleAppearance);
+      if(work.wireRoutes!==undefined)(root.FurnishElectrical||require('./electrical-core.js')).validateRoutes(work.wireRoutes);
       if(work.presentation!==undefined)(root.FurnishPresentation||require('./presentation-core.js')).validate(work.presentation);
       (root.FurnishLayers||require('./layers-core.js')).validate(work.objectLayers);
       design.products().validateDatum(work);

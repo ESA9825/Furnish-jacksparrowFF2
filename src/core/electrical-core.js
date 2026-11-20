@@ -15,7 +15,8 @@ function assertEditable(before,after){
  for(const f of before.furniture){const n=next.get(f.id);if(!panel(f)&&(!n||!equal(reference(f),reference(n))))throw Error('插座布置视图中家具位置和结构只读；仅允许柜门／抽屉开合');if(panel(f)&&n&&(!panel(n)||f.groupId!==n.groupId))throw Error('请在家具布局视图中更改面板分组或类型');}
  for(const f of after.furniture)if(!old.has(f.id)&&!panel(f))throw Error('插座布置视图只能新增开关插座面板');
  if(!equal(before.furniture.filter(f=>!panel(f)).map(f=>f.id),after.furniture.filter(f=>!panel(f)).map(f=>f.id)))throw Error('插座布置视图中家具顺序只读');
- const rest=w=>{const out={...w};delete out.furniture;delete out.scene3d;if(out.objectLayers){out.objectLayers=structuredClone(out.objectLayers);for(const f of [...before.furniture,...after.furniture].filter(panel))delete out.objectLayers.assignments?.['furniture:'+f.id];}return out;};
+ validateRoutes(after.wireRoutes);
+ const rest=w=>{const out={...w};delete out.furniture;delete out.scene3d;delete out.wireRoutes;if(out.objectLayers){out.objectLayers=structuredClone(out.objectLayers);for(const f of [...before.furniture,...after.furniture].filter(panel))delete out.objectLayers.assignments?.['furniture:'+f.id];}return out;};
  if(!equal(rest(before),rest(after)))throw Error('插座布置视图中建筑、装修及其他方案资料只读');
 }
 const pointNumber=i=>'E'+String(i+1).padStart(2,'0');
@@ -88,5 +89,83 @@ function nearest(f,faces,limit=Infinity){
  for(const s of faces){if(n[0]*s.normal[0]+n[1]*s.normal[1]<.99999)continue;const offset=((f.cx-s.a[0])*(s.b[0]-s.a[0])+(f.cy-s.a[1])*(s.b[1]-s.a[1]))/s.length;if(offset<f.w/2||offset>s.length-f.w/2)continue;const position=place(f,s,offset),distance=Math.hypot(position.cx-f.cx,position.cy-f.cy);if(distance<=limit&&(!best||distance<best.distance))best={surface:s,offset,position,distance};}
  return best;
 }
-const api={panel,assertEditable,purpose,controlPairs,points,surfaces,place,nearest};root.FurnishElectrical=api;if(typeof module==='object'&&module.exports)module.exports=api;
+const wireKinds=Object.freeze({power:'电线',network:'网线'});
+const routeLimits=Object.freeze({routes:500,points:100,xy:1000000,z:20000});
+const identifier=v=>typeof v==='string'&&v.length>0&&v.length<=200&&!/[\x00-\x1f]/.test(v);
+const validCoordinate=(v,limit)=>Number.isFinite(v)&&Math.abs(v)<=limit;
+const distance=(a,b)=>Math.hypot(b.x-a.x,b.y-a.y,b.z-a.z);
+function validateRoutes(routes){
+ if(routes===undefined)return;
+ if(!Array.isArray(routes)||routes.length>routeLimits.routes)throw Error('布线路径列表无效，最多 500 条');
+ const ids=new Set();
+ for(const route of routes){
+  if(!identifier(route?.id)||ids.has(route.id)||!Object.hasOwn(wireKinds,route.kind)||typeof route.name!=='string'||!route.name.trim()||route.name.length>80)throw Error('线路编号、类别或名称无效');
+  ids.add(route.id);
+  const pts=route.points;
+  if(!Array.isArray(pts)||pts.length<2||pts.length>routeLimits.points)throw Error('每条线路须有 2–100 个路径点');
+  for(const [i,p] of pts.entries()){
+   if(!p||!validCoordinate(p.x,routeLimits.xy)||!validCoordinate(p.y,routeLimits.xy)||!validCoordinate(p.z,routeLimits.z))throw Error('线路坐标或标高无效');
+   if(p.furnitureId!==undefined&&(!identifier(p.furnitureId)||(i!==0&&i!==pts.length-1)))throw Error('只有线路首尾可关联有效点位编号');
+   if(i&&distance(pts[i-1],p)===0&&!pts[i-1].furnitureId&&!p.furnitureId)throw Error('线路相邻路径点重合');
+  }
+ }
+}
+function boxKind(f){
+ return f?.type==='electrical_box_strong'?'power':f?.type==='electrical_box_weak'?'network':null;
+}
+function endpointKind(f){
+ if(!f||f.obj)return null;
+ if(boxKind(f))return boxKind(f);
+ if(!panel(f))return null;
+ const spec=P().panelSpec(f);
+ if(spec?.group==='信息类'&&/net[56]/.test(P().value(f,'panelVariant')))return 'network';
+ if(spec?.gangs||spec?.group==='插座类'||spec?.control==='sensor'||P().definition(f)?.trackSocket)return 'power';
+ return null;
+}
+function endpoint(f,plan,furniture){
+ const base=P().floorBase(plan,f,furniture),range=P().vertical(f);
+ return {x:f.cx,y:f.cy,z:base.known&&range?base.z+(range.bottom+range.top)/2:null};
+}
+// Equal trims bisect the turn in the measured plane. The 3D pass then
+// handles elevation changes while keeping each plan bend within its angle.
+const cornerTrim=150;
+const coordinates=['x','y','z'];
+function chamfer(points,axes){
+ const path=[points[0]],source=[0],reversals=[];
+ for(let i=1;i<points.length-1;i++){
+  const a=points[i-1],b=points[i],c=points[i+1];
+  const incoming=axes.map(k=>b[k]-a[k]),outgoing=axes.map(k=>c[k]-b[k]);
+  const ab=Math.hypot(...incoming),bc=Math.hypot(...outgoing);
+  const dot=incoming.reduce((sum,v,k)=>sum+v*outgoing[k],0)/(ab*bc);
+  if(dot<=-1+1e-8)reversals.push(i);
+  if(!Number.isFinite(dot)||dot>1e-9||reversals.at(-1)===i){path.push(b);source.push(i);continue;}
+  const trim=Math.min(cornerTrim,ab/3,bc/3);
+  const toward=(p,len)=>Object.fromEntries(coordinates.map(k=>[k,b[k]+(p[k]-b[k])*(trim/len)]));
+  path.push(toward(a,ab),toward(c,bc));
+  source.push(i,i);
+ }
+ path.push(points.at(-1));
+ source.push(points.length-1);
+ return {path,source,reversals};
+}
+function networkPath(points){
+ const plan=chamfer(points,['x','y']);
+ const spatial=chamfer(plan.path,coordinates);
+ return {path:spatial.path,reversals:[...new Set([...plan.reversals,...spatial.reversals.map(i=>plan.source[i])])]};
+}
+function routeGeometry(route,plan,furniture,byId=new Map(furniture.map(f=>[f.id,f]))){
+ const points=route.points.map(p=>{
+  if(!p.furnitureId)return p;
+  const f=byId.get(p.furnitureId);
+  if(endpointKind(f)!==route.kind)return {...p,unresolved:true};
+  const current=endpoint(f,plan,furniture);
+  return current.z===null?{...p,x:current.x,y:current.y,unresolved:true}:current;
+ });
+ const unresolved=points.some(p=>p.unresolved);
+ const {path,reversals}=route.kind==='network'&&points.length>2?networkPath(points):{path:points,reversals:[]};
+ const length=unresolved||reversals.length?null:path.reduce((sum,p,i)=>i?sum+distance(path[i-1],p):0,0);
+ return {points,path,length,unresolved,reversals};
+}
+const api={panel,assertEditable,purpose,controlPairs,points,surfaces,place,nearest,wireKinds,routeLimits,validateRoutes,boxKind,endpointKind,endpoint,routeGeometry};
+root.FurnishElectrical=api;if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

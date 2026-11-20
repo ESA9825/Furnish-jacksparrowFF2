@@ -13,6 +13,7 @@ globalThis.FurnishElectricalUI=(()=>{
  function setMode(mode){
   if(!['furniture','ceiling','electrical'].includes(mode))return;
   endDrag(true);closeFabEditor(false);if(!$('#dlg').hidden)closeDialog();
+  globalThis.FurnishWiringUI?.leave();
   adding=false;poseHost=null;ui.sceneMove=false;ui.sel=null;ui.tool='select';ui.planMode=mode;saveUI();renderAll();applyView();
  }
  function selection(sel){
@@ -32,23 +33,26 @@ globalThis.FurnishElectricalUI=(()=>{
  }
  function draw(root=svg,{exporting=false,visibleLayers=true}={}){
   let g=root.querySelector('#gElectrical');
-  if(!active()){g?.remove();return;}
+  if(!active()){g?.remove();globalThis.FurnishWiringUI?.draw(root);return;}
   if(!g){g=document.createElementNS(NS,'g');g.id='gElectrical';root.querySelector('#gSel')?.before(g);if(!g.parentNode)root.append(g);}
   g.setAttribute('transform',`rotate(${drawingRotation()})`);
   const scale=exporting ? .075 : view.s,k=1/scale,rows=E.points(state,canvasEffectivePlan()).filter(r=>!visibleLayers||FurnishLayers.visible(state,'furniture:'+r.id));
   g.innerHTML=rows.map(r=>{const f=getF(r.id),selected=selIds().includes(f.id),rotation=-drawingRotation();return `<g data-electrical-symbol="${esc(f.id)}" ${exporting?'':`data-fid="${esc(f.id)}"`} transform="translate(${f.cx} ${f.cy}) rotate(${rotation})" style="cursor:move"><title>${esc(r.number+' · '+f.name+' · '+r.variant.label)} · 底部 ${height(r.finishedBottom)} mm（完成地面）</title><circle r="${11*k}" fill="${selected?'#a64d31':'#fffaf4'}" stroke="#a64d31" stroke-width="2" vector-effect="non-scaling-stroke"/><text text-anchor="middle" dominant-baseline="central" font-size="${9*k}" font-weight="bold" fill="${selected?'white':'#783a28'}" pointer-events="none">${r.number}</text><text x="${16*k}" y="${-5*k}" font-size="${11*k}" fill="#783a28" stroke="#fffaf4" stroke-width="${3*k}" paint-order="stroke" pointer-events="none">${esc(r.variant.label)}</text><text x="${16*k}" y="${10*k}" font-size="${10*k}" fill="#783a28" stroke="#fffaf4" stroke-width="${3*k}" paint-order="stroke" pointer-events="none">底 ${height(r.finishedBottom)} / 中 ${height(r.finishedCenter)} mm</text></g>`;}).join('');
   const chosen=selItems().length===1&&selItems()[0];
   if(chosen&&E.panel(chosen)){const hit=E.nearest(chosen,E.surfaces(canvasEffectivePlan(),state,chosen),1);if(hit){const s=hit.surface,n=s.normal,a=s.a,b=[s.a[0]+(s.b[0]-s.a[0])*hit.offset/s.length,s.a[1]+(s.b[1]-s.a[1])*hit.offset/s.length],d=35*k,u=[a[0]+n[0]*d,a[1]+n[1]*d],v=[b[0]+n[0]*d,b[1]+n[1]*d],mid=[(u[0]+v[0])/2,(u[1]+v[1])/2];g.insertAdjacentHTML('beforeend',`<g pointer-events="none" data-electrical-dimension><path d="M${a}L${u}L${v}L${b}" fill="none" stroke="#a64d31" stroke-width="1" vector-effect="non-scaling-stroke"/><text transform="translate(${mid}) rotate(${-drawingRotation()})" text-anchor="middle" font-size="${11*k}" fill="#783a28" stroke="#fffaf4" stroke-width="${3*k}" paint-order="stroke">中心距面起点 ${Number(hit.offset.toFixed(1))} mm</text></g>`);}}
+  globalThis.FurnishWiringUI?.draw(root,{exporting,visibleLayers});
   for(const node of root.querySelectorAll('#gFurn > [data-fid]')){const ref=!E.panel(getF(node.dataset.fid));if(ref){node.setAttribute('opacity','.28');node.setAttribute('pointer-events','none');}else node.setAttribute('pointer-events','none');}
  }
  function afterRender(){
   document.body.classList.toggle('electrical-mode',active());
   const status=$('#placement-status'),message=active()&&adding?tr('点击画布放置面板，按 Esc 取消','Click the plan to place the socket. Press Esc to cancel.'):'';
   if(status.textContent!==message)status.textContent=message;
-  if(active())draw();else {document.querySelector('#gElectrical')?.remove();for(const n of document.querySelectorAll('#gFurn > [data-fid]'))n.removeAttribute('pointer-events');}
+  draw();
+  if(!active())for(const n of document.querySelectorAll('#gFurn > [data-fid]'))n.removeAttribute('pointer-events');
   refreshList();
  }
  function pointer(e){
+  if(globalThis.FurnishWiringUI?.pointer(e))return true;
   if(!active()||!adding||e.button!==0||spaceDown)return false;
   const p=toMM(e),item=LIB.flatMap(c=>c.items).find(i=>FurnishProducts.supports({type:i[0]},'panelVariant'));if(!item)return false;
   adding=false;addItem(item,p.x,p.y);return true;
@@ -167,10 +171,12 @@ globalThis.FurnishElectricalUI=(()=>{
  }
  function panel(p){
   if(!active())return false;
+  if(globalThis.FurnishWiringUI?.panel(p))return true;
   const f=selItems().length===1&&selItems()[0],rows=E.points(state,canvasEffectivePlan()),locked=f&&physicalLocked(f);
   const listOpen=p.querySelector('#electrical-panel-list')?.open??!f;
-  p.innerHTML=`<section class="electrical-panel"><h3>插座布置 <span class="muted">${rows.length} 个点位</span></h3><p class="muted">家具、墙体和柜体结构只读。开合柜门可查看柜内点位；面板可贴墙或贴柜体板面。</p><div class="actions"><button class="btn primary" id="electrical-add">${adding?'取消放置':'＋ 添加面板'}</button><button class="btn" id="electrical-exit">返回家具布局</button></div>${f?editor(f,rows.find(r=>r.id===f.id),locked):'<p>点选图中编号编辑面板，或从下方列表选择。</p>'}<details ${poseHost?'open':''}><summary>柜门／抽屉开合</summary><label>选择柜体<select id="electrical-host"><option value="">请选择</option>${state.furniture.filter(f=>(f.cabinet||f.kitchen)&&FurnishLayers.visible(state,'furniture:'+f.id)).map(f=>`<option value="${esc(f.id)}" ${poseHost===f.id?'selected':''}>${esc(f.name)}</option>`).join('')}</select></label><div class="actions"><button class="btn" id="electrical-open">全部打开</button><button class="btn" id="electrical-close">全部关闭</button><button class="btn" id="electrical-3d">三维逐扇开合</button></div><small>仅改变开启状态；柜体尺寸、位置和结构保持。原来锁定的柜体仍受保护。</small></details><details id="electrical-panel-list" ${listOpen?'open':''}><summary>面板清单</summary>${listRows(rows)}</details><p id="electrical-error" class="project-error" role="alert"></p></section>`;
+  p.innerHTML=`<section class="electrical-panel"><h3>插座布置 <span class="muted">${rows.length} 个点位</span></h3><p class="muted">家具、墙体和柜体结构只读。开合柜门可查看柜内点位；面板可贴墙或贴柜体板面。</p><div class="actions"><button class="btn primary" id="electrical-add">${adding?'取消放置':'＋ 添加面板'}</button><button class="btn" id="electrical-wiring">布线</button><button class="btn" id="electrical-exit">返回家具布局</button></div>${f?editor(f,rows.find(r=>r.id===f.id),locked):'<p>点选图中编号编辑面板，或从下方列表选择。</p>'}<details ${poseHost?'open':''}><summary>柜门／抽屉开合</summary><label>选择柜体<select id="electrical-host"><option value="">请选择</option>${state.furniture.filter(f=>(f.cabinet||f.kitchen)&&FurnishLayers.visible(state,'furniture:'+f.id)).map(f=>`<option value="${esc(f.id)}" ${poseHost===f.id?'selected':''}>${esc(f.name)}</option>`).join('')}</select></label><div class="actions"><button class="btn" id="electrical-open">全部打开</button><button class="btn" id="electrical-close">全部关闭</button><button class="btn" id="electrical-3d">三维逐扇开合</button></div><small>仅改变开启状态；柜体尺寸、位置和结构保持。原来锁定的柜体仍受保护。</small></details><details id="electrical-panel-list" ${listOpen?'open':''}><summary>面板清单</summary>${listRows(rows)}</details><p id="electrical-error" class="project-error" role="alert"></p></section>`;
   p.querySelector('#electrical-add').onclick=()=>{adding=!adding;renderPanel();afterRender();};p.querySelector('#electrical-exit').onclick=()=>setMode('furniture');
+  p.querySelector('#electrical-wiring').onclick=()=>{adding=false;FurnishWiringUI.open();afterRender();};
   bindList(p);
   p.querySelector('#electrical-host').onchange=e=>{poseHost=e.target.value;};
   const report=fn=>{try{fn();}catch(e){p.querySelector('#electrical-error').textContent=e.message;}};

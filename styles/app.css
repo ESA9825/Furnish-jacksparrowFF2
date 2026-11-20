@@ -1141,3 +1141,14 @@ button.replacement-product:focus-visible{outline:2px solid var(--accent);outline
 }
 @media(max-width:600px){.electrical-panel .form { grid-template-columns:repeat(2,minmax(0,1fr)); }}
 #panel .electrical-panel .actions .btn.primary{background:var(--action-bg);color:var(--on-action);border-color:transparent}
+
+.wiring-list { list-style:none; margin:10px 0; padding:0; }
+.wiring-list > li { padding:8px 0; border-top:1px solid var(--line); }
+.wiring-list > li > button { width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px; text-align:left; }
+.wiring-list button span { min-width:0; overflow-wrap:anywhere; }
+.wiring-list small { color:var(--muted); }
+.wiring-point-fields { display:flex; align-items:end; gap:6px; margin-top:4px; }
+.wiring-point-fields label { flex:1; min-width:0; }
+.wiring-point-fields input { width:100%; min-width:0; }
+.wiring-swatch { display:inline-block; width:18px; margin-right:7px; vertical-align:middle; border-top:3px solid #b84c29; }
+.wiring-swatch[data-wire-kind="network"] { border-top:3px dashed #175caa; }
