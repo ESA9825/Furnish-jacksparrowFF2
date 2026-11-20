@@ -14,6 +14,8 @@ assert.throws(()=>P.validatePlanWork(plan,{...work,open:{d:{0:{...work.open.d[0]
 for(const notes of [42,[{text:'a',x:null,y:0}],[{text:'a',x:'',y:0}],[{text:'a',x:'bad',y:0}],[{text:' ',x:0,y:0}],[{text:'x'.repeat(121),x:0,y:0}]])assert.throws(()=>P.validateWork({...work,notes}),/标注/);
 assert.throws(()=>P.validateWork({...work,notes:Array.from({length:2001},(_,i)=>({id:'n'+i,text:'标注',x:i,y:0}))}),/2000/);
 const legacy=[{text:'旧标注',x:'100',y:'-50'},{id:'same',text:'甲',x:0,y:0},{id:'same',text:'乙',x:1,y:1}],before=JSON.stringify(legacy),normalized=P.validateWork({...work,notes:legacy}).notes;
+const legacyPayload={...payload,current:{...work,notes:legacy}};
+assert.deepEqual(P.validateWorkspacePayload(legacyPayload),P.unpack(P.pack(legacyPayload)));
 assert.equal(normalized[0].x,100);assert.equal(normalized[0].size,1);assert.equal(normalized[0].color,'accent');assert.equal(new Set(normalized.map(n=>n.id)).size,3);assert.equal(JSON.stringify(legacy),before);
 assert.throws(()=>P.unpack(P.pack({...payload,designs:[{name:'标注损坏',work:{...work,notes:42}}]})),/标注损坏.*标注/);
 assert.throws(()=>P.unpack(P.pack({...payload,current:{...work,plan:'other'}})),/当前方案.*编号/);

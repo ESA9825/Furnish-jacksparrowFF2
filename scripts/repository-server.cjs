@@ -10,7 +10,7 @@ function create(root){
    // No CORS; reject cross-site writes and DNS-rebinding hosts, even on loopback.
    const host=req.headers.host||'',origin=req.headers.origin;
    if(!/^(127\.0\.0\.1|localhost):\d+$/.test(host)||origin&&origin!=='http://'+host||req.headers['sec-fetch-site']==='cross-site')throw Object.assign(Error('仅允许本机同源访问'),{status:403});
-   if(req.method==='GET'&&route==='/api/furnish/workspace'){reply(200,{...read(),storage:files.info({inspect:false}),supportedWorkspaceVersions:C.workspaceVersions});return true;}
+   if(req.method==='GET'&&route==='/api/furnish/workspace'){reply(200,{...read(),storage:files.info({inspect:false}),validatedWorkspace:true,supportedWorkspaceVersions:C.workspaceVersions});return true;}
    if(req.method==='GET'&&route==='/api/furnish/recoveries'){reply(200,recoveries());return true;}
    if(req.method==='GET'&&route==='/api/furnish/storage'){reply(200,files.info());return true;}
    if(req.method==='GET'&&route==='/api/furnish/backups'){reply(200,files.backups());return true;}

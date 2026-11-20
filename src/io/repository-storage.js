@@ -2,6 +2,7 @@
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishRepositoryStorage=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
  'use strict';
  function create({request,fingerprint,onChange,onAcknowledge=()=>{},ensureBackend=async()=>{},delay=650,debounce=true,retryDelays=[1500,5000,15000]}){
+  let loadedValidatedFile=false;
   let revision=null,pending=null,timer=null,running=null,blocked=false,retryable=false,storage=null,lastSavedAt=null,retryTimer=null,retryCount=0,uncertain=null,lastFailure='',stopped=false,status={mode:'loading',message:'正在读取本地正式文件…'};
   const publish=(mode,message)=>{status={mode,message:message+(storage?'\n保存位置：'+storage.file:'')+(lastSavedAt?'\n最后成功保存：'+new Date(lastSavedAt).toLocaleString():''),storage,lastSavedAt};onChange(status);};
   const transient=e=>!e.status||e.status>=500||[408,423,429].includes(e.status);
@@ -21,14 +22,16 @@
   }
   async function archive(workspace){return request('/recoveries','POST',{workspace});}
   async function initialize(caches){
+   loadedValidatedFile=false;
    await ensureBackend();
    const disk=await request('/workspace','GET');revision=disk.revision;storage=disk.storage||null;lastSavedAt=storage?.savedAt||null;
    const candidates=caches.filter(w=>repositoryCore().workspaceVersions.includes(w?.v)&&Object.keys(w.work||{}).length).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
-   const seen=new Set();for(const c of candidates){const hash=await fingerprint(c);if(hash!==revision&&!seen.has(hash)){await archive(c);seen.add(hash);}}
-   const cache=candidates[0];
+   const cache=candidates[0],seen=new Set();let cacheHash=null;
+   for(const c of candidates){const hash=await fingerprint(c);if(c===cache)cacheHash=hash;if(hash!==revision&&!seen.has(hash)){await archive(c);seen.add(hash);}}
    if(!disk.workspace){if(!cache){publish('ready','本地正式文件自动保存已启用');return null;}publish('pending','正在迁移浏览器设计到本地正式文件…');const result=await request('/workspace','PUT',{workspace:cache,baseRevision:null});revision=result.revision;lastSavedAt=Date.now();publish('saved','设计已保存到本地正式文件');return {...cache,_repository:{revision}};}
-   const hash=cache?await fingerprint(cache):null,action=rootDecision(disk.revision,cache?._repository?.revision,hash,cache?._repository?.clean);
+   const action=rootDecision(disk.revision,cache?._repository?.revision,cacheHash,cache?._repository?.clean);
    if(action==='resume'){publish('pending','正在恢复尚未写入文件的编辑…');const result=await request('/workspace','PUT',{workspace:cache,baseRevision:revision});revision=result.revision;lastSavedAt=Date.now();publish('saved','已恢复本机编辑并保存到本地正式文件');return {...cache,_repository:{revision}};}
+   loadedValidatedFile=disk.validatedWorkspace===true;
    publish('saved',action==='conflict'?'已加载本地正式文件；不同的浏览器缓存已保留，可从“本机恢复副本”载入':'已加载本地正式文件；浏览器缓存用于意外恢复');return {...disk.workspace,_repository:{revision}};
   }
   // Kept in the shared core as well; supplied lazily for browser and Node tests.
@@ -71,7 +74,7 @@
   }
   function stop(){clearTimeout(timer);cancelRetry();stopped=true;pending=null;blocked=true;retryable=false;publish('conflict','本机缓存已清除；本地正式文件保留，刷新可重新载入');}
   async function retry(reset=true){if(stopped||blocked&&!retryable)throw Error('文件存在冲突或已停止保存，请刷新后处理恢复副本');cancelRetry();if(!pending&&!running)return;if(reset)retryCount=0;blocked=false;publish('pending','正在重试本地文件保存…');await flush();}
-  return {initialize,schedule,flush,retry,archive,stop,get revision(){return revision;},get status(){return status;},get pending(){return !!pending||!!running;},get blocked(){return blocked;}};
+  return {initialize,schedule,flush,retry,archive,stop,get revision(){return revision;},get loadedValidatedFile(){return loadedValidatedFile;},get status(){return status;},get pending(){return !!pending||!!running;},get blocked(){return blocked;}};
  }
  return {create};
 });

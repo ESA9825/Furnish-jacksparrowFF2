@@ -857,7 +857,7 @@ $('#planBtn').onclick = () => openPlans();
 /* ======================= 主题 ======================= */
 const THEME_KEY = 'huxing-theme';
 function curTheme(){ return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'; }
-function setTheme(t){
+function setTheme(t,{redraw=true}={}){
   document.documentElement.dataset.theme = t;
   try { localStorage.setItem(THEME_KEY, t); } catch(e) {}
   const meta = document.querySelector('meta[name="theme-color"]'); if (meta) meta.content = t === 'dark' ? '#0c0b09' : '#1b1916';
@@ -865,8 +865,7 @@ function setTheme(t){
   const b = $('#themeBtn'), q = $('#themeQuick'), next = t === 'dark' ? tr('亮色', 'Light') : tr('暗色', 'Dark');
   b.innerHTML = ico(t === 'dark' ? 'sun' : 'moon') + next; b.classList.toggle('on', t === 'dark');
   q.innerHTML = ico(t === 'dark' ? 'sun' : 'moon'); q.title = tr(`切换为${next}主题`, `Switch to ${next.toLowerCase()} theme`);
-  buildDefs(); renderAll();
-  window.View3D?.retheme();
+  if(redraw){buildDefs(); renderAll();window.View3D?.retheme();}
 }
 $('#themeBtn').onclick = $('#themeQuick').onclick = () => setTheme(curTheme() === 'dark' ? 'light' : 'dark');
 
@@ -1082,8 +1081,6 @@ $('#langSel').onclick = e => { const l = e.target.closest('[data-lang]')?.datase
 
 applyStaticLang(); syncFullscreen();
 setTheme((() => { try { return localStorage.getItem(THEME_KEY); } catch(e) { return null; } })() ||
-  (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
-applyPlanData(); state.furniture = sanitizeFurn(state.furniture, PLAN);
-syncLayerBtns(); buildCats(); buildLib(); buildPlanList(); renderOpenings(); renderDims();
+  (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),{redraw:false});
+syncLayerBtns();
 $('#tip').textContent = TIPS()['2d'];
-fitView(); renderAll(); renderDesigns(); syncSaved();

@@ -23,7 +23,7 @@
   for(const [id,work] of Object.entries(w.work)){
    if(!/^[a-zA-Z0-9_-]{1,200}$/.test(id))throw Error('工作区户型编号无效');
    const designs=w.designs.filter(d=>d.planId===id),payload={planId:id,current:work,designs,catalog:w.custom||[]};
-   const checked=P.unpack(P.pack(payload));
+   const checked=P.validateWorkspacePayload(payload);
    // Each preview validates its current work. Passing all named designs again
    // for every preview made startup validation quadratic in history length.
    const validate=work=>P.validatePlanWork(P.previewPlan({...checked,current:work,designs:[]},plans),work);

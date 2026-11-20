@@ -26,7 +26,7 @@ const fingerprint=async w=>S.digest(C.text(w));
  const file=path.join(dir,'projects/workspace.furnish.json'),valid=fs.readFileSync(file,'utf8');fs.writeFileSync(file,'<<<<<<< HEAD\n');assert.throws(()=>api.read());assert.throws(()=>api.write(a,second.revision));assert.match(fs.readFileSync(file,'utf8'),/HEAD/);fs.writeFileSync(file,valid);
  const server=http.createServer((req,res)=>api.handle(req,res));await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const url='http://127.0.0.1:'+server.address().port;
  try{
-  assert.equal((await fetch(url+'/api/furnish/workspace')).status,200);
+  const workspaceResponse=await fetch(url+'/api/furnish/workspace');assert.equal(workspaceResponse.status,200);assert.equal((await workspaceResponse.json()).validatedWorkspace,true);
   assert.equal((await fetch(url+'/api/furnish/storage')).status,200);
   assert.ok((await (await fetch(url+'/api/furnish/backups')).json()).length);
   const history=api.backups()[0];assert.equal((await fetch(url+'/api/furnish/backups/'+history.id)).status,200);
@@ -37,7 +37,7 @@ const fingerprint=async w=>S.digest(C.text(w));
    const cached={...clone(a),v,updatedAt:1000+v};cached._repository={revision:first.revision,clean:await fingerprint(cached)};
    const request=async(route,method='GET',body)=>{const response=await fetch(url+'/api/furnish'+route,{method,headers:body?{'Content-Type':'application/json','X-Furnish-Request':'workspace-v1'}:{},...(body?{body:JSON.stringify(body)}:{})});const value=await response.json();if(!response.ok)throw Object.assign(Error(value.error),{status:response.status});return value;};
    const real=Client.create({request,fingerprint,onChange(){},delay:100000});
-   const loaded=await real.initialize([cached]);assert.equal(real.status.mode,'saved',`v${v} recovery must not disable file saving`);assert.deepEqual(C.portable(loaded),C.portable(b));assert.equal(api.read().revision,second.revision);assert(api.recoveries().some(entry=>JSON.stringify(entry.workspace)===JSON.stringify(cached)),`v${v} recovery retains exact raw cache`);
+   const loaded=await real.initialize([cached]);assert.equal(real.loadedValidatedFile,true);assert.equal(real.status.mode,'saved',`v${v} recovery must not disable file saving`);assert.deepEqual(C.portable(loaded),C.portable(b));assert.equal(api.read().revision,second.revision);assert(api.recoveries().some(entry=>JSON.stringify(entry.workspace)===JSON.stringify(cached)),`v${v} recovery retains exact raw cache`);
    const edited={...clone(b),v};edited.work[plan.id].furniture[0].cy+=v;real.schedule(edited);await real.flush();assert.equal(real.status.mode,'saved');assert.equal(api.read().workspace.work[plan.id].furniture[0].cy,edited.work[plan.id].furniture[0].cy);const revision=api.read().revision;api.write(b,revision);real.stop();
   }
   assert.throws(()=>api.recover({...a,v:999}),/恢复副本无效/);
@@ -52,13 +52,14 @@ const fingerprint=async w=>S.digest(C.text(w));
   C.validate(body.workspace);state={workspace:C.portable(body.workspace),revision:await fingerprint(body.workspace)};writes.push(clone(body.workspace));return {revision:state.revision};
  };const client=Client.create({request,fingerprint,onChange:s=>statuses.push(s),onAcknowledge:a=>acks.push(a),delay:100000});return {client,archives,writes,statuses,acks,get state(){return state;},set state(v){state=v;}};}
  const revA=await fingerprint(a),revB=await fingerprint(b);
- const emptyBrowser=setup({revision:revA,workspace:a});assert.equal((await emptyBrowser.client.initialize([]))._repository.revision,revA);assert.equal(emptyBrowser.writes.length,0);
+ const emptyBrowser=setup({revision:revA,workspace:a});assert.equal((await emptyBrowser.client.initialize([]))._repository.revision,revA);assert.equal(emptyBrowser.writes.length,0);assert.equal(emptyBrowser.client.loadedValidatedFile,false);
+ const validatedDisk=setup({revision:revA,workspace:a,validatedWorkspace:true});await validatedDisk.client.initialize([]);assert.equal(validatedDisk.client.loadedValidatedFile,true);
  const migrate=setup({revision:null,workspace:null});const migrated=await migrate.client.initialize([a]);assert.equal(migrated._repository.revision,revA);assert.equal(migrate.archives.length,1);assert.equal(migrate.writes.length,1);
  const stale={...a,updatedAt:9999999999999,_repository:{revision:revA,clean:revA}};
  const pull=setup({revision:revB,workspace:b});const loaded=await pull.client.initialize([stale]);assert.deepEqual(C.portable(loaded),C.portable(b));assert.equal(pull.writes.length,0);
  const unknown=setup({revision:revB,workspace:b});await unknown.client.initialize([{...a,updatedAt:9999999999999}]);assert.equal(unknown.writes.length,0);assert.equal(unknown.archives.length,1);assert.match(unknown.client.status.message,/恢复副本/);
  const pending={...b,_repository:{revision:revA,clean:revA}};
- const resume=setup({revision:revA,workspace:a});const resumed=await resume.client.initialize([pending]);assert.equal(resumed._repository.revision,revB);assert.equal(resume.writes.length,1);
+ const resume=setup({revision:revA,workspace:a,validatedWorkspace:true});const resumed=await resume.client.initialize([pending]);assert.equal(resumed._repository.revision,revB);assert.equal(resume.writes.length,1);assert.equal(resume.client.loadedValidatedFile,false);
  const both=setup({revision:revB,workspace:b});const divergent=clone(pending);divergent.work[plan.id].furniture[0].cy+=456;await both.client.initialize([divergent]);assert.equal(both.writes.length,0);assert.equal(both.archives.length,1);
  // Both browser stores are kept before selecting the newer candidate.
  const two=setup({revision:null,workspace:null});await two.client.initialize([a,{...b,updatedAt:200}]);assert.equal(two.archives.length,2);assert.equal(two.state.revision,revB);
