@@ -59,15 +59,16 @@ const artGlassPatterns={
 };
 // G12 detail-page range; variants with identical fronts retain electrical labels.
 const panelVariants=Object.freeze(Object.fromEntries([
- ...[['1','一'],['2','二'],['3','三'],['4','四']].flatMap(([n,label])=>[['single','单极'],['double','双控'],...(Number(n)<=2?[['intermediate','中途掣']]:[])].map(([mode,text])=>['switch'+n+'-'+mode,{label:label+'位'+text,group:'开关类',control:'conventional'}])),
- ...[['socket5','二三极连体'],['socket5-wide','二三极宽体'],['socket16','一位三极（16A）'],['socket5-switch','二三极＋双控开关'],['socket16-switch','三极＋单极开关'],['socket4','二位二极连体'],['socket5-separated','二极＋三极分体'],['socket7','二位二极＋三极连体'],['socket5-3usb','二三极＋三位USB'],['socket5-ac','二三极＋二位USB（A+C）'],['socket5-diagonal','10A斜五孔']].map(([id,label])=>[id,{label,group:'插座类',control:'conventional'}]),
+ ...[['1','一'],['2','二'],['3','三'],['4','四']].flatMap(([n,label])=>[['single','单极'],['double','双控'],...(Number(n)<=2?[['intermediate','中途掣']]:[])].map(([mode,text])=>['switch'+n+'-'+mode,{label:label+'位'+text,listLabel:text,group:'开关类',control:'conventional',gangs:Number(n)}])),
+ ...[['socket5','二三极连体'],['socket5-wide','二三极宽体'],['socket16','一位三极（16A）',16,'一位三极'],['socket5-switch','二三极＋双控开关'],['socket16-switch','三极＋单极开关'],['socket4','二位二极连体'],['socket5-separated','二极＋三极分体'],['socket7','二位二极＋三极连体'],['socket5-3usb','二三极＋三位USB'],['socket5-ac','二三极＋二位USB（A+C）'],['socket5-diagonal','10A斜五孔',10,'斜五孔']].map(([id,label,ratedAmps,listLabel])=>[id,{label,group:'插座类',control:'conventional',...(ratedAmps?{ratedAmps,listLabel}:{})}]),
  ...[['blank','白板'],['phone','一位电话'],['net5','一位电脑'],['net6','一位电脑（六类）'],['tv','一位电视'],['tv-push','插入式一分支电视'],['phone-net5','一位电话＋电脑'],['phone-net6','一位电话＋电脑（六类）'],['net5-double','二位电脑'],['net6-double','二位电脑（六类）'],['tv-net5','一位电脑＋电视'],['tv-net6','一位电脑＋电视（六类）']].map(([id,label])=>[id,{label,group:'信息类'}]),
  ...[['cable','出线孔'],['doorbell','一位带荧光门铃开关'],['bell','呼叫开关'],['nightlight','人体感应地脚灯']].map(([id,label])=>[id,{label,group:'电子类',...(id==='nightlight'?{control:'sensor'}:{})}])
 ]));
 // Additional 86 variants share the legacy type; old G12 keys/defaults stay unchanged.
 const xiaomiPanelVariants=Object.freeze(Object.fromEntries(['2','2pro'].flatMap(series=>[1,2,3].flatMap(gangs=>['white','grey'].map(color=>{
- const pro=series==='2pro',name='小米智能开关'+(pro?'2 Pro':'2'),label=name+' · '+['','单开','双开','三开'][gangs]+' · '+(color==='white'?'白色':'深空灰');
- return ['xiaomi-'+series+'-'+gangs+'-'+color,{label,group:name,control:'smart',series,gangs,color,depth:pro?5:7.9,totalDepth:pro?34.8:(gangs===3?34.7:30.7),brand:'小米/Xiaomi',model:name,sourceUrl:'https://item.jd.com/'+(pro?'100434281318':'100313419465')+'.html'}];
+ const pro=series==='2pro',name='小米智能开关'+(pro?'2 Pro':'2'),finish=color==='white'?'白色':'深空灰';
+ const label=name+' · '+['','单开','双开','三开'][gangs]+' · '+finish;
+ return ['xiaomi-'+series+'-'+gangs+'-'+color,{label,listLabel:name+' · '+finish,group:name,control:'smart',series,gangs,color,depth:pro?5:7.9,totalDepth:pro?34.8:(gangs===3?34.7:30.7),brand:'小米/Xiaomi',model:name,sourceUrl:'https://item.jd.com/'+(pro?'100434281318':'100313419465')+'.html'}];
 })))));
 const panelOptions=Object.freeze({...panelVariants,...xiaomiPanelVariants});
 function panelSpec(f){const key=value(f,'panelVariant');return panelOptions[key];}

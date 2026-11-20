@@ -3,6 +3,7 @@ globalThis.FurnishElectricalUI=(()=>{
  const height=v=>v===null?'待核对':Number(v.toFixed(1));
  const E=FurnishElectrical,NS='http://www.w3.org/2000/svg';
  const controlLabels={smart:['智能','Smart'],conventional:['常规','Conventional'],sensor:['感应','Sensor']};
+ const gangLabels=[null,['单开','1 gang'],['双开','2 gang'],['三开','3 gang'],['四开','4 gang']];
  let adding=false,poseHost=null;
  const active=()=>ui.planMode==='electrical';
  const physicalLocked=f=>!!f&&(!!f.locked||FurnishLayers.locked(state,'furniture:'+f.id));
@@ -56,12 +57,20 @@ globalThis.FurnishElectricalUI=(()=>{
    const product=FurnishProducts.definition(f),variantLabel=nm(r.variant.label);
    const line=r.variant.model||!product.panelLine?null:tr(...product.panelLine);
    const model=[line,variantLabel].filter(Boolean).join(' · ');
+   const displayModel=[line,nm(r.variant.listLabel||r.variant.label)].filter(Boolean).join(' · ');
    const control=r.variant.control||product.trackSocket?.control,category=controlLabels[control];
+   const gangs=gangLabels[r.variant.gangs],amps=r.variant.ratedAmps;
+   const tags=[
+    category?`<span class="electrical-control" data-control="${control}">${tr(...category)}</span>`:'',
+    gangs?`<span class="electrical-control">${tr(...gangs)}</span>`:'',
+    amps?`<span class="electrical-control">${tr(`额定 ${amps} A`,`Rated ${amps} A`)}</span>`:''
+   ].join('');
    const elevation=r.finishedBottom===null?tr('待核对','Unknown'):height(r.finishedBottom)+' mm';
    groups.get(key).items.push(`<li><button type="button" class="btn electrical-row" data-electrical-id="${esc(r.id)}" ${current===r.id?'aria-current="true"':''}>
      <span class="electrical-row-number">${r.number}</span>
      <span class="electrical-row-description">${label&&label!==variantLabel&&label!==model?`<b>${esc(label)}</b>`:''}
-       <span class="electrical-row-product">${category?`<span class="electrical-control" data-control="${control}">${tr(...category)}</span> `:''}${esc(model)}</span>
+       <span class="electrical-row-product">${esc(displayModel)}</span>
+       ${tags?`<span class="electrical-row-tags">${tags}</span>`:''}
        ${hidden?`<small>${tr('图层已隐藏','Layer hidden')}</small>`:''}
      </span>
      <span class="electrical-row-height"><b>${elevation}</b><small>${tr('底高','Bottom height')}</small></span>
