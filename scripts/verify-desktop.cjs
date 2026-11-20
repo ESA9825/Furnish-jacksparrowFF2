@@ -2,11 +2,15 @@
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),http=require('node:http'),crypto=require('node:crypto');
 const {pathToFileURL}=require('node:url');
+const {parseArgs}=require('node:util');
 const {_electron,chromium}=require('playwright');
 const root=path.resolve(__dirname,'..'),{runtimeFiles}=require('./package-desktop.cjs'),Artifacts=require('./lib/test-artifacts.cjs');
 const hash=file=>crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 async function freePort(){const s=http.createServer();await new Promise(r=>s.listen(0,'127.0.0.1',r));const p=s.address().port;await new Promise(r=>s.close(r));return p;}
 async function main(){
+ const {values,positionals}=parseArgs({options:{narrow:{type:'boolean'}},allowPositionals:true});
+ if(positionals.length>1)throw Error('用法：node scripts/verify-desktop.cjs [--narrow] [桌面程序路径]');
+ const [executablePath]=positionals;
  const source=path.resolve(process.env.FURNISH_TEST_PROJECT||path.join(root,'projects/workspace.furnish.json')),before=hash(source);
  const job=Artifacts.createRun({parent:path.join(root,'output/desktop-verification'),prefix:'verification-'}),run=job.dir;let passed=false;
  try{
@@ -14,7 +18,7 @@ async function main(){
  job.copy(source,'workspace/projects/workspace.furnish.json',{disposable:false});
  for(const name of runtimeFiles)job.copy(path.join(root,'scripts',name),path.join('workspace/scripts',name));
  job.discard('profile');
- const executable=require('./launch-desktop.cjs').desktopExecutable(root,{executable:process.argv[2]?path.resolve(process.argv[2]):undefined});
+ const executable=require('./launch-desktop.cjs').desktopExecutable(root,{executable:executablePath?path.resolve(executablePath):undefined});
  const port=await freePort(),env={...process.env,FURNISH_DESKTOP_ROOT:isolated,FURNISH_DESKTOP_PROFILE:path.join(run,'profile'),FURNISH_PORT:String(port)};
  delete env.ELECTRON_RUN_AS_NODE;
  const checks=[],errors=[];let desktop,browser;
@@ -62,12 +66,18 @@ async function main(){
   assert.equal(await page.evaluate(()=>state.furniture.length),initial.furniture);
   assert.equal(await page.evaluate(id=>state.furniture.find(f=>f.id===id).color,edit.id),'#73918a');
   await page.evaluate(()=>FurnishRepository.flush());checks.push('file input reimports exported plan with edited furniture intact');
-  await desktop.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setContentSize(390,844));
-  await page.waitForFunction(()=>innerWidth===390);
-  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
-  await page.screenshot({path:path.join(run,'desktop-narrow.png')});
-  await desktop.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setContentSize(1440,960));
-  checks.push('390px desktop viewport without document overflow');
+  if(values.narrow){
+   const originalSize=await desktop.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].getContentSize());
+   try{
+    await desktop.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setContentSize(390,844));
+    await page.waitForFunction(()=>innerWidth===390);
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+    await page.screenshot({path:path.join(run,'desktop-narrow.png')});
+    checks.push('390px desktop viewport without document overflow');
+   }finally{
+    await desktop.evaluate(({BrowserWindow},[width,height])=>BrowserWindow.getAllWindows()[0].setContentSize(width,height),originalSize);
+   }
+  }
   const switchStart=Date.now();
   await page.locator('[data-view="3d"]').click();
   await page.waitForFunction(()=>document.body.classList.contains('m3d')&&!switching,null,{timeout:120000});

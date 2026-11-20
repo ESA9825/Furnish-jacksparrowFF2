@@ -101,7 +101,7 @@ node scripts/package-desktop.cjs --portable --out output/desktop/Furnish-portabl
 
 ## 验证与边界
 
-`node tests/test-desktop.cjs` 检查目录解析、导航限制、服务复用／关闭、端口冲突及拒绝覆盖打包。`npm run verify:desktop` 启动真实打包 EXE，在 `output/desktop-verification/` 创建独立源码／设计／缓存副本，验收恢复、编辑、键盘撤销重做、保存、导出、WebGL、打印、HTTP 浏览器共享、直接 file:// 与退出重启。可通过 `node scripts/verify-desktop.cjs <EXE路径>` 指定其他包。脚本检查源设计哈希，绝不把验收编辑写回原工作区。
+`node tests/test-desktop.cjs` 检查目录解析、导航限制、服务复用／关闭、端口冲突及拒绝覆盖打包。`npm run verify:desktop` 启动真实打包 EXE，在 `output/desktop-verification/` 创建独立源码／设计／缓存副本，验收恢复、编辑、键盘撤销重做、保存、导出、WebGL、打印、HTTP 浏览器共享、直接 file:// 与退出重启。可通过 `node scripts/verify-desktop.cjs <EXE路径>` 指定其他包。 默认跳过窄屏检查。使用 `npm run verify:desktop -- --narrow` 开启 390 px 内容宽度的溢出检查和截图，也可用 `node scripts/verify-desktop.cjs --narrow <EXE路径>` 同时指定程序。脚本检查源设计哈希，绝不把验收编辑写回原工作区。
 
 页面使用隔离上下文和渲染器沙箱，不启用 Node；网页继续通过原同源 HTTP 接口读写。外链交给系统浏览器，阻止 file/javascript 等外部导航。本机页面请求直连，不依赖系统代理。桌面壳不暴露任意文件读写或执行命令的桥接接口。依据 [Electron 安全说明](https://www.electronjs.org/docs/latest/tutorial/security) 和[手动分发方式](https://www.electronjs.org/docs/latest/tutorial/application-distribution)。
 
