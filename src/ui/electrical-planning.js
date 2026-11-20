@@ -53,7 +53,10 @@ globalThis.FurnishElectricalUI=(()=>{
    if(!groups.has(key))groups.set(key,{room,items:[]});
    const hidden=!FurnishLayers.visible(state,FurnishLayers.furnitureKey(f));
    const name=nm(r.name).trim(),prefix=name.match(/^(E\d+)(?:\s*[·・:：]\s*|\s+|$)/);
-   const label=prefix?.[1]===r.number?name.slice(prefix[0].length):name;
+   const purpose=prefix?.[1]===r.number?name.slice(prefix[0].length):name;
+   const label=r.variant.control==='sensor'
+    ?purpose.replace(/^N\d+(?:\s*[·・:：]\s*|\s+|$)/,'').replace(/\s*[·・]\s*N\d+(?=\s*(?:[·・]|$))/g,'')
+    :purpose;
    const product=FurnishProducts.definition(f),variantLabel=nm(r.variant.label);
    const line=r.variant.model||!product.panelLine?null:tr(...product.panelLine);
    const model=[line,variantLabel].filter(Boolean).join(' · ');
