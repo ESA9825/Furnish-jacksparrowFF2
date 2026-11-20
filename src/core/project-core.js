@@ -5,7 +5,8 @@
  const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().filter(k=>v[k]!==undefined).map(k=>[k,canonical(v[k])])):v;
  const core=()=>root.FurnishDraft || require('./floorplan-core.js');
  // Reuse derived plans only within a synchronous validation transaction. Each
- // distinct draft goes through build/validation, and each caller gets a copy.
+ // distinct draft goes through build/validation. Internal callers only read
+ // the result. effectivePlan makes its own copy before applying overrides.
  let validationDraftCache=null;
  function withDraftCache(action){if(validationDraftCache)return action();validationDraftCache=new Map();try{return action();}finally{validationDraftCache=null;}}
  function buildDraft(input){
@@ -13,7 +14,7 @@
   const key=JSON.stringify(input);
   let plan=validationDraftCache.get(key);
   if(!plan){plan=core().build(input);if(validationDraftCache.size>=8)validationDraftCache.delete(validationDraftCache.keys().next().value);validationDraftCache.set(key,plan);}
-  return clone(plan);
+  return plan;
  }
  const bays=()=>root.FurnishBayWindows || require('./bay-window-core.js');
  const geometry=()=>root.FurnishGeometry || require('./layout-geometry.js');
@@ -551,8 +552,9 @@
  function unpack(input){let data=clone(input);if(data?.format==='furnish-workspace')fail('这是自动保存的整个工作区文件，不能作为单个项目导入。请在旧电脑打开“导入／导出 → 导出完整项目”，再将导出的文件带到新电脑，通过“导入项目”加载。原工作区文件仍可保留作完整备份。');if(data.format==='furnish-project'){if(![1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101].includes(data.version))fail('不支持的项目版本');if(checksum(data.payload)!==data.checksum)fail('项目完整性校验失败，文件可能被修改或损坏');data=data.payload;}else if(Array.isArray(data.furniture)){data={planId:data.plan,current:data,designs:[],catalog:[]};}else fail('不是 Furnish 项目文件');
   return validatePayload(data);
  }
- // In-memory workspace records share the import checks without an envelope or checksum.
- function validateWorkspacePayload(input){return validatePayload(upgradePayloadArchitecture(clone(input)));}
+ // The repository already owns its parsed workspace copy. Other callers
+ // receive an independent normalized payload.
+ function validateWorkspacePayload(input,{owned=false}={}){return validatePayload(upgradePayloadArchitecture(owned?input:clone(input)));}
  function validatePayload(data){
   if(!data||typeof data.planId!=='string'||!Array.isArray(data.designs)||data.designs.length>100||!Array.isArray(data.catalog)||data.catalog.length>500)fail('项目结构无效');const checked=(label,work)=>{try{const validated=checkWork(work,true);const upgraded=(root.FurnishFurnitureUpgrade||require('./furniture-upgrade.js')).upgradeWork(validated);return checkWork(upgraded,true);}catch(e){fail(label+'：'+e.message);}};data.current=checked('当前方案',data.current);data.designs=data.designs.map(d=>{if(d.editable!==undefined&&typeof d.editable!=='boolean')fail('方案编辑标记无效');if(typeof d.name!=='string'||d.name.length>80)fail('方案名称无效');return {...d,work:checked('命名方案「'+d.name+'」',d.work)};});if(data.current.architecture){const id=data.current.architecture.draft.id;if(id!==data.planId||data.designs.some(d=>d.work.architecture?.draft.id!==id))fail('方案户型不一致');}
   for(const [label,work] of [['当前方案',data.current],...data.designs.map(d=>['命名方案「'+d.name+'」',d.work])])if(work.plan!==undefined&&work.plan!==data.planId)fail(label+'：方案户型编号与项目不一致');

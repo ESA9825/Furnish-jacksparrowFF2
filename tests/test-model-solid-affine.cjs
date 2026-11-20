@@ -20,3 +20,25 @@ for(const type of ['cat_tree','washer_littleswan_tg10k60w','coffeetable_yeswood_
  }
 }
 console.log('PASS compiled mesh transforms match per-vertex hierarchy walk: '+vertices+' production vertices, max error '+maxError+' mm; nested rotation, quaternion, mirror, scale and stop ancestor');
+
+// Position-only consumers leave the static asset normals unevaluated. A
+// consumer that reads them receives the same attribute exactly once.
+{
+ const Static=require('../src/render/static-asset-model.js'),normals=[1,1,0,1,0,1,0,1,1];
+ let normalReads=0;
+ normals.slice=function(...args){normalReads++;return Array.prototype.slice.apply(this,args);};
+ const asset={format:1,sizeMm:[100,100,100],parts:[{positions:[0,0,0,.1,0,0,0,.1,.1],normals}]},f={w:200,h:100,d:300};
+ const build=(T)=>Static.build(T,asset,f,15).children[0].geometry;
+ const lazy=build(A.T);
+ assert.equal(normalReads,0);
+ class EagerGeometry extends A.T.BufferGeometry {}
+ EagerGeometry.prototype.setDeferredAttribute=undefined;
+ const eager=build({...A.T,BufferGeometry:EagerGeometry});
+ const readsAfterEager=normalReads;
+ assert.deepEqual(lazy.attributes.position.array,eager.attributes.position.array);
+ assert.deepEqual(lazy.index,eager.index);
+ assert.deepEqual(lazy.attributes.normal.array,eager.attributes.normal.array);
+ assert.equal(normalReads,readsAfterEager+3);
+ assert.strictEqual(lazy.attributes.normal,lazy.attributes.normal);
+ assert.equal(normalReads,readsAfterEager+3);
+}

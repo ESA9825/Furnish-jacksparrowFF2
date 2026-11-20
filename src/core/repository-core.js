@@ -12,7 +12,11 @@
  const text=input=>JSON.stringify({format:'furnish-workspace',version:version(input),workspace:portable(input)},null,2)+'\n';
  // A read revision belongs to the recorded file, not to a newer program's
  // recalculated minimum format. Otherwise a code-only upgrade looks external.
- const storedText=record=>JSON.stringify({format:record.format,version:record.version,workspace:portable(record.workspace)},null,2)+'\n';
+ // This record comes directly from JSON.parse. Canonicalization already copies it.
+ const storedText=record=>{
+  const {_repository,updatedAt,...workspace}=record.workspace;
+  return JSON.stringify({format:record.format,version:record.version,workspace:canonical(workspace)},null,2)+'\n';
+ };
  function validate(input){const P=root.FurnishProject||require('./project-core.js');return P.withDraftCache?P.withDraftCache(()=>validateRaw(input)):validateRaw(input);}
  function validateRaw(input){
   const w=clone(input),P=root.FurnishProject||require('./project-core.js'),plans=root.FurnishPlans||require('../data/plans.js');
@@ -23,7 +27,7 @@
   for(const [id,work] of Object.entries(w.work)){
    if(!/^[a-zA-Z0-9_-]{1,200}$/.test(id))throw Error('工作区户型编号无效');
    const designs=w.designs.filter(d=>d.planId===id),payload={planId:id,current:work,designs,catalog:w.custom||[]};
-   const checked=P.validateWorkspacePayload(payload);
+   const checked=P.validateWorkspacePayload(payload,{owned:true});
    // Each preview validates its current work. Passing all named designs again
    // for every preview made startup validation quadratic in history length.
    const validate=work=>P.validatePlanWork(P.previewPlan({...checked,current:work,designs:[]},plans),work);

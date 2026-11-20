@@ -13,6 +13,16 @@ function transform(node,stop){const origin=point(node,[0,0,0],stop),axes=[[1,0,0
 class Node{constructor(geometry){this.geometry=geometry;this.isMesh=!!geometry;this.children=[];this.userData={};this.position=new Vector();this.rotation=new Vector();this.quaternion=new Quaternion(this);this.scale=new Vector(1,1,1);}add(...nodes){for(const n of nodes){if(n.parent)n.parent.children=n.parent.children.filter(x=>x!==n);n.parent=this;this.children.push(n);}return this;}attach(n){const p=point(n,[0,0,0]);this.add(n);n.position.set(p[0]-this.position.x,p[1]-this.position.y,p[2]-this.position.z);return this;}translateY(v){this.position.y+=Math.cos(this.rotation.x)*v;this.position.z+=Math.sin(this.rotation.x)*v;return this;}traverse(fn){fn(this);this.children.forEach(n=>n.traverse(fn));}}
 class Attribute{constructor(array,size){this.array=Array.from(array);this.itemSize=size;this.count=this.array.length/size;}getX(i){return this.array[i*this.itemSize];}getY(i){return this.array[i*this.itemSize+1];}getZ(i){return this.array[i*this.itemSize+2];}setXYZ(i,x,y,z){this.array.splice(i*this.itemSize,3,x,y,z);return this;}}
 class Geometry{constructor(vertices=[],faces=[]){this.attributes={position:new Attribute(vertices.flat(),3)};this.index=faces.flat();this.userData={};}setAttribute(k,v){this.attributes[k]=v;return this;}setIndex(v){this.index=v;return this;}computeVertexNormals(){if(!this.attributes.normal)this.attributes.normal=new Attribute(this.attributes.position.array.map(()=>0),3);}transform(fn){const p=this.attributes.position;for(let i=0;i<p.count;i++)p.setXYZ(i,...fn([p.getX(i),p.getY(i),p.getZ(i)]));return this;}rotateX(a){return this.transform(v=>rotate(v,'x',a));}rotateY(a){return this.transform(v=>rotate(v,'y',a));}rotateZ(a){return this.transform(v=>rotate(v,'z',a));}scale(x,y,z){return this.transform(v=>v.map((p,i)=>p*[x,y,z][i]));}translate(x,y,z){return this.transform(v=>v.map((p,i)=>p+[x,y,z][i]));}}
+// Some production builders can supply render attributes only when requested.
+Geometry.prototype.setDeferredAttribute=function(key,create){
+ const attributes=this.attributes;
+ Object.defineProperty(attributes,key,{configurable:true,enumerable:true,get(){
+  const value=create();
+  Object.defineProperty(attributes,key,{value,enumerable:true,configurable:true,writable:true});
+  return value;
+ },set(value){Object.defineProperty(attributes,key,{value,enumerable:true,configurable:true,writable:true});}});
+ return this;
+};
 const prismFaces=n=>[Array.from({length:n},(_,i)=>i),Array.from({length:n},(_,i)=>n+i),...Array.from({length:n},(_,i)=>[i,(i+1)%n,(i+1)%n+n,i+n])];
 class Box extends Geometry{constructor(w,h,d){super([-1,1].flatMap(y=>[[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,z])=>[x*w/2,y*h/2,z*d/2])));this.faces=prismFaces(4);this.computeVertexNormals();}}
 // The same rounded-box position/normal construction used by vendored r160;
