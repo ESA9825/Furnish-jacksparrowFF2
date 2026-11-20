@@ -43,13 +43,23 @@ for(const points of [
  [right[0],right[1],{x:400,y:1000,z:0}],
  [{...right[0],z:0},{...right[1],z:800},{...right[2],z:1800}],
  [{...right[0],z:0},{...right[1],z:800},{...right[2],z:0}],
- [right[0],{...right[0],z:1000},{...right[1],z:1000}],
 ]){
  const shape=network(points);
  assert.equal(shape.reversals.length,0);
  assert(shape.path.length>3);
  for(const axes of [xy,xyz])assert(bends(shape.path,axes).every(dot=>dot>0));
 }
+const wallRiser=[{x:800,y:400,z:60},{x:0,y:0,z:60},{x:0,y:0,z:500}];
+for(const points of [wallRiser,wallRiser.slice().reverse()]){
+ const shape=network(points);
+ assert.deepEqual(shape.path,points);
+ assert.equal(shape.length,Math.hypot(800,400)+440);
+}
+// A later planar bend still receives its chamfer without moving the wall foot.
+const mixed=[wallRiser[2],wallRiser[1],{...right[1],z:60},{...right[2],z:60}];
+const mixedPath=network(mixed).path;
+assert.deepEqual(mixedPath.slice(0,2),mixed.slice(0,2));
+assert.equal(mixedPath.length,5);
 for(const folded of [
  [right[0],right[1],{x:800,y:0,z:0}],
  [right[0],{...right[0],z:500},{...right[0],z:200}],

@@ -130,6 +130,8 @@ function endpoint(f,plan,furniture){
 // handles elevation changes while keeping each plan bend within its angle.
 const cornerTrim=150;
 const coordinates=['x','y','z'];
+const vertical=v=>v[0]===0&&v[1]===0&&v[2]!==0;
+const level=v=>v[2]===0&&Math.hypot(v[0],v[1])>0;
 function chamfer(points,axes){
  const path=[points[0]],source=[0],reversals=[];
  for(let i=1;i<points.length-1;i++){
@@ -138,7 +140,9 @@ function chamfer(points,axes){
   const ab=Math.hypot(...incoming),bc=Math.hypot(...outgoing);
   const dot=incoming.reduce((sum,v,k)=>sum+v*outgoing[k],0)/(ab*bc);
   if(dot<=-1+1e-8)reversals.push(i);
-  if(!Number.isFinite(dot)||dot>1e-9||reversals.at(-1)===i){path.push(b);source.push(i);continue;}
+  // Keep a conduit at the junction where a level run meets a wall riser.
+  const wallRiser=axes===coordinates&&((vertical(incoming)&&level(outgoing))||(level(incoming)&&vertical(outgoing)));
+  if(wallRiser||!Number.isFinite(dot)||dot>1e-9||reversals.at(-1)===i){path.push(b);source.push(i);continue;}
   const trim=Math.min(cornerTrim,ab/3,bc/3);
   const toward=(p,len)=>Object.fromEntries(coordinates.map(k=>[k,b[k]+(p[k]-b[k])*(trim/len)]));
   path.push(toward(a,ab),toward(c,bc));

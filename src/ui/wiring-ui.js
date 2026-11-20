@@ -138,7 +138,7 @@ globalThis.FurnishWiringUI=(()=>{
  function list(panel){
   const plan=canvasEffectivePlan(),byId=new Map(state.furniture.map(f=>[f.id,f]));
   const rows=routes().map(route=>({route,...geometry(route,plan,byId)}));
-  panel.innerHTML=`<section class="electrical-panel"><div class="actions"><button class="btn" id="wiring-back">返回插座布置</button></div><h3>布线</h3><div class="actions"><button class="btn primary" data-wire-new="power">＋ 电线</button><button class="btn primary" data-wire-new="network">＋ 网线</button></div><p class="wiring-summary">${totals(rows)}</p><p class="muted">长度按处理后的三维路径累计。网线自动将直角和锐角切为钝角。</p>${rows.length?`<ul class="wiring-list">${rows.map(({route,length})=>`<li><button class="btn" data-wire-edit="${esc(route.id)}"><span>${esc(route.name)}</span><small>${E.wireKinds[route.kind]} · ${metres(length)}</small></button></li>`).join('')}</ul>`:'<p class="muted">选择电线或网线，在平面图上添加路径点。</p>'}</section>`;
+  panel.innerHTML=`<section class="electrical-panel"><div class="actions"><button class="btn" id="wiring-back">返回插座布置</button></div><h3>布线</h3><div class="actions"><button class="btn primary" data-wire-new="power">＋ 电线</button><button class="btn primary" data-wire-new="network">＋ 网线</button></div><p class="wiring-summary">${totals(rows)}</p><p class="muted">长度按三维路径累计。水平段接竖管时保留墙脚直角。</p>${rows.length?`<ul class="wiring-list">${rows.map(({route,length})=>`<li><button class="btn" data-wire-edit="${esc(route.id)}"><span>${esc(route.name)}</span><small>${E.wireKinds[route.kind]} · ${metres(length)}</small></button></li>`).join('')}</ul>`:'<p class="muted">选择电线或网线，在平面图上添加路径点。</p>'}</section>`;
   panel.querySelector('#wiring-back').onclick=()=>{leave();refresh();};
   for(const b of panel.querySelectorAll('[data-wire-new]'))b.onclick=()=>{const kind=b.dataset.wireNew;begin({id:uid(),kind,name:E.wireKinds[kind]+' '+(rows.filter(x=>x.route.kind===kind).length+1),points:[]});};
   for(const b of panel.querySelectorAll('[data-wire-edit]'))b.onclick=()=>begin(routes().find(r=>r.id===b.dataset.wireEdit));
@@ -150,9 +150,11 @@ globalThis.FurnishWiringUI=(()=>{
    const f=p.furnitureId&&getF(p.furnitureId),q=points[i];
    const link=p.furnitureId?`<small>${esc(f?.name||'原点位已删除')}${q.unresolved?' · 待核对':''}</small><button class="btn" type="button" data-wire-detach="${i}">解除关联</button>`:'';
    const fields=p.furnitureId?'':Object.keys(axisLabels).map(axis=>`<label>${axisLabels[axis]}<input type="number" step="any" data-wire-axis="${axis}" data-wire-index="${i}" value="${Number.isFinite(p[axis])?p[axis]:''}" required></label>`).join('');
-   return `<li><div><b>点 ${i+1}</b> <small>${p.furnitureId?`(${mm(q.x)}, ${mm(q.y)}, ${q.unresolved?'待核对':mm(q.z)}) mm`:''}</small></div><div class="wiring-point-fields">${fields}${link}<button class="btn" type="button" data-wire-remove="${i}" aria-label="移除点 ${i+1}">移除</button></div></li>`;
+   const riser=p.furnitureId&&!q.unresolved&&points.length>1
+    ?`<button class="btn" type="button" data-wire-riser="${i}" aria-label="点 ${i+1} 改为贴墙升降">贴墙升降</button>`:'';
+   return `<li><div><b>点 ${i+1}</b> <small>${p.furnitureId?`(${mm(q.x)}, ${mm(q.y)}, ${q.unresolved?'待核对':mm(q.z)}) mm`:''}</small></div><div class="wiring-point-fields">${fields}${link}${riser}<button class="btn" type="button" data-wire-remove="${i}" aria-label="移除点 ${i+1}">移除</button></div></li>`;
   }).join('');
-  panel.innerHTML=`<section class="electrical-panel"><h3>${existing?'编辑':'新增'}${E.wireKinds[route.kind]}</h3><form id="wiring-form"><div class="form"><label class="full">线路名称<input id="wiring-name" required maxlength="80" value="${esc(route.name)}"></label><label class="full">新点标高（方案基准，mm）<input id="wiring-height" type="number" step="any" value="${Number.isFinite(height)?height:''}"></label></div><p class="muted">点击平面添加路径点，按住 Shift 对齐。点选对应的箱体或面板可关联首尾，末端已关联时，新点加在末端之前。${route.kind==='network'?'网线自动将直角和锐角切为钝角。':''}</p><ol class="wiring-list">${formRows}</ol><p id="wiring-length">路径长度 ${route.points.length<2?'—':metres(length)}</p><p id="wiring-error" class="project-error" role="alert">${reversals.length?reversalMessage(reversals):''}</p><div class="actions"><button class="btn primary" type="submit">保存线路</button><button class="btn" type="button" id="wiring-cancel">取消</button>${existing?'<button class="btn danger" type="button" id="wiring-delete">删除线路</button>':''}</div></form></section>`;
+  panel.innerHTML=`<section class="electrical-panel"><h3>${existing?'编辑':'新增'}${E.wireKinds[route.kind]}</h3><form id="wiring-form"><div class="form"><label class="full">线路名称<input id="wiring-name" required maxlength="80" value="${esc(route.name)}"></label><label class="full">新点标高（方案基准，mm）<input id="wiring-height" type="number" step="any" value="${Number.isFinite(height)?height:''}"></label></div><p class="muted">点击平面添加路径点，按住 Shift 对齐。点选对应的箱体或面板可关联首尾，末端已关联时，新点加在末端之前。「贴墙升降」按相邻点标高放置竖管的起点。${route.kind==='network'?'网线平面弯道仍自动切角，水平管接竖管保留直角。':''}</p><ol class="wiring-list">${formRows}</ol><p id="wiring-length">路径长度 ${route.points.length<2?'—':metres(length)}</p><p id="wiring-error" class="project-error" role="alert">${reversals.length?reversalMessage(reversals):''}</p><div class="actions"><button class="btn primary" type="submit">保存线路</button><button class="btn" type="button" id="wiring-cancel">取消</button>${existing?'<button class="btn danger" type="button" id="wiring-delete">删除线路</button>':''}</div></form></section>`;
   const input=panel.querySelector('#wiring-height');
   input.oninput=()=>{height=input.valueAsNumber;};
   panel.querySelector('#wiring-name').oninput=e=>{route.name=e.target.value;FurnishElectricalUI.draw();};
@@ -166,6 +168,15 @@ globalThis.FurnishWiringUI=(()=>{
   for(const b of panel.querySelectorAll('[data-wire-detach]'))b.onclick=()=>{
    const i=Number(b.dataset.wireDetach),p=geometry(route).points[i];
    route.points[i]={x:p.x,y:p.y,z:p.z};refresh();
+  };
+  for(const b of panel.querySelectorAll('[data-wire-riser]'))b.onclick=()=>{
+   const i=Number(b.dataset.wireRiser),{points}=geometry(route),p=points[i],adjacent=points[i===0?1:i-1];
+   if(p.unresolved||![adjacent.x,adjacent.y,adjacent.z].every(Number.isFinite))return report('请先核对端点和相邻点坐标');
+   if(p.z===adjacent.z)return report('相邻点和端点同高，无需竖管');
+   if(p.x===adjacent.x&&p.y===adjacent.y)return report('端点已经沿竖直方向连接');
+   if(points.length>=E.routeLimits.points)return report('每条线路最多 100 个路径点');
+   route.points.splice(i===0?1:i,0,{x:p.x,y:p.y,z:adjacent.z});
+   refresh();
   };
   const cancel=()=>{draft=null;refresh();};
   panel.querySelector('#wiring-cancel').onclick=cancel;

@@ -37,13 +37,13 @@ async function main(){
   await page.evaluate(async()=>{
    FurnishElectricalUI.setMode('furniture');
    drawer('panel',true);
-   const panel={id:'test-net-panel',name:'网络面板',type:'panel_bull_g12',color:'#fff',panelVariant:'phone-net6',w:86,d:10,h:86,cx:5500,cy:5300,rot:0,mountHeight:500};
-   const box={id:'test-net-box',name:'弱电箱',type:'electrical_box_weak',color:'#fff',w:300,d:120,h:400,cx:3000,cy:3600,rot:0,mountHeight:300};
+   const panel={id:'test-net-panel',name:'网络面板',type:'panel_bull_g12',color:'#fff',panelVariant:'phone-net6',w:86,d:10,h:86,cx:5500,cy:5284,rot:0,mountHeight:500};
+   const box={id:'test-net-box',name:'弱电箱',type:'electrical_box_weak',color:'#fff',w:300,d:120,h:400,cx:863,cy:3600,rot:-90,mountHeight:300};
    mutate(()=>{
     state.furniture.push(panel,box);
     state.wireRoutes=[
      {id:'test-network',kind:'network',name:'入户网线',points:[
-      {x:box.cx,y:box.cy,z:500,furnitureId:box.id},{x:box.cx,y:box.cy,z:2200},
+      {x:box.cx,y:box.cy,z:500,furnitureId:box.id},{x:box.cx+400,y:box.cy,z:2200},
       {x:panel.cx,y:box.cy,z:2200},{x:panel.cx,y:panel.cy,z:2200},{x:panel.cx,y:panel.cy,z:543,furnitureId:panel.id}
      ]},
      {id:'test-power',kind:'power',name:'客厅电线',points:[{x:3500,y:3900,z:300},{x:5000,y:3900,z:300}]}
@@ -113,12 +113,29 @@ async function main(){
   await page.evaluate(()=>redo());
   assert(await assertRendered());
   assert.equal(await page.evaluate(()=>state.wireRoutes[0].points[1].z),2000);
+  await page.locator('#wiring-edit-2d').click();
+  await page.waitForFunction(()=>!is3D()&&!switching);
+  await page.locator('[data-wire-edit="test-network"]').click();
+  await page.locator('[data-wire-index="1"][data-wire-axis="z"]').fill('60');
+  await page.locator('[data-wire-riser="0"]').click();
+  assert.equal(await page.locator('[data-wire-index="2"][data-wire-axis="z"]').inputValue(),'60');
+  await page.locator('#wiring-form button[type="submit"]').click();
+  await toView('3d');
+  assert(await assertRendered(),'the wall riser is included in the actual rendered segments');
+  assert(await page.evaluate(()=>{
+   const route=state.wireRoutes[0];
+   const {path:[box,foot,run],length}=FurnishElectrical.routeGeometry(route,canvasEffectivePlan(),state.furniture);
+   return length>0&&box.x===foot.x&&box.y===foot.y&&box.z>foot.z&&foot.z===60&&run.z===foot.z&&run.x!==foot.x;
+  }),'the resolved wall riser meets the horizontal run exactly at the saved foot');
+  await page.evaluate(()=>mutate(()=>state.scene3d=FurnishDesign.patchSceneSettings(state.scene3d,{furn:false})));
+  await page.evaluate(()=>View3D.automationCamera({position:{x:2700,y:4700,z:2200},target:{x:1050,y:3600,z:350}}));
+  await page.screenshot({path:path.join(job.dir,'wiring-wall-riser.png')});
   await page.locator('[data-plan-mode="furniture"]').click();
   await page.waitForFunction(()=>testElectricalGroup.children.length===0);
   await page.evaluate(()=>FurnishRepository.flush());
   await page.reload();
   await page.locator('#repository-loading').waitFor({state:'hidden'});
-  assert.equal(await page.evaluate(()=>state.wireRoutes[0].points[1].z),2000);
+  assert.deepEqual(await page.evaluate(()=>state.wireRoutes[0].points[1]),{x:863,y:3600,z:60});
   assert.deepEqual(errors,[]);
   assert.equal(hash(),before);
   passed=true;
