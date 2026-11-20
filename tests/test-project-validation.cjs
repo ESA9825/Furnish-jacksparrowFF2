@@ -24,3 +24,16 @@ const duplicates=D.restoreNotes([{id:'n1',x:0,y:0,text:'a'},{id:'n1',x:1,y:1,tex
 assert.equal(JSON.stringify(payload),JSON.stringify({planId:'p',current:work,designs:[{name:'方案 A',work}],catalog:[]}));
 const plans=require('../src/data/plans.js');
 for(const plan of plans)for(const [i,d] of plan.doors.entries()){const axis=d.rect[2]-d.rect[0]>=d.rect[3]-d.rect[1]?0:1,h=[...d.h];h[axis]=Math.abs(h[axis]-d.rect[axis])<.01?d.rect[axis+2]:d.rect[axis];for(const v of [{h:d.h,c:d.c,o:d.o},{h:d.h,c:d.c,o:d.o.map(x=>-x)},{h,c:d.c.map(x=>-x),o:d.o}])P.validatePlanWork(plan,P.validateWork({furniture:[],open:{d:{[i]:v}}}));}
+
+// Validation can reuse an exact valid draft within one transaction. A named
+// design with the same plan ID must still validate its own modified draft.
+{
+ const {draft,work}=require('./helpers/wall-finish-fixture.cjs').fixture();
+ const C=require('../src/core/repository-core.js'),workspace={v:101,planId:draft.id,customPlans:[draft],work:{[draft.id]:work},designs:[{id:'named',name:'命名设计',planId:draft.id,work}]};
+ const before=clone(workspace),loaded=C.validate(workspace);
+ assert.deepEqual(workspace,before);
+ assert.notStrictEqual(loaded.work[draft.id].architecture.draft,loaded.designs[0].work.architecture.draft);
+ const invalid=clone(workspace);invalid.designs[0].work.architecture.draft.walls[0].thickness=0;
+ assert.throws(()=>C.validate(invalid),/命名设计.*Invalid wall/);
+ assert.deepEqual(C.validate(workspace),loaded);
+}

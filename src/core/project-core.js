@@ -4,15 +4,15 @@
  const clone=v=>JSON.parse(JSON.stringify(v)),fail=m=>{throw new Error(m);},num=v=>typeof v==='number'&&Number.isFinite(v);
  const canonical=v=>Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().filter(k=>v[k]!==undefined).map(k=>[k,canonical(v[k])])):v;
  const core=()=>root.FurnishDraft || require('./floorplan-core.js');
- // Reuse derived plans only within a synchronous validation transaction. Every
- // input still passes upgrade/validation, and each caller receives an isolated copy.
+ // Reuse derived plans only within a synchronous validation transaction. Each
+ // distinct draft goes through build/validation, and each caller gets a copy.
  let validationDraftCache=null;
  function withDraftCache(action){if(validationDraftCache)return action();validationDraftCache=new Map();try{return action();}finally{validationDraftCache=null;}}
  function buildDraft(input){
   if(!validationDraftCache)return core().build(input);
-  const draft=core().validate(core().upgrade(input)),key=JSON.stringify(draft);
+  const key=JSON.stringify(input);
   let plan=validationDraftCache.get(key);
-  if(!plan){plan=core().build(draft);if(validationDraftCache.size>=8)validationDraftCache.delete(validationDraftCache.keys().next().value);validationDraftCache.set(key,plan);}
+  if(!plan){plan=core().build(input);if(validationDraftCache.size>=8)validationDraftCache.delete(validationDraftCache.keys().next().value);validationDraftCache.set(key,plan);}
   return clone(plan);
  }
  const bays=()=>root.FurnishBayWindows || require('./bay-window-core.js');
@@ -482,7 +482,9 @@
   if(!positions.length)fail('OBJ 未包含网格面');const min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];for(let i=0;i<positions.length;i++){const axis=i%3;min[axis]=Math.min(min[axis],positions[i]);max[axis]=Math.max(max[axis],positions[i]);}if(max.some((v,i)=>v-min[i]<1e-9))fail('模型需要具有宽、高、深三个维度');return {positions,min,max};
  }
  const checksum=value=>{let hash=2166136261;for(const c of JSON.stringify(value)){hash^=c.charCodeAt(0);hash=Math.imul(hash,16777619);}return (hash>>>0).toString(16).padStart(8,'0');};
- function validateWork(work){(root.FurnishStyles||require('./style-core.js')).validateAppearance(work?.styleAppearance);
+ function validateWork(work){return checkWork(work,false);}
+ // Project imports already own a JSON copy. Both paths run the same checks.
+ function checkWork(work,owned){(root.FurnishStyles||require('./style-core.js')).validateAppearance(work?.styleAppearance);
   if(work?.presentation!==undefined)(root.FurnishPresentation||require('./presentation-core.js')).validate(work.presentation);
   (root.FurnishLayers||require('./layers-core.js')).validate(work?.objectLayers);
   if(work?.tilePresets!==undefined)(root.FurnishTilePresets||require('./tile-preset-core.js')).validate(work.tilePresets);
@@ -492,7 +494,7 @@
   if(work?.purchaseOrders!==undefined)(root.FurnishPurchasing||require('./purchasing-core.js')).validate(work.purchaseOrders);
   ceilingHeight(work);
   if(work?.drawing!==undefined)(root.FurnishDrawing||require('./drawing-core.js')).settings(work.drawing);
-  if(!work||!Array.isArray(work.furniture)||work.furniture.length>2000)fail('家具数据无效');const w=clone(work),ids=new Set();
+  if(!work||!Array.isArray(work.furniture)||work.furniture.length>2000)fail('家具数据无效');const w=owned?work:clone(work),ids=new Set();
   for(const f of w.furniture){if(!f||typeof f.id!=='string'||ids.has(f.id)||![f.cx,f.cy,f.w,f.d,f.rot].every(num)||f.w<=0||f.d<=0||f.w>20000||f.d>20000)fail('家具尺寸或编号无效');ids.add(f.id);if(f.price!==undefined&&(!num(f.price)||f.price<0||f.price>1e7)||f.h!==undefined&&(!num(f.h)||f.h<=0||f.h>20000))fail('家具价格或高度无效');if(f.frontClearance!==undefined&&(!num(f.frontClearance)||f.frontClearance<0||f.frontClearance>3000))fail('家具使用空间无效');if(f.obj){if(!Array.isArray(f.obj.positions)||!f.obj.positions.length||f.obj.positions.length>180000||f.obj.positions.length%9||f.obj.positions.some(v=>!num(v)||Math.abs(v)>1e9))fail('模型数据无效');for(let axis=0;axis<3;axis++){const values=f.obj.positions.filter((v,i)=>i%3===axis);if(Math.max(...values)-Math.min(...values)<1e-9)fail('模型必须具有三维尺寸');}}}
   for(const f of w.furniture)if(f.cabinet)(root.FurnishCabinet||require('./cabinet-core.js')).validate(f);
   for(const f of w.furniture)design().products().validate(f);
@@ -552,7 +554,7 @@
  // In-memory workspace records share the import checks without an envelope or checksum.
  function validateWorkspacePayload(input){return validatePayload(upgradePayloadArchitecture(clone(input)));}
  function validatePayload(data){
-  if(!data||typeof data.planId!=='string'||!Array.isArray(data.designs)||data.designs.length>100||!Array.isArray(data.catalog)||data.catalog.length>500)fail('项目结构无效');const checked=(label,work)=>{try{const validated=validateWork(work);const upgraded=(root.FurnishFurnitureUpgrade||require('./furniture-upgrade.js')).upgradeWork(validated);return validateWork(upgraded);}catch(e){fail(label+'：'+e.message);}};data.current=checked('当前方案',data.current);data.designs=data.designs.map(d=>{if(d.editable!==undefined&&typeof d.editable!=='boolean')fail('方案编辑标记无效');if(typeof d.name!=='string'||d.name.length>80)fail('方案名称无效');return {...d,work:checked('命名方案「'+d.name+'」',d.work)};});if(data.current.architecture){const id=data.current.architecture.draft.id;if(id!==data.planId||data.designs.some(d=>d.work.architecture?.draft.id!==id))fail('方案户型不一致');}
+  if(!data||typeof data.planId!=='string'||!Array.isArray(data.designs)||data.designs.length>100||!Array.isArray(data.catalog)||data.catalog.length>500)fail('项目结构无效');const checked=(label,work)=>{try{const validated=checkWork(work,true);const upgraded=(root.FurnishFurnitureUpgrade||require('./furniture-upgrade.js')).upgradeWork(validated);return checkWork(upgraded,true);}catch(e){fail(label+'：'+e.message);}};data.current=checked('当前方案',data.current);data.designs=data.designs.map(d=>{if(d.editable!==undefined&&typeof d.editable!=='boolean')fail('方案编辑标记无效');if(typeof d.name!=='string'||d.name.length>80)fail('方案名称无效');return {...d,work:checked('命名方案「'+d.name+'」',d.work)};});if(data.current.architecture){const id=data.current.architecture.draft.id;if(id!==data.planId||data.designs.some(d=>d.work.architecture?.draft.id!==id))fail('方案户型不一致');}
   for(const [label,work] of [['当前方案',data.current],...data.designs.map(d=>['命名方案「'+d.name+'」',d.work])])if(work.plan!==undefined&&work.plan!==data.planId)fail(label+'：方案户型编号与项目不一致');
   const catalogIds=new Set();for(const c of data.catalog){if(c?.id!==undefined){if(typeof c.id!=='string'||!c.id||c.id.length>200||catalogIds.has(c.id))fail('家具库编号无效或重复');catalogIds.add(c.id);}if(!c||typeof c.name!=='string'||c.name.length>80||![c.w,c.d,c.h,c.price].every(num)||c.w<design().products().catalogMinimum(c,'w')||c.d<design().products().catalogMinimum(c,'d')||c.w>20000||c.d>20000||c.h<=0||c.h>20000||c.price<0)fail('家具库数据无效');validateWork({furniture:[{...c,id:'model',cx:0,cy:0,rot:0}]});}return data;
  }

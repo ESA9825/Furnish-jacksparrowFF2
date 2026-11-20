@@ -756,7 +756,7 @@ product-rules 集中派生 kind，保留 type 为模型／数据兼容 ID；name
 
 ## 2026-11-17：二维内存共享与恢复派生
 
-FurnitureSolids保留完整顶点／索引及原缓存键，只在不可变记录内共享重复坐标；调用者不得原位改写返回顶点。Project.withDraftCache供Repository.validate的同步事务复用已校验户型派生，最多8项、逐次校验与深拷贝，正常／异常退出均释放；事务外及原effectivePlan缓存保持原契约。没有新状态、加载或持久机制，见[增量验收](validation/memory-optimization-20261117/README.md)。
+FurnitureSolids保留完整顶点／索引及原缓存键，只在不可变记录内共享重复坐标；调用者不得原位改写返回顶点。Project.withDraftCache供Repository.validate的同步事务复用已校验户型派生，最多8项，完全相同的输入复用派生，其余输入执行完整草稿校验；每个调用方都获得深拷贝，正常／异常退出均释放；事务外及原effectivePlan缓存保持原契约。没有新状态、加载或持久机制，见[增量验收](validation/memory-optimization-20261117/README.md)。
 
 ## 2026-11-17：源码指纹与静态流
 

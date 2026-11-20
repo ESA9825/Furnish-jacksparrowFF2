@@ -42,6 +42,23 @@
   return records.reduce((total,{vertices,faces})=>total+192+vertices.length*56+
    faces.reduce((bytes,face)=>bytes+32+face.length*8,0),0);
  }
+ // Use exact coordinates as keys, including the sign of zero.
+ const negativeZero=Symbol('negative zero');
+ const coordinateKey=value=>Object.is(value,-0)?negativeZero:value;
+ function meshVertices(data,toWorld){
+  const byX=new Map(),vertices=[];
+  for(let i=0;i<data.length;i+=3){
+   const x=data[i],y=data[i+1],z=data[i+2],kx=coordinateKey(x),ky=coordinateKey(y),kz=coordinateKey(z);
+   let byY=byX.get(kx);
+   if(!byY){byY=new Map();byX.set(kx,byY);}
+   let byZ=byY.get(ky);
+   if(!byZ){byZ=new Map();byY.set(ky,byZ);}
+   let vertex=byZ.get(kz);
+   if(!vertex){vertex=toWorld([x,y,z]).map(value=>value*1000);byZ.set(kz,vertex);}
+   vertices.push(vertex);
+  }
+  return vertices;
+ }
  function parts(f,{furniture=[],plan}={}){
   if(!supported(f))return null;
   if(f.pose3D){const R=root.FurnishProductPose||require('./product-pose.js');return R.parts(f,parts(R.source(f),{furniture,plan}));}
@@ -61,7 +78,16 @@
    const {T,Box,Rounded,transform}=adapter(),built=model.build(T,products.elevationSource(f),r.sliding?{corner}:r.rounded?Rounded:Box);
    const records=[];
    built.traverse(node=>{
-    const g=node.geometry;if(!g||node.userData.coveringPart==='fabric-panel')return;const data=g.attributes.position.array,min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];for(let i=0;i<data.length;i++){const axis=i%3;min[axis]=Math.min(min[axis],data[i]);max[axis]=Math.max(max[axis],data[i]);}if(min.some((v,i)=>max[i]-v<1e-10))return;const a=data,toWorld=transform(node),pool=new Map(),vertices=Array.from({length:a.length/3},(_,i)=>{const point=a.slice(i*3,i*3+3),key=point.map(v=>Object.is(v,-0)?'-0':String(v)).join(',');let vertex=pool.get(key);if(!vertex){vertex=toWorld(point).map(v=>v*1000);pool.set(key,vertex);}return vertex;}),name=node.userData.coveringPart||Object.entries(node.userData).find(([key,v])=>key.endsWith('Part')&&typeof v==='string')?.[1]||'结构';
+    const g=node.geometry;
+    if(!g||node.userData.coveringPart==='fabric-panel')return;
+    const data=g.attributes.position.array,min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];
+    for(let i=0;i<data.length;i++){
+     const axis=i%3;
+     min[axis]=Math.min(min[axis],data[i]);
+     max[axis]=Math.max(max[axis],data[i]);
+    }
+    if(min.some((v,i)=>max[i]-v<1e-10))return;
+    const vertices=meshVertices(data,transform(node)),name=node.userData.coveringPart||Object.entries(node.userData).find(([key,v])=>key.endsWith('Part')&&typeof v==='string')?.[1]||'结构';
     const add=(vs,faces)=>records.push({vertices:vs,faces,boardName:labels[name]||'结构件',partRole:name,actualBoard:true});
     if(g.userData.bentBoard){
      // Separate the inward bend into narrow convex strips, preserving the void.
@@ -81,7 +107,25 @@
   // Records are immutable. Share repeated triples without changing vertex order,
   // face indices, double precision or the public arrays' cardinality.
   const transformed=new WeakMap();
-  const result=local.parts.map((r,i)=>{let bottom=Infinity,top=-Infinity;const vertices=r.vertices.map(point=>{let vertex=transformed.get(point);if(!vertex){let [x,y,z]=point;x*=f.flip?-1:1;vertex=[(f.cx||0)+x*c-z*s,y+base,(f.cy||0)+x*s+z*c];transformed.set(point,vertex);}bottom=Math.min(bottom,vertex[1]);top=Math.max(top,vertex[1]);return vertex;});return {...r,vertices,boardKey:'furniture:'+i,p:M.section({vertices,faces:r.faces},null),vertical:{bottom,top,source:'production-mesh'}};});
+  const result=local.parts.map((r,i)=>{
+   let bottom=Infinity,top=-Infinity;
+   const vertices=r.vertices.map(point=>{
+    let vertex=transformed.get(point);
+    if(!vertex){
+     let [x,y,z]=point;
+     x*=f.flip?-1:1;
+     vertex=[(f.cx||0)+x*c-z*s,y+base,(f.cy||0)+x*s+z*c];
+     transformed.set(point,vertex);
+    }
+    bottom=Math.min(bottom,vertex[1]);
+    top=Math.max(top,vertex[1]);
+    return vertex;
+   });
+   // The uncut footprint only needs each shared vertex once. Retain
+   // the original list for degenerate records and every height-clipped section.
+   const unique=new Set(vertices),projection=unique.size>1?[...unique]:vertices;
+   return {...r,vertices,boardKey:'furniture:'+i,p:M.section({vertices:projection},null),vertical:{bottom,top,source:'production-mesh'}};
+  });
   const world={parts:result,bytes:local.bytes+result.reduce((bytes,part)=>bytes+part.p.length*48,0)};
   worldCache.set(worldKey,world);
   remember(f,key,local,worldKey,world);
