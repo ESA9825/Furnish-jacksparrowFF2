@@ -20,6 +20,26 @@ const low={...panel,cx:500,cy:2000,mountHeight:100},high={...low,cx:2000};assert
 const unknown=clone(floors);delete unknown.floorFinish.areas.high.finishedZ;assert.equal(E.surfaces(unknown,work,high).length,0,'unknown floor height must not invent a cabinet mounting face');
 const faces=E.surfaces({walls:[[0,0,1000,200]]},work,panel);assert.equal(faces.filter(s=>s.kind==='wall').length,4);
 assert.equal(E.points(work)[0].number,'E01');assert.equal(E.points(work)[0].center,543);
+assert.equal(E.purpose('E25 · 主卧普通床头柜电源 · 台灯及充电',['主卧']),'普通床头柜电源 · 台灯及充电');
+assert.equal(E.purpose('N3 · 次卧下床落脚灯 · N3 · 独立感应',['次卧']),'下床落脚灯 · 独立感应');
+assert.equal(E.purpose('E18 · 原独立进线 E1 · 次卧备用',['厨房']),'原独立进线 E1 · 次卧备用');
+const switchPoint=(id,name,panelVariant='switch1-double')=>({...panel,id,name,panelVariant});
+const wired=switchPoint('wired','E29 · 主卧阅读区灯 · 与门口 E67 有线双控');
+const wiredPeer=switchPoint('outside','E67 · 走廊开关');
+const smart=switchPoint('smart','E27 · 床头窗帘 · 与门口 E28 两地控制','xiaomi-2pro-3-white');
+const smartPeer=switchPoint('door','E28 · 门口窗帘','xiaomi-2pro-2-white');
+const switches=[panel,wired,smartPeer,smart,wiredPeer];
+for(const order of [switches,[...switches].reverse()]){
+ const pairs=E.controlPairs(order);
+ assert.deepEqual([...pairs.links.get(wired.id)],[wiredPeer.id]);
+ assert.deepEqual([...pairs.links.get(wiredPeer.id)],[wired.id]);
+ assert.deepEqual([...pairs.links.get(smart.id)],[smartPeer.id]);
+ assert.equal(pairs.references.get(smart.id).get('E28'),pairs.numbers.get(smartPeer.id));
+}
+assert(!E.controlPairs([...switches,switchPoint('duplicate','E67 · 另一开关')]).links.has(wired.id));
+assert(!E.controlPairs([wired,{...wiredPeer,name:'门口开关'}]).links.size);
+assert(!E.controlPairs([wired,{...wiredPeer,panelVariant:'socket5-diagonal'}]).links.size);
+assert(!E.controlPairs([{...wired,name:'E29 · 不与 E67 双控'},wiredPeer]).links.size);
 const plan=require('../src/data/plans.js')[0],W=require('../src/core/work-state.js').create({makeId:()=> 'fixture',colorFor:()=> '#fff',materials:require('../src/data/catalog.js').materials}),full={...W.fresh(plan),furniture:[cabinet,panel]},payload={planId:plan.id,current:full,designs:[{name:'插座布置',work:clone(full)}],catalog:[]};
 assert.deepEqual(J.unpack(J.pack(payload)),payload);let restored=clone(full);for(let i=0;i<3;i++)restored=W.restore(clone(restored),plan);assert.deepEqual(restored.furniture,full.furniture);P.validate(panel);
 console.log('electrical planning: protected layout, opening exception, actual inner/outer board faces, rotated/mirrored contact, height limits and project round trip passed');

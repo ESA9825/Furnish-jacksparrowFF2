@@ -388,7 +388,7 @@ function furnitureDirectionsSVG(){
 }
 function renderSel(){
   window.FurnishCeilingUI?.selectionChanged();
-  if(globalThis.FurnishElectricalUI?.active()){$('#gSel').innerHTML='';FurnishElectricalUI.draw();return;}
+  if(globalThis.FurnishElectricalUI?.active()){$('#gSel').innerHTML=FurnishElectricalUI.pairedOverlay();FurnishElectricalUI.draw();return;}
   if(globalThis.FurnishObservationLayers&&selIds().some(id=>!FurnishObservationLayers.visible(getF(id))))ui.sel=null;
   const preview=window.FurnishWorkspace?.openingPreviewPlan?.();if(!preview)return renderSelectedGeometry();
   const actual=[WALLS,WINS,DOORS,SLIDES,ROOMS];try{({walls:WALLS,wins:WINS,doors:DOORS,slides:SLIDES,rooms:ROOMS}=preview);renderSelectedGeometry();}finally{[WALLS,WINS,DOORS,SLIDES,ROOMS]=actual;}
@@ -545,7 +545,7 @@ function renderSelectedGeometry(){
     const [a, b] = ui.marq;
     s += `<rect x="${Math.min(a.x,b.x)}" y="${Math.min(a.y,b.y)}" width="${Math.abs(b.x-a.x)}" height="${Math.abs(b.y-a.y)}" fill="rgba(47,93,98,.08)" stroke="${TEAL}" stroke-width="1" stroke-dasharray="5 3" vector-effect="non-scaling-stroke" pointer-events="none"/>`;
   }
-  const selection=$('#gSel');selection.innerHTML = waterheaterClearanceSVG()+dishwasherClearanceSVG()+s+furnitureDirectionsSVG();
+  const selection=$('#gSel');selection.innerHTML = waterheaterClearanceSVG()+dishwasherClearanceSVG()+s+furnitureDirectionsSVG()+(window.FurnishElectricalUI?.pairedOverlay()||'');
   // Keep resize/rotation handles above interactive clearance labels. A long
   // label can cross the handle after rotating a narrow or curved product.
   for(const controls of selection.querySelectorAll('[data-selection-controls]'))selection.appendChild(controls);
@@ -606,6 +606,7 @@ function renderAll({sceneFirst=false,replan=false}={}){
   window.FurnishDesignUI?.clearPlacementGuide();
   syncCustomArchitecture({replan:!replan});
   applyOpeningOverrides(); renderOpenings(); ui.guides = null;
+  window.FurnishElectricalUI?.refreshRelations();
   // These layers only read the design; share one derivation within this draw.
   withCanvasPlan(()=>{
     renderGrid(); renderRooms(); renderFurn(); renderWalls(); renderLabels(); renderDims(); renderMeasure(); renderNotes(); renderSel();

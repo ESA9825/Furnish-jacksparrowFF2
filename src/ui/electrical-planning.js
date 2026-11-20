@@ -4,7 +4,7 @@ globalThis.FurnishElectricalUI=(()=>{
  const E=FurnishElectrical,NS='http://www.w3.org/2000/svg';
  const controlLabels={smart:['智能','Smart'],conventional:['常规','Conventional'],sensor:['感应','Sensor']};
  const gangLabels=[null,['单开','1 gang'],['双开','2 gang'],['三开','3 gang'],['四开','4 gang']];
- let adding=false,poseHost=null;
+ let adding=false,poseHost=null,relations=E.controlPairs([]);
  const active=()=>ui.planMode==='electrical';
  const physicalLocked=f=>!!f&&(!!f.locked||FurnishLayers.locked(state,'furniture:'+f.id));
  const blocked=f=>active()&&!E.panel(f);
@@ -22,6 +22,13 @@ globalThis.FurnishElectricalUI=(()=>{
   poseHost=null;return {...sel,id,ids};
  }
  function geometry(){return E.surfaces(canvasEffectivePlan(),state,selItems()[0]);}
+ function refreshRelations(){relations=E.controlPairs(state.furniture);}
+ function relatedIds(){return [...(relations.links.get(ui.sel?.kind==='furn'?ui.sel.id:null)||[])];}
+ function pairedOverlay(){
+  if(!active()&&!ui.layers.furn)return '';
+  const markers=relatedIds().map(getF).filter(f=>f&&FurnishLayers.visible(state,FurnishLayers.furnitureKey(f)));
+  return markers.map(f=>`<g transform="rotate(${drawingRotation()})" pointer-events="none"><circle data-electrical-peer="${esc(f.id)}" cx="${f.cx}" cy="${f.cy}" r="${17/view.s}" fill="none" stroke="#00877e" stroke-width="3" vector-effect="non-scaling-stroke"/></g>`).join('');
+ }
  function draw(root=svg,{exporting=false,visibleLayers=true}={}){
   let g=root.querySelector('#gElectrical');
   if(!active()){g?.remove();return;}
@@ -47,36 +54,39 @@ globalThis.FurnishElectricalUI=(()=>{
  }
  function listRows(rows){
   if(!rows.length)return `<p class="muted">${tr('当前方案没有插座或开关面板。','There are no sockets or switch plates in this design.')}</p>`;
-  const groups=new Map(),current=ui.sel?.kind==='furn'?ui.sel.id:null;
+  const groups=new Map(),current=ui.sel?.kind==='furn'?ui.sel.id:null,peers=relatedIds();
   for(const r of rows){
    const f=getF(r.id),room=roomAt(f.cx,f.cy),key=room?.id??null;
    if(!groups.has(key))groups.set(key,{room,items:[]});
    const hidden=!FurnishLayers.visible(state,FurnishLayers.furnitureKey(f));
-   const name=nm(r.name).trim(),prefix=name.match(/^(E\d+)(?:\s*[·・:：]\s*|\s+|$)/);
-   const purpose=prefix?.[1]===r.number?name.slice(prefix[0].length):name;
-   const label=r.variant.control==='sensor'
-    ?purpose.replace(/^N\d+(?:\s*[·・:：]\s*|\s+|$)/,'').replace(/\s*[·・]\s*N\d+(?=\s*(?:[·・]|$))/g,'')
-    :purpose;
-   const product=FurnishProducts.definition(f),variantLabel=nm(r.variant.label);
-   const line=r.variant.model||!product.panelLine?null:tr(...product.panelLine);
-   const model=[line,variantLabel].filter(Boolean).join(' · ');
-   const displayModel=[line,nm(r.variant.listLabel||r.variant.label)].filter(Boolean).join(' · ');
+   const references=relations.references.get(r.id);
+   const label=E.purpose(nm(r.name),[room&&nm(state.rooms[room.id]?.name),room&&nm(room.name)])
+    .replace(/(?<![A-Z0-9])E\d+(?![A-Z0-9])/gi,code=>references?.get(code.toUpperCase())||code);
+   const product=FurnishProducts.definition(f),variantLabel=nm(r.variant.label),detail=nm(r.variant.listLabel||r.variant.label);
+   const series=product.panelLine&&tr(...product.panelLine);
+   const model=r.variant.model?detail:series;
+   const type=product.trackSocket?`${tr('轨道插座','Track socket')} · ${variantLabel}`
+    :r.variant.control==='smart'?tr('墙壁开关','Wall switch')
+    :r.variant.gangs?`${tr('开关','Switch')} · ${detail}`
+    :r.variant.group==='插座类'?`${tr('插座','Socket')} · ${detail}`:detail;
    const control=r.variant.control||product.trackSocket?.control,category=controlLabels[control];
    const gangs=gangLabels[r.variant.gangs],amps=r.variant.ratedAmps;
    const tags=[
     category?`<span class="electrical-control" data-control="${control}">${tr(...category)}</span>`:'',
     gangs?`<span class="electrical-control">${tr(...gangs)}</span>`:'',
-    amps?`<span class="electrical-control">${tr(`额定 ${amps} A`,`Rated ${amps} A`)}</span>`:''
+    amps?`<span class="electrical-control">${tr(`额定 ${amps} A`,`Rated ${amps} A`)}</span>`:'',
+    relations.links.has(r.id)?`<span class="electrical-control electrical-link-tag">${tr('双控','Two-way')} ${[...relations.links.get(r.id)].map(id=>relations.numbers.get(id)).join('、')}</span>`:''
    ].join('');
    const elevation=r.finishedBottom===null?tr('待核对','Unknown'):height(r.finishedBottom)+' mm';
-   groups.get(key).items.push(`<li><button type="button" class="btn electrical-row" data-electrical-id="${esc(r.id)}" ${current===r.id?'aria-current="true"':''}>
+   groups.get(key).items.push(`<li><button type="button" class="btn electrical-row" data-electrical-id="${esc(r.id)}" ${current===r.id?'aria-current="true"':''} ${peers.includes(r.id)?'data-electrical-related':''}>
      <span class="electrical-row-number">${r.number}</span>
-     <span class="electrical-row-description">${label&&label!==variantLabel&&label!==model?`<b>${esc(label)}</b>`:''}
-       <span class="electrical-row-product">${esc(displayModel)}</span>
+     <span class="electrical-row-description"><b>${esc(type)}</b>
+       ${label&&label!==variantLabel&&label!==type&&label!==model?`<span class="electrical-row-purpose">${esc(label)}</span>`:''}
+       ${model?`<span class="electrical-row-product">${esc(model)}</span>`:''}
        ${tags?`<span class="electrical-row-tags">${tags}</span>`:''}
        ${hidden?`<small>${tr('图层已隐藏','Layer hidden')}</small>`:''}
+       <span class="electrical-row-height"><small>${tr('底高','Bottom height')}</small> <b>${elevation}</b></span>
      </span>
-     <span class="electrical-row-height"><b>${elevation}</b><small>${tr('底高','Bottom height')}</small></span>
     </button></li>`);
   }
   return `<div class="electrical-list-groups">${[...groups.values()].map(({room,items})=>{
@@ -105,9 +115,11 @@ globalThis.FurnishElectricalUI=(()=>{
  function selectionChanged(){
   if($('#electrical-list-dock').hidden)return;
   const id=ui.sel?.kind==='furn'?ui.sel.id:null;
+  const peers=relatedIds();
   for(const row of $('#electrical-list-rows').querySelectorAll('[data-electrical-id]')){
    if(row.dataset.electricalId===id)row.setAttribute('aria-current','true');
    else row.removeAttribute('aria-current');
+   row.toggleAttribute('data-electrical-related',peers.includes(row.dataset.electricalId));
   }
  }
  function refreshList(){
@@ -164,8 +176,8 @@ globalThis.FurnishElectricalUI=(()=>{
   $('#electrical-list').onclick=()=>setListOpen(dock.hidden);
   $('#electrical-list-close').onclick=()=>setListOpen(false);
   dock.addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();setListOpen(false);}});
-  afterRender();if(active())renderPanel();
+  refreshRelations();afterRender();if(active())renderPanel();
  });
  document.addEventListener('keydown',e=>{if(active()&&e.key==='Escape'&&adding){adding=false;renderPanel();afterRender();}},true);
- return {active,blocked,physicalLocked,assertEditable,setMode,selection,selectionChanged,draw,afterRender,pointer,panel};
+ return {active,blocked,physicalLocked,assertEditable,setMode,selection,selectionChanged,draw,refreshRelations,relatedIds,pairedOverlay,afterRender,pointer,panel};
 })();

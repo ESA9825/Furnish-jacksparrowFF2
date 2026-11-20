@@ -18,7 +18,42 @@ function assertEditable(before,after){
  const rest=w=>{const out={...w};delete out.furniture;delete out.scene3d;if(out.objectLayers){out.objectLayers=structuredClone(out.objectLayers);for(const f of [...before.furniture,...after.furniture].filter(panel))delete out.objectLayers.assignments?.['furniture:'+f.id];}return out;};
  if(!equal(rest(before),rest(after)))throw Error('插座布置视图中建筑、装修及其他方案资料只读');
 }
-function points(work,plan){return work.furniture.filter(panel).map((f,i)=>{const bottom=P().bottomHeight(f),height=P().height(f),m=plan?(root.FurnishDesign||require('./design-core.js')).furnitureHeightMeasurements(f,plan,work.furniture):{bottom};return {id:f.id,number:'E'+String(i+1).padStart(2,'0'),name:f.name,variant:P().panelSpec(f)||{label:P().definition(f).trackSocket.label},bottom,center:bottom+height/2,finishedBottom:m.bottom,finishedCenter:m.bottom===null?null:m.bottom+height/2};});}
+const pointNumber=i=>'E'+String(i+1).padStart(2,'0');
+const leadingCode=/^([EN]\d+)(?:\s*[·・:：-]\s*|\s+|(?=[\u3400-\u9fff])|$)/i;
+function purpose(name,roomNames=[]){
+ let label=name.trim();
+ while(leadingCode.test(label))label=label.replace(leadingCode,'');
+ label=label.replace(/\s*[·・]\s*N\d+(?=\s*(?:[·・]|$))/gi,'');
+ const room=roomNames.filter(Boolean).sort((a,b)=>b.length-a.length).find(name=>label.startsWith(name));
+ return room?label.slice(room.length).replace(/^[\s·・:：-]+/,''):label;
+}
+function controlPairs(furniture){
+ const panels=furniture.filter(panel),aliases=new Map(),numbers=new Map(),links=new Map(),references=new Map();
+ panels.forEach((f,i)=>{
+  numbers.set(f.id,pointNumber(i));
+  const code=f.name.trim().match(leadingCode)?.[1].toUpperCase();
+  if(code?.startsWith('E'))aliases.set(code,aliases.has(code)?null:f);
+ });
+ for(const f of panels){
+  if(!P().panelSpec(f)?.gangs)continue;
+  for(const clause of purpose(f.name).split(/[，,。；;、\n]/)){
+   if(!/双控|两地控制|两地联动|两处控制|米家联动/i.test(clause))continue;
+   if(/不做|不与|不跟|不接|不联动|不可|取消|待定|待确认|待核/.test(clause))continue;
+   const codes=[...new Set(clause.match(/(?<![A-Z0-9])E\d+(?![A-Z0-9])/gi)?.map(v=>v.toUpperCase()))];
+   if(codes.length!==1)continue;
+   const [code]=codes,other=aliases.get(code);
+   if(!other||other.id===f.id||!P().panelSpec(other)?.gangs)continue;
+   for(const [a,b] of [[f.id,other.id],[other.id,f.id]]){
+    if(!links.has(a))links.set(a,new Set());
+    links.get(a).add(b);
+   }
+   if(!references.has(f.id))references.set(f.id,new Map());
+   references.get(f.id).set(code,numbers.get(other.id));
+  }
+ }
+ return {numbers,links,references};
+}
+function points(work,plan){return work.furniture.filter(panel).map((f,i)=>{const bottom=P().bottomHeight(f),height=P().height(f),m=plan?(root.FurnishDesign||require('./design-core.js')).furnitureHeightMeasurements(f,plan,work.furniture):{bottom};return {id:f.id,number:pointNumber(i),name:f.name,variant:P().panelSpec(f)||{label:P().definition(f).trackSocket.label},bottom,center:bottom+height/2,finishedBottom:m.bottom,finishedCenter:m.bottom===null?null:m.bottom+height/2};});}
 const surfaceCache=new Map();
 function surfaces(plan,work,f){
  const G=root.FurnishGeometry||require('./layout-geometry.js'),M=root.FurnishCabinetMotion||require('./cabinet-motion.js'),out=[];
@@ -50,5 +85,5 @@ function nearest(f,faces,limit=Infinity){
  for(const s of faces){if(n[0]*s.normal[0]+n[1]*s.normal[1]<.99999)continue;const offset=((f.cx-s.a[0])*(s.b[0]-s.a[0])+(f.cy-s.a[1])*(s.b[1]-s.a[1]))/s.length;if(offset<f.w/2||offset>s.length-f.w/2)continue;const position=place(f,s,offset),distance=Math.hypot(position.cx-f.cx,position.cy-f.cy);if(distance<=limit&&(!best||distance<best.distance))best={surface:s,offset,position,distance};}
  return best;
 }
-const api={panel,assertEditable,points,surfaces,place,nearest};root.FurnishElectrical=api;if(typeof module==='object'&&module.exports)module.exports=api;
+const api={panel,assertEditable,purpose,controlPairs,points,surfaces,place,nearest};root.FurnishElectrical=api;if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

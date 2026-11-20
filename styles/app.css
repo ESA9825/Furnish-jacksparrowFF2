@@ -1084,16 +1084,19 @@ button.replacement-product:focus-visible{outline:2px solid var(--accent);outline
 .electrical-list-group ul { list-style:none; margin:0; padding:0; }
 .electrical-list-group li { border-top:1px solid var(--line); }
 .electrical-list-group small { color:var(--muted); font-size:11px; font-weight:400; }
-.electrical-list-group .electrical-row { display:grid; grid-template-columns:minmax(4ch,max-content) minmax(0,1fr) max-content; align-items:start; gap:7px; width:100%; padding:8px 9px; border:0; border-radius:0; text-align:left; white-space:normal; line-height:1.35; }
+.electrical-list-group .electrical-row { display:grid; grid-template-columns:minmax(4ch,max-content) minmax(0,1fr); align-items:start; gap:7px; width:100%; padding:9px; border:0; border-radius:0; text-align:left; white-space:normal; line-height:1.35; }
 .electrical-row-number { color:var(--muted); font-family:var(--mono); font-weight:700; }
 .electrical-row-description { overflow-wrap:anywhere; }
-.electrical-row-product { display:block; color:var(--ink); font-size:12px; }
-.electrical-row-description > b + .electrical-row-product { margin-top:4px; }
+.electrical-row-purpose,.electrical-row-product { display:block; margin-top:3px; font-size:12px; }
+.electrical-row-product { color:var(--muted); }
 .electrical-row-tags { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
 .electrical-control { padding:1px 5px; border-radius:5px; background:var(--soft); color:var(--ink); font-size:10px; font-weight:700; white-space:nowrap; }
 .electrical-control[data-control="smart"] { background:var(--accent-soft); color:var(--accent-ink); }
+.electrical-link-tag { background:#00877e24; }
 .electrical-row small { display:block; margin-top:2px; }
-.electrical-row-height { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.electrical-row-height { display:flex; gap:5px; align-items:baseline; margin-top:4px; font-size:11px; font-variant-numeric:tabular-nums; }
+.electrical-row-height small { margin-top:0; }
+.electrical-row[data-electrical-related] { background:#00877e24; box-shadow:inset 3px 0 #00877e; }
 .electrical-row[aria-current="true"] { background:var(--soft); box-shadow:inset 3px 0 var(--action-bg); }
 .electrical-row:focus-visible { outline-offset:-2px; }
 #view-workspace { display:grid; grid-template-columns:minmax(0,1fr); min-width:0; min-height:0; }

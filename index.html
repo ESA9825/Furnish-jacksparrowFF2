@@ -1934,7 +1934,9 @@ function furnitureScreenPoint(f){
  return at.z>=-1&&at.z<=1?{x:r.left+(at.x+1)*r.width/2,y:r.top+(1-at.y)*r.height/2}:null;
 }
 function updateSel(){
-  const replacing=!!globalThis.FurnishCatalog?.active(),ids = replacing?[]:selIds(),selection=JSON.stringify(ui.sel),key=selection+':'+replacing+':'+!!ui.sceneMove;
+  const replacing=!!globalThis.FurnishCatalog?.active(),ids = replacing?[]:selIds(),selection=JSON.stringify(ui.sel),
+   peers=replacing?[]:(globalThis.FurnishElectricalUI?.relatedIds()||[]).filter(id=>FurnishObservationLayers.visible(getF(id))&&!ids.includes(id)),
+   key=JSON.stringify([selection,replacing,!!ui.sceneMove,peers]);
   if (key === selKey) return;
   selKey = key;
   if(sceneIssue&&sceneIssue.selection!==selection)clearSceneIssue();
@@ -1942,6 +1944,13 @@ function updateSel(){
   if (selHelper){ selHelper.children.forEach(h => {h.geometry.dispose();h.material.dispose();}); scene.remove(selHelper); selHelper = null; }
   const gs = ids.map(id => furnG.children.find(g => g.userData.fid === id)).filter(Boolean);
   if (gs.length){ selHelper = new THREE.Group(); gs.forEach(g => selHelper.add(new THREE.BoxHelper(g, 0xef5a24))); scene.add(selHelper); }
+  for(const id of peers){
+    const model=furnG.children.find(g=>g.userData.fid===id);if(!model)continue;
+    const outline=new THREE.BoxHelper(model,0x00877e);
+    outline.material.depthTest=false;outline.renderOrder=40;
+    if(!selHelper){selHelper=new THREE.Group();scene.add(selHelper);}
+    selHelper.add(outline);
+  }
   const selectedBay=FurnishBayWindows.selected(PLAN,ui.sel),layerKey=ui.sel?.layerObject||(selectedBay?'floor:'+selectedBay.platform.id:ui.sel?.kind==='room'?'floor:'+ui.sel.id:null);
   if(layerKey){const box=new THREE.Box3(),meshes=[];for(const group of [archFloor,archUp])group.traverse(o=>{if(o.isMesh&&sceneObjectShown(o)&&(FurnishObservationLayers.sceneKey(o)===layerKey||selectedBay&&selectedBay.windows.some(w=>o.userData.bayWindowIndex===w.index))){meshes.push(o);box.union(new THREE.Box3().setFromObject(o));}});if(!box.isEmpty()){selHelper=new THREE.Group();const outline=new THREE.Box3Helper(box,0xef5a24);outline.material.depthTest=false;outline.renderOrder=40;outline.userData.layerSelection=layerKey;outline.userData.layerMeshes=meshes;selHelper.add(outline);scene.add(selHelper);}}
 
