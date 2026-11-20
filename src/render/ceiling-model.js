@@ -113,6 +113,13 @@ function build(THREE,data,{wx=v=>v/1000,wz=v=>v/1000,top=Infinity,lamps=true,bod
    for(const h of C.downlightHoles(c,bodies)){const hole=new THREE.Path();hole.absellipse(h.x/1000,-h.y/1000,h.r/1000,h.r/1000,0,Math.PI*2,false,0);outline.holes.push(hole);}
    const g=new THREE.ExtrudeGeometry(outline,{depth:c.thickness/1000,bevelEnabled:false,curveSegments:32});g.rotateX(-Math.PI/2);
    g.translate(wx(0),c.height/1000,wz(0));if(c.height>=top){g.dispose();continue;}syncIdentity.produce("ceiling-model:site-4",()=>mesh(g,flatSurface,c,'flat'));
+   for(const edge of (data.closures||[]).filter(edge=>edge.id===c.id&&edge.bottom<top)){
+    const profile=shape(edge.polygon.map(([x,y])=>[x,-y]));
+    const geometry=new THREE.ExtrudeGeometry(profile,{depth:(edge.top-edge.bottom)/1000,bevelEnabled:false});
+    geometry.rotateX(-Math.PI/2);geometry.translate(wx(0),edge.bottom/1000,wz(0));
+    const closure=syncIdentity.produce('ceiling-flat-edge',()=>mesh(geometry,flatSurface,c,'flat-edge'));
+    closure.userData.furnishStablePart='flat-edge:'+edge.key;
+   }
   }
  }
  for(const m of group.children.filter(m=>m.userData.ceiling.part==='light')){

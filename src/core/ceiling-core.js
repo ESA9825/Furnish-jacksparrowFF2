@@ -384,6 +384,56 @@ function regionContext(plan,r){
  const heights=rooms.filter(room=>(room.polys||[room.poly]).some(poly=>overlapArea(r.polygon,poly)>.01)).map(room=>room.ceilingHeight);
  return {outside:outside>.01,height:heights.length&&heights.every(finite)?Math.min(...heights):undefined};
 }
+// Complete exposed edges of standalone gypsum flats. The board stays hollow
+// above its underside, and a shared edge closes only the change in level.
+function flatEdgeClosures(plan,data){
+ const standalone=new Set((data.regions||[]).filter(r=>r.style==='flat').map(r=>r.id));
+ const rooms=(plan.rooms||[]).filter(r=>r.counted!==false).flatMap(r=>(r.polys||[r.poly]).map(poly=>({poly,roof:r.ceilingHeight??plan.ceilingHeight})));
+ const boards=data.items.filter(c=>c.kind==='flat');
+ const Z=zones(),closures=[];
+ const lerp=(a,b,t)=>a.map((v,i)=>v+(b[i]-v)*t);
+ for(const board of boards.filter(c=>standalone.has(c.regionId)&&!c.aluminum)){
+  const poly=board.polygon,bottom=board.height+board.thickness;
+  const path={closed:true,segments:boundaryPaths({poly})};
+  const neighbors=boards.filter(c=>c!==board);
+  const reference=[...rooms.map(r=>r.poly),...neighbors.map(c=>c.polygon)];
+  let inset;
+  try{inset=closedOffset({path},board.thickness);}catch{/* A narrow or acute board can exhaust its inset. Clip individual strips in that case. */}
+  for(const [index,{a,b,normal}] of path.segments.entries()){
+   const length=distance(a,b),project=p=>((p[0]-a[0])*(b[0]-a[0])+(p[1]-a[1])*(b[1]-a[1]))/(length*length);
+   const cuts=[0,1],add=t=>{if(t*length>eps()&&(1-t)*length>eps())cuts.push(t);};
+   for(const boundary of reference)for(const [i,p] of boundary.entries()){
+    const q=boundary[(i+1)%boundary.length];
+    const u=(p[0]-a[0])*normal[0]+(p[1]-a[1])*normal[1],v=(q[0]-a[0])*normal[0]+(q[1]-a[1])*normal[1];
+    if(Math.abs(u)<=eps())add(project(p));
+    if(u*v<0)add(project(lerp(p,q,u/(u-v))));
+   }
+   const stops=cuts.sort((a,b)=>a-b).filter((t,i)=>!i||(t-cuts[i-1])*length>eps());
+   const spans=[];
+   for(let i=1;i<stops.length;i++){
+    const start=stops[i-1],end=stops[i],mid=lerp(a,b,(start+end)/2),sample=side=>mid.map((v,k)=>v+side*normal[k]*.001);
+    const inward=sample(1),outward=sample(-1);
+    // Where the board meets a room boundary, the wall already closes it.
+    if(!rooms.some(r=>inside(outward,r.poly,false)))continue;
+    const roofs=rooms.filter(r=>finite(r.roof)&&inside(inward,r.poly,false)).map(r=>r.roof);
+    if(!roofs.length)continue;
+    const top=Math.min(...roofs,...neighbors.filter(c=>inside(outward,c.polygon,false)).map(c=>c.height));
+    if(top<=bottom+eps())continue;
+    if(spans.at(-1)?.end===start&&spans.at(-1).top===top)spans.at(-1).end=end;
+    else spans.push({start,end,top});
+   }
+   for(const [span,{start,end,top}] of spans.entries()){
+    const edgeStart=lerp(a,b,start),edgeEnd=lerp(a,b,end),next=(index+1)%poly.length;
+    const inner=p=>p.map((v,k)=>v+normal[k]*board.thickness);
+    // Miter at original corners; split points must align across the strip.
+    const strip=[edgeStart,edgeEnd,inset&&end===1?inset[next]:inner(edgeEnd),inset&&start===0?inset[index]:inner(edgeStart)];
+    const pieces=inset?[strip]:Z.decompose([poly,strip],p=>Z.inside(p,poly)&&Z.inside(p,strip));
+    for(const [piece,polygon] of pieces.entries())closures.push({id:board.id,key:index+'-'+span+'-'+piece,polygon,bottom,top});
+   }
+  }
+ }
+ return closures;
+}
 function derive(plan,work){
  if(!work.ceilings)return plan;const data=resolve(work.ceilings),contexts=new Map();
  for(const r of data.regions||[])if(r.style!=='none'){const context=regionContext(plan,r);contexts.set(r.id,context);if(context.outside)data.pending.push({id:r.id,message:r.name+'：吊顶区域超出可用空间或跨越墙体，请核对边界'});}
@@ -397,6 +447,8 @@ function derive(plan,work){
   if(light.some(p=>c.height-p[1]< -eps()))data.pending.push({id:c.id,message:'灯带低于测量基准地面，请核对发光位置'});
   if(!finite(r.ceilingHeight))data.pending.push({id:c.id,message:'原顶高度待核对'});else if(top>r.ceilingHeight+eps())data.pending.push({id:c.id,message:'吊顶或灯带超过当前原顶高度'});
  }
+ const closures=flatEdgeClosures(plan,data);
+ if(closures.length)data.closures=closures;
  return {...plan,ceilings:data};
 }
 function onlyChange(a,b){const strip=v=>{const c=clone(v);delete c.ceilings;return JSON.stringify(c);};return strip(a)===strip(b);}
@@ -489,18 +541,19 @@ function checks(plan,bodies,{focusIds=null}={}){
  });
  const caps=c.kind==='flat'?[]:endCaps(c).plates.map(plate=>({...plate,box:bounds(plate.footprint),bottom:c.height-Math.max(...plate.section.map(p=>p[1])),top:c.height-Math.min(...plate.section.map(p=>p[1]))}));
  const flatBox=c.kind==='flat'?bounds(c.polygon):null,flatConvex=c.kind==='flat'&&convex(c.polygon);
+ const closures=(plan.ceilings?.closures||[]).filter(edge=>edge.id===c.id).map(edge=>({...edge,box:bounds(edge.polygon)}));
  for(const {f,p,vertical} of bodies){
   if(focusIds&&!focusIds.has(f.id))continue;
   const box=bounds(p),separated=(bottom,top,tolerance=eps())=>vertical&&Math.min(vertical.top,top)-Math.max(vertical.bottom,bottom)<=tolerance;
-  let hit=false;
-  if(c.kind==='flat'){
+  let hit=closures.some(edge=>!separated(edge.bottom,edge.top)&&!disjoint(box,edge.box)&&overlapArea(edge.polygon,p)>eps()**2);
+  if(!hit&&c.kind==='flat'){
    if(separated(c.height,c.height+c.thickness)||disjoint(box,flatBox))continue;
    if(apertures.get(c.id).some(h=>h.id===f.id))continue;
    const slots=replacements.get(c.id);if(slots.some(s=>s.fid===f.id))continue;
    if(slots.length){const Z=zones(),cuts=slots.map(s=>s.cell),remaining=Z.decompose([c.polygon,p,...cuts],q=>Z.inside(q,c.polygon)&&Z.inside(q,p)&&!cuts.some(cut=>Z.inside(q,cut)));if(Z.area(remaining)<=eps()**2)continue;}
    if(flatConvex){const overlap=intersection(p,c.polygon);if(overlap.length<3||Math.abs(area(overlap))<=eps()**2)continue;}else if(overlapArea(c.polygon,p)<=eps()**2)continue;
    hit=!vertical||Math.min(vertical.top,c.height+c.thickness)-Math.max(vertical.bottom,c.height)>eps();
-  }else{
+  }else if(!hit){
    // Section contact is decided by clipped area, so retain even sub-epsilon
    // height overlap and the clipper's numerical boundary allowance.
    for(const {outline,bottom,top,legs} of sections){if(separated(bottom,top,-eps()))continue;for(const {leg,poly:footprint,box:legBox} of legs){
@@ -537,7 +590,7 @@ function aluminumLayout(c){
  }
  const trim=c.aluminum.trim?Z.decompose([c.polygon,inner],p=>Z.inside(p,c.polygon)&&!Z.inside(p,inner)):[];return {...grid,panels,trim,stats:{whole:panels.filter(p=>p.full).length,cut:panels.filter(p=>!p.full).length}};
 }
-function signature(data,furniture=[]){const P=root.FurnishProducts||require('./product-rules.js'),panelDevices=furniture.some(f=>!f.obj&&P.definition(f)?.ceilingPanel);return data?data.items.map(({name,...geometry})=>{const g=clone(geometry);if(!panelDevices)delete g.aluminum;else if(g.aluminum)g.aluminum={direction:g.aluminum.direction,trim:g.aluminum.trim,...(g.aluminum.origin?{origin:clone(g.aluminum.origin)}:{})};if(g.section){delete g.section.template;delete g.section.material;}return g;}):null;}
+function signature(data,furniture=[]){const P=root.FurnishProducts||require('./product-rules.js'),panelDevices=furniture.some(f=>!f.obj&&P.definition(f)?.ceilingPanel);return data?data.items.map(({name,...geometry})=>{const g=clone(geometry);if(!panelDevices)delete g.aluminum;else if(g.aluminum)g.aluminum={direction:g.aluminum.direction,trim:g.aluminum.trim,...(g.aluminum.origin?{origin:clone(g.aluminum.origin)}:{})};if(g.section){delete g.section.template;delete g.section.material;}const closures=data.closures?.filter(edge=>edge.id===g.id);if(closures?.length)g.closures=closures;return g;}):null;}
 function shift(work,offset){if(!work.ceilings)return;for(const r of work.ceilings.regions||[]){r.polygon=r.polygon.map(p=>p.map(v=>v+offset));if(r.aluminum?.origin)r.aluminum.origin=r.aluminum.origin.map(v=>v+offset);}for(const c of work.ceilings.items){if(c.aluminum?.origin)c.aluminum.origin=c.aluminum.origin.map(v=>v+offset);if(c.kind==='profile'){for(const p of route(c))for(const k of ['a','b'])p[k]=p[k].map(v=>v+offset);if(!c.path.segments){c.path.a=c.path.a.map(v=>v+offset);c.path.b=c.path.b.map(v=>v+offset);}}else c.polygon=c.polygon.map(p=>p.map(v=>v+offset));}}
 function requiresV6(work){return !!work?.ceilings?.items.some(c=>c.kind==='profile'&&(c.path?.segments||c.section?.light?.cornerSetback!==undefined));}
 function requiresV7(work){return !!work?.ceilings?.items.some(c=>c.section?.light?.corner!==undefined);}
