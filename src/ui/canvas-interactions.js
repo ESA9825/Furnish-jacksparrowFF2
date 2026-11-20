@@ -6,13 +6,13 @@ let stageEl;
 const drawingRotation=()=>globalThis.FurnishDrawing?FurnishDrawing.settings(state.drawing).rotation:0;
 function drawingPoint(p,inverse=false){return globalThis.FurnishDrawing?FurnishDrawing.rotate(p,(inverse?-1:1)*drawingRotation()):p;}
 function drawingCenter(){const p=drawingPoint([view.x0+svg.clientWidth/2/view.s,view.y0+svg.clientHeight/2/view.s],true);return {x:p[0],y:p[1]};}
-function displayBounds(){return globalThis.FurnishDrawing?FurnishDrawing.bounds(FurnishDrawing.drawingBounds(FurnishProject.effectivePlan(PLAN,state),state.drawing),drawingRotation()):BOUNDS;}
+function displayBounds(){return globalThis.FurnishDrawing?FurnishDrawing.bounds(FurnishDrawing.drawingBounds(canvasEffectivePlan(),state.drawing),drawingRotation()):BOUNDS;}
 function syncDrawingTransform(){const rotation=drawingRotation();for(const g of svg.children)if(g.tagName.toLowerCase()==='g'&&g.id!=='gCompass')g.setAttribute('transform',`rotate(${rotation})`);window.FurnishDrawingUI?.syncCompass();}
 function queueView(){ if (!viewRaf) viewRaf = requestAnimationFrame(() => { viewRaf = 0; applyView(); }); }
 function applyView(){
   return withCanvasPlan(applyCanvasView);
 }
-function applyCanvasView(){
+function applyCanvasViewport(){
   if (viewRaf){ cancelAnimationFrame(viewRaf); viewRaf = 0; }
   const W = svg.clientWidth, H = svg.clientHeight;
   svg.setAttribute('viewBox', `${view.x0} ${view.y0} ${W/view.s} ${H/view.s}`);
@@ -26,6 +26,9 @@ function applyCanvasView(){
   let gs = 1000*view.s; while (gs < 16) gs *= 2; while (gs > 64) gs /= 2;
   const off = v => (((-v*view.s) % gs) + gs) % gs + 'px';
   stageEl.style.setProperty('--gs', gs + 'px'); stageEl.style.setProperty('--gx', off(view.x0)); stageEl.style.setProperty('--gy', off(view.y0));
+}
+function applyCanvasView(){
+  applyCanvasViewport();
   renderSel(); renderMeasure();
   window.FurnishRoomMeasure?.afterRender();
   window.FurnishTilePresetUI?.afterView();
@@ -35,12 +38,12 @@ function applyCanvasView(){
   refreshHobOpenings();
   if(ui.sel?.kind==='wall')window.FurnishWorkflowTools?.redrawDistances();
 }
-function fitView(){
+function fitView({redraw=true}={}){
   const inset=globalThis.FurnishWorkflowTools?80:0;
   const W = Math.max(100,svg.clientWidth-inset), H = svg.clientHeight,b=displayBounds();
   view.s = Math.min(W/b.w, H/b.h);
   view.x0 = b.x - (W/view.s - b.w)/2-inset/view.s; view.y0 = b.y - (H/view.s - b.h)/2;
-  applyView();
+  if(redraw)applyView();else applyCanvasViewport();
 }
 function zoomAt(ns, mx, my){
   ns = Math.max(.012, Math.min(2, ns));

@@ -23,5 +23,5 @@ function preparePrint(){
  document.head.append(style);document.body.append(sheet);
 }
 window.addEventListener('beforeprint',preparePrint);window.addEventListener('afterprint',clearPrint);
-window.FurnishDrawingUI={afterRender,syncCompass,prepareExport,open,preparePrint,clearPrint};afterRender();fitView();
+window.FurnishDrawingUI={afterRender,syncCompass,prepareExport,open,preparePrint,clearPrint};
 })();

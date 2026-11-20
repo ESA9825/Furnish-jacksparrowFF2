@@ -593,7 +593,7 @@ function renderArchitecturePreview(plan,dimension){
   finally{[WALLS,WINS,DOORS,SLIDES,ROOMS]=actual;}
 }
 let deferredRenderFrame=null,deferredRenderTimer=null;
-function renderAll({sceneFirst=false,replan=false}={}){
+function renderAll({sceneFirst=false,replan=false,fit=false}={}){
   cancelAnimationFrame(deferredRenderFrame);clearTimeout(deferredRenderTimer);
   // Present the production pose before expensive panel checks; bursts share
   // one derived UI refresh. Ordinary edits/undo cancel this pending refresh.
@@ -609,6 +609,7 @@ function renderAll({sceneFirst=false,replan=false}={}){
   window.FurnishElectricalUI?.refreshRelations();
   // These layers only read the design; share one derivation within this draw.
   withCanvasPlan(()=>{
+    if(fit)fitView({redraw:false});
     renderGrid(); renderRooms(); renderFurn(); renderWalls(); renderLabels(); renderDims(); renderMeasure(); renderNotes(); renderSel();
     renderPanel(); updateHeader(); renderDesignBar();
   });

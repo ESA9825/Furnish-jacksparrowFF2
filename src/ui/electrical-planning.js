@@ -176,7 +176,7 @@ globalThis.FurnishElectricalUI=(()=>{
   $('#electrical-list').onclick=()=>setListOpen(dock.hidden);
   $('#electrical-list-close').onclick=()=>setListOpen(false);
   dock.addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();setListOpen(false);}});
-  refreshRelations();afterRender();if(active())renderPanel();
+  if(!repositoryBooting){refreshRelations();afterRender();if(active())renderPanel();}
  });
  document.addEventListener('keydown',e=>{if(active()&&e.key==='Escape'&&adding){adding=false;renderPanel();afterRender();}},true);
  return {active,blocked,physicalLocked,assertEditable,setMode,selection,selectionChanged,draw,refreshRelations,relatedIds,pairedOverlay,afterRender,pointer,panel};

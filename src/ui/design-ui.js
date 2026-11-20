@@ -84,5 +84,4 @@
  const recoveryButton=document.createElement('button');recoveryButton.className='btn';recoveryButton.id='recoveryPoints';recoveryButton.textContent=tr('自动快照','Automatic snapshots');$('#file-recovery-actions').append(recoveryButton);recoveryButton.onclick=()=>{recovery();$('#fileMenu').open=false;};renderHist();
  const originalOpen=FurnishWorkspace.open;FurnishWorkspace.open=tab=>{originalOpen(tab);if(tab==='compare'){$('#project-content').insertAdjacentHTML('afterbegin',`<p><button class="btn" id="cmp-manage">${tr('管理方案与历史','Manage designs and history')}</button></p>`);$('#cmp-manage').onclick=designs;}};
  $('#vSelection').onclick=()=>window.View3D?.focusSelection();
- renderPanel();
 })();

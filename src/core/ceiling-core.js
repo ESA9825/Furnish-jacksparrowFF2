@@ -2,7 +2,9 @@
 (function(root){
 'use strict';
 const clone=v=>JSON.parse(JSON.stringify(v)),finite=v=>typeof v==='number'&&Number.isFinite(v),fail=m=>{throw Error(m);};
-const rules=()=> (root.FurnishProducts||require('./product-rules.js')).ceiling;
+// Resolve the Node fallback once. Polygon predicates read these rules per edge.
+let nodeProducts;
+const rules=()=> (root.FurnishProducts||(nodeProducts??=require('./product-rules.js'))).ceiling;
 const zones=()=>root.FurnishZoneGeometry||(typeof require==='function'?require('./zone-geometry.js'):null);
 const eps=()=>rules().epsilon;
 // Direct inputs use the exact guard. Derived differences additionally account

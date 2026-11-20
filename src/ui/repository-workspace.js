@@ -84,7 +84,7 @@
   function renderWorkspace(){
    if(renderedWork===state)return;
    if(state===initialWork)state.furniture=sanitizeFurn(state.furniture,state);
-   buildDefs();buildCats();buildLib();fitView();renderAll({replan:true});renderDesigns();buildPlanList();
+   buildDefs();buildCats();buildLib();renderAll({replan:true,fit:true});renderDesigns();buildPlanList();
    renderedWork=state;
   }
   try{

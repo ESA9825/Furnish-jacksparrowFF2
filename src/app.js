@@ -1063,6 +1063,7 @@ $('#libSearch').addEventListener('input', e => { libUI.q = e.target.value; if(li
 let lastW = 0, lastH = 0;
 new ResizeObserver(() => {
   const w = svg.clientWidth, h = svg.clientHeight; if (!w) return;
+  if (repositoryBooting){lastW=w;lastH=h;return;}
   if (!lastW) fitView();
   else { view.x0 -= (w - lastW)/2/view.s; view.y0 -= (h - lastH)/2/view.s; applyView(); }
   lastW = w; lastH = h;
