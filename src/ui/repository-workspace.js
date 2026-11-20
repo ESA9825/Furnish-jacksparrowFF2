@@ -78,7 +78,19 @@
   }catch(e){toast('无法读取保存设置：'+e.message);}
  }
  async function initialize(){
-  const loading=document.createElement('div');loading.id='repository-loading';loading.style.cssText='position:fixed;inset:0;z-index:120;display:grid;place-items:center;background:rgba(250,248,242,.95);color:#343029';loading.textContent='正在核对本地正式文件与浏览器恢复缓存…';document.body.append(loading);
+  const loading=$('#repository-loading'),status=$('#repository-loading-status'),progress=loading.querySelector('progress');
+  const offline=location.protocol==='file:';
+  progress.max=offline?2:4;
+  function stage(value,zh,en){
+   progress.value=value;
+   status.textContent=tr(zh,en);
+  }
+  async function showDrawing(zh='正在绘制当前方案…',en='Drawing the current design…'){
+   stage(Math.max(progress.value,offline?1:2),zh,en);
+   // Let the browser show the stage before starting synchronous geometry work.
+   await new Promise(resolve=>setTimeout(resolve,0));
+  }
+  stage(0,'正在启动并读取本机缓存…','Starting and reading local cache…');
   const initialWork=state;
   let saved=null,renderedWork=null;
   function renderWorkspace(){
@@ -89,21 +101,25 @@
   }
   try{
    try{saved=await window.FurnishStorage.ready;}catch{/* Use localStorage if IndexedDB is unavailable. */}
-   if(location.protocol==='file:'){
+   if(offline){
+    await showDrawing();
     if(C.workspaceVersions.includes(saved?.v)&&(saved.updatedAt||0)>(store.updatedAt||0))applyWorkspace(saved);
     return;
    }
+   stage(1,'正在读取并校验正式文件…','Reading and validating the workspace…');
    repositoryClient=FurnishRepositoryStorage.create({request,fingerprint,ensureBackend,delay:60000,debounce:false,onChange:()=>syncSaved(),onAcknowledge:({revision})=>{if(storageWiping)return;store._repository={revision,clean:revision};cache(store);}});
    const next=await repositoryClient.initialize([repositoryInitialCache,saved,...FurnishWorkspaceCache.candidates({read:key=>localStorage.getItem(key),key:STORE})]);
-   if(next){applyWorkspace(next,{validated:repositoryClient.loadedValidatedFile});if(store.v>=7)store.v=Math.max(store.v,9);renderWorkspace();store._repository={revision:repositoryClient.revision,clean:await fingerprint(store)};await cache(store);}
+   await showDrawing();
+   if(next){applyWorkspace(next,{validated:repositoryClient.loadedValidatedFile});if(store.v>=7)store.v=Math.max(store.v,9);renderWorkspace();stage(3,'正在更新本机恢复缓存…','Updating local recovery cache…');store._repository={revision:repositoryClient.revision,clean:await fingerprint(store)};await cache(store);}
    else{renderWorkspace();store._repository={revision:null};repositoryClient.schedule(store);}
    window.FurnishRepository={flush:async()=>{await autosave.flush();return repositoryClient.flush();},openRecoveries,openStorage};
   }catch(e){
+   await showDrawing('正在打开可用的本机方案…','Opening the available local design…');
    // Do not mark a disconnected file store as saved, or overwrite any cache.
    if(C.workspaceVersions.includes(saved?.v)&&(saved.updatedAt||0)>(store.updatedAt||0))try{applyWorkspace(saved);}catch{/* Leave invalid data untouched for manual recovery. */}
    const message='本地正式文件未能加载，已暂停文件保存。可在“保存位置与历史备份”恢复版本，或重启 start-furnish.cmd 后刷新：'+e.message;
    repositoryClient={status:{mode:'error',message},schedule(){},get pending(){return false;},stop(){}};toast(message);
-  }finally{renderWorkspace();$('#save-now').onclick=()=>saveNow();const settings=document.createElement('button');settings.className='btn';settings.id='storage-settings';settings.textContent='保存位置与历史备份';settings.onclick=()=>{$('#fileMenu').open=false;openStorage();};$('#file-storage-actions').append(settings);if(location.protocol!=='file:'){const button=document.createElement('button');button.className='btn';button.id='repository-recovery';button.textContent='本机恢复副本';button.onclick=()=>{$('#fileMenu').open=false;openRecoveries();};$('#file-recovery-actions').append(button);}repositoryBooting=false;repositoryResume();loading.remove();syncSaved();renderDesignBar();}
+  }finally{renderWorkspace();$('#save-now').onclick=()=>saveNow();const settings=document.createElement('button');settings.className='btn';settings.id='storage-settings';settings.textContent='保存位置与历史备份';settings.onclick=()=>{$('#fileMenu').open=false;openStorage();};$('#file-storage-actions').append(settings);if(location.protocol!=='file:'){const button=document.createElement('button');button.className='btn';button.id='repository-recovery';button.textContent='本机恢复副本';button.onclick=()=>{$('#fileMenu').open=false;openRecoveries();};$('#file-recovery-actions').append(button);}repositoryBooting=false;repositoryResume();progress.value=progress.max;loading.remove();syncSaved();renderDesignBar();}
  }
  addEventListener('beforeunload',e=>{if(repositoryClient?.pending){repositoryClient.flush?.().catch(()=>{});e.preventDefault();e.returnValue='';}});
  initialize();

@@ -58,6 +58,30 @@ html,body{margin:0;height:100%;background:var(--shell);color:var(--ink);overflow
   -webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased;
   font:13px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
 body{background:radial-gradient(1200px 500px at 85% -10%, rgba(239,90,36,.10), transparent 60%), var(--shell)}
+#repository-loading{
+  position:fixed;inset:0;z-index:120;display:grid;place-items:center;padding:20px;
+  background:var(--paper);color:var(--ink);
+}
+.repository-loading-card{
+  width:min(100%,360px);padding:30px;display:grid;justify-items:center;text-align:center;
+  border:1px solid var(--line);border-radius:var(--r-lg);background:var(--card);box-shadow:var(--shadow-sm);
+}
+.repository-loading-card h1{margin:12px 0 0;font-size:25px}
+.repository-loading-card p{margin:6px 0 20px;color:var(--muted);font-size:13px}
+.repository-loading-spinner{
+  width:28px;height:28px;border:3px solid var(--accent-soft);border-top-color:var(--accent-ink);
+  border-radius:50%;animation:repository-loading-spin 1s linear infinite;
+}
+.repository-loading-card progress{
+  display:block;width:100%;height:7px;border:0;border-radius:var(--r-pill);
+  appearance:none;background:var(--soft);accent-color:var(--accent-ink);overflow:hidden;
+}
+.repository-loading-card progress::-webkit-progress-bar{background:var(--soft)}
+.repository-loading-card progress::-webkit-progress-value{background:var(--accent-ink);border-radius:var(--r-pill)}
+.repository-loading-card progress::-moz-progress-bar{background:var(--accent-ink);border-radius:var(--r-pill)}
+@keyframes repository-loading-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.repository-loading-spinner{animation:none}}
+
 button,input,select{font:inherit;color:inherit}
 input{-webkit-user-select:text;user-select:text}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
