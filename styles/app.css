@@ -1116,12 +1116,16 @@ button.replacement-product:focus-visible{outline:2px solid var(--accent);outline
 .electrical-row-tags { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
 .electrical-control { padding:1px 5px; border-radius:5px; background:var(--soft); color:var(--ink); font-size:10px; font-weight:700; white-space:nowrap; }
 .electrical-control[data-control="smart"] { background:var(--accent-soft); color:var(--accent-ink); }
-.electrical-link-tag { background:#00877e24; }
+.electrical-row-links { display:flex; flex-wrap:wrap; gap:4px; padding:0 9px 8px 45px; }
+.electrical-link-tag { border:1px solid #00877e60; background:#00877e24; cursor:pointer; white-space:normal; text-align:start; }
+.electrical-link-tag:hover { background:#00877e40; }
 .electrical-row small { display:block; margin-top:2px; }
-.electrical-row-height { display:flex; gap:5px; align-items:baseline; margin-top:4px; font-size:11px; font-variant-numeric:tabular-nums; }
+.electrical-row-heading { display:flex; justify-content:space-between; align-items:baseline; gap:6px; }
+.electrical-row-height { display:flex; gap:4px; align-items:baseline; flex:none; white-space:nowrap; font-size:11px; font-variant-numeric:tabular-nums; }
 .electrical-row-height small { margin-top:0; }
-.electrical-row[data-electrical-related] { background:#00877e24; box-shadow:inset 3px 0 #00877e; }
-.electrical-row[aria-current="true"] { background:var(--soft); box-shadow:inset 3px 0 var(--action-bg); }
+.electrical-entry:has(> .electrical-row[data-electrical-related]) { background:#00877e24; box-shadow:inset 3px 0 #00877e; }
+.electrical-entry:has(> .electrical-row[aria-current="true"]) { background:var(--soft); box-shadow:inset 3px 0 var(--action-bg); }
+.electrical-entry > .electrical-row:not(:hover) { background:transparent; }
 .electrical-row:focus-visible { outline-offset:-2px; }
 #view-workspace { display:grid; grid-template-columns:minmax(0,1fr); min-width:0; min-height:0; }
 .electrical-list-open #view-workspace { grid-template-columns:minmax(0,1fr) min(42%,clamp(246px,22vw,320px)); gap:var(--gap); }

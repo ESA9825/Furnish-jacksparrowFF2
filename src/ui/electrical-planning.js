@@ -3,6 +3,7 @@ globalThis.FurnishElectricalUI=(()=>{
  const height=v=>v===null?'待核对':Number(v.toFixed(1));
  const E=FurnishElectrical,NS='http://www.w3.org/2000/svg';
  const controlLabels={smart:['智能','Smart'],conventional:['常规','Conventional'],sensor:['感应','Sensor']};
+ const linkLabels={wired:['有线双控','Wired two-way'],mijia:['米家联动','Mijia automation']};
  const gangLabels=[null,['单开','1 gang'],['双开','2 gang'],['三开','3 gang'],['四开','4 gang']];
  let adding=false,poseHost=null,relations=E.controlPairs([]);
  const active=()=>ui.planMode==='electrical';
@@ -23,7 +24,7 @@ globalThis.FurnishElectricalUI=(()=>{
  }
  function geometry(){return E.surfaces(canvasEffectivePlan(),state,selItems()[0]);}
  function refreshRelations(){relations=E.controlPairs(state.furniture);}
- function relatedIds(){return [...(relations.links.get(ui.sel?.kind==='furn'?ui.sel.id:null)||[])];}
+ function relatedIds(){return [...(relations.links.get(ui.sel?.kind==='furn'?ui.sel.id:null)?.keys()||[])];}
  function pairedOverlay(){
   if(!active()&&!ui.layers.furn)return '';
   const markers=relatedIds().map(getF).filter(f=>f&&FurnishLayers.visible(state,FurnishLayers.furnitureKey(f)));
@@ -52,6 +53,17 @@ globalThis.FurnishElectricalUI=(()=>{
   const p=toMM(e),item=LIB.flatMap(c=>c.items).find(i=>FurnishProducts.supports({type:i[0]},'panelVariant'));if(!item)return false;
   adding=false;addItem(item,p.x,p.y);return true;
  }
+ function relatedButtons(id,room){
+  const links=relations.links.get(id);
+  if(!links)return '';
+  return `<div class="electrical-row-links">${[...links].map(([peerId,methods])=>{
+   const peer=getF(peerId),destination=roomAt(peer.cx,peer.cy);
+   const location=destination?.id===room?.id?'':destination?nm(state.rooms[destination.id]?.name||destination.name):tr('未归属房间','No room assigned');
+   const method=methods.size===1?linkLabels[[...methods][0]]:['双控','Two-way'];
+   const label=[tr(...method),relations.numbers.get(peerId),location].filter(Boolean).join(' · ');
+   return `<button type="button" class="electrical-control electrical-link-tag" data-electrical-jump="${esc(peerId)}" aria-label="${esc(tr('定位 ','Locate ')+label)}">${esc(label)} <span aria-hidden="true">↗</span></button>`;
+  }).join('')}</div>`;
+ }
  function listRows(rows){
   if(!rows.length)return `<p class="muted">${tr('当前方案没有插座或开关面板。','There are no sockets or switch plates in this design.')}</p>`;
   const groups=new Map(),current=ui.sel?.kind==='furn'?ui.sel.id:null,peers=relatedIds();
@@ -74,20 +86,19 @@ globalThis.FurnishElectricalUI=(()=>{
    const tags=[
     category?`<span class="electrical-control" data-control="${control}">${tr(...category)}</span>`:'',
     gangs?`<span class="electrical-control">${tr(...gangs)}</span>`:'',
-    amps?`<span class="electrical-control">${tr(`额定 ${amps} A`,`Rated ${amps} A`)}</span>`:'',
-    relations.links.has(r.id)?`<span class="electrical-control electrical-link-tag">${tr('双控','Two-way')} ${[...relations.links.get(r.id)].map(id=>relations.numbers.get(id)).join('、')}</span>`:''
+    amps?`<span class="electrical-control">${tr(`额定 ${amps} A`,`Rated ${amps} A`)}</span>`:''
    ].join('');
    const elevation=r.finishedBottom===null?tr('待核对','Unknown'):height(r.finishedBottom)+' mm';
-   groups.get(key).items.push(`<li><button type="button" class="btn electrical-row" data-electrical-id="${esc(r.id)}" ${current===r.id?'aria-current="true"':''} ${peers.includes(r.id)?'data-electrical-related':''}>
+   groups.get(key).items.push(`<li class="electrical-entry"><button type="button" class="btn electrical-row" data-electrical-id="${esc(r.id)}" ${current===r.id?'aria-current="true"':''} ${peers.includes(r.id)?'data-electrical-related':''}>
      <span class="electrical-row-number">${r.number}</span>
-     <span class="electrical-row-description"><b>${esc(type)}</b>
+     <span class="electrical-row-description">
+       <span class="electrical-row-heading"><b>${esc(type)}</b><span class="electrical-row-height"><small>${tr('底高','Bottom height')}</small> <b>${elevation}</b></span></span>
        ${label&&label!==variantLabel&&label!==type&&label!==model?`<span class="electrical-row-purpose">${esc(label)}</span>`:''}
        ${model?`<span class="electrical-row-product">${esc(model)}</span>`:''}
        ${tags?`<span class="electrical-row-tags">${tags}</span>`:''}
        ${hidden?`<small>${tr('图层已隐藏','Layer hidden')}</small>`:''}
-       <span class="electrical-row-height"><small>${tr('底高','Bottom height')}</small> <b>${elevation}</b></span>
      </span>
-    </button></li>`);
+    </button>${relatedButtons(r.id,room)}</li>`);
   }
   return `<div class="electrical-list-groups">${[...groups.values()].map(({room,items})=>{
    const location=room?nm(state.rooms[room.id]?.name||room.name):tr('未归属房间','No room assigned');
@@ -108,9 +119,18 @@ globalThis.FurnishElectricalUI=(()=>{
   if(wasAdding)afterRender();
   if(is3D())window.View3D?.focusSelection({itemId:id});
   else zoomToBox(groupBox([f]),550);
+  return true;
  }
+ function findRow(host,id){return [...host.querySelectorAll('[data-electrical-id]')].find(b=>b.dataset.electricalId===id);}
  function bindList(host){
   host.querySelectorAll('[data-electrical-id]').forEach(b=>b.onclick=()=>locate(b.dataset.electricalId));
+  host.querySelectorAll('[data-electrical-jump]').forEach(b=>b.onclick=()=>{
+   const id=b.dataset.electricalJump;
+   if(!locate(id))return;
+   const target=findRow(host,id);
+   target?.scrollIntoView({block:'nearest',inline:'nearest'});
+   target?.focus({preventScroll:true});
+  });
  }
  function selectionChanged(){
   if($('#electrical-list-dock').hidden)return;
@@ -125,11 +145,16 @@ globalThis.FurnishElectricalUI=(()=>{
  function refreshList(){
   if($('#electrical-list-dock').hidden)return;
   const host=$('#electrical-list-rows'),scroll=host.scrollTop;
-  const focus=host.contains(document.activeElement)?document.activeElement.dataset.electricalId:null;
+  const focused=host.contains(document.activeElement)?document.activeElement:null;
+  const focus=focused?.closest('.electrical-entry')?.querySelector('[data-electrical-id]')?.dataset.electricalId;
   host.innerHTML=listRows(E.points(state,canvasEffectivePlan()));
   bindList(host);
   host.scrollTop=scroll;
-  if(focus)[...host.querySelectorAll('[data-electrical-id]')].find(b=>b.dataset.electricalId===focus)?.focus({preventScroll:true});
+  if(focus){
+   const row=findRow(host,focus);
+   const link=[...(row?.parentElement.querySelectorAll('[data-electrical-jump]')||[])].find(b=>b.dataset.electricalJump===focused.dataset.electricalJump);
+   (link||row)?.focus({preventScroll:true});
+  }
  }
  function setListOpen(open){
   const dock=$('#electrical-list-dock'),button=$('#electrical-list'),restoreFocus=dock.contains(document.activeElement);
