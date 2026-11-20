@@ -12,6 +12,7 @@ globalThis.FurnishElectricalUI=(()=>{
  function assertEditable(before,after){if(active())E.assertEditable(before,after);}
  function setMode(mode){
   if(!['furniture','ceiling','electrical'].includes(mode))return;
+  if(mode==='electrical'&&active())return;
   endDrag(true);closeFabEditor(false);if(!$('#dlg').hidden)closeDialog();
   globalThis.FurnishWiringUI?.leave();
   adding=false;poseHost=null;ui.sceneMove=false;ui.sel=null;ui.tool='select';ui.planMode=mode;saveUI();renderAll();applyView();
@@ -45,7 +46,7 @@ globalThis.FurnishElectricalUI=(()=>{
  }
  function afterRender(){
   document.body.classList.toggle('electrical-mode',active());
-  const status=$('#placement-status'),message=active()&&adding?tr('点击画布放置面板，按 Esc 取消','Click the plan to place the socket. Press Esc to cancel.'):'';
+  const status=$('#placement-status'),message=active()&&adding&&!is3D()?tr('点击画布放置面板，按 Esc 取消','Click the plan to place the socket. Press Esc to cancel.'):'';
   if(status.textContent!==message)status.textContent=message;
   draw();
   if(!active())for(const n of document.querySelectorAll('#gFurn > [data-fid]'))n.removeAttribute('pointer-events');
@@ -174,8 +175,12 @@ globalThis.FurnishElectricalUI=(()=>{
   if(globalThis.FurnishWiringUI?.panel(p))return true;
   const f=selItems().length===1&&selItems()[0],rows=E.points(state,canvasEffectivePlan()),locked=f&&physicalLocked(f);
   const listOpen=p.querySelector('#electrical-panel-list')?.open??!f;
-  p.innerHTML=`<section class="electrical-panel"><h3>插座布置 <span class="muted">${rows.length} 个点位</span></h3><p class="muted">家具、墙体和柜体结构只读。开合柜门可查看柜内点位；面板可贴墙或贴柜体板面。</p><div class="actions"><button class="btn primary" id="electrical-add">${adding?'取消放置':'＋ 添加面板'}</button><button class="btn" id="electrical-wiring">布线</button><button class="btn" id="electrical-exit">返回家具布局</button></div>${f?editor(f,rows.find(r=>r.id===f.id),locked):'<p>点选图中编号编辑面板，或从下方列表选择。</p>'}<details ${poseHost?'open':''}><summary>柜门／抽屉开合</summary><label>选择柜体<select id="electrical-host"><option value="">请选择</option>${state.furniture.filter(f=>(f.cabinet||f.kitchen)&&FurnishLayers.visible(state,'furniture:'+f.id)).map(f=>`<option value="${esc(f.id)}" ${poseHost===f.id?'selected':''}>${esc(f.name)}</option>`).join('')}</select></label><div class="actions"><button class="btn" id="electrical-open">全部打开</button><button class="btn" id="electrical-close">全部关闭</button><button class="btn" id="electrical-3d">三维逐扇开合</button></div><small>仅改变开启状态；柜体尺寸、位置和结构保持。原来锁定的柜体仍受保护。</small></details><details id="electrical-panel-list" ${listOpen?'open':''}><summary>面板清单</summary>${listRows(rows)}</details><p id="electrical-error" class="project-error" role="alert"></p></section>`;
-  p.querySelector('#electrical-add').onclick=()=>{adding=!adding;renderPanel();afterRender();};p.querySelector('#electrical-exit').onclick=()=>setMode('furniture');
+  p.innerHTML=`<section class="electrical-panel"><h3>插座布置 <span class="muted">${rows.length} 个点位</span></h3><p class="muted">家具、墙体和柜体结构只读。开合柜门可查看柜内点位；面板可贴墙或贴柜体板面。</p><div class="actions"><button class="btn primary" id="electrical-add">${adding?'取消放置':'＋ 添加面板'}</button><button class="btn" id="electrical-wiring">布线</button><button class="btn" id="electrical-exit">返回家具布局</button></div>${f?editor(f,rows.find(r=>r.id===f.id),locked):is3D()?'<p>从面板清单选择点位并定位。</p>':'<p>点选图中编号编辑面板，或从下方列表选择。</p>'}<details ${poseHost?'open':''}><summary>柜门／抽屉开合</summary><label>选择柜体<select id="electrical-host"><option value="">请选择</option>${state.furniture.filter(f=>(f.cabinet||f.kitchen)&&FurnishLayers.visible(state,'furniture:'+f.id)).map(f=>`<option value="${esc(f.id)}" ${poseHost===f.id?'selected':''}>${esc(f.name)}</option>`).join('')}</select></label><div class="actions"><button class="btn" id="electrical-open">全部打开</button><button class="btn" id="electrical-close">全部关闭</button><button class="btn" id="electrical-3d">三维逐扇开合</button></div><small>仅改变开启状态；柜体尺寸、位置和结构保持。原来锁定的柜体仍受保护。</small></details><details id="electrical-panel-list" ${listOpen?'open':''}><summary>面板清单</summary>${listRows(rows)}</details><p id="electrical-error" class="project-error" role="alert"></p></section>`;
+  p.querySelector('#electrical-add').onclick=async()=>{
+   const fromScene=is3D();
+   if(fromScene){await setView('2d');if(is3D()||!active())return;}
+   adding=fromScene||!adding;renderPanel();afterRender();
+  };p.querySelector('#electrical-exit').onclick=()=>setMode('furniture');
   p.querySelector('#electrical-wiring').onclick=()=>{adding=false;FurnishWiringUI.open();afterRender();};
   bindList(p);
   p.querySelector('#electrical-host').onchange=e=>{poseHost=e.target.value;};

@@ -212,7 +212,6 @@ main.drawer-panel #fab-editor{visibility:hidden}
 .plan-display{margin-left:auto;display:flex;flex:none;gap:2px;padding:2px;border:1px solid var(--s-line);border-radius:10px;background:var(--s-panel);animation:none}
 .plan-display .btn{min-height:30px;padding:4px 14px;border-radius:7px}
 .plan-display .btn[aria-pressed="true"]{background:var(--action-bg);color:var(--on-action)}
-.m3d #electrical-list{margin-inline-start:auto}
 .design-bar #electrical-list[aria-expanded="true"]{background:var(--action-bg);color:var(--on-action)}
 #plan-display-note{margin:8px 0 0;color:var(--muted);font-size:11px}
 #placement-status{animation:none}

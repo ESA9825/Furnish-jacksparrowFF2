@@ -257,10 +257,10 @@
         <button class="btn" data-design-command="manage" data-en="Manage designs">管理方案</button>
       </div>
     </details>
-    <div class="plan-display only2d" role="group" aria-label="平面编辑模式" data-en-aria="Plan editing mode">
+    <div class="plan-display" role="group" aria-label="方案编辑模式" data-en-aria="Design editing mode">
       <button class="btn" data-plan-mode="furniture" aria-pressed="true" data-en="Furniture">家具</button>
       <button class="btn" data-plan-mode="electrical" aria-pressed="false" data-en="Sockets">插座</button>
-      <button class="btn" data-plan-mode="ceiling" aria-pressed="false" data-en="Ceiling">吊顶</button>
+      <button class="btn only2d" data-plan-mode="ceiling" aria-pressed="false" data-en="Ceiling">吊顶</button>
     </div>
     <button class="btn" id="electrical-list" aria-controls="electrical-list-dock" aria-expanded="false" data-en="Socket list">插座清单</button>
   </section>
@@ -770,6 +770,7 @@ const GRAPHICS_IDLE_MS=20000;
 let graphicsIdleTimer=0,graphicsParked=false,graphicsExtension=null,parkedPose=null;
 let renderer, labelRenderer, scene, camera, orbit, walkCtl, hemi, sun, ground, glassMat, wallMat, capMat, frameMat;
 let archFloor, archUp, furnG, clearanceG, labelG, wallLabelG, lampG, colliders = [], selKey = null, selHelper = null;
+let electricalG, electricalKey='';
 let elevationG,issueG,sceneIssue=null,issueTimer=0,selectionTransform=null,sceneMeasure=null;
 const observation=FurnishSceneObservation.create(THREE);
 const ceilingDisplay=FurnishCeilingModel.createDisplay(THREE);
@@ -840,6 +841,7 @@ function init(){
   clearanceG = new THREE.Group();
   scene.add(archFloor, archUp, furnG, clearanceG, labelG, wallLabelG, lampG);
   elevationG=new THREE.Group();issueG=new THREE.Group();scene.add(elevationG,issueG);
+  electricalG=new THREE.Group();electricalG.name='Electrical planning';scene.add(electricalG);
 
   const cv = renderer.domElement;
   sceneMeasure=FurnishSceneMeasure.create({THREE,stage,canvas:cv,camera,tr,invalidate,
@@ -1590,6 +1592,42 @@ function syncReplacementFootprint(work){
 }
 
 // 只重建变化的部分
+function syncElectrical(){
+  const overlay=FurnishElectricalUI.active()?FurnishWiringUI.sceneOverlay():null;
+  const key=overlay?JSON.stringify([OX,OY,overlay]):'';
+  if(key===electricalKey)return;
+  electricalKey=key;
+  clearAnnotations(electricalG);
+  if(!overlay)return;
+  for(const {label,kind,x,y,z} of overlay.markers){
+    const marker=annotationLabel(electricalG,label,wx(x),M(z),wz(y),'electrical-scene-marker');
+    if(kind)marker.element.dataset.wireKind=kind;
+  }
+  const world=({x,y,z})=>new THREE.Vector3(wx(x),M(z),wz(y));
+  const up=new THREE.Vector3(0,1,0),part=new THREE.Object3D();
+  for(const {kind,path,editing} of overlay.paths){
+    const points=path.map(world),segments=[];
+    for(let i=1;i<points.length;i++){
+      const a=points[i-1],b=points[i];
+      if(!a.equals(b))segments.push([a,b]);
+    }
+    if(!segments.length)continue;
+    const radius=editing ? .035 : .023;
+    const material=new THREE.MeshBasicMaterial({color:FurnishWiringUI.colors[kind],depthTest:false,depthWrite:false,transparent:true,toneMapped:false});
+    const bars=new THREE.InstancedMesh(new THREE.CylinderGeometry(radius,radius,1,6),material,segments.length);
+    segments.forEach(([a,b],i)=>{
+      const direction=new THREE.Vector3().subVectors(b,a);
+      part.position.copy(a).lerp(b,.5);
+      part.scale.set(1,direction.length()+radius,1);
+      part.quaternion.setFromUnitVectors(up,direction.normalize());
+      part.updateMatrix();
+      bars.setMatrixAt(i,part.matrix);
+    });
+    bars.renderOrder=editing?61:60;
+    electricalG.add(bars);
+  }
+}
+
 function sync(force){
   if (!inited || (!active && !force)) return;
   H=FurnishProject.ceilingHeight(state)/1000;
@@ -1625,6 +1663,7 @@ function sync(force){
   if (force || l !== sigLabels){ sigLabels = l; buildLabels(); }
   syncReplacementFootprint(furnitureWork);
   applyObservationLayers();
+  syncElectrical();
   invalidate();
 }
 
@@ -1805,6 +1844,7 @@ function parkGraphics(){
   clearObservation();
   clearSceneIssue();
   clearAnnotations(elevationG);
+  clearAnnotations(electricalG);electricalKey='';
   if(selHelper){clearAnnotations(selHelper);scene.remove(selHelper);selHelper=null;}
   if(replacementFootprint){
     replacementFootprint.geometry.dispose();
@@ -1987,7 +2027,7 @@ function updateSel(){
   invalidate();
 }
 
-function clearAnnotations(group){if(!group)return;group.traverse(o=>{if(o.isCSS2DObject)o.element.remove();o.geometry?.dispose();o.material?.dispose();});group.clear();}
+function clearAnnotations(group){if(!group)return;group.traverse(o=>{if(o.isCSS2DObject)o.element.remove();if(o.isInstancedMesh)o.dispose();o.geometry?.dispose();o.material?.dispose();});group.clear();}
 function annotationLabel(group,text,x,y,z,cls){const el=document.createElement('div');el.className=cls;el.textContent=text;const label=new CSS2DObject(el);label.position.set(x,y,z);group.add(label);return label;}
 function annotationLine(group,points,color){const line=new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points),new THREE.LineBasicMaterial({color,depthTest:false,transparent:true,opacity:.85}));line.renderOrder=30;group.add(line);}
 function fitSceneAnnotationLabels(){
@@ -2356,7 +2396,7 @@ function productionMotionPending(){return doors.some(d=>d.cur!==(d.open?d.a1:d.a
 function progressiveState(){
  const signature=highQualitySignature();if(!signature||productionMotionPending())return null;
  const parts=JSON.parse(signature),cameraState={matrixWorld:camera.matrixWorld.elements.slice(),projectionMatrix:camera.projectionMatrix.elements.slice(),near:camera.near,far:camera.far,aspect:camera.aspect};
- return {sceneKey:JSON.stringify([...parts.slice(0,-2),ceilingDisplay.progressiveKey(archUp,camera,ui.ceilingMode)]),viewKey:FurnishProgressivePolicy.cameraKey(cameraState),camera:cameraState,editing:!!selHelper||!!sceneIssue||!!sceneMeasure?.active()||!!globalThis.FurnishTilePresetUI?.inspecting()};
+ return {sceneKey:JSON.stringify([...parts.slice(0,-2),ceilingDisplay.progressiveKey(archUp,camera,ui.ceilingMode)]),viewKey:FurnishProgressivePolicy.cameraKey(cameraState),camera:cameraState,editing:FurnishElectricalUI.active()||!!selHelper||!!sceneIssue||!!sceneMeasure?.active()||!!globalThis.FurnishTilePresetUI?.inspecting()};
 }
 function progressiveScene(){return highQualityScene({cameraIndependent:true});}
 async function highQualityScene({cameraIndependent=false}={}){

@@ -1,34 +1,55 @@
 /* Route drafts are local to the electrical editor until the user saves. */
 globalThis.FurnishWiringUI=(()=>{
  const E=FurnishElectrical;
- const colors={power:'#b84c29',network:'#175caa'};
+ const colors=Object.freeze({power:'#b84c29',network:'#175caa'});
  const kinds=Object.keys(E.wireKinds);
  const axisLabels={x:'X',y:'Y',z:'标高'};
  const mm=v=>String(Math.round(v*100)/100);
  const metres=v=>v===null?'待核对':Number.isFinite(v)?(v/1000).toFixed(2)+' m':'—';
- let opened=false,draft=null,owner=null,height=0;
+ let opened=false,draft=null,owner=null,height=0,inspectedId=null;
  const active=()=>opened&&FurnishElectricalUI.active();
- function leave(){opened=false;draft=null;owner=null;}
+ function leave(){opened=false;draft=null;owner=null;inspectedId=null;}
  function current(){
   if(owner!==state){draft=null;owner=null;}
   return draft;
  }
  function begin(route){
   endDrag(true);
+  inspectedId=null;
   owner=state;
   draft=structuredClone(route);
   height=0;
   refresh();
  }
- function refresh(){renderPanel();FurnishElectricalUI.draw();}
+ function refresh(){renderPanel();FurnishElectricalUI.draw();if(is3D())window.View3D.sync();}
  function open(){
   opened=true;
-  if(is3D())setView('2d');
   select(null);
  }
  const routes=()=>state.wireRoutes||[];
  const report=message=>{const el=$('#wiring-error');if(el)el.textContent=message;};
  const geometry=(route,plan=canvasEffectivePlan(),byId)=>E.routeGeometry(route,plan,state.furniture,byId);
+ function sceneOverlay(){
+  const plan=canvasEffectivePlan(),furniture=state.furniture,byId=new Map(furniture.map(f=>[f.id,f]));
+  const routeDraft=active()?current():null,saved=routes();
+  const inspected=active()&&saved.some(r=>r.id===inspectedId)?inspectedId:null;
+  const paths=[];
+  const visibleRoutes=[...saved.filter(r=>r.id!==routeDraft?.id),...(routeDraft?[routeDraft]:[])];
+  for(const route of visibleRoutes){
+   if(inspected&&route.id!==inspected)continue;
+   const {path}=geometry(route,plan,byId);
+   if(path.length&&path.every(p=>[p.x,p.y,p.z].every(Number.isFinite)))paths.push({kind:route.kind,path,editing:route===routeDraft});
+  }
+  const numbers=new Map(E.points(state).map(row=>[row.id,row.number]));
+  const markers=[];
+  for(const f of furniture){
+   const box=E.boxKind(f),label=numbers.get(f.id)||(box==='power'?'强':box==='network'?'弱':null);
+   if(!label||!FurnishLayers.visible(state,'furniture:'+f.id))continue;
+   const p=E.endpoint(f,plan,furniture);
+   if(Number.isFinite(p.z))markers.push({...p,label,kind:E.endpointKind(f)});
+  }
+  return {paths,markers};
+ }
  function apply(next){
   E.validateRoutes(next);
   mutate(()=>{if(next.length)state.wireRoutes=next;else delete state.wireRoutes;});
@@ -163,11 +184,25 @@ globalThis.FurnishWiringUI=(()=>{
  function panel(node){
   if(!active())return false;
   const route=current();
-  if(route)editor(node,route);else list(node);
+  if(is3D())scenePanel(node,route);
+  else if(route)editor(node,route);else list(node);
   return true;
+ }
+ function scenePanel(node,routeDraft){
+  const plan=canvasEffectivePlan(),byId=new Map(state.furniture.map(f=>[f.id,f]));
+  const rows=routes().map(route=>({route,...geometry(route,plan,byId)}));
+  node.innerHTML=`<section class="electrical-panel"><div class="actions"><button class="btn" id="wiring-back">返回插座布置</button><button class="btn primary" id="wiring-edit-2d">返回二维编辑</button></div><h3>三维布线</h3><p class="muted">走线透视显示。点击线路可单独查看，再点恢复全部。${routeDraft?' 返回二维可继续编辑草稿。':''}</p><p class="wiring-summary">${totals(rows)}</p>${rows.length?`<ul class="wiring-list">${rows.map(({route,length})=>`<li><button class="btn" data-wire-inspect="${esc(route.id)}" aria-pressed="${route.id===inspectedId}"><span><span class="wiring-swatch" data-wire-kind="${route.kind}" aria-hidden="true"></span>${esc(route.name)}</span><small>${metres(length)}</small></button></li>`).join('')}</ul>`:''}</section>`;
+  node.querySelector('#wiring-back').onclick=()=>{leave();refresh();};
+  node.querySelector('#wiring-edit-2d').onclick=()=>setView('2d');
+  const buttons=node.querySelectorAll('[data-wire-inspect]');
+  for(const button of buttons)button.onclick=()=>{
+   inspectedId=inspectedId===button.dataset.wireInspect?null:button.dataset.wireInspect;
+   for(const b of buttons)b.setAttribute('aria-pressed',String(b.dataset.wireInspect===inspectedId));
+   window.View3D.sync();
+  };
  }
  document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&active()&&current()&&$('#dlg').hidden){e.stopImmediatePropagation();draft=null;refresh();}
  },true);
- return {open,leave,draw,pointer,panel};
+ return {open,leave,draw,pointer,panel,sceneOverlay,colors};
 })();
