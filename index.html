@@ -772,7 +772,7 @@ let archFloor, archUp, furnG, clearanceG, labelG, wallLabelG, lampG, colliders =
 let elevationG,issueG,sceneIssue=null,issueTimer=0,selectionTransform=null,sceneMeasure=null;
 const observation=FurnishSceneObservation.create(THREE);
 const ceilingDisplay=FurnishCeilingModel.createDisplay(THREE);
-let observationTarget=null,observationSelection='',observationRevision='';
+let observationTarget=null,observationSelection='',observationRevision='',observationCutaway=true;
 let sigArch = '', sigFurn = '', sigLabels = '', grow = 1, furnGrow = 1;
 let sigNorth='';
 const doors = [], slidingDoors = [], keys = {};
@@ -1752,8 +1752,15 @@ function observationBounds(){
 }
 function clearObservation(){
  ceilingDisplay.clear();
- observationTarget=null;observationSelection='';if(observation.clear())invalidate(true);
+ observationTarget=null;observationSelection='';observationCutaway=true;if(observation.clear())invalidate(true);
  $('#vRestoreWalls').hidden=true;syncHint3d();
+}
+function clearPanelPose(next,id){
+ for(const group of [archUp,archFloor,furnG])group.updateWorldMatrix(true,true);
+ const direction=next.t.clone().sub(next.p),distance=direction.length();
+ const sightline=new THREE.Raycaster(next.p,direction.normalize(),camera.near,Math.max(camera.near,distance-.005));
+ const objects=[archUp,archFloor,...furnG.children.filter(group=>group.userData.fid!==id)];
+ return !sightline.intersectObjects(objects,true).some(hit=>hit.object.isMesh&&sceneObjectShown(hit.object)&&observation.material(hit.object)!==glassMat);
 }
 function frameObservation(front=false){
  const bounds=observationBounds();if(bounds.isEmpty()){clearObservation();return;}
@@ -1765,7 +1772,21 @@ function frameObservation(front=false){
  const dir=primary?new THREE.Vector3(-Math.sin(angle),.22,Math.cos(angle)):camera.position.clone().sub(orbit.target).normalize();
  // A shallow view shows both base and upper units without looking down behind them.
  if(dir.lengthSq()<.01)dir.set(0,.2,1);dir.y=THREE.MathUtils.clamp(dir.y,.12,.45);dir.normalize();
- const next=FurnishSceneObservation.fit(THREE,camera,bounds,dir,{width:SW(),height:SH(),marginX:Math.min(48,SW()*.1),marginY,minDistance:orbit.minDistance});
+ const frame=direction=>FurnishSceneObservation.fit(THREE,camera,bounds,direction,{width:SW(),height:SH(),marginX:Math.min(48,SW()*.1),marginY,minDistance:orbit.minDistance});
+ let next=frame(dir);
+ const panel=observationTarget.length===1&&getF(observationTarget[0]);
+ observationCutaway=true;
+ if(globalThis.FurnishElectrical?.panel(panel)){
+  const angle=(panel.rot||0)*Math.PI/180,normal=new THREE.Vector3(-Math.sin(angle),.22,Math.cos(angle)).normalize();
+  const up=new THREE.Vector3(0,1,0);
+  for(const yaw of [0,20,-20,40,-40]){
+   const candidate=frame(normal.clone().applyAxisAngle(up,yaw*Math.PI/180));
+   if(!clearPanelPose(candidate,panel.id))continue;
+   next=candidate;observationCutaway=false;
+   if(observation.clear())invalidate(true);
+   break;
+  }
+ }
  if(next){observationRevision=sigFurn;orbit.maxDistance=Math.max(45,next.p.distanceTo(next.t)*1.5);flyTo(next);}
 }
 function updateObservation(){
@@ -1774,7 +1795,7 @@ function updateObservation(){
  if(opt.mode!=='orbit'||anim||observationSelection!==JSON.stringify(ui.sel)){clearObservation();return;}
  const bounds=observationBounds();if(bounds.isEmpty()){clearObservation();return;}
  if(observationRevision!==sigFurn)frameObservation();
- if(observation.update(camera,bounds,archUp))invalidate(true);
+ if(observationCutaway&&observation.update(camera,bounds,archUp))invalidate(true);
 }
 
 /* ======================= 进入 / 退出 3D ======================= */
@@ -2379,7 +2400,7 @@ async function automationCamera(options){
   await automationReady();
  }
  const point=p=>({x:p.x*1000+OX,y:p.z*1000+OY,z:p.y*1000}),target=opt.mode==='orbit'?orbit.target:camera.position.clone().add(camera.getWorldDirection(new THREE.Vector3()));
- return {mode:opt.mode,position:point(camera.position),target:point(target),horizontalFov:2*Math.atan(Math.tan(camera.fov*Math.PI/360)*camera.aspect)*180/Math.PI,verticalFov:camera.fov,aspect:camera.aspect,unit:'mm',coordinateSystem:'x/y 为户型模型坐标，z 为绝对离地高度',cut:opt.cut,focusIds:observationTarget?[...observationTarget]:[],temporaryFocusClipping:!!observationTarget};
+ return {mode:opt.mode,position:point(camera.position),target:point(target),horizontalFov:2*Math.atan(Math.tan(camera.fov*Math.PI/360)*camera.aspect)*180/Math.PI,verticalFov:camera.fov,aspect:camera.aspect,unit:'mm',coordinateSystem:'x/y 为户型模型坐标，z 为绝对离地高度',cut:opt.cut,focusIds:observationTarget?[...observationTarget]:[],temporaryFocusClipping:!!observationTarget&&observationCutaway};
 }
 function shot(){ const a = document.createElement('a'); a.download = tr('户型装修方案', 'floor-plan-design') + '-3D.png'; a.href = renderer.domElement.toDataURL('image/png'); a.click(); }
 function image(){if(globalThis.FurnishCatalog?.active())return null;if(globalThis.FurnishWorkflowTools?.styleId()||!inited||anim||stage.classList.contains('animating'))return null;if(!active)return capturedState===JSON.stringify(state)?capturedImage:null;renderScene();return renderer.domElement.toDataURL('image/png');}
