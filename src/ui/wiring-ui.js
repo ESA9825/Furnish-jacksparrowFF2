@@ -6,7 +6,7 @@ globalThis.FurnishWiringUI=(()=>{
  const axisLabels={x:'X',y:'Y',z:'标高'};
  const mm=v=>String(Math.round(v*100)/100);
  const metres=v=>v===null?'待核对':Number.isFinite(v)?(v/1000).toFixed(2)+' m':'—';
- let opened=false,draft=null,owner=null,height=0,inspectedId=null;
+ let opened=false,draft=null,owner=null,height=0,inspectedId=null,conduitView=false;
  const active=()=>opened&&FurnishElectricalUI.active();
  function leave(){opened=false;draft=null;owner=null;inspectedId=null;}
  function current(){
@@ -38,7 +38,7 @@ globalThis.FurnishWiringUI=(()=>{
   for(const route of visibleRoutes){
    if(inspected&&route.id!==inspected)continue;
    const {path}=geometry(route,plan,byId);
-   if(path.length&&path.every(p=>[p.x,p.y,p.z].every(Number.isFinite)))paths.push({kind:route.kind,path,editing:route===routeDraft});
+   if(path.length&&path.every(p=>[p.x,p.y,p.z].every(Number.isFinite)))paths.push({kind:route.kind,path,editing:route===routeDraft,diameter:route.conduitDiameter});
   }
   const numbers=new Map(E.points(state).map(row=>[row.id,row.number]));
   const markers=[];
@@ -48,7 +48,7 @@ globalThis.FurnishWiringUI=(()=>{
    const p=E.endpoint(f,plan,furniture);
    if(Number.isFinite(p.z))markers.push({...p,label,kind:E.endpointKind(f)});
   }
-  return {paths,markers};
+  return {paths,markers,conduitView};
  }
  function apply(next){
   E.validateRoutes(next);
@@ -144,6 +144,7 @@ globalThis.FurnishWiringUI=(()=>{
   for(const b of panel.querySelectorAll('[data-wire-edit]'))b.onclick=()=>begin(routes().find(r=>r.id===b.dataset.wireEdit));
  }
  const reversalMessage=indices=>'网线路径在点 '+indices.map(i=>i+1).join('、')+' 原路折返，请调整路径点。';
+ const diameterText=route=>route.conduitDiameter===undefined?`预览 Ø${E.conduitDefault} mm`:`Ø${route.conduitDiameter} mm`;
  function editor(panel,route){
   const {points,length,reversals}=geometry(route),existing=routes().some(r=>r.id===route.id);
   const formRows=route.points.map((p,i)=>{
@@ -154,7 +155,11 @@ globalThis.FurnishWiringUI=(()=>{
     ?`<button class="btn" type="button" data-wire-riser="${i}" aria-label="点 ${i+1} 改为贴墙升降">贴墙升降</button>`:'';
    return `<li><div><b>点 ${i+1}</b> <small>${p.furnitureId?`(${mm(q.x)}, ${mm(q.y)}, ${q.unresolved?'待核对':mm(q.z)}) mm`:''}</small></div><div class="wiring-point-fields">${fields}${link}${riser}<button class="btn" type="button" data-wire-remove="${i}" aria-label="移除点 ${i+1}">移除</button></div></li>`;
   }).join('');
-  panel.innerHTML=`<section class="electrical-panel"><h3>${existing?'编辑':'新增'}${E.wireKinds[route.kind]}</h3><form id="wiring-form"><div class="form"><label class="full">线路名称<input id="wiring-name" required maxlength="80" value="${esc(route.name)}"></label><label class="full">新点标高（方案基准，mm）<input id="wiring-height" type="number" step="any" value="${Number.isFinite(height)?height:''}"></label></div><p class="muted">点击平面添加路径点，按住 Shift 对齐。点选对应的箱体或面板可关联首尾，末端已关联时，新点加在末端之前。「贴墙升降」按相邻点标高放置竖管的起点。${route.kind==='network'?'网线平面弯道仍自动切角，水平管接竖管保留直角。':''}</p><ol class="wiring-list">${formRows}</ol><p id="wiring-length">路径长度 ${route.points.length<2?'—':metres(length)}</p><p id="wiring-error" class="project-error" role="alert">${reversals.length?reversalMessage(reversals):''}</p><div class="actions"><button class="btn primary" type="submit">保存线路</button><button class="btn" type="button" id="wiring-cancel">取消</button>${existing?'<button class="btn danger" type="button" id="wiring-delete">删除线路</button>':''}</div></form></section>`;
+  panel.innerHTML=`<section class="electrical-panel"><h3>${existing?'编辑':'新增'}${E.wireKinds[route.kind]}</h3><form id="wiring-form"><div class="form"><label class="full">线路名称<input id="wiring-name" required maxlength="80" value="${esc(route.name)}"></label><label class="full">PVC-U 线管外径<select id="wiring-diameter"><option value="">未指定 · 预览 Ø${E.conduitDefault} mm</option>${E.conduitDiameters.map(d=>`<option value="${d}" ${d===route.conduitDiameter?'selected':''}>Ø${d} mm</option>`).join('')}</select></label><label class="full">新点标高（方案基准，mm）<input id="wiring-height" type="number" step="any" value="${Number.isFinite(height)?height:''}"></label></div><p class="muted">点击平面添加路径点，按住 Shift 对齐。点选对应的箱体或面板可关联首尾，末端已关联时，新点加在末端之前。「贴墙升降」按相邻点标高放置竖管的起点。${route.kind==='network'?'网线平面弯道仍自动切角，水平管接竖管保留直角。':''}</p><ol class="wiring-list">${formRows}</ol><p id="wiring-length">路径长度 ${route.points.length<2?'—':metres(length)}</p><p id="wiring-error" class="project-error" role="alert">${reversals.length?reversalMessage(reversals):''}</p><div class="actions"><button class="btn primary" type="submit">保存线路</button><button class="btn" type="button" id="wiring-cancel">取消</button>${existing?'<button class="btn danger" type="button" id="wiring-delete">删除线路</button>':''}</div></form></section>`;
+  panel.querySelector('#wiring-diameter').onchange=e=>{
+   if(e.target.value)route.conduitDiameter=Number(e.target.value);
+   else delete route.conduitDiameter;
+  };
   const input=panel.querySelector('#wiring-height');
   input.oninput=()=>{height=input.valueAsNumber;};
   panel.querySelector('#wiring-name').oninput=e=>{route.name=e.target.value;FurnishElectricalUI.draw();};
@@ -202,9 +207,13 @@ globalThis.FurnishWiringUI=(()=>{
  function scenePanel(node,routeDraft){
   const plan=canvasEffectivePlan(),byId=new Map(state.furniture.map(f=>[f.id,f]));
   const rows=routes().map(route=>({route,...geometry(route,plan,byId)}));
-  node.innerHTML=`<section class="electrical-panel"><div class="actions"><button class="btn" id="wiring-back">返回插座布置</button><button class="btn primary" id="wiring-edit-2d">返回二维编辑</button></div><h3>三维布线</h3><p class="muted">走线透视显示。点击线路可单独查看，再点恢复全部。${routeDraft?' 返回二维可继续编辑草稿。':''}</p><p class="wiring-summary">${totals(rows)}</p>${rows.length?`<ul class="wiring-list">${rows.map(({route,length})=>`<li><button class="btn" data-wire-inspect="${esc(route.id)}" aria-pressed="${route.id===inspectedId}"><span><span class="wiring-swatch" data-wire-kind="${route.kind}" aria-hidden="true"></span>${esc(route.name)}</span><small>${metres(length)}</small></button></li>`).join('')}</ul>`:''}</section>`;
+  node.innerHTML=`<section class="electrical-panel"><div class="actions"><button class="btn" id="wiring-back">返回插座布置</button><button class="btn primary" id="wiring-edit-2d">返回二维编辑</button></div><h3>三维布线</h3><label>显示方式<select id="wiring-scene-mode"><option value="trace">透视走线</option><option value="conduit" ${conduitView?'selected':''}>实体线管</option></select></label><p class="muted">${conduitView?'实体线管按实际外径显示，橙色标记表示弯管放不下。':'透视显示完整走线。'}点击线路可单独查看，再点恢复全部。${routeDraft?' 返回二维可继续编辑草稿。':''}</p><p class="wiring-summary">${totals(rows)}</p>${rows.length?`<ul class="wiring-list">${rows.map(({route,length})=>`<li><button class="btn" data-wire-inspect="${esc(route.id)}" aria-pressed="${route.id===inspectedId}"><span><span class="wiring-swatch" data-wire-kind="${route.kind}" aria-hidden="true"></span>${esc(route.name)}</span><small>${diameterText(route)} · ${metres(length)}</small></button></li>`).join('')}</ul>`:''}</section>`;
   node.querySelector('#wiring-back').onclick=()=>{leave();refresh();};
   node.querySelector('#wiring-edit-2d').onclick=()=>setView('2d');
+  node.querySelector('#wiring-scene-mode').onchange=e=>{
+   conduitView=e.target.value==='conduit';
+   refresh();node.querySelector('#wiring-scene-mode').focus({preventScroll:true});
+  };
   const buttons=node.querySelectorAll('[data-wire-inspect]');
   for(const button of buttons)button.onclick=()=>{
    inspectedId=inspectedId===button.dataset.wireInspect?null:button.dataset.wireInspect;

@@ -603,6 +603,7 @@
 <script src="src/core/design-core.js"></script>
 <script src="src/core/layers-core.js"></script>
 <script src="src/core/electrical-core.js"></script>
+<script src="src/render/conduit-model.js"></script>
 <script src="src/core/work-state.js"></script>
 <script src="src/io/workspace-cache.js"></script>
 <script src="src/io/project-storage.js"></script>
@@ -1605,8 +1606,13 @@ function syncElectrical(){
   }
   const world=({x,y,z})=>new THREE.Vector3(wx(x),M(z),wz(y));
   const up=new THREE.Vector3(0,1,0),part=new THREE.Object3D();
-  for(const {kind,path,editing} of overlay.paths){
-    const points=path.map(world),segments=[];
+  for(const {kind,path,editing,diameter} of overlay.paths){
+    const points=path.map(world);
+    if(overlay.conduitView){
+      electricalG.add(FurnishConduitModel.build(THREE,points,FurnishElectrical.conduitProfile(diameter),{kind,editing}));
+      continue;
+    }
+    const segments=[];
     for(let i=1;i<points.length;i++){
       const a=points[i-1],b=points[i];
       if(!a.equals(b))segments.push([a,b]);

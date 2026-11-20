@@ -1155,5 +1155,7 @@ button.replacement-product:focus-visible{outline:2px solid var(--accent);outline
 .m3d .wiring-swatch[data-wire-kind="network"] { border-top-style:solid; }
 .electrical-scene-marker { padding:1px 4px; border:1px solid currentColor; border-radius:4px; background:#fffaf4; color:#783a28; font-size:10px; font-weight:700; pointer-events:none; }
 .electrical-scene-marker[data-wire-kind="network"] { color:#175caa; }
+.wiring-list > li > [data-wire-inspect] { display:grid; justify-content:stretch; gap:4px; white-space:normal; }
+.wiring-list [data-wire-inspect] small { padding-inline-start:25px; }
 .wiring-list [data-wire-inspect][aria-pressed="true"] { background:var(--action-bg); color:var(--on-action); }
 .wiring-list [data-wire-inspect][aria-pressed="true"] small { color:inherit; }

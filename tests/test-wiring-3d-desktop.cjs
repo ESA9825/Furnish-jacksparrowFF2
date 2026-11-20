@@ -4,7 +4,8 @@ const fs=require('node:fs');
 const path=require('node:path');
 const crypto=require('node:crypto');
 const net=require('node:net');
-const {_electron}=require('playwright');
+const {_electron,chromium}=require('playwright');
+const {pathToFileURL}=require('node:url');
 const Artifacts=require('../scripts/lib/test-artifacts.cjs');
 const {runtimeFiles}=require('../scripts/package-desktop.cjs');
 const {desktopExecutable}=require('../scripts/launch-desktop.cjs');
@@ -15,7 +16,7 @@ const hash=()=>crypto.createHash('sha256').update(fs.readFileSync(source)).diges
 
 async function main(){
  const before=hash(),job=Artifacts.createRun({parent:path.join(root,'output/desktop-verification.noindex'),prefix:'wiring-3d-'});
- let app,passed=false;
+ let app,browser,passed=false;
  try{
   const work=job.workspace('workspace',root,{directories:['src','styles','vendor'],files:['index.html','manifest.webmanifest']});
   job.copy(source,'workspace/projects/workspace.furnish.json',{disposable:false});
@@ -119,6 +120,8 @@ async function main(){
   await page.locator('[data-wire-index="1"][data-wire-axis="z"]').fill('60');
   await page.locator('[data-wire-riser="0"]').click();
   assert.equal(await page.locator('[data-wire-index="2"][data-wire-axis="z"]').inputValue(),'60');
+  assert.equal(await page.locator('#wiring-diameter').inputValue(),'');
+  await page.locator('#wiring-diameter').selectOption('25');
   await page.locator('#wiring-form button[type="submit"]').click();
   await toView('3d');
   assert(await assertRendered(),'the wall riser is included in the actual rendered segments');
@@ -130,17 +133,53 @@ async function main(){
   await page.evaluate(()=>mutate(()=>state.scene3d=FurnishDesign.patchSceneSettings(state.scene3d,{furn:false})));
   await page.evaluate(()=>View3D.automationCamera({position:{x:2700,y:4700,z:2200},target:{x:1050,y:3600,z:350}}));
   await page.screenshot({path:path.join(job.dir,'wiring-wall-riser.png')});
+  await page.locator('#wiring-scene-mode').selectOption('conduit');
+  await page.waitForFunction(()=>testElectricalGroup.getObjectByName('PVC-U conduit')?.userData.diameter===25);
+  assert(await page.evaluate(()=>testElectricalGroup.getObjectByName('PVC-U conduit').userData.bendCount>0));
+  assert.equal(await page.evaluate(()=>state.wireRoutes[1].conduitDiameter),undefined);
+  await page.screenshot({path:path.join(job.dir,'pvc-u-conduit.png')});
+  await page.evaluate(()=>undo()); // Furniture visibility.
+  await page.evaluate(()=>undo()); // Wall riser and diameter.
+  await page.waitForFunction(()=>testElectricalGroup.getObjectByName('PVC-U conduit')?.userData.diameter===20);
+  await page.evaluate(()=>redo());
+  await page.waitForFunction(()=>testElectricalGroup.getObjectByName('PVC-U conduit')?.userData.diameter===25);
   await page.locator('[data-plan-mode="furniture"]').click();
   await page.waitForFunction(()=>testElectricalGroup.children.length===0);
   await page.evaluate(()=>FurnishRepository.flush());
   await page.reload();
   await page.locator('#repository-loading').waitFor({state:'hidden'});
   assert.deepEqual(await page.evaluate(()=>state.wireRoutes[0].points[1]),{x:863,y:3600,z:60});
+  assert.equal(await page.evaluate(()=>state.wireRoutes[0].conduitDiameter),25);
+  const route=await page.evaluate(()=>state.wireRoutes[0]);
+  await app.close();app=null;
+  browser=await chromium.launch({channel:process.env.FURNISH_BROWSER_CHANNEL||'chrome',args:['--enable-unsafe-swiftshader']});
+  const offline=await browser.newPage({offline:true,viewport:{width:1400,height:900}});
+  offline.on('pageerror',e=>errors.push(e.message));
+  await offline.goto(pathToFileURL(path.join(work,'index.html')).href);
+  await offline.locator('#repository-loading').waitFor({state:'hidden'});
+  await offline.evaluate(baseline=>{
+   FurnishElectricalUI.setMode('electrical');
+   drawer('panel',true);
+   baseline.points=baseline.points.map(({x,y,z})=>({x,y,z}));
+   mutate(()=>state.wireRoutes=[baseline]);
+   const build=FurnishConduitModel.build;
+   FurnishConduitModel.build=(...args)=>{
+    const group=build(...args);
+    window.testOfflineConduit=group.userData;
+    return group;
+   };
+  },route);
+  await offline.locator('#viewSeg [data-view="3d"]').click();
+  await offline.waitForFunction(()=>is3D()&&!switching);
+  await offline.locator('#electrical-wiring').click();
+  await offline.locator('#wiring-scene-mode').selectOption('conduit');
+  await offline.waitForFunction(()=>testOfflineConduit?.diameter===25&&testOfflineConduit.bendCount>0);
   assert.deepEqual(errors,[]);
   assert.equal(hash(),before);
   passed=true;
-  console.log('PASS 3D electrical mode, real segment positions, route isolation, 2D draft round trip, undo/redo and reload. '+job.dir);
+  console.log('PASS 3D wiring, real conduit geometry, route isolation, 2D draft, undo/redo, saved reload and offline file://. '+job.dir);
  }finally{
+  if(browser)await browser.close();
   if(app){if(!passed)app.process().kill('SIGKILL');await app.close().catch(()=>{});}
   assert.equal(hash(),before);
   job.finish(passed);

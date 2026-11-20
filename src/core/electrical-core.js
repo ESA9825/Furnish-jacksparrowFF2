@@ -91,6 +91,14 @@ function nearest(f,faces,limit=Infinity){
 }
 const wireKinds=Object.freeze({power:'电线',network:'网线'});
 const routeLimits=Object.freeze({routes:500,points:100,xy:1000000,z:20000});
+const conduitWalls=Object.freeze({16:1.3,20:1.4,25:1.5,32:1.6});
+const conduitDiameters=Object.freeze(Object.keys(conduitWalls).map(Number));
+const conduitDefault=20;
+function conduitProfile(diameter=conduitDefault){
+ if(!conduitDiameters.includes(diameter))throw Error('请选择 Ø16、20、25 或 32 mm 电工套管');
+ return {diameter,wall:conduitWalls[diameter],bendRadius:3*diameter,
+  stockLength:3000,sleeveLength:2*diameter,sleeveDiameter:1.2*diameter};
+}
 const identifier=v=>typeof v==='string'&&v.length>0&&v.length<=200&&!/[\x00-\x1f]/.test(v);
 const validCoordinate=(v,limit)=>Number.isFinite(v)&&Math.abs(v)<=limit;
 const distance=(a,b)=>Math.hypot(b.x-a.x,b.y-a.y,b.z-a.z);
@@ -100,6 +108,7 @@ function validateRoutes(routes){
  const ids=new Set();
  for(const route of routes){
   if(!identifier(route?.id)||ids.has(route.id)||!Object.hasOwn(wireKinds,route.kind)||typeof route.name!=='string'||!route.name.trim()||route.name.length>80)throw Error('线路编号、类别或名称无效');
+  conduitProfile(route.conduitDiameter);
   ids.add(route.id);
   const pts=route.points;
   if(!Array.isArray(pts)||pts.length<2||pts.length>routeLimits.points)throw Error('每条线路须有 2–100 个路径点');
@@ -170,6 +179,6 @@ function routeGeometry(route,plan,furniture,byId=new Map(furniture.map(f=>[f.id,
  const length=unresolved||reversals.length?null:path.reduce((sum,p,i)=>i?sum+distance(path[i-1],p):0,0);
  return {points,path,length,unresolved,reversals};
 }
-const api={panel,assertEditable,purpose,controlPairs,points,surfaces,place,nearest,wireKinds,routeLimits,validateRoutes,boxKind,endpointKind,endpoint,routeGeometry};
+const api={panel,assertEditable,purpose,controlPairs,points,surfaces,place,nearest,wireKinds,routeLimits,validateRoutes,boxKind,endpointKind,endpoint,routeGeometry,conduitDiameters,conduitDefault,conduitProfile};
 root.FurnishElectrical=api;if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

@@ -102,6 +102,20 @@ const caches={'huxing-design-v101':JSON.stringify(workspace),'huxing-design-v102
 const load=read=>Cache.load({read,key:'huxing-design-v102',firstPlan:plan,restore:W.restore});
 assert.deepEqual(load(key=>caches[key]),next);
 assert.deepEqual(load(key=>key.endsWith('101')?caches[key]:null),workspace);
+const sized={...work,wireRoutes:[{...route,conduitDiameter:25}]};
+const sizedProject=J.pack({...payload,current:sized,designs:[{name:'线管外径',work:sized}]});
+assert.equal(sizedProject.version,103);
+const sizedRestored=J.unpack(sizedProject);
+assert.equal(sizedRestored.current.wireRoutes[0].conduitDiameter,25);
+assert.equal(sizedRestored.designs[0].work.wireRoutes[0].conduitDiameter,25);
+assert.deepEqual(W.restore(W.restore(clone(sized),plan),plan).wireRoutes,sized.wireRoutes);
+const sizedWorkspace={...next,v:103,work:{[plan.id]:sized},designs:[{name:'线管外径',planId:plan.id,work:sized}]};
+assert.deepEqual(R.parse(JSON.parse(R.text(sizedWorkspace))).work[plan.id].wireRoutes,sized.wireRoutes);
+caches['huxing-design-v103']=JSON.stringify(sizedWorkspace);
+const loadLatest=read=>Cache.load({read,key:'huxing-design-v103',firstPlan:plan,restore:W.restore});
+assert.equal(loadLatest(key=>caches[key]).v,103);
+assert.equal(loadLatest(key=>key.endsWith('102')?caches[key]:null).v,102);
+assert.equal(E.conduitProfile().diameter,20);
 E.assertEditable(legacy,work);
 E.assertEditable(work,legacy);
 assert.throws(()=>E.assertEditable(work,{...work,furniture:[{...box,cx:10},socket]}),/只读/);
@@ -113,6 +127,9 @@ for(const fail of [
  r=>r.points[1].x='10',
  r=>r.points[1].furnitureId=socket.id,
  r=>r.points[2]={...r.points[1]},
+ r=>r.conduitDiameter=21,
+ r=>r.conduitDiameter='20',
+ r=>r.conduitDiameter=null,
 ]){
  const bad=clone(work);
  fail(bad.wireRoutes[0]);
