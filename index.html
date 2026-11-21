@@ -1025,7 +1025,9 @@ function floorMat(kind,color,{refined=false}={}){
   const t = new THREE.CanvasTexture(cv);
   t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1/s.sx, 1/s.sy);
   t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy();
-  const m=new THREE.MeshStandardMaterial({map:t, roughness:s.rough});if(s.grout)m.userData.tileFinish={legacy:true,color:s.base,groutPixels:3};if(color){m.userData.styleSurfaceOwned=true;return m;}return floorMats[cacheKey]=m;
+  const m=new THREE.MeshStandardMaterial({map:t,roughness:refined?.38:s.rough});
+  if(refined)m.userData.satinTile=true;
+  if(s.grout)m.userData.tileFinish={legacy:true,color:s.base,groutPixels:3};if(color){m.userData.styleSurfaceOwned=true;return m;}return floorMats[cacheKey]=m;
 }
 
 /* ======================= 几何小工具（y = 底面高度） ======================= */
@@ -1738,7 +1740,7 @@ function applyLight(){
   ground.material.color.set(night ? 0x2a2e38 : DK() ? 0x26231e : 0xf2eee7);
   renderer.toneMappingExposure = lighting.exposure;
   envK = lighting.reflection; matCache.forEach(m => { if (m.envMap) m.envMapIntensity = m.userData.env*envK; });
-  interiorDaylight?.setLight(night?0:Math.min(1.25,lighting.sun*.41));
+  interiorDaylight?.setLight(night?0:Math.min(1.25,lighting.sun*.41),{position,warm});
   const range=$('#sun'),mode=$('#sunMode'),readout=$('#sunAltitude');
   range.min=opt.solar?0:7;range.max=opt.solar?24:18;range.value=opt.hour;
   mode.dataset.zh=opt.solar?'太阳时':'日照';

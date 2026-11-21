@@ -33,12 +33,14 @@ function create(T,scene,{wx,wz,inside}){
   furnishDaylightMap:{value:null},furnishDaylightBounds:{value:new T.Vector4()},
   furnishDaylightSources:{value:Array.from({length:maxApertures},()=>new T.Vector4(0,0,0,0))},
   furnishWindowShapes:{value:Array.from({length:maxApertures},()=>new T.Vector4(0,0,0,0))},
-  furnishDaylightStrength:{value:0}
+  furnishDaylightStrength:{value:0},
+  furnishSkyTint:{value:new T.Vector3(.80,.91,1)},
+  furnishInteriorSun:{value:new T.Vector4(0,1,0,0)}
  };
  const decorated=new Map(),variants=new Map(),supports=new Map();
  const inverse=new T.Matrix4(),matrix=new T.Matrix4(),box=new T.Box3();
  const local=new T.Vector3(),center=new T.Vector3(),length=new T.Vector3();
- const transform=new T.Object3D();
+ const transform=new T.Object3D(),skyColor=new T.Color();
  transform.rotation.x=-Math.PI/2;
  const overlay=new T.Group();
  scene.add(overlay);
@@ -79,7 +81,7 @@ function create(T,scene,{wx,wz,inside}){
   bounds=new T.Box3(new T.Vector3(wx(xmin),-.15,wz(ymin)),new T.Vector3(wx(xmax),3.3,wz(ymax)));
   uniforms.furnishDaylightBounds.value.set(wx(xmin),wz(ymin),1000/(xmax-xmin),1000/(ymax-ymin));
   for(const w of windows){
-   uniforms.furnishDaylightSources.value[w.id].set(wx(w.alongX?w.x:w.inner),(w.sill+w.head)/2,wz(w.alongX?w.inner:w.y),0);
+   uniforms.furnishDaylightSources.value[w.id].set(wx(w.alongX?w.x:w.inner),(w.sill+w.head)/2,wz(w.alongX?w.inner:w.y),w.lightRooms.has(livingRooms[0])?1:0);
    uniforms.furnishWindowShapes.value[w.id].set(w.width/2000,(w.head-w.sill)/2,w.alongX?0:w.normal,w.alongX?w.normal:0);
   }
   const rooms=[...roomById.values()];
@@ -131,11 +133,12 @@ function create(T,scene,{wx,wz,inside}){
   if(!source?.isMeshStandardMaterial||source.transparent)return source;
   if(variants.has(source))return variants.get(source);
   const material=source.clone();
+  const satinTile=source.userData.satinTile===true;
   const smoothReflection=!!source.envMap&&source.roughness<=.30&&source.metalness===0;
   // Keep source PBR values and pre-existing shaders. Export strips these
   // raster hooks and keeps the source values.
   const cacheKey=source.customProgramCacheKey();
-  material.customProgramCacheKey=()=>cacheKey+'|room-daylight-v2|'+smoothReflection;
+  material.customProgramCacheKey=()=>cacheKey+'|room-daylight-v3|'+smoothReflection+'|'+satinTile;
   material.onBeforeCompile=function(shader,renderer){
    source.onBeforeCompile.call(this,shader,renderer);
    Object.assign(shader.uniforms,uniforms);
@@ -153,31 +156,49 @@ function create(T,scene,{wx,wz,inside}){
     uniform vec4 furnishDaylightSources[${maxApertures}];
     uniform vec4 furnishWindowShapes[${maxApertures}];
     uniform float furnishDaylightStrength;
+    uniform vec3 furnishSkyTint;
+    uniform vec4 furnishInteriorSun;
     void furnishWindowLight(int sourceIndex,float energy,vec3 normal,vec3 view,vec3 diffuse,
                             float metalness,float roughness,inout vec3 indirectDiffuse,inout vec3 indirectSpecular){
      if(sourceIndex==0||energy<=0.0)return;
-     vec3 source=furnishDaylightSources[sourceIndex].xyz;
+     vec4 emitter=furnishDaylightSources[sourceIndex];
+     vec3 source=emitter.xyz;
      vec4 aperture=furnishWindowShapes[sourceIndex];
      vec3 towards=normalize(source-furnishInteriorPosition+vec3(0.0,0.0,-0.001));
      vec3 direction=(viewMatrix*vec4(towards,0.0)).xyz;
      float facing=clamp(dot(normal,direction),0.0,1.0);
      vec3 tint=vec3(0.80,0.91,1.0)*energy;
-     indirectDiffuse+=diffuse*tint*(0.27+0.51*facing)*(1.0-metalness);
+     vec3 bounce=vec3(0.0);
+     float sunward=max(0.0,-dot(aperture.zw,furnishInteriorSun.xz));
+     if(emitter.w>0.0){
+      tint=furnishSkyTint*energy;
+      float underside=max(-dot(normal,viewMatrix[1].xyz),0.0);
+      vec3 bounceTint=mix(vec3(0.65,0.50,0.35),vec3(1.00,0.46,0.19),furnishInteriorSun.w);
+      bounce=bounceTint*energy*(0.055+0.18*underside)*(0.80+0.20*sunward);
+     }
+     indirectDiffuse+=diffuse*(tint*(0.27+0.51*facing)+bounce)*(1.0-metalness);
      float gloss=1.0-roughness;
      vec3 halfVector=normalize(direction+view);
      indirectSpecular+=tint*(0.03+0.12*metalness)*gloss*facing
        *pow(max(dot(normal,halfVector),0.0),mix(5.0,30.0,gloss));
-     ${smoothReflection?`
+     ${smoothReflection||satinTile?`
       // Project the reflection against this specific aperture plane.
       vec3 ray=(vec4(reflect(-view,normal),0.0)*viewMatrix).xyz;
       float incidence=-dot(ray.xz,aperture.zw);
       float travel=dot(furnishInteriorPosition.xz-source.xz,aperture.zw)/max(incidence,0.001);
       vec3 hit=furnishInteriorPosition+travel*ray-source;
       vec2 offset=abs(vec2(dot(hit.xz,aperture.wz),hit.y));
-      vec2 falloff=1.0-smoothstep(aperture.xy*0.55,aperture.xy+0.48,offset);
+      float spread=mix(0.48,mix(0.36,1.05,roughness),emitter.w);
+      vec2 falloff=1.0-smoothstep(aperture.xy*0.55,aperture.xy+spread,offset);
       float weight=falloff.x*falloff.y*step(0.015,incidence)*step(0.0,travel);
       float fresnel=0.16+0.24*pow(1.0-clamp(dot(view,normal),0.0,1.0),3.0);
-      indirectSpecular+=tint*weight*fresnel;
+      ${satinTile?`
+       float lowAngle=1.0-clamp(dot(view,normal),0.0,1.0);
+       indirectSpecular+=tint*weight*(0.025+0.11*lowAngle*lowAngle)*emitter.w;
+      `:`
+       vec3 lightTint=mix(tint,tint*vec3(1.38,1.08,.80),sunward*furnishInteriorSun.w*emitter.w);
+       indirectSpecular+=lightTint*weight*fresnel*(1.0+0.34*emitter.w);
+      `}
      `:``}
     }
    `+shader.fragmentShader.replace('#include <aomap_fragment>',`
@@ -187,6 +208,13 @@ function create(T,scene,{wx,wz,inside}){
      if(max(energy.x,energy.y)>0.0){
       vec2 nearestUV=(floor(uv*${resolution}.0)+0.5)/${resolution}.0;
       ivec2 ids=ivec2(texture2D(furnishDaylightMap,nearestUV).ba*255.0+0.5);
+      // Retain the global ambient for all other rooms. In the living suite,
+      // some of that fill is reassigned to window-facing diffuse light.
+      if(furnishDaylightSources[ids.x].w>0.0){
+       float localFill=smoothstep(0.0,0.15,energy.x);
+       float ambientShare=0.10+0.30*furnishInteriorSun.w;
+       reflectedLight.indirectDiffuse*=1.0-ambientShare*localFill;
+      }
       vec3 view=normalize(vViewPosition);
       furnishWindowLight(ids.x,energy.x,normal,view,diffuseColor.rgb,metalnessFactor,roughnessFactor,
                          reflectedLight.indirectDiffuse,reflectedLight.indirectSpecular);
@@ -304,11 +332,30 @@ function create(T,scene,{wx,wz,inside}){
   lastPose='';
   setLight(daylight);
  }
- function setLight(amount){
+ function setLight(amount,solar){
   daylight=amount;
   uniforms.furnishDaylightStrength.value=daylight;
   for(const [source,material] of variants)if(source.envMap)material.envMapIntensity=source.envMapIntensity;
-  if(sky)sky.visible=daylight>0;
+  const {furnishInteriorSun:sun,furnishSkyTint:tint}=uniforms;
+  if(solar){
+   center.set(...solar.position).normalize();
+   const low=Math.max(0,Math.min(1,solar.warm));
+   sun.value.set(center.x,center.y,center.z,low);
+   tint.value.set(.80+.44*low,.91-.02*low,1-.42*low);
+  }
+  if(sky){
+   sky.visible=daylight>0;
+   if(daylight>0){
+    for(let i=0;i<sky.count;i++){
+     const opening=uniforms.furnishDaylightSources.value[i+1],shape=uniforms.furnishWindowShapes.value[i+1];
+     const facing=Math.max(0,-shape.z*sun.value.x-shape.w*sun.value.z);
+     const low=opening.w*sun.value.w,glow=low*facing;
+     skyColor.setRGB(1-.10*low,1-.16*low+.09*glow,1-.23*low+.08*glow);
+     sky.setColorAt(i,skyColor);
+    }
+    sky.instanceColor.needsUpdate=true;
+   }
+  }
   if(patch)patch.material.opacity=daylight>0?.38:.13;
  }
  function reset(){

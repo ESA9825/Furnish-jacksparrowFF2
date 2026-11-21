@@ -207,6 +207,7 @@ async function run(){
       assert.equal(await previewHour(hour),hour);
       await capture('-hour-'+hour);
      }
+     assert.equal(await page.evaluate(()=>state.scene3d.hour),originalHour,'Preview overwrote the saved scene time');
      assert.equal(await previewHour(originalHour),originalHour);
      await page.evaluate(()=>View3D.automationReady());
     }
