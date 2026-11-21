@@ -55,6 +55,7 @@ function create(T,scene,{wx,wz,inside}){
   furnishFinishField:{value:null},furnishFinishBounds:{value:new T.Vector4()},
   furnishFinishTexture:{value:null},furnishWallContact:{value:1},
   furnishNightMap:{value:null},furnishNightBounds:{value:new T.Vector4()},furnishNightActive:{value:0},
+  furnishFinishLights:{value:[new T.Vector4(),new T.Vector4()]},
   furnishSofaPose:{value:new T.Vector4()},furnishSofaSize:{value:new T.Vector4()},
   furnishSofaVisible:{value:0}
  };
@@ -248,13 +249,15 @@ function create(T,scene,{wx,wz,inside}){
   const layout=source.userData.tileFinish?.layout;
   const groutHalfWidth=layout?layout.gap/(2*(Math.min(layout.width,layout.height)+layout.gap)):.006;
   const paintDetail=profile==='wall',cabinetDetail=profile==='cabinet',nicheDetail=profile==='niche';
-  const ceiling=profile==='ceiling';
+  const ceiling=profile==='ceiling',pile=profile==='pile',stone=profile==='stone';
+  const wood=profile==='wood'||nicheDetail;
+  const finishResponse=pile||stone||wood||cabinetDetail;
   const nightReceiver=ceiling||paintDetail||cabinetDetail;
   const smoothReflection=!!source.envMap&&source.roughness<=.30&&source.metalness===0;
   // Keep source PBR values and pre-existing shaders. Export strips these
   // raster hooks and keeps the source values.
   const cacheKey=source.customProgramCacheKey();
-  material.customProgramCacheKey=()=>cacheKey+'|room-daylight-v5|'+smoothReflection+'|'+satinTile+'|'+profile;
+  material.customProgramCacheKey=()=>cacheKey+'|room-daylight-v6|'+smoothReflection+'|'+satinTile+'|'+profile;
   material.onBeforeCompile=function(shader,renderer){
    source.onBeforeCompile.call(this,shader,renderer);
    Object.assign(shader.uniforms,uniforms);
@@ -284,11 +287,12 @@ function create(T,scene,{wx,wz,inside}){
     uniform float furnishDaylightStrength;
     uniform vec3 furnishSkyTint;
     uniform vec4 furnishInteriorSun;
-    ${nightReceiver?`
+    ${nightReceiver||finishResponse?`
      uniform sampler2D furnishNightMap;
      uniform vec4 furnishNightBounds;
      uniform float furnishNightActive;
     `:''}
+    ${finishResponse?'uniform vec4 furnishFinishLights[2];':''}
     ${profile?`
      uniform sampler2D furnishFinishField;
      uniform vec4 furnishFinishBounds;
@@ -329,11 +333,23 @@ function create(T,scene,{wx,wz,inside}){
      vec3 halfVector=normalize(direction+view);
      indirectSpecular+=tint*(0.03+0.12*metalness)*gloss*facing
        *pow(max(dot(normal,halfVector),0.0),mix(5.0,30.0,gloss));
+     ${pile?`
+      float grazing=1.0-clamp(dot(normal,view),0.0,1.0);
+      indirectSpecular+=diffuse*tint*(0.28*emitter.w*grazing*grazing)*(0.48+0.52*facing);
+     `:stone?`
+      // The satin slab retains a broad sky response even when the sharp
+      // mirror ray just misses the physical opening.
+      indirectSpecular+=tint*(0.22*emitter.w*facing)
+       *pow(max(dot(normal,halfVector),0.0),4.5);
+     `:wood?`
+      indirectSpecular+=diffuse*tint*(0.16*emitter.w*facing)*pow(max(dot(normal,halfVector),0.0),4.0);
+     `:''}
      ${cabinetDetail?`
       // Broad satin response from the same window aperture; transparent
       // glazing and hardware retain their existing rendering path.
-      indirectSpecular+=tint*(0.065*emitter.w*facing)
-       *pow(max(dot(normal,halfVector),0.0),7.0);
+      float lacquerAngle=1.0-clamp(dot(normal,view),0.0,1.0);
+      indirectSpecular+=tint*(emitter.w*facing)*(0.057+0.040*lacquerAngle)
+       *pow(max(dot(normal,halfVector),0.0),5.0);
      `:''}
      ${smoothReflection||satinTile?`
       // Project the reflection against this specific aperture plane.
@@ -342,10 +358,10 @@ function create(T,scene,{wx,wz,inside}){
       float travel=dot(furnishInteriorPosition.xz-source.xz,aperture.zw)/max(incidence,0.001);
       vec3 hit=furnishInteriorPosition+travel*ray-source;
       vec2 offset=abs(vec2(dot(hit.xz,aperture.wz),hit.y));
-      float spread=mix(0.48,mix(0.36,1.05,roughness),emitter.w);
+      float spread=mix(0.48,${stone?'0.71+0.62*roughness':'mix(0.36,1.05,roughness)'},emitter.w);
       vec2 falloff=1.0-smoothstep(aperture.xy*0.55,aperture.xy+spread,offset);
       float weight=falloff.x*falloff.y*step(0.015,incidence)*step(0.0,travel);
-      float fresnel=0.16+0.24*pow(1.0-clamp(dot(view,normal),0.0,1.0),3.0);
+      float fresnel=${stone?'0.12+0.32':'0.16+0.24'}*pow(1.0-clamp(dot(view,normal),0.0,1.0),3.0);
       ${satinTile?`
        float lowAngle=1.0-clamp(dot(view,normal),0.0,1.0);
        indirectSpecular+=tint*weight*(0.025+0.11*lowAngle*lowAngle)*emitter.w;
@@ -394,6 +410,10 @@ function create(T,scene,{wx,wz,inside}){
      vec2 lacquer=texture2D(furnishFinishTexture,furnishBoardPosition*vec2(2.1,1.3)).rg;
      diffuseColor.rgb*=0.985+0.093*(lacquer.r-.5)+0.042*(lacquer.g-.5);
      roughnessFactor=min(roughnessFactor,0.43+0.14*(lacquer.r-.5));
+    `:''}
+    ${stone?`
+     diffuseColor.rgb*=0.91;
+     roughnessFactor=max(roughnessFactor,0.31);
     `:''}
    `).replace('#include <aomap_fragment>',`
     ${ceiling?'':`
@@ -459,15 +479,34 @@ function create(T,scene,{wx,wz,inside}){
      reflectedLight.indirectDiffuse+=diffuseColor.rgb*vec3(1.0,0.78,0.56)
       *(0.17*face*(1.0-hood)*(1.0-side)*furnishDaylightStrength);
     `:''}
-    ${nightReceiver?`
+    ${nightReceiver||finishResponse?`
      if(furnishNightActive>0.0){
       vec3 receiver=normalize((vec4(geometryNormal,0.0)*viewMatrix).xyz);
       vec2 uv=(furnishInteriorPosition.xz+receiver.xz*0.085-furnishNightBounds.xy)*furnishNightBounds.zw;
       if(all(greaterThan(uv,vec2(0.0)))&&all(lessThan(uv,vec2(1.0)))){
        vec3 energy=texture2D(furnishNightMap,uv).rgb;
        float high=smoothstep(0.95,2.46,furnishInteriorPosition.y);
-       float gain=${ceiling?'0.012*max(0.0,-receiver.y)':paintDetail?'0.0038*high*hasPaint':'0.0016*high*(1.0-abs(receiver.y))'};
-       reflectedLight.indirectDiffuse+=diffuseColor.rgb*energy*gain;
+       ${nightReceiver?`
+        float gain=${ceiling?'0.012*max(0.0,-receiver.y)':paintDetail?'0.0038*high*hasPaint':'0.0016*high*(1.0-abs(receiver.y))'};
+        reflectedLight.indirectDiffuse+=diffuseColor.rgb*energy*gain;
+       `:''}
+       ${finishResponse?`
+        vec3 view=normalize(vViewPosition);
+        float grazing=1.0-clamp(dot(normal,view),0.0,1.0);
+        vec3 lightSum=vec3(0.0);
+        for(int i=0;i<2;i++){
+         vec4 fixture=furnishFinishLights[i];
+         vec3 offset=fixture.xyz-furnishInteriorPosition;
+         if(fixture.w<=0.0||offset.y<=0.0)continue;
+         float power=fixture.w/(1.0+0.55*dot(offset,offset));
+         vec3 lamp=(viewMatrix*vec4(normalize(offset),0.0)).xyz;
+         float facing=max(0.0,dot(normal,lamp));
+         vec3 h=normalize(view+lamp);
+         float lobe=pow(max(0.0,dot(normal,h)),${stone?'5.0':cabinetDetail?'5.0':'3.4'});
+         lightSum+=power*${pile?'diffuseColor.rgb*grazing*grazing*(0.20+0.80*facing)*0.075':stone?'vec3((0.133+0.032*grazing)*facing*lobe)':wood?'diffuseColor.rgb*(0.083*facing*lobe)':'vec3(0.028*facing*lobe)'};
+        }
+        reflectedLight.indirectSpecular+=energy*lightSum;
+       `:''}
       }
      }
     `:''}
@@ -547,6 +586,11 @@ function create(T,scene,{wx,wz,inside}){
   const key=active.map(source=>source.o.id+':'+source.rectangle.material.id).join(',');
   if(nightKey===key)return;
   nightKey=key;
+  for(const [i,slot] of uniforms.furnishFinishLights.value.entries()){
+   const main=active.filter(source=>source.room===nightRooms[i]).sort((a,b)=>b.power-a.power)[0];
+   if(main)slot.set(main.position.x,main.position.y,main.position.z,main.power);
+   else slot.set(0,0,0,0);
+  }
   const {x:xmin,y:zmin,z:sx,w:sz}=uniforms.furnishNightBounds.value;
   const size=80;
   nightField?.dispose();
@@ -665,7 +709,12 @@ function create(T,scene,{wx,wz,inside}){
     const satin=scopedCabinet&&(part.cabinetDoorSize||part.cabinetDrawerBoard==='front')&&
      !part.cabinetHardware&&!mesh.material?.map&&mesh.material?.metalness===0;
     const niche=niches?.get(mesh);
-    accepted.add(mesh);paint(mesh,niche?'niche':satin?'cabinet':'',niche);
+    const inSuite=finishRooms.has(base.roomId);
+    const pile=inSuite&&f.type==='sofa_yeswood_cherry'&&mesh.material?.sheen>0;
+    const coffeePart=inSuite&&part.cherryCoffeePart;
+    const finish=pile?'pile':coffeePart==='white-stone'?'stone':
+     coffeePart&&mesh.material?.map?'wood':niche?'niche':satin?'cabinet':'';
+    accepted.add(mesh);paint(mesh,finish,niche);
    });
    if(contactTypes.test(f.type)&&!f.pose3D&&model.userData.floorBase.known&&Math.abs(model.position.y-model.userData.floorBase.z/1000)<.025){
     supports.set(model,findSupports(model,scopedCabinet));

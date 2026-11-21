@@ -27,10 +27,16 @@ const trialGTAO=process.env.FURNISH_RASTER_GTAO==='1';
 const trialBloom=process.env.FURNISH_RASTER_BLOOM==='1';
 const trialSMAA=process.env.FURNISH_RASTER_SMAA==='1';
 const revisionRound=process.env.FURNISH_RASTER_ROUND||'';
+const materialRound=revisionRound==='material-response';
+const captureTrajectory=trialSMAA||materialRound||revisionRound==='thin-edges';
 const nightTrial=trialBloom||trialSMAA||!!revisionRound&&process.env.FURNISH_RASTER_SCENE!=='day';
 const trialEffect=trialGTAO?'viewport-gtao':trialBloom?'viewport-bloom':trialSMAA?'viewport-smaa':null;
-const trackAngles=Array.from({length:29},(_,i)=>-.052+(i/28)*.104);
-const trackCrops={
+const halfTrack=materialRound?.095:.052;
+const trackAngles=Array.from({length:29},(_,i)=>-halfTrack+(i/28)*2*halfTrack);
+const trackCrops=materialRound?{
+ living:[['cloth',[.065,.31,.51,.55]],['stone',[.25,.55,.57,.42]]],
+ dining:[['cabinet',[.63,.28,.36,.62]]]
+}:{
  living:[['window',[.485,.405,.27,.34]],['strip',[.26,.135,.56,.245]]],
  dining:[['seam',[.663,.258,.30,.425]]]
 };
@@ -91,7 +97,7 @@ async function run(){
  assert.ok(project&&baseline,'Usage: verify-living-furniture-raster.cjs <1601 workspace file> <before commit>');
  assert.ok(previewHours.every(hour=>Number.isFinite(hour)&&hour>=0&&hour<=24),'Invalid preview hour');
  assert.ok([trialGTAO,trialBloom,trialSMAA].filter(Boolean).length<=1,'Vary only one viewport effect');
- if(trialSMAA)assert.ok(secondCamera||rooms?.every(r=>r.secondCamera),'SMAA comparison needs both room cameras');
+ if(captureTrajectory)assert.ok(secondCamera||rooms?.every(r=>r.secondCamera),'Trajectory comparison needs both room cameras');
  assert.ok(variants.every(v=>v==='before'||v==='after'||(!trialEffect&&v==='no-sheen')),'Unknown benchmark variant');
  const source=read(project),after=collectSource(),before=Object.fromEntries(files.map(file=>
   [file,execFileSync('git',['show',baseline+':'+file],{cwd:root,maxBuffer:8*1024*1024})]));
@@ -100,7 +106,7 @@ async function run(){
  const job=artifacts.createRun({parent:path.join(root,'output/desktop-verification.noindex'),prefix:rooms||customTargets?'room-raster-':'living-furniture-'});
  const cases=rooms||[{camera,targets,secondCamera}];
  const report={sourceHash:hash(source),baseline,trialGTAO,trialBloom,trialSMAA,revisionRound,...(gestureCamera?{gestureCamera}:{}),
-  ...(trialSMAA?{trajectory:{anglesRadians:trackAngles,crops:trackCrops},gtao:false,bloom:false}:{}),
+  ...(captureTrajectory?{trajectory:{anglesRadians:trackAngles,crops:trackCrops},gtao:false,bloom:false}:{}),
   ...(rooms?{rooms}:{camera,targets,...(secondCamera?{secondCamera}:{})}),results:[]};
  let passed=false,app;
  console.log(job.dir);
@@ -152,10 +158,10 @@ async function run(){
        if(typeof viewportAO==='undefined'||!viewportAO?.draw(scene,camera,{aoEnabled:false}))return null;
        return renderer.domElement.toDataURL('image/png');
       };
-      if(${trialSMAA}&&!metrics.holdTrack)metrics.holdTrack=active=>{
+      if(${captureTrajectory}&&!metrics.holdTrack)metrics.holdTrack=active=>{
        viewportPointer=active?{moving:true}:null;syncViewportPixelRatio();
       };
-      if(${trialSMAA}&&!metrics.trackFrame)metrics.trackFrame=(yaw,regions)=>{
+      if(${captureTrajectory}&&!metrics.trackFrame)metrics.trackFrame=(yaw,regions)=>{
        const original=curPose();
        try{
         camera.position.copy(original.p).sub(original.t)
@@ -321,7 +327,7 @@ async function run(){
      assert.equal(render.canvas[0],Math.floor((await page.locator('#view3d canvas').first().boundingBox()).width*Math.min(2,render.dpr)));
     }
     const recordTrack=async()=>{
-     if(!trialSMAA||i>1)return;
+     if(!captureTrajectory||i>1)return;
      scene.track={};
      for(const [room,pose] of [['living',camera],['dining',secondCamera]]){
       await page.evaluate(pose=>View3D.automationCamera(pose),pose);
