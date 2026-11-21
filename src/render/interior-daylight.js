@@ -1,11 +1,22 @@
-/* A bounded raster preview for the 1601 balcony and living/dining rooms. */
+/* Room-scoped raster daylight and floor contact for 1601. */
 (function(root){
 'use strict';
-const planId='custom_mv37igji',windowId='cad_window_9_3';
-const roomIds=new Set(['area_fmv3qb1oi4','area_fmv3p2ig914','area_fmv3qajd93']);
+const planId='custom_mv37igji';
+const livingRooms=['area_fmv3qb1oi4','area_fmv3p2ig914','area_fmv3qajd93'];
 const adjoiningIds=new Set(['area_fmv3qb1oi5','area_fmv3qcck717']);
-const contactTypes=/^(sofa|armchair|chair|coffeetable|table|roundtable|cat_tree|plant_clivia|plant_spider|aircon_floor)/;
-const resolution=64;
+const apertures=[
+ // Opening ref, room receiving the light, additional continuous or bay floor.
+ ['cad_window_9_3','area_fmv3p2ig914',livingRooms],
+ ['cad_window_23_6','area_fmv3p2ig914',['area_fmv3p2ig914','area_fmv3qb1oi4']],
+ ['cad_window_11_5:front','area_fmv3p1fkz7',['area_fmv3p1fkz7','bay_cad_window_11_5']],
+ ['cad_window_8_2','area_fmv3p1fkz7',['area_fmv3p1fkz7']],
+ ['cad_window_10_4:front','area_fmv3oztg03',['area_fmv3oztg03','bay_cad_window_10_4']],
+ ['cad_window_6_0','area_fmv3qcck717',['area_fmv3qcck717']],
+ ['cad_window_7_1','area_fmv3qdfiz23',['area_fmv3qdfiz23']]
+];
+const contactTypes=/^(sofa|armchair|chair|coffeetable|table|roundtable|bed|nightstand|desk|cabinet|bookshelf|cat_tree|cat_tower|plant_clivia|plant_spider|aircon_floor)/;
+const resolution=192;
+const maxApertures=apertures.length+1; // slot zero is always unlit
 
 function edgeDistance(x,y,polygon){
  let nearest=Infinity;
@@ -20,7 +31,8 @@ function edgeDistance(x,y,polygon){
 function create(T,scene,{wx,wz,inside}){
  const uniforms={
   furnishDaylightMap:{value:null},furnishDaylightBounds:{value:new T.Vector4()},
-  furnishDaylightSource:{value:new T.Vector3()},furnishWindowHalfSize:{value:new T.Vector2()},
+  furnishDaylightSources:{value:Array.from({length:maxApertures},()=>new T.Vector4(0,0,0,0))},
+  furnishWindowShapes:{value:Array.from({length:maxApertures},()=>new T.Vector4(0,0,0,0))},
   furnishDaylightStrength:{value:0}
  };
  const decorated=new Map(),variants=new Map(),supports=new Map();
@@ -30,7 +42,8 @@ function create(T,scene,{wx,wz,inside}){
  transform.rotation.x=-Math.PI/2;
  const overlay=new T.Group();
  scene.add(overlay);
- let patch,sky,field,rooms=[],floors=[],bounds=null,lastPose='',daylight=0;
+ let patch,sky,field,floors=[],bounds=null,lastPose='',daylight=0;
+ let roomById=new Map();
 
  function dataTexture(width,height,fill){
   const bytes=new Uint8Array(width*height*4);
@@ -40,33 +53,78 @@ function create(T,scene,{wx,wz,inside}){
   texture.needsUpdate=true;
   return texture;
  }
- function mapLight(window,adjoining){
-  const corners=rooms.flatMap(room=>room.poly);
+ function opening(rectWindow,room,lightRooms,id){
+  const {rect:[left,front,right,back],sill,head}=rectWindow;
+  const alongX=right-left>=back-front;
+  const x=(left+right)/2,y=(front+back)/2;
+  const center=room.at||room.poly.reduce(([a,b],[u,v])=>[a+u/room.poly.length,b+v/room.poly.length],[0,0]);
+  const normal=(alongX?center[1]-y:center[0]-x)>=0?1:-1;
+  const inner=alongX?(normal>0?back:front):(normal>0?right:left);
+  const outer=alongX?(normal>0?front:back):(normal>0?left:right);
+  const width=alongX?right-left:back-front;
+  return {id,lightRooms,alongX,normal,inner,outer,width,x,y,sill,head};
+ }
+ function mapLight(plan){
+  const windows=[];
+  for(const [ref,roomId,ids] of apertures){
+   const window=plan.wins?.[plan.winRefs?.indexOf(ref)];
+   const room=roomById.get(roomId);
+   if(!room||!window||!(window.head>window.sill))continue;
+   windows.push(opening(window,room,new Set(ids),windows.length+1));
+  }
+  if(!windows.length)return;
+  const corners=[...roomById.values()].flatMap(room=>room.poly);
   const xmin=Math.min(...corners.map(p=>p[0]))-160,xmax=Math.max(...corners.map(p=>p[0]))+160;
   const ymin=Math.min(...corners.map(p=>p[1]))-160,ymax=Math.max(...corners.map(p=>p[1]))+160;
-  const [left,front,right,back]=window.rect;
   bounds=new T.Box3(new T.Vector3(wx(xmin),-.15,wz(ymin)),new T.Vector3(wx(xmax),3.3,wz(ymax)));
   uniforms.furnishDaylightBounds.value.set(wx(xmin),wz(ymin),1000/(xmax-xmin),1000/(ymax-ymin));
-  uniforms.furnishDaylightSource.value.set(wx((left+right)/2),(window.sill+window.head)/2,wz(back));
-  const width=right-left;
-  uniforms.furnishWindowHalfSize.value.set(width/2000,(window.head-window.sill)/2);
+  for(const w of windows){
+   uniforms.furnishDaylightSources.value[w.id].set(wx(w.alongX?w.x:w.inner),(w.sill+w.head)/2,wz(w.alongX?w.inner:w.y),0);
+   uniforms.furnishWindowShapes.value[w.id].set(w.width/2000,(w.head-w.sill)/2,w.alongX?0:w.normal,w.alongX?w.normal:0);
+  }
+  const rooms=[...roomById.values()];
+  const adjoining=rooms.filter(room=>adjoiningIds.has(room.id));
+  const litRooms=rooms.filter(room=>windows.some(w=>w.lightRooms.has(room.id)));
   field=dataTexture(resolution,resolution,(i,j)=>{
    const x=xmin+(i+.5)/resolution*(xmax-xmin),y=ymin+(j+.5)/resolution*(ymax-ymin);
-   if(!rooms.some(room=>[[-90,0],[0,-90],[0,0],[0,90],[90,0]].some(([a,b])=>inside(x+a,y+b,room.poly))))return [0,0,0,0];
-   const lateral=Math.max(0,left-x,x-right),depth=Math.max(0,y-back);
-   const edge=Math.min(1,...adjoining.map(room=>edgeDistance(x,y,room.poly)/780));
-   const soft=Math.exp(-depth/(width*1.25)-lateral*lateral/600000)*edge*edge*(3-2*edge);
-   return [Math.round(soft*255),0,0,255];
+   // Use the exact owning room first. The allowance lights the wall faces
+   // beside furniture and room footprints without crossing into a neighbor.
+   const exact=rooms.find(room=>inside(x,y,room.poly));
+   const near=exact?[exact]:litRooms.filter(room=>edgeDistance(x,y,room.poly)<=90);
+   const weights=[];
+   for(const w of windows){
+    if(!near.some(room=>w.lightRooms.has(room.id)))continue;
+    const lateral=Math.max(0,Math.abs(w.alongX?x-w.x:y-w.y)-w.width/2);
+    const depth=Math.max(0,((w.alongX?y:x)-w.inner)*w.normal);
+    const edge=w.lightRooms.has(livingRooms[2])?
+     Math.min(1,...adjoining.map(room=>edgeDistance(x,y,room.poly)/780)):1;
+    const area=Math.min(1,Math.sqrt(w.width*(w.head-w.sill)/2500));
+    const soft=area*Math.exp(-depth/(w.width*1.25)-lateral*lateral/600000)*edge*edge*(3-2*edge);
+    weights.push([Math.round(soft*255),w.id]);
+   }
+   // Keep aperture slots stable inside a room even where one side is faint.
+   const [a=[0,0],b=[0,0]]=weights;
+   // An empty texel still has well-defined source zero for the shader.
+   return [a[0],b[0],a[1],b[1]];
   });
   uniforms.furnishDaylightMap.value=field;
+
   const skyMap=dataTexture(1,32,(_,y)=>{
    const t=y/31;
    return [Math.round(239-38*t),Math.round(242-24*t),Math.round(239-4*t),255];
   });
   skyMap.colorSpace=T.SRGBColorSpace;
-  sky=new T.Mesh(new T.PlaneGeometry(width/1000,window.head-window.sill),
-   new T.MeshBasicMaterial({map:skyMap,toneMapped:false}));
-  sky.position.set(wx((left+right)/2),(window.sill+window.head)/2,wz(front)-.01);
+  sky=new T.InstancedMesh(new T.PlaneGeometry(1,1),
+   new T.MeshBasicMaterial({map:skyMap,toneMapped:false}),windows.length);
+  const apertureTransform=new T.Object3D();
+  for(const [i,w] of windows.entries()){
+   const outer=w.outer-.01*1000*w.normal;
+   apertureTransform.position.set(wx(w.alongX?w.x:outer),(w.sill+w.head)/2,wz(w.alongX?outer:w.y));
+   apertureTransform.rotation.y=Math.atan2(w.alongX?0:w.normal,w.alongX?w.normal:0);
+   apertureTransform.scale.set(w.width/1000,w.head-w.sill,1);
+   apertureTransform.updateMatrix();
+   sky.setMatrixAt(i,apertureTransform.matrix);
+  }
   overlay.add(sky);
  }
  function appearance(source){
@@ -77,7 +135,7 @@ function create(T,scene,{wx,wz,inside}){
   // Keep source PBR values and pre-existing shaders. Export strips these
   // raster hooks and keeps the source values.
   const cacheKey=source.customProgramCacheKey();
-  material.customProgramCacheKey=()=>cacheKey+'|room-daylight-v1|'+smoothReflection;
+  material.customProgramCacheKey=()=>cacheKey+'|room-daylight-v2|'+smoothReflection;
   material.onBeforeCompile=function(shader,renderer){
    source.onBeforeCompile.call(this,shader,renderer);
    Object.assign(shader.uniforms,uniforms);
@@ -92,39 +150,57 @@ function create(T,scene,{wx,wz,inside}){
     varying vec3 furnishInteriorPosition;
     uniform sampler2D furnishDaylightMap;
     uniform vec4 furnishDaylightBounds;
-    uniform vec3 furnishDaylightSource;
-    uniform vec2 furnishWindowHalfSize;
+    uniform vec4 furnishDaylightSources[${maxApertures}];
+    uniform vec4 furnishWindowShapes[${maxApertures}];
     uniform float furnishDaylightStrength;
+    void furnishWindowLight(int sourceIndex,float energy,vec3 normal,vec3 view,vec3 diffuse,
+                            float metalness,float roughness,inout vec3 indirectDiffuse,inout vec3 indirectSpecular){
+     if(sourceIndex==0||energy<=0.0)return;
+     vec3 source=furnishDaylightSources[sourceIndex].xyz;
+     vec4 aperture=furnishWindowShapes[sourceIndex];
+     vec3 towards=normalize(source-furnishInteriorPosition+vec3(0.0,0.0,-0.001));
+     vec3 direction=(viewMatrix*vec4(towards,0.0)).xyz;
+     float facing=clamp(dot(normal,direction),0.0,1.0);
+     vec3 tint=vec3(0.80,0.91,1.0)*energy;
+     indirectDiffuse+=diffuse*tint*(0.27+0.51*facing)*(1.0-metalness);
+     float gloss=1.0-roughness;
+     vec3 halfVector=normalize(direction+view);
+     indirectSpecular+=tint*(0.03+0.12*metalness)*gloss*facing
+       *pow(max(dot(normal,halfVector),0.0),mix(5.0,30.0,gloss));
+     ${smoothReflection?`
+      // Project the reflection against this specific aperture plane.
+      vec3 ray=(vec4(reflect(-view,normal),0.0)*viewMatrix).xyz;
+      float incidence=-dot(ray.xz,aperture.zw);
+      float travel=dot(furnishInteriorPosition.xz-source.xz,aperture.zw)/max(incidence,0.001);
+      vec3 hit=furnishInteriorPosition+travel*ray-source;
+      vec2 offset=abs(vec2(dot(hit.xz,aperture.wz),hit.y));
+      vec2 falloff=1.0-smoothstep(aperture.xy*0.55,aperture.xy+0.48,offset);
+      float weight=falloff.x*falloff.y*step(0.015,incidence)*step(0.0,travel);
+      float fresnel=0.16+0.24*pow(1.0-clamp(dot(view,normal),0.0,1.0),3.0);
+      indirectSpecular+=tint*weight*fresnel;
+     `:``}
+    }
    `+shader.fragmentShader.replace('#include <aomap_fragment>',`
-    vec2 furnishLightUV=(furnishInteriorPosition.xz-furnishDaylightBounds.xy)*furnishDaylightBounds.zw;
-    float furnishSky=texture2D(furnishDaylightMap,furnishLightUV).r*furnishDaylightStrength;
-    vec3 furnishToWindow=normalize(furnishDaylightSource-furnishInteriorPosition+vec3(0.0,0.0,-0.001));
-    vec3 furnishWindowView=(viewMatrix*vec4(furnishToWindow,0.0)).xyz;
-    float furnishFacing=clamp(dot(normal,furnishWindowView),0.0,1.0);
-    vec3 furnishTint=vec3(0.80,0.91,1.0)*furnishSky;
-    reflectedLight.indirectDiffuse+=diffuseColor.rgb*furnishTint*(0.27+0.51*furnishFacing)*(1.0-metalnessFactor);
-    vec3 furnishHalfVector=normalize(furnishWindowView+normalize(vViewPosition));
-    float furnishGloss=1.0-roughnessFactor;
-    reflectedLight.indirectSpecular+=furnishTint*(0.03+0.12*metalnessFactor)*furnishGloss*furnishFacing
-      *pow(max(dot(normal,furnishHalfVector),0.0),mix(5.0,30.0,furnishGloss));
-    ${smoothReflection?`
-     // A broad aperture reflection for smooth opaque finishes.
-     vec3 furnishView=normalize(vViewPosition);
-     vec3 furnishRay=inverseTransformDirection(reflect(-furnishView,normal),viewMatrix);
-     float furnishTravel=(furnishInteriorPosition.z-furnishDaylightSource.z)/max(-furnishRay.z,0.001);
-     vec2 furnishAperture=abs(furnishInteriorPosition.xy+furnishTravel*furnishRay.xy-furnishDaylightSource.xy);
-     vec2 furnishInside=1.0-smoothstep(furnishWindowHalfSize*0.55,furnishWindowHalfSize+0.48,furnishAperture);
-     float furnishWindowWeight=furnishInside.x*furnishInside.y*step(0.015,-furnishRay.z)*step(0.0,furnishTravel);
-     float furnishFresnel=0.16+0.24*pow(1.0-clamp(dot(furnishView,normal),0.0,1.0),3.0);
-     reflectedLight.indirectSpecular+=furnishTint*furnishWindowWeight*furnishFresnel;
-    `:``}
+    if(furnishDaylightStrength>0.0){
+     vec2 uv=(furnishInteriorPosition.xz-furnishDaylightBounds.xy)*furnishDaylightBounds.zw;
+     vec2 energy=texture2D(furnishDaylightMap,uv).rg*furnishDaylightStrength;
+     if(max(energy.x,energy.y)>0.0){
+      vec2 nearestUV=(floor(uv*${resolution}.0)+0.5)/${resolution}.0;
+      ivec2 ids=ivec2(texture2D(furnishDaylightMap,nearestUV).ba*255.0+0.5);
+      vec3 view=normalize(vViewPosition);
+      furnishWindowLight(ids.x,energy.x,normal,view,diffuseColor.rgb,metalnessFactor,roughnessFactor,
+                         reflectedLight.indirectDiffuse,reflectedLight.indirectSpecular);
+      furnishWindowLight(ids.y,energy.y,normal,view,diffuseColor.rgb,metalnessFactor,roughnessFactor,
+                         reflectedLight.indirectDiffuse,reflectedLight.indirectSpecular);
+     }
+    }
     #include <aomap_fragment>`);
   };
   variants.set(source,material);
   return material;
  }
  function paint(mesh){
-  if(!mesh.isMesh||decorated.has(mesh)||!box.setFromObject(mesh).intersectsBox(bounds))return;
+  if(!bounds||!mesh.isMesh||decorated.has(mesh)||!box.setFromObject(mesh).intersectsBox(bounds))return;
   const source=mesh.material,next=Array.isArray(source)?source.map(appearance):appearance(source);
   if(Array.isArray(source)?source.every((m,i)=>m===next[i]):source===next)return;
   decorated.set(mesh,source);
@@ -136,7 +212,7 @@ function create(T,scene,{wx,wz,inside}){
   const parts=[];
   model.traverse(mesh=>{
    if(!mesh.isMesh)return;
-   mesh.geometry.computeBoundingBox();
+   if(!mesh.geometry.boundingBox)mesh.geometry.computeBoundingBox();
    matrix.multiplyMatrices(inverse,mesh.matrixWorld);
    box.copy(mesh.geometry.boundingBox).applyMatrix4(matrix);
    // Only low geometry in contact with the known floor carries a patch.
@@ -176,14 +252,12 @@ function create(T,scene,{wx,wz,inside}){
   patch.instanceMatrix.needsUpdate=true;
  }
  function begin(plan,archFloor,archUp,furnG,furniture){
-  const window=plan?.id===planId?plan.wins?.[plan.winRefs?.indexOf(windowId)]:null;
-  if(!window||window.head<=window.sill||window.rect[2]-window.rect[0]<window.rect[3]-window.rect[1]){
+  if(plan?.id!==planId||!plan.rooms?.length){
    reset();return;
   }
-  if(!field){
-   rooms=plan.rooms.filter(room=>roomIds.has(room.id)&&room.poly?.length>=3);
-   if(!rooms.length)return;
-   mapLight(window,plan.rooms.filter(room=>adjoiningIds.has(room.id)&&room.poly?.length>=3));
+  if(!patch){
+   roomById=new Map(plan.rooms.filter(room=>room.poly?.length>=3).map(room=>[room.id,room]));
+   mapLight(plan);
    const mask=dataTexture(32,32,(x,y)=>{
     const q=Math.max(Math.abs((x+.5)/16-1),Math.abs((y+.5)/16-1));
     const a=(1-q*q)**2;
@@ -191,28 +265,28 @@ function create(T,scene,{wx,wz,inside}){
    });
    patch=new T.InstancedMesh(new T.PlaneGeometry(1,1),new T.MeshBasicMaterial({
     color:'#28201b',alphaMap:mask,opacity:.38,transparent:true,depthWrite:false
-   }),96);
+   }),256);
    patch.count=0;patch.frustumCulled=false;patch.renderOrder=1;
    patch.instanceMatrix.setUsage(T.DynamicDrawUsage);
    overlay.add(patch);
   }
   const accepted=new Set();
-  floors=archFloor.children.filter(mesh=>mesh.userData.floor&&roomIds.has(mesh.userData.room));
+  floors=archFloor.children.filter(mesh=>mesh.userData.floor&&roomById.has(mesh.userData.room));
   for(const floor of floors){
-   const room=rooms.find(r=>r.id===floor.userData.room);
+   const room=roomById.get(floor.userData.room);
    floor.userData.interiorPolygon=room?.poly.map(([x,y])=>[wx(x),wz(y)]);
    accepted.add(floor);paint(floor);
   }
   archUp.updateWorldMatrix(true,true);
   archUp.traverse(mesh=>{
-   if(mesh.userData.recessWall||mesh.userData.wallFinish){accepted.add(mesh);paint(mesh);}
+   if(mesh.userData.recessWall||mesh.userData.wallFinish||mesh.userData.wallTiling||mesh.userData.room?.startsWith('bay_')){accepted.add(mesh);paint(mesh);}
   });
   const byId=new Map(furniture.map(f=>[f.id,f]));
   furnG.updateWorldMatrix(true,true);
   supports.clear();
   for(const model of furnG.children){
    const f=byId.get(model.userData.fid);
-   if(!f||!roomIds.has(model.userData.floorBase?.roomId))continue;
+   if(!f||!roomById.has(model.userData.floorBase?.roomId))continue;
    model.traverse(mesh=>{if(mesh.isMesh){accepted.add(mesh);paint(mesh);}});
    if(contactTypes.test(f.type)&&!f.pose3D&&model.userData.floorBase.known&&Math.abs(model.position.y-model.userData.floorBase.z/1000)<.025){
     supports.set(model,findSupports(model));
@@ -243,7 +317,7 @@ function create(T,scene,{wx,wz,inside}){
   decorated.clear();variants.clear();supports.clear();
   for(const mesh of [sky,patch])if(mesh){mesh.geometry.dispose();mesh.material.map?.dispose();mesh.material.alphaMap?.dispose();mesh.material.dispose();mesh.dispose?.();overlay.remove(mesh);}
   field?.dispose();uniforms.furnishDaylightMap.value=null;
-  patch=sky=field=bounds=null;rooms=[];floors=[];lastPose='';
+  patch=sky=field=bounds=null;roomById.clear();floors=[];lastPose='';
  }
  return {begin,contacts,setLight,reset,overlay};
 }

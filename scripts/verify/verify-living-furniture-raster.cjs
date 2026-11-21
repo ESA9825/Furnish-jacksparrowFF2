@@ -16,11 +16,15 @@ const [project,baseline]=process.argv.slice(2);
 const files=['index.html','src/ui/canvas-interactions.js','src/render/yeswood-sofa-model.js','src/render/cherry-coffee-table-model.js'];
 const camera=process.env.FURNISH_RASTER_CAMERA?JSON.parse(process.env.FURNISH_RASTER_CAMERA):
  {mode:'orbit',position:{x:9530,y:5320,z:1470},target:{x:7600,y:3800,z:610},horizontalFov:51};
+const defaultTargets=['fmv5bzynf3','fmvglvcws1'];
+const targets=(process.env.FURNISH_RASTER_TARGETS||defaultTargets.join(',')).split(',');
+const customTargets=!!process.env.FURNISH_RASTER_TARGETS;
+const daylightFile='src/render/interior-daylight.js';
 const secondCamera=process.env.FURNISH_RASTER_SECOND_CAMERA?JSON.parse(process.env.FURNISH_RASTER_SECOND_CAMERA):null;
 const hash=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const read=file=>fs.readFileSync(file);
 const variants=(process.env.FURNISH_RASTER_RUNS||'before,after,no-sheen,no-sheen,after,before').split(',');
-const collectSource=()=>Object.fromEntries(files.map(file=>[file,read(path.join(root,file))]));
+const collectSource=()=>Object.fromEntries([...files,daylightFile].map(file=>[file,read(path.join(root,file))]));
 const summary=values=>{
  const sorted=[...values].sort((a,b)=>a-b);
  const percentile=p=>sorted[Math.ceil(sorted.length*p)-1];
@@ -73,8 +77,10 @@ async function run(){
  assert.ok(variants.every(v=>['before','after','no-sheen'].includes(v)),'Unknown benchmark variant');
  const source=read(project),after=collectSource(),before=Object.fromEntries(files.map(file=>
   [file,execFileSync('git',['show',baseline+':'+file],{cwd:root,maxBuffer:8*1024*1024})]));
- const job=artifacts.createRun({parent:path.join(root,'output/desktop-verification.noindex'),prefix:'living-furniture-'});
- const report={sourceHash:hash(source),baseline,camera,...(secondCamera?{secondCamera}:{}),results:[]};
+ if(execFileSync('git',['ls-tree',baseline,'--',daylightFile],{cwd:root}).length)
+  before[daylightFile]=execFileSync('git',['show',baseline+':'+daylightFile],{cwd:root});
+ const job=artifacts.createRun({parent:path.join(root,'output/desktop-verification.noindex'),prefix:customTargets?'room-raster-':'living-furniture-'});
+ const report={sourceHash:hash(source),baseline,camera,targets,...(secondCamera?{secondCamera}:{}),results:[]};
  let passed=false,app;
  console.log(job.dir);
  try{
@@ -82,7 +88,7 @@ async function run(){
   for(const file of runtimeFiles)job.copy(path.join(root,'scripts',file),path.join('workspace/scripts',file));
   const save=path.join(work,'projects/workspace.furnish.json');
   report.sources=Object.fromEntries(files.map(file=>[file,{before:hash(before[file]),after:hash(after[file])}]));
-  report.sources['src/render/interior-daylight.js']={after:hash(read(path.join(root,'src/render/interior-daylight.js')))};
+  report.sources[daylightFile]={...(before[daylightFile]?{before:hash(before[daylightFile])}:{}),after:hash(after[daylightFile])};
   for(const [i,variant] of variants.entries()){
    const profile=job.discard('profile-'+i);
    fs.writeFileSync(save,source);
@@ -99,11 +105,15 @@ async function run(){
      code=code.replace(render,`const started=performance.now();renderer.render(scene,camera);
       const metrics=window.furnitureBench;if(metrics.samples)metrics.samples.push({at:started,cpu:performance.now()-started});
       if(!metrics.target)metrics.target=(id)=>{
-       const f=getF(id), rect=renderer.domElement.getBoundingClientRect();
-       for(const dx of [0,180,-180,300,-300])for(const dy of [0,150,-150]){
-        const at=new THREE.Vector3(wx(f.cx+dx),M(FurnishProducts.height(f)+60),wz(f.cy+dy)).project(camera);
+       const rect=renderer.domElement.getBoundingClientRect();
+       const model=furnG.children.find(o=>o.userData.fid===id);
+       if(!model)return null;
+       const bounds=new THREE.Box3().setFromObject(model);
+       const center=bounds.getCenter(new THREE.Vector3()),size=bounds.getSize(new THREE.Vector3());
+       for(const yRatio of [.55,.82,.3])for(const xRatio of [0,.22,-.22,.39,-.39])for(const zRatio of [0,.22,-.22]){
+        const at=new THREE.Vector3(center.x+xRatio*size.x,bounds.min.y+yRatio*size.y,center.z+zRatio*size.z).project(camera);
         const x=rect.left+(at.x+1)*rect.width/2,y=rect.top+(1-at.y)*rect.height/2;
-        if(document.elementFromPoint(x,y)===renderer.domElement&&pick({clientX:x,clientY:y})?.fid===id)return {x,y};
+        if(Number.isFinite(x)&&Number.isFinite(y)&&document.elementFromPoint(x,y)===renderer.domElement&&pick({clientX:x,clientY:y})?.fid===id)return {x,y};
        }
        return null;
       };
@@ -149,16 +159,22 @@ async function run(){
    await page.waitForURL(`http://127.0.0.1:${port}/`);
    await page.reload();
    await page.locator('#repository-loading').waitFor({state:'hidden',timeout:60000});
-   const scene=await page.evaluate(async camera=>{
+   const scene=await page.evaluate(async ({camera,targets})=>{
     if(FurnishElectricalUI.active())FurnishElectricalUI.setMode('furniture');
     drawer('lib',false);drawer('panel',false);
     select(null);
     await setView('3d');
     const pose=await View3D.automationCamera(camera);
-    return {name:PLAN.name,count:state.furniture.length,settings:state.scene3d,pose,
-     targets:['fmv5bzynf3','fmvglvcws1'].map(id=>({id,type:getF(id)?.type,locked:furnitureLocked(getF(id))}))};
-   },camera);
-   assert.deepEqual(scene.targets.map(f=>f.type),['sofa_yeswood_cherry','coffeetable_yeswood_cherry']);
+    const effective=FurnishProject.effectivePlan(PLAN,state);
+    const openings=effective.wins?.map((opening,index)=>({
+     ref:effective.winRefs?.[index],rect:opening.rect,sill:opening.sill,head:opening.head
+    }));
+    return {name:PLAN.name,count:state.furniture.length,settings:state.scene3d,pose,openings,
+     targets:targets.map(id=>({id,type:getF(id)?.type,locked:furnitureLocked(getF(id))}))};
+   },{camera,targets});
+   assert.ok(scene.targets.every(f=>f.type),'Missing benchmark furniture');
+   if(!customTargets)assert.deepEqual(scene.targets.map(f=>f.type),['sofa_yeswood_cherry','coffeetable_yeswood_cherry']);
+   const movable=scene.targets.at(-1);
    assert.ok(scene.pose,'Production 3D did not open');
    await page.waitForFunction(()=>document.querySelector('#progressive-controls')?.dataset.state==='smooth');
    assert.equal(await page.locator('#progressive-frame').count(),0);
@@ -192,10 +208,10 @@ async function run(){
     };
     const f=getF(id);
     return {point:furnitureBench.target(id),cx:f.cx,cy:f.cy,locked:furnitureLocked(f)};
-   },{camera,id:scene.targets[1].id});
-   assert.ok(drag.point&&!drag.locked,'Coffee table must be pickable and unlocked');
+   },{camera,id:movable.id});
+   assert.ok(drag.point&&!drag.locked,`Furniture ${movable.id} must be pickable and unlocked`);
    const move=await measure(page,cdp,drag.point,t=>({x:30+110*t+29*Math.sin(t*2*Math.PI),y:18+23*Math.sin(t*Math.PI)}),
-    ()=>page.evaluate(({id,cx,cy})=>getF(id).cx!==cx||getF(id).cy!==cy,{...drag,id:scene.targets[1].id}));
+    ()=>page.evaluate(({id,cx,cy})=>getF(id).cx!==cx||getF(id).cy!==cy,{...drag,id:movable.id}));
    assert.equal(await page.locator('#progressive-frame').count(),0);
    assert.deepEqual(errors,[]);
    await cdp.detach();
@@ -203,21 +219,21 @@ async function run(){
    console.log(variant,JSON.stringify({render,rotate:rotate.frameIntervalMs,move:move.frameIntervalMs,
     snap:move.snapMs,poseChanges:move.poseChanges,poseInputToSubmissionMs:move.poseInputToSubmissionMs}));
    if(variant==='after'&&!report.productionExport){
-    const table=scene.targets[1].id;
-    const positions=await page.evaluate(({table,drag})=>{
-     const at=()=>[getF(table).cx,getF(table).cy];
+    const id=movable.id;
+    const positions=await page.evaluate(id=>{
+     const at=()=>[getF(id).cx,getF(id).cy];
      const moved=at();
      undo();const undone=at();
      redo();const redone=at();
      return {moved,undone,redone};
-    },{table,drag});
+    },id);
     assert.notDeepEqual(positions.moved,[drag.cx,drag.cy]);
     assert.deepEqual(positions.undone,[drag.cx,drag.cy]);
     assert.deepEqual(positions.redone,positions.moved);
     assert.ok(await page.evaluate(()=>saveNow()),'Isolated workspace save failed');
     await page.reload();
     await page.locator('#repository-loading').waitFor({state:'hidden',timeout:60000});
-    assert.deepEqual(await page.evaluate(id=>[getF(id).cx,getF(id).cy],table),positions.moved);
+    assert.deepEqual(await page.evaluate(id=>[getF(id).cx,getF(id).cy],id),positions.moved);
     const data=await page.evaluate(async ({camera,scene})=>{
      await setView('3d');await View3D.automationCamera(camera);
      return await furnitureBench.exportModels(scene.targets.map(f=>f.id));
@@ -225,10 +241,14 @@ async function run(){
     const glb=Buffer.from(data.split(',')[1],'base64');
     const document=JSON.parse(glb.subarray(20,20+glb.readUInt32LE(12)));
     const fabrics=document.materials.filter(m=>m.extensions?.KHR_materials_sheen);
-    assert.equal(fabrics.length,1);
-    assert.ok(fabrics[0].normalTexture&&fabrics[0].pbrMetallicRoughness.baseColorTexture);
-    fs.writeFileSync(path.join(job.dir,'two-production-models.glb'),glb);
-    report.productionExport={filename:'two-production-models.glb',sha256:hash(glb),nodes:document.nodes.length,
+    assert.ok(document.nodes.length&&document.materials.length,'Furniture GLB must contain production geometry');
+    if(!customTargets){
+     assert.equal(fabrics.length,1);
+     assert.ok(fabrics[0].normalTexture&&fabrics[0].pbrMetallicRoughness.baseColorTexture);
+    }
+    const filename=customTargets?'production-models.glb':'two-production-models.glb';
+    fs.writeFileSync(path.join(job.dir,filename),glb);
+    report.productionExport={filename,sha256:hash(glb),nodes:document.nodes.length,
      sheenMaterials:fabrics.length,undoRedo:true,reload:true};
    }
    assert.ok(await page.evaluate(()=>saveNow()),'Isolated workspace save failed');
