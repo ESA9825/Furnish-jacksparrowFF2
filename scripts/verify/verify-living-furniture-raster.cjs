@@ -21,6 +21,7 @@ const targets=(process.env.FURNISH_RASTER_TARGETS||defaultTargets.join(',')).spl
 const customTargets=!!process.env.FURNISH_RASTER_TARGETS;
 const daylightFile='src/render/interior-daylight.js';
 const secondCamera=process.env.FURNISH_RASTER_SECOND_CAMERA?JSON.parse(process.env.FURNISH_RASTER_SECOND_CAMERA):null;
+const rooms=process.env.FURNISH_RASTER_ROOMS?JSON.parse(fs.readFileSync(process.env.FURNISH_RASTER_ROOMS,'utf8')):null;
 const hash=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const read=file=>fs.readFileSync(file);
 const variants=(process.env.FURNISH_RASTER_RUNS||'before,after,no-sheen,no-sheen,after,before').split(',');
@@ -31,9 +32,9 @@ const summary=values=>{
  return {n:sorted.length,p50:percentile(.5),p95:percentile(.95),max:sorted.at(-1)};
 };
 
-async function measure(page,cdp,start,offset,check){
- await cdp.send('Input.dispatchMouseEvent',{type:'mouseMoved',...start});
- await cdp.send('Input.dispatchMouseEvent',{type:'mousePressed',...start,button:'left',buttons:1,clickCount:1});
+async function measure(page,cdp,start,offset,check,modifiers=0){
+ await cdp.send('Input.dispatchMouseEvent',{type:'mouseMoved',...start,modifiers});
+ await cdp.send('Input.dispatchMouseEvent',{type:'mousePressed',...start,button:'left',buttons:1,clickCount:1,modifiers});
  await page.evaluate(()=>{window.furnitureBench.samples=[];window.furnitureBench.moves=[];});
  let last;
  const began=performance.now();
@@ -41,11 +42,11 @@ async function measure(page,cdp,start,offset,check){
   await delay(Math.max(0,began+i*1000/60-performance.now()));
   const point=offset(i/72);
   last={x:start.x+point.x,y:start.y+point.y};
-  await cdp.send('Input.dispatchMouseEvent',{type:'mouseMoved',...last,button:'left',buttons:1});
+  await cdp.send('Input.dispatchMouseEvent',{type:'mouseMoved',...last,button:'left',buttons:1,modifiers});
  }
  const {frames,moves}=await page.evaluate(()=>window.furnitureBench.takeSamples());
  const changed=await check();
- await cdp.send('Input.dispatchMouseEvent',{type:'mouseReleased',...last,button:'left',buttons:0,clickCount:1});
+ await cdp.send('Input.dispatchMouseEvent',{type:'mouseReleased',...last,button:'left',buttons:0,clickCount:1,modifiers});
  assert.ok(changed,'The real pointer gesture did not move the camera or furniture');
  assert.ok(frames.length>=2,`Too few actual renderer frames (${frames.length}, ${moves.length} drag events)`);
  const intervals=frames.slice(1).map((f,i)=>f.at-frames[i].at);
@@ -79,8 +80,9 @@ async function run(){
   [file,execFileSync('git',['show',baseline+':'+file],{cwd:root,maxBuffer:8*1024*1024})]));
  if(execFileSync('git',['ls-tree',baseline,'--',daylightFile],{cwd:root}).length)
   before[daylightFile]=execFileSync('git',['show',baseline+':'+daylightFile],{cwd:root});
- const job=artifacts.createRun({parent:path.join(root,'output/desktop-verification.noindex'),prefix:customTargets?'room-raster-':'living-furniture-'});
- const report={sourceHash:hash(source),baseline,camera,targets,...(secondCamera?{secondCamera}:{}),results:[]};
+ const job=artifacts.createRun({parent:path.join(root,'output/desktop-verification.noindex'),prefix:rooms||customTargets?'room-raster-':'living-furniture-'});
+ const cases=rooms||[{camera,targets,secondCamera}];
+ const report={sourceHash:hash(source),baseline,...(rooms?{rooms}:{camera,targets,...(secondCamera?{secondCamera}:{})}),results:[]};
  let passed=false,app;
  console.log(job.dir);
  try{
@@ -159,98 +161,121 @@ async function run(){
    await page.waitForURL(`http://127.0.0.1:${port}/`);
    await page.reload();
    await page.locator('#repository-loading').waitFor({state:'hidden',timeout:60000});
-   const scene=await page.evaluate(async ({camera,targets})=>{
-    if(FurnishElectricalUI.active())FurnishElectricalUI.setMode('furniture');
-    drawer('lib',false);drawer('panel',false);
-    select(null);
-    await setView('3d');
-    const pose=await View3D.automationCamera(camera);
-    const effective=FurnishProject.effectivePlan(PLAN,state);
-    const openings=effective.wins?.map((opening,index)=>({
-     ref:effective.winRefs?.[index],rect:opening.rect,sill:opening.sill,head:opening.head
-    }));
-    return {name:PLAN.name,count:state.furniture.length,settings:state.scene3d,pose,openings,
-     targets:targets.map(id=>({id,type:getF(id)?.type,locked:furnitureLocked(getF(id))}))};
-   },{camera,targets});
-   assert.ok(scene.targets.every(f=>f.type),'Missing benchmark furniture');
-   if(!customTargets)assert.deepEqual(scene.targets.map(f=>f.type),['sofa_yeswood_cherry','coffeetable_yeswood_cherry']);
-   const movable=scene.targets.at(-1);
-   assert.ok(scene.pose,'Production 3D did not open');
-   await page.waitForFunction(()=>document.querySelector('#progressive-controls')?.dataset.state==='smooth');
-   assert.equal(await page.locator('#progressive-frame').count(),0);
-   await page.evaluate(()=>View3D.automationReady());
-   const capture=async suffix=>{
-    const png=await page.evaluate(()=>View3D.image());
-    fs.writeFileSync(path.join(job.dir,variant+'-'+i+suffix+'.png'),Buffer.from(png.split(',')[1],'base64'));
-   };
-   await capture('');
-   if(secondCamera){
-    await page.evaluate(pose=>View3D.automationCamera(pose),secondCamera);
-    await capture('-secondary');
-    await page.evaluate(pose=>View3D.automationCamera(pose),camera);
-   }
-   const render=await page.evaluate(()=>furnitureBench.info());
    const cdp=await page.context().newCDPSession(page);
-   const box=await page.locator('#view3d canvas').first().boundingBox();
-   const from={x:box.x+box.width*.45,y:box.y+box.height*.49};
-   const rotate=await measure(page,cdp,from,t=>({x:34*Math.sin(t*4*Math.PI)+12*t,y:8*Math.sin(t*2*Math.PI)}),
-    async()=>Math.abs((await page.evaluate(()=>View3D.automationCamera())).position.y-camera.position.y)>1);
-   const drag=await page.evaluate(async ({camera,id})=>{
-    await View3D.automationCamera(camera);
-    selectIds([id]);ui.sceneMove=true;View3D.sync();renderFab();
-    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-    const snapOriginal=snapMove;
-    snapMove=(f,...args)=>{
-     const start=performance.now();
-     const position=snapOriginal(f,...args);
-     furnitureBench.moves?.push({at:furnitureBench.inputAt,cpu:performance.now()-start,changed:position[0]!==f.cx||position[1]!==f.cy});
-     return position;
+   for(const {name,camera,targets=[],secondCamera} of cases){
+    const scene=await page.evaluate(async ({camera,targets})=>{
+     if(FurnishElectricalUI.active())FurnishElectricalUI.setMode('furniture');
+     drawer('lib',false);drawer('panel',false);
+     select(null);
+     await setView('3d');
+     const pose=await View3D.automationCamera(camera);
+     const effective=FurnishProject.effectivePlan(PLAN,state);
+     const openings=effective.wins?.map((opening,index)=>({
+      ref:effective.winRefs?.[index],rect:opening.rect,sill:opening.sill,head:opening.head
+     }));
+     return {name:PLAN.name,count:state.furniture.length,settings:state.scene3d,pose,openings,
+      targets:targets.map(id=>({id,type:getF(id)?.type,locked:furnitureLocked(getF(id))}))};
+    },{camera,targets});
+    assert.ok(scene.targets.every(f=>f.type),'Missing benchmark furniture');
+    if(!rooms&&!customTargets)assert.deepEqual(scene.targets.map(f=>f.type),['sofa_yeswood_cherry','coffeetable_yeswood_cherry']);
+    const movable=scene.targets.at(-1);
+    assert.ok(scene.pose,'Production 3D did not open');
+    await page.waitForFunction(()=>document.querySelector('#progressive-controls')?.dataset.state==='smooth');
+    assert.equal(await page.locator('#progressive-frame').count(),0);
+    await page.evaluate(()=>View3D.automationReady());
+    const capture=async suffix=>{
+     const png=await page.evaluate(()=>View3D.image());
+     fs.writeFileSync(path.join(job.dir,variant+'-'+i+(name?'-'+name:'')+suffix+'.png'),Buffer.from(png.split(',')[1],'base64'));
     };
-    const f=getF(id);
-    return {point:furnitureBench.target(id),cx:f.cx,cy:f.cy,locked:furnitureLocked(f)};
-   },{camera,id:movable.id});
-   assert.ok(drag.point&&!drag.locked,`Furniture ${movable.id} must be pickable and unlocked`);
-   const move=await measure(page,cdp,drag.point,t=>({x:30+110*t+29*Math.sin(t*2*Math.PI),y:18+23*Math.sin(t*Math.PI)}),
-    ()=>page.evaluate(({id,cx,cy})=>getF(id).cx!==cx||getF(id).cy!==cy,{...drag,id:movable.id}));
-   assert.equal(await page.locator('#progressive-frame').count(),0);
-   assert.deepEqual(errors,[]);
-   await cdp.detach();
-   report.results.push({variant,scene,render,rotate,move});
-   console.log(variant,JSON.stringify({render,rotate:rotate.frameIntervalMs,move:move.frameIntervalMs,
-    snap:move.snapMs,poseChanges:move.poseChanges,poseInputToSubmissionMs:move.poseInputToSubmissionMs}));
-   if(variant==='after'&&!report.productionExport){
-    const id=movable.id;
-    const positions=await page.evaluate(id=>{
-     const at=()=>[getF(id).cx,getF(id).cy];
-     const moved=at();
-     undo();const undone=at();
-     redo();const redone=at();
-     return {moved,undone,redone};
-    },id);
-    assert.notDeepEqual(positions.moved,[drag.cx,drag.cy]);
-    assert.deepEqual(positions.undone,[drag.cx,drag.cy]);
-    assert.deepEqual(positions.redone,positions.moved);
-    assert.ok(await page.evaluate(()=>saveNow()),'Isolated workspace save failed');
-    await page.reload();
-    await page.locator('#repository-loading').waitFor({state:'hidden',timeout:60000});
-    assert.deepEqual(await page.evaluate(id=>[getF(id).cx,getF(id).cy],id),positions.moved);
-    const data=await page.evaluate(async ({camera,scene})=>{
-     await setView('3d');await View3D.automationCamera(camera);
-     return await furnitureBench.exportModels(scene.targets.map(f=>f.id));
-    },{camera,scene});
-    const glb=Buffer.from(data.split(',')[1],'base64');
-    const document=JSON.parse(glb.subarray(20,20+glb.readUInt32LE(12)));
-    const fabrics=document.materials.filter(m=>m.extensions?.KHR_materials_sheen);
-    assert.ok(document.nodes.length&&document.materials.length,'Furniture GLB must contain production geometry');
-    if(!customTargets){
-     assert.equal(fabrics.length,1);
-     assert.ok(fabrics[0].normalTexture&&fabrics[0].pbrMetallicRoughness.baseColorTexture);
+    await capture('');
+    if(secondCamera){
+     await page.evaluate(pose=>View3D.automationCamera(pose),secondCamera);
+     await capture('-secondary');
+     await page.evaluate(pose=>View3D.automationCamera(pose),camera);
     }
-    const filename=customTargets?'production-models.glb':'two-production-models.glb';
-    fs.writeFileSync(path.join(job.dir,filename),glb);
-    report.productionExport={filename,sha256:hash(glb),nodes:document.nodes.length,
-     sheenMaterials:fabrics.length,undoRedo:true,reload:true};
+    const render=await page.evaluate(()=>furnitureBench.info());
+    if(!movable){report.results.push({variant,name,scene,render});continue;}
+    const box=await page.locator('#view3d canvas').first().boundingBox();
+    const from={x:box.x+box.width*.45,y:box.y+box.height*.49};
+    const rotate=await measure(page,cdp,from,t=>({x:34*Math.sin(t*4*Math.PI)+12*t,y:8*Math.sin(t*2*Math.PI)}),
+     async()=>Math.abs((await page.evaluate(()=>View3D.automationCamera())).position.y-camera.position.y)>1);
+    let pan;
+    if(rooms){
+     await page.evaluate(pose=>View3D.automationCamera(pose),camera);
+     // Shift+left is OrbitControls' alternate pan gesture (CDP Shift=8).
+     pan=await measure(page,cdp,from,t=>({x:96*t,y:14*Math.sin(t*Math.PI)}),async()=>{
+      const {target}=await page.evaluate(()=>View3D.automationCamera());
+      return Math.hypot(target.x-camera.target.x,target.y-camera.target.y)>1;
+     },8);
+    }
+    const drag=await page.evaluate(async ({camera,id})=>{
+     await View3D.automationCamera(camera);
+     selectIds([id]);ui.sceneMove=true;View3D.sync();renderFab();
+     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+     furnitureBench.originalSnap??=snapMove;
+     snapMove=(f,...args)=>{
+      const start=performance.now();
+      const position=furnitureBench.originalSnap(f,...args);
+      furnitureBench.moves?.push({at:furnitureBench.inputAt,cpu:performance.now()-start,changed:position[0]!==f.cx||position[1]!==f.cy});
+      return position;
+     };
+     const f=getF(id);
+     return {point:furnitureBench.target(id),cx:f.cx,cy:f.cy,locked:furnitureLocked(f)};
+    },{camera,id:movable.id});
+    assert.ok(drag.point&&!drag.locked,`Furniture ${movable.id} must be pickable and unlocked`);
+    const move=await measure(page,cdp,drag.point,t=>({x:30+110*t+29*Math.sin(t*2*Math.PI),y:18+23*Math.sin(t*Math.PI)}),
+     ()=>page.evaluate(({id,cx,cy})=>getF(id).cx!==cx||getF(id).cy!==cy,{...drag,id:movable.id}));
+    assert.equal(await page.locator('#progressive-frame').count(),0);
+    assert.deepEqual(errors,[]);
+    report.results.push({variant,name,scene,render,rotate,...(pan?{pan}:{}),move});
+    console.log(variant,name||'',JSON.stringify({render,rotate:rotate.frameIntervalMs,...(pan?{pan:pan.frameIntervalMs}:{}),move:move.frameIntervalMs,
+     snap:move.snapMs,poseChanges:move.poseChanges,poseInputToSubmissionMs:move.poseInputToSubmissionMs}));
+    if(rooms){
+     const restored=await page.evaluate(id=>{
+      snapMove=furnitureBench.originalSnap;undo();
+      select(null);ui.sceneMove=false;View3D.sync();
+      const {cx,cy}=getF(id);
+      return [cx,cy];
+     },movable.id);
+     assert.deepEqual(restored,[drag.cx,drag.cy]);
+     continue;
+    }
+    if(variant==='after'&&!report.productionExport){
+     const id=movable.id;
+     const positions=await page.evaluate(id=>{
+      const at=()=>[getF(id).cx,getF(id).cy];
+      const moved=at();
+      undo();const undone=at();
+      redo();const redone=at();
+      return {moved,undone,redone};
+     },id);
+     assert.notDeepEqual(positions.moved,[drag.cx,drag.cy]);
+     assert.deepEqual(positions.undone,[drag.cx,drag.cy]);
+     assert.deepEqual(positions.redone,positions.moved);
+     assert.ok(await page.evaluate(()=>saveNow()),'Isolated workspace save failed');
+     await page.reload();
+     await page.locator('#repository-loading').waitFor({state:'hidden',timeout:60000});
+     assert.deepEqual(await page.evaluate(id=>[getF(id).cx,getF(id).cy],id),positions.moved);
+     const data=await page.evaluate(async ({camera,scene})=>{
+      await setView('3d');await View3D.automationCamera(camera);
+      return await furnitureBench.exportModels(scene.targets.map(f=>f.id));
+     },{camera,scene});
+     const glb=Buffer.from(data.split(',')[1],'base64');
+     const document=JSON.parse(glb.subarray(20,20+glb.readUInt32LE(12)));
+     const fabrics=document.materials.filter(m=>m.extensions?.KHR_materials_sheen);
+     assert.ok(document.nodes.length&&document.materials.length,'Furniture GLB must contain production geometry');
+     if(!customTargets){
+      assert.equal(fabrics.length,1);
+      assert.ok(fabrics[0].normalTexture&&fabrics[0].pbrMetallicRoughness.baseColorTexture);
+     }
+     const filename=customTargets?'production-models.glb':'two-production-models.glb';
+     fs.writeFileSync(path.join(job.dir,filename),glb);
+     report.productionExport={filename,sha256:hash(glb),nodes:document.nodes.length,
+      sheenMaterials:fabrics.length,undoRedo:true,reload:true};
+    }
    }
+   await cdp.detach();
+   assert.deepEqual(errors,[]);
    assert.ok(await page.evaluate(()=>saveNow()),'Isolated workspace save failed');
    await closeTestApp(app);
    app=null;
