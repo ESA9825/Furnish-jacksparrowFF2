@@ -9,6 +9,20 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),C=require('../s
  for(const l of lights){assert(l.intensity>0);assert(l.position.toArray().every(Number.isFinite));assert.equal(l.parent,receiver);assert.equal(l.target.parent,receiver);assert(l.castShadow);}
  const shader={uniforms:{},vertexShader:'#include <begin_vertex>',fragmentShader:'#include <emissivemap_fragment>'};receiver.material.onBeforeCompile(shader);assert(shader.uniforms.furnishWashMask.value.image.data.some(v=>v>0));assert(receiver.userData.ceilingWashEnergy>0);assert(!off.children.some(o=>o.userData.ceilingWashApplied));
  const hook=receiver.material.onBeforeCompile;M.applyWash(T,on);assert.equal(receiver.material.onBeforeCompile,hook,'repeated binding does not stack wrappers or lights');assert.equal(lamps(on).length,lights.length);
+ const painted=M.build(T,data(base),{wash:false});
+ M.applyWash(T,painted,{reflectPaint:true});
+ const plaster=painted.children.find(o=>o.userData.ceiling.part==='flat');
+ const strip=painted.children.find(o=>o.userData.ceiling.part==='light');
+ assert.equal(plaster.userData.ceilingPaint,true);
+ assert.equal(strip.userData.ceilingPaint,false);
+ const reflected={uniforms:{},vertexShader:'#include <begin_vertex>',fragmentShader:'#include <aomap_fragment>'};
+ plaster.material.onBeforeCompile(reflected);
+ assert.match(reflected.fragmentShader,/reflectedLight.indirectDiffuse\+=diffuseColor.rgb/);
+ assert.doesNotMatch(reflected.fragmentShader,/totalEmissiveRadiance/);
+ strip.visible=false;plaster.onBeforeRender();
+ assert.equal(reflected.uniforms.furnishWashVisible.value,0);
+ strip.visible=true;plaster.onBeforeRender();
+ assert.equal(reflected.uniforms.furnishWashVisible.value,1);
  assert.equal(lamps(M.build(T,data(base,false))).length,0,'no imaginary receiver means no upward diffuse bounce');
  const sealed=M.build(T,data(base),{wash:false}),lightBox=new T.Box3().setFromObject(sealed.children.find(o=>o.userData.ceiling.part==='light')),cap=new T.Mesh(new T.BoxGeometry(4.9,.01,.8),new T.MeshStandardMaterial());cap.position.set(2.4,lightBox.max.y+.03,.04);sealed.add(cap);M.applyWash(T,sealed);assert.equal(lamps(sealed).length,0,'opaque cap blocks all direct light and consequent bounce');assert.equal(sealed.children.find(o=>o.userData.ceiling?.part==='flat').userData.ceilingWashEnergy,0);
  const below=structuredClone(roof);below.height=2300;assert.equal(lamps(M.build(T,{version:1,items:[base,below]})).length,0,'opaque bottom does not illuminate a receiver below');

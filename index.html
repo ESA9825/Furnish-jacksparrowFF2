@@ -1607,7 +1607,7 @@ const syncIdentity=FurnishPartIdentity;
     model.position.set(wx((x0+x1)/2),0,wz((y0+y1)/2));model.rotation.y=v?-Math.PI/2:0;
     archUp.add(model);slidingDoors.push(model.userData.slidingDoor);
   },(item,slot)=>item.id||"plan-slot:"+slot);
-  FurnishCeilingModel.applyWash(THREE,archUp);
+  FurnishCeilingModel.applyWash(THREE,archUp,{reflectPaint:PLAN.id==='custom_mv37igji'});
   archUp.scale.setScalar(1);cutElectricalBoxWalls();
   applyLight(); applyGrow();
 }
@@ -1840,7 +1840,7 @@ function applyLight(){
   renderer.toneMappingExposure = lighting.exposure;
   envK = lighting.reflection; matCache.forEach(m => { if (m.envMap) m.envMapIntensity = m.userData.env*envK; });
   interiorDaylight?.setLight(night?0:Math.min(1.25,lighting.sun*.41),{position,warm});
-  interiorDaylight?.setNight(night&&opt.lamps);
+  interiorDaylight?.setNight(night&&opt.lamps,night?lighting.ambient:0);
   const range=$('#sun'),mode=$('#sunMode'),readout=$('#sunAltitude');
   range.min=opt.solar?0:7;range.max=opt.solar?24:18;range.value=opt.hour;
   mode.dataset.zh=opt.solar?'太阳时':'日照';

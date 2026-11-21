@@ -82,7 +82,7 @@ require('../src/render/interior-daylight.js');
  assert.equal(contact(.82,.08,2),0,'A single wall is not treated as a corner');
  const wallShader={uniforms:{},vertexShader:'#include <project_vertex>',fragmentShader:'#include <roughnessmap_fragment>\n#include <aomap_fragment>'};
  wall.material[0].onBeforeCompile(wallShader);
- assert.match(wallShader.fragmentShader,/plaster/);
+ assert.match(wallShader.fragmentShader,/paintGrain/);
  const {width,height,data}=shader.uniforms.furnishDaylightMap.value.image;
  const bounds=shader.uniforms.furnishDaylightBounds.value;
  const sample=(x,y)=>{
@@ -181,9 +181,14 @@ require('../src/render/interior-daylight.js');
  furnG.add(lamp);
  begin({...nightPlan,id:'other'});begin(nightPlan);
  pilot.setNight(true);pilot.contacts();
- const nightShader={uniforms:{},vertexShader:'#include <project_vertex>',fragmentShader:'#include <aomap_fragment>'};
+ const nightShader={uniforms:{},vertexShader:'#include <project_vertex>',fragmentShader:
+  '#include <roughnessmap_fragment>\n#include <normal_fragment_maps>\n#include <aomap_fragment>'};
  roof.material.onBeforeCompile(nightShader);
  assert.match(nightShader.fragmentShader,/furnishNightMap/);
+ assert.match(nightShader.fragmentShader,/paintGrain/,'The room ceiling uses the same paint grain as the wall');
+ assert.equal(nightShader.uniforms.furnishFinishTexture.value,wallShader.uniforms.furnishFinishTexture.value);
+ pilot.setNight(true,.015);
+ assert.equal(nightShader.uniforms.furnishCeilingAmbient.value,.015*.44);
  const night=nightShader.uniforms;
  const map=night.furnishNightMap.value;
  const sampleNight=(x,z)=>{

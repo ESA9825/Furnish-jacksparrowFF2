@@ -19,7 +19,7 @@ function build(THREE,data,{wx=v=>v/1000,wz=v=>v/1000,top=Infinity,lamps=true,bod
  const diffuser=new THREE.MeshStandardMaterial({color:'#f6f7ef',emissive:'#fff1d2',emissiveIntensity:lamps ? .22 : 0,roughness:.65,transparent:true,opacity:.8,side:THREE.DoubleSide}),diffuserOff=diffuser.clone();diffuserOff.emissiveIntensity=0;
  let conflictLight=null;const lightMaterial=layout=>{if(!layout.pending.some(m=>m.includes('相交')))return light;if(!conflictLight){conflictLight=light.clone();conflictLight.color.set('#e96842');conflictLight.emissive.set('#e35030');conflictLight.emissiveIntensity=lamps?1:0;}return conflictLight;};
  const shape=(p,s=new THREE.Shape())=>{p.forEach(([x,y],i)=>s[i?'lineTo':'moveTo'](x/1000,y/1000));s.closePath();return s;};
- function mesh(geometry,material,c,part){const m=syncIdentity.produce("ceiling-model:site-1",()=>new THREE.Mesh(geometry,material));m.userData.ceiling={id:c.id,part};m.userData.ceilingOwnMaterial=true;m.castShadow=part!=='light';m.receiveShadow=true;group.add(m);return m;}
+ function mesh(geometry,material,c,part){const m=syncIdentity.produce("ceiling-model:site-1",()=>new THREE.Mesh(geometry,material));m.userData.ceiling={id:c.id,part};m.userData.ceilingPaint=material===surface||material===flatSurface;m.userData.ceilingOwnMaterial=true;m.castShadow=part!=='light';m.receiveShadow=true;group.add(m);return m;}
  function sweep(c,p,material,part){
   const L=Math.hypot(c.path.b[0]-c.path.a[0],c.path.b[1]-c.path.a[1]),t=c.path.b.map((v,i)=>(v-c.path.a[i])/L),n=c.path.normal;
   const g=new THREE.ExtrudeGeometry(shape(p.map(([u,d])=>[u,-d])),{depth:L/1000,bevelEnabled:false,steps:1});
@@ -133,11 +133,11 @@ function build(THREE,data,{wx=v=>v/1000,wz=v=>v/1000,top=Infinity,lamps=true,bod
 }
 // Bake the continuous wash only where a ray from the emitting face reaches
 // a real ceiling. Opaque production meshes, including channel walls/base, block it.
-function applyWash(T,group){
+function applyWash(T,group,{reflectPaint=false}={}){
  if(!T.Raycaster||!T.DataTexture)return;
  group.updateWorldMatrix(true,true);
  const segments=[],blockers=[];
- group.traverse(o=>{if(o.userData.ceilingWash)segments.push(...o.userData.ceilingWash.map(s=>({a:new T.Vector3(...s[0]),b:new T.Vector3(...s[1]),sample:s[2]||0,id:o.userData.ceiling?.id})));if(o.isMesh&&o.userData.ceiling?.part!=='light'&&o.userData.ceiling?.part!=='diffuser'&&!o.material?.transparent)blockers.push(o);});
+ group.traverse(o=>{if(o.userData.ceilingWash)segments.push(...o.userData.ceilingWash.map(s=>({a:new T.Vector3(...s[0]),b:new T.Vector3(...s[1]),sample:s[2]||0,id:o.userData.ceiling?.id,emitter:o})));if(o.isMesh&&o.userData.ceiling?.part!=='light'&&o.userData.ceiling?.part!=='diffuser'&&!o.material?.transparent)blockers.push(o);});
  if(!segments.length)return;
  const ray=new T.Raycaster(),up=new T.Vector3(0,1,0),smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
  group.traverse(o=>{
@@ -162,16 +162,35 @@ function applyWash(T,group){
   const texture=new T.DataTexture(pixels,width,depth,T.RGBAFormat);texture.minFilter=texture.magFilter=T.LinearFilter;texture.generateMipmaps=false;texture.needsUpdate=true;
   const material=o.material.clone();o.material=material;o.userData.ceilingOwnMaterial=true;o.userData.ceilingWashApplied=true;material.addEventListener('dispose',()=>texture.dispose());
   const maskBounds=new T.Vector4(bounds.min.x,bounds.min.z,size.x,size.z);
-  washMasks.set(o,{texture,bounds:maskBounds,ceilingIds:new Set(sources.map(source=>source.id))});
-  material.customProgramCacheKey=()=> 'ceiling-visible-wash-v2';
+  const emitters=[...new Set(sources.map(source=>source.emitter))];
+  const active=()=>emitters.some(emitter=>{
+   if(emitter.material?.emissiveIntensity<=0)return false;
+   for(let node=emitter;node;node=node.parent)if(!node.visible)return false;
+   return true;
+  });
+  washMasks.set(o,{texture,bounds:maskBounds,ceilingIds:new Set(sources.map(source=>source.id)),active});
+  const reflected=reflectPaint&&(roof||o.userData.ceilingPaint);
+  const visibleWash={value:1};
+  if(reflected){
+   const draw=o.onBeforeRender;
+   o.onBeforeRender=function(...args){
+    draw.apply(this,args);
+    visibleWash.value=active()?1:0;
+   };
+  }
+  material.customProgramCacheKey=()=> 'ceiling-visible-wash-v3|'+reflected;
   material.onBeforeCompile=shader=>{
    shader.uniforms.furnishWashMask={value:texture};shader.uniforms.furnishWashBounds={value:maskBounds};shader.uniforms.furnishWashColor={value:new T.Color('#ffde9e')};
+   if(reflected)shader.uniforms.furnishWashVisible=visibleWash;
    const varying='varying vec3 vFurnishWashPosition;varying vec3 vFurnishWashNormal;\n';
    shader.vertexShader=varying+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvFurnishWashPosition=(modelMatrix*vec4(transformed,1.0)).xyz;vFurnishWashNormal=normalize(mat3(modelMatrix)*normal);');
-   shader.fragmentShader=varying+'uniform sampler2D furnishWashMask;uniform vec4 furnishWashBounds;uniform vec3 furnishWashColor;\n'+shader.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
+   const lightingChunk=reflected?'#include <aomap_fragment>':'#include <emissivemap_fragment>';
+   shader.fragmentShader=varying+'uniform sampler2D furnishWashMask;uniform vec4 furnishWashBounds;uniform vec3 furnishWashColor;\n'+
+    (reflected?'uniform float furnishWashVisible;\n':'')+shader.fragmentShader.replace(lightingChunk,`${lightingChunk}
     vec2 washUV=(vFurnishWashPosition.xz-furnishWashBounds.xy)/furnishWashBounds.zw;
     float wash=texture2D(furnishWashMask,washUV).r*max(0.0,-vFurnishWashNormal.y*(gl_FrontFacing?1.0:-1.0));
-    totalEmissiveRadiance+=furnishWashColor*wash*0.1625;
+    ${reflected?'reflectedLight.indirectDiffuse+=diffuseColor.rgb*furnishWashColor*wash*furnishWashVisible*0.1625;':
+     'totalEmissiveRadiance+=furnishWashColor*wash*0.1625;'}
    `);
   };
   // A virtual diffuse ceiling bounce is created only after direct light has
