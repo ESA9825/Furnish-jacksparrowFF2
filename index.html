@@ -1840,6 +1840,7 @@ function applyLight(){
   renderer.toneMappingExposure = lighting.exposure;
   envK = lighting.reflection; matCache.forEach(m => { if (m.envMap) m.envMapIntensity = m.userData.env*envK; });
   interiorDaylight?.setLight(night?0:Math.min(1.25,lighting.sun*.41),{position,warm});
+  interiorDaylight?.setNight(night&&opt.lamps);
   const range=$('#sun'),mode=$('#sunMode'),readout=$('#sunAltitude');
   range.min=opt.solar?0:7;range.max=opt.solar?24:18;range.value=opt.hour;
   mode.dataset.zh=opt.solar?'太阳时':'日照';

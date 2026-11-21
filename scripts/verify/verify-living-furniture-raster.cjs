@@ -26,7 +26,8 @@ const rooms=process.env.FURNISH_RASTER_ROOMS?JSON.parse(fs.readFileSync(process.
 const trialGTAO=process.env.FURNISH_RASTER_GTAO==='1';
 const trialBloom=process.env.FURNISH_RASTER_BLOOM==='1';
 const trialSMAA=process.env.FURNISH_RASTER_SMAA==='1';
-const nightTrial=trialBloom||trialSMAA;
+const revisionRound=process.env.FURNISH_RASTER_ROUND||'';
+const nightTrial=trialBloom||trialSMAA||!!revisionRound&&process.env.FURNISH_RASTER_SCENE!=='day';
 const trialEffect=trialGTAO?'viewport-gtao':trialBloom?'viewport-bloom':trialSMAA?'viewport-smaa':null;
 const trackAngles=Array.from({length:29},(_,i)=>-.052+(i/28)*.104);
 const trackCrops={
@@ -37,7 +38,7 @@ const panCamera=rooms||process.env.FURNISH_RASTER_PAN==='1';
 const previewHours=(process.env.FURNISH_RASTER_HOURS||'').split(',').filter(Boolean).map(Number);
 const hash=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const read=file=>fs.readFileSync(file);
-const variants=(process.env.FURNISH_RASTER_RUNS||(trialEffect?'before,after,after,before':'before,after,no-sheen,no-sheen,after,before')).split(',');
+const variants=(process.env.FURNISH_RASTER_RUNS||((trialEffect||revisionRound)?'before,after,after,before':'before,after,no-sheen,no-sheen,after,before')).split(',');
 const collectSource=()=>Object.fromEntries([...files,daylightFile].map(file=>[file,read(path.join(root,file))]));
 const summary=values=>{
  const sorted=[...values].sort((a,b)=>a-b);
@@ -98,7 +99,7 @@ async function run(){
   before[daylightFile]=execFileSync('git',['show',baseline+':'+daylightFile],{cwd:root});
  const job=artifacts.createRun({parent:path.join(root,'output/desktop-verification.noindex'),prefix:rooms||customTargets?'room-raster-':'living-furniture-'});
  const cases=rooms||[{camera,targets,secondCamera}];
- const report={sourceHash:hash(source),baseline,trialGTAO,trialBloom,trialSMAA,...(gestureCamera?{gestureCamera}:{}),
+ const report={sourceHash:hash(source),baseline,trialGTAO,trialBloom,trialSMAA,revisionRound,...(gestureCamera?{gestureCamera}:{}),
   ...(trialSMAA?{trajectory:{anglesRadians:trackAngles,crops:trackCrops},gtao:false,bloom:false}:{}),
   ...(rooms?{rooms}:{camera,targets,...(secondCamera?{secondCamera}:{})}),results:[]};
  let passed=false,app;
@@ -234,7 +235,7 @@ async function run(){
    await page.locator('#repository-loading').waitFor({state:'hidden',timeout:60000});
    const cdp=await page.context().newCDPSession(page);
    for(const {name,camera,targets=[],secondCamera} of cases){
-    const scene=await page.evaluate(async ({camera,targets,nightTrial})=>{
+    const scene=await page.evaluate(async ({camera,targets,nightTrial,revisionRound})=>{
      if(FurnishElectricalUI.active())FurnishElectricalUI.setMode('furniture');
      drawer('lib',false);drawer('panel',false);
      select(null);
@@ -245,6 +246,9 @@ async function run(){
        state.objectLayers=FurnishLayers.update(state,lampLayer,{visible:true}).objectLayers;
       }
      },{sceneFirst:true});
+     else if(revisionRound)mutate(()=>{
+      state.scene3d=FurnishDesign.patchSceneSettings(state.scene3d,{hour:11,night:false,lamps:false,nightLights:false});
+     },{sceneFirst:true});
      await setView('3d');
      const pose=await View3D.automationCamera(camera);
      const effective=FurnishProject.effectivePlan(PLAN,state);
@@ -253,13 +257,16 @@ async function run(){
      }));
      return {name:PLAN.name,count:state.furniture.length,settings:state.scene3d,pose,openings,
       targets:targets.map(id=>({id,type:getF(id)?.type,locked:furnitureLocked(getF(id))}))};
-    },{camera,targets,nightTrial});
+    },{camera,targets,nightTrial,revisionRound});
     assert.ok(scene.targets.every(f=>f.type),'Missing benchmark furniture');
     if(!rooms&&!customTargets)assert.deepEqual(scene.targets.map(f=>f.type),['sofa_yeswood_cherry','coffeetable_yeswood_cherry']);
     const movable=scene.targets.at(-1);
     assert.ok(scene.pose,'Production 3D did not open');
     await page.waitForFunction(()=>document.querySelector('#progressive-controls')?.dataset.state==='smooth');
     assert.equal(await page.locator('#progressive-frame').count(),0);
+    if(revisionRound){
+     for(const id of ['gtao','bloom','smaa'])assert.equal(await page.locator('#viewport-'+id).getAttribute('aria-pressed'),'false');
+    }
     if(trialEffect){
      await page.locator('#showMenu').evaluate(menu=>{menu.open=true;});
      const control=page.locator('#'+trialEffect);
@@ -290,7 +297,7 @@ async function run(){
      await page.evaluate(pose=>View3D.automationCamera(pose),secondCamera);
      const secondaryVisual=await capture('-secondary');
      if(trialBloom)scene.secondaryEmitters=await page.evaluate(()=>furnitureBench.emitters());
-     if(nightTrial&&variant!=='before')assert.notEqual(await capture('-secondary-beauty',true),secondaryVisual);
+     if((trialBloom||trialSMAA)&&variant!=='before')assert.notEqual(await capture('-secondary-beauty',true),secondaryVisual);
      await page.evaluate(pose=>View3D.automationCamera(pose),camera);
     }
     if(previewHours.length){

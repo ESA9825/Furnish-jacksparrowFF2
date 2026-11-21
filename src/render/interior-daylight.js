@@ -54,6 +54,7 @@ function create(T,scene,{wx,wz,inside}){
   furnishInteriorSun:{value:new T.Vector4(0,1,0,0)},
   furnishFinishField:{value:null},furnishFinishBounds:{value:new T.Vector4()},
   furnishFinishTexture:{value:null},furnishWallContact:{value:1},
+  furnishNightMap:{value:null},furnishNightBounds:{value:new T.Vector4()},furnishNightActive:{value:0},
   furnishSofaPose:{value:new T.Vector4()},furnishSofaSize:{value:new T.Vector4()},
   furnishSofaVisible:{value:0}
  };
@@ -66,6 +67,7 @@ function create(T,scene,{wx,wz,inside}){
  scene.add(overlay);
  let patch,sky,field,finishField,finishTexture,wallsGroup,floors=[],bounds=null,lastPose='',daylight=0;
  let roomById=new Map(),sofa=null;
+ let nightRooms=[],nightSources=[],nightField,nightKey='',nightEnabled=false;
 
  function dataTexture(width,height,fill){
   const bytes=new Uint8Array(width*height*4);
@@ -246,6 +248,8 @@ function create(T,scene,{wx,wz,inside}){
   const layout=source.userData.tileFinish?.layout;
   const groutHalfWidth=layout?layout.gap/(2*(Math.min(layout.width,layout.height)+layout.gap)):.006;
   const paintDetail=profile==='wall',cabinetDetail=profile==='cabinet',nicheDetail=profile==='niche';
+  const ceiling=profile==='ceiling';
+  const nightReceiver=ceiling||paintDetail||cabinetDetail;
   const smoothReflection=!!source.envMap&&source.roughness<=.30&&source.metalness===0;
   // Keep source PBR values and pre-existing shaders. Export strips these
   // raster hooks and keeps the source values.
@@ -280,6 +284,11 @@ function create(T,scene,{wx,wz,inside}){
     uniform float furnishDaylightStrength;
     uniform vec3 furnishSkyTint;
     uniform vec4 furnishInteriorSun;
+    ${nightReceiver?`
+     uniform sampler2D furnishNightMap;
+     uniform vec4 furnishNightBounds;
+     uniform float furnishNightActive;
+    `:''}
     ${profile?`
      uniform sampler2D furnishFinishField;
      uniform vec4 furnishFinishBounds;
@@ -387,6 +396,7 @@ function create(T,scene,{wx,wz,inside}){
      roughnessFactor=min(roughnessFactor,0.43+0.14*(lacquer.r-.5));
     `:''}
    `).replace('#include <aomap_fragment>',`
+    ${ceiling?'':`
     if(furnishDaylightStrength>0.0){
      vec2 uv=(furnishInteriorPosition.xz-furnishDaylightBounds.xy)*furnishDaylightBounds.zw;
      vec2 energy=texture2D(furnishDaylightMap,uv).rg*furnishDaylightStrength;
@@ -407,6 +417,7 @@ function create(T,scene,{wx,wz,inside}){
                          reflectedLight.indirectDiffuse,reflectedLight.indirectSpecular);
      }
     }
+    `}
     #include <aomap_fragment>
     ${profile==='floor'?`
      vec3 floorProximity=texture2D(furnishFinishField,furnishFinishUV(furnishInteriorPosition.xz)).rgb;
@@ -448,8 +459,20 @@ function create(T,scene,{wx,wz,inside}){
      reflectedLight.indirectDiffuse+=diffuseColor.rgb*vec3(1.0,0.78,0.56)
       *(0.17*face*(1.0-hood)*(1.0-side)*furnishDaylightStrength);
     `:''}
+    ${nightReceiver?`
+     if(furnishNightActive>0.0){
+      vec3 receiver=normalize((vec4(geometryNormal,0.0)*viewMatrix).xyz);
+      vec2 uv=(furnishInteriorPosition.xz+receiver.xz*0.085-furnishNightBounds.xy)*furnishNightBounds.zw;
+      if(all(greaterThan(uv,vec2(0.0)))&&all(lessThan(uv,vec2(1.0)))){
+       vec3 energy=texture2D(furnishNightMap,uv).rgb;
+       float high=smoothstep(0.95,2.46,furnishInteriorPosition.y);
+       float gain=${ceiling?'0.012*max(0.0,-receiver.y)':paintDetail?'0.0038*high*hasPaint':'0.0016*high*(1.0-abs(receiver.y))'};
+       reflectedLight.indirectDiffuse+=diffuseColor.rgb*energy*gain;
+      }
+     }
+    `:''}
    `);
-   if(profile)softenSun(shader);
+   if(profile&&!ceiling)softenSun(shader);
   };
   pool.set(variantKey,material);variants.set(source,pool);
   return material;
@@ -482,7 +505,70 @@ function create(T,scene,{wx,wz,inside}){
   });
   return parts.slice(0,8);
  }
+ function configureNight(furnG){
+  nightRooms=[...finishRooms].flatMap(id=>{
+   const room=roomById.get(id);
+   return room?[{id,poly:room.poly.map(([x,y])=>[wx(x),wz(y)])}]:[];
+  });
+  const points=nightRooms.flatMap(room=>room.poly);
+  nightSources=[];nightKey='';
+  if(!points.length)return;
+  const [xmin,zmin,xmax,zmax]=[
+   Math.min(...points.map(([x])=>x)),Math.min(...points.map(([,z])=>z)),
+   Math.max(...points.map(([x])=>x)),Math.max(...points.map(([,z])=>z))
+  ];
+  uniforms.furnishNightBounds.value.set(xmin,zmin,1/(xmax-xmin),1/(zmax-zmin));
+  const floorTint=new Map(floors.map(mesh=>[mesh.userData.room,mesh.material.color]));
+  furnG.traverse(o=>{
+   for(const rectangle of o.userData.lightingRects||[]){
+    if(rectangle.normal[1]>-.8||!rectangle.material)continue;
+    const position=new T.Vector3().fromArray(rectangle.position).applyMatrix4(o.matrixWorld);
+    const room=nightRooms.find(r=>inside(position.x,position.z,r.poly));
+    if(!room)continue;
+    const floor=floorTint.get(room.id);
+    const tint=new T.Color(rectangle.color);
+    if(floor)tint.multiply(new T.Color(.60+.40*floor.r,.60+.40*floor.g,.60+.40*floor.b));
+    const power=Math.min(1.7,rectangle.radiance*rectangle.width*rectangle.height*.58);
+    const reach=Math.max(1.35,Math.min(2.15,position.y*.69));
+    nightSources.push({o,rectangle,position,room,tint,power,reach});
+   }
+  });
+ }
+ function updateNight(){
+  const show=uniforms.furnishNightActive;
+  if(!nightEnabled||!nightSources.length){show.value=0;return;}
+  const active=nightSources.filter(({o,rectangle})=>{
+   if(rectangle.enabled===false||rectangle.material.emissiveIntensity<=0)return false;
+   for(let node=o;node;node=node.parent)if(!node.visible)return false;
+   return true;
+  });
+  show.value=active.length?1:0;
+  if(!active.length)return;
+  const key=active.map(source=>source.o.id+':'+source.rectangle.material.id).join(',');
+  if(nightKey===key)return;
+  nightKey=key;
+  const {x:xmin,y:zmin,z:sx,w:sz}=uniforms.furnishNightBounds.value;
+  const size=80;
+  nightField?.dispose();
+  nightField=dataTexture(size,size,(i,j)=>{
+   const x=xmin+(i+.5)/(size*sx),z=zmin+(j+.5)/(size*sz);
+   const room=nightRooms.find(r=>inside(x,z,r.poly));
+   if(!room)return [0,0,0,255];
+   let r=0,g=0,b=0;
+   for(const source of active){
+    if(source.room!==room)continue;
+    const radius=Math.hypot(x-source.position.x,z-source.position.z)/source.reach;
+    const weight=source.power/(1+radius**4);
+    r+=source.tint.r*weight;g+=source.tint.g*weight;b+=source.tint.b*weight;
+   }
+   const distance=Math.min(1,edgeDistance(x,z,room.poly)/.52);
+   const fade=distance*distance*(3-2*distance);
+   return [...[r,g,b].map(value=>Math.round(255*fade*Math.min(1,value/(1+.60*value)))),255];
+  });
+  uniforms.furnishNightMap.value=nightField;
+ }
  function contacts(){
+  updateNight();
   if(!patch)return;
   uniforms.furnishWallContact.value=wallsGroup?.visible?1:0;
   const entries=[...supports];
@@ -552,12 +638,17 @@ function create(T,scene,{wx,wz,inside}){
   for(const floor of floors)paint(floor,finishRooms.has(floor.userData.room)?'floor':'');
   archUp.updateWorldMatrix(true,true);
   archUp.traverse(mesh=>{
+   const roomCeiling=mesh.userData.layerObject?.startsWith('roomCeiling:')&&finishRooms.has(mesh.userData.layerObject.slice(12));
+   if(roomCeiling||mesh.userData.ceiling?.part==='flat'){
+    accepted.add(mesh);paint(mesh,'ceiling');
+   }
    if(mesh.userData.recessWall||mesh.userData.wallFinish||mesh.userData.wallTiling||mesh.userData.room?.startsWith('bay_')){
     accepted.add(mesh);paint(mesh,mesh.userData.recessWall&&!mesh.userData.walkOnly?'wall':'');
    }
   });
   const byId=new Map(furniture.map(f=>[f.id,f]));
   furnG.updateWorldMatrix(true,true);
+  configureNight(furnG);
   supports.clear();sofa=null;
   for(const model of furnG.children){
    const f=byId.get(model.userData.fid);
@@ -627,11 +718,13 @@ function create(T,scene,{wx,wz,inside}){
   decorated.clear();variants.clear();supports.clear();
   for(const mesh of [sky,patch])if(mesh){mesh.geometry.dispose();mesh.material.map?.dispose();mesh.material.alphaMap?.dispose();mesh.material.dispose();mesh.dispose?.();overlay.remove(mesh);}
   field?.dispose();uniforms.furnishDaylightMap.value=null;
+  nightField?.dispose();nightField=null;nightKey='';nightSources=[];nightRooms=[];
+  uniforms.furnishNightMap.value=null;uniforms.furnishNightActive.value=0;
   finishField?.dispose();finishTexture?.dispose();
   uniforms.furnishFinishField.value=uniforms.furnishFinishTexture.value=null;
   patch=sky=field=finishField=finishTexture=wallsGroup=bounds=null;roomById.clear();floors=[];sofa=null;uniforms.furnishSofaVisible.value=0;lastPose='';
  }
- return {begin,contacts,setLight,reset,overlay};
+ return {begin,contacts,setLight,setNight:enabled=>{nightEnabled=enabled;},reset,overlay};
 }
 root.FurnishInteriorDaylight={create};
 })(globalThis);
