@@ -519,6 +519,7 @@
 <script src="src/data/wood-veneers.js"></script>
 <script src="src/core/product-rules.js"></script>
 <script src="src/core/lighting-core.js"></script>
+<script src="src/render/interior-daylight.js"></script>
 <script src="src/core/progressive-view-core.js"></script>
 <script src="src/core/fridge-core.js"></script>
 <script src="src/core/electrical-box-core.js"></script>
@@ -770,6 +771,7 @@ let capturedImage=null,capturedState='';
 const GRAPHICS_IDLE_MS=20000;
 let graphicsIdleTimer=0,graphicsParked=false,graphicsExtension=null,parkedPose=null;
 let renderer, labelRenderer, scene, camera, orbit, walkCtl, hemi, sun, ground, glassMat, wallMat, capMat, frameMat;
+let interiorDaylight;
 let archFloor, archUp, furnG, clearanceG, labelG, wallLabelG, lampG, colliders = [], selKey = null, selHelper = null;
 let electricalG, electricalKey='';
 let elevationG,issueG,sceneIssue=null,issueTimer=0,selectionTransform=null,sceneMeasure=null;
@@ -806,6 +808,7 @@ function init(){
   host.appendChild(labelRenderer.domElement);
 
   scene = new THREE.Scene();
+  interiorDaylight=FurnishInteriorDaylight.create(THREE,scene,{wx,wz,inside:FurnishGeometry.inPoly});
   camera = new THREE.PerspectiveCamera(45, SW()/SH(), .05, 300);
   updateProjection();
   orbit = new OrbitControls(camera, renderer.domElement);
@@ -1391,6 +1394,7 @@ function buildArch(){
 const syncIdentity=FurnishPartIdentity;
 
   ceilingDisplay.clear();observation.clear();
+  interiorDaylight?.reset();
   clearGroup(archFloor); clearGroup(archUp); lampG.clear(); doors.length = 0; slidingDoors.length = 0; colliders = [];
   const top = opt.cut===2.8?H:Math.min(opt.cut,H);
   const appearanceWork=globalThis.FurnishWorkflowTools?.styleWork(state)||state;
@@ -1670,6 +1674,7 @@ function sync(force){
   if(geometryChanged){sceneMeasure?.clear();buildHeaterClearances(furnitureWork);clearSceneIssue();selKey=null;}
   if (force || a !== sigArch){ sigArch = a; buildArch(); invalidate(true); }
   if (force || f !== sigFurn){ sigFurn = f; buildFurn(furnitureWork); invalidate(true); }
+  if(geometryChanged)interiorDaylight?.begin(opt.cut===2.8?floorScenePlan:null,archFloor,archUp,furnG,furnitureWork.furniture);
   if (force || l !== sigLabels){ sigLabels = l; buildLabels(); }
   syncReplacementFootprint(furnitureWork);
   applyObservationLayers();
@@ -1713,6 +1718,7 @@ function applyLight(){
   ground.material.color.set(night ? 0x2a2e38 : DK() ? 0x26231e : 0xf2eee7);
   renderer.toneMappingExposure = lighting.exposure;
   envK = lighting.reflection; matCache.forEach(m => { if (m.envMap) m.envMapIntensity = m.userData.env*envK; });
+  interiorDaylight?.setLight(night?0:Math.min(1.25,lighting.sun*.41));
   const range=$('#sun'),mode=$('#sunMode'),readout=$('#sunAltitude');
   range.min=opt.solar?0:7;range.max=opt.solar?24:18;range.value=opt.hour;
   mode.dataset.zh=opt.solar?'太阳时':'日照';
@@ -1852,6 +1858,7 @@ function updateObservation(){
 function parkGraphics(){
   if(active||graphicsParked||!graphicsExtension||renderer.getContext().isContextLost())return;
   clearObservation();
+  interiorDaylight?.reset();
   clearSceneIssue();
   clearAnnotations(elevationG);
   clearAnnotations(electricalG);electricalKey='';
@@ -2332,7 +2339,7 @@ function bindUI(){
 }
 
 /* ======================= 主循环 ======================= */
-function renderScene(){FurnishDownlightModel.limitLights(scene,camera,renderer.capabilities);renderer.render(scene,camera);}
+function renderScene(){interiorDaylight?.contacts();FurnishDownlightModel.limitLights(scene,camera,renderer.capabilities);renderer.render(scene,camera);}
 const clock = new THREE.Clock();
 function startLoop(){ invalidate(); if (!raf){ clock.getDelta(); raf = requestAnimationFrame(loop); } }
 function loop(){

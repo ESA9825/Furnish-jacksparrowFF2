@@ -14,7 +14,9 @@ const {desktopExecutable}=require('../launch-desktop.cjs');
 const root=path.resolve(__dirname,'../..');
 const [project,baseline]=process.argv.slice(2);
 const files=['index.html','src/ui/canvas-interactions.js','src/render/yeswood-sofa-model.js','src/render/cherry-coffee-table-model.js'];
-const camera={mode:'orbit',position:{x:9530,y:5320,z:1470},target:{x:7600,y:3800,z:610},horizontalFov:51};
+const camera=process.env.FURNISH_RASTER_CAMERA?JSON.parse(process.env.FURNISH_RASTER_CAMERA):
+ {mode:'orbit',position:{x:9530,y:5320,z:1470},target:{x:7600,y:3800,z:610},horizontalFov:51};
+const secondCamera=process.env.FURNISH_RASTER_SECOND_CAMERA?JSON.parse(process.env.FURNISH_RASTER_SECOND_CAMERA):null;
 const hash=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const read=file=>fs.readFileSync(file);
 const variants=(process.env.FURNISH_RASTER_RUNS||'before,after,no-sheen,no-sheen,after,before').split(',');
@@ -72,7 +74,7 @@ async function run(){
  const source=read(project),after=collectSource(),before=Object.fromEntries(files.map(file=>
   [file,execFileSync('git',['show',baseline+':'+file],{cwd:root,maxBuffer:8*1024*1024})]));
  const job=artifacts.createRun({parent:path.join(root,'output/desktop-verification.noindex'),prefix:'living-furniture-'});
- const report={sourceHash:hash(source),baseline,camera,results:[]};
+ const report={sourceHash:hash(source),baseline,camera,...(secondCamera?{secondCamera}:{}),results:[]};
  let passed=false,app;
  console.log(job.dir);
  try{
@@ -80,6 +82,7 @@ async function run(){
   for(const file of runtimeFiles)job.copy(path.join(root,'scripts',file),path.join('workspace/scripts',file));
   const save=path.join(work,'projects/workspace.furnish.json');
   report.sources=Object.fromEntries(files.map(file=>[file,{before:hash(before[file]),after:hash(after[file])}]));
+  report.sources['src/render/interior-daylight.js']={after:hash(read(path.join(root,'src/render/interior-daylight.js')))};
   for(const [i,variant] of variants.entries()){
    const profile=job.discard('profile-'+i);
    fs.writeFileSync(save,source);
@@ -133,6 +136,7 @@ async function run(){
    const page=await app.firstWindow();
    const errors=[];
    page.on('pageerror',error=>errors.push(error.message));
+   page.on('console',message=>{if(message.type()==='error'&&/WebGLProgram|Shader Error/.test(message.text()))errors.push(message.text());});
    await app.context().addInitScript(()=>{
     localStorage.setItem('furnish-observation-v1','smooth');
     window.furnitureBench={samples:null,moves:null,takeSamples(){
@@ -155,11 +159,20 @@ async function run(){
      targets:['fmv5bzynf3','fmvglvcws1'].map(id=>({id,type:getF(id)?.type,locked:furnitureLocked(getF(id))}))};
    },camera);
    assert.deepEqual(scene.targets.map(f=>f.type),['sofa_yeswood_cherry','coffeetable_yeswood_cherry']);
+   assert.ok(scene.pose,'Production 3D did not open');
    await page.waitForFunction(()=>document.querySelector('#progressive-controls')?.dataset.state==='smooth');
    assert.equal(await page.locator('#progressive-frame').count(),0);
    await page.evaluate(()=>View3D.automationReady());
-   const png=await page.evaluate(()=>View3D.image());
-   fs.writeFileSync(path.join(job.dir,variant+'-'+i+'.png'),Buffer.from(png.split(',')[1],'base64'));
+   const capture=async suffix=>{
+    const png=await page.evaluate(()=>View3D.image());
+    fs.writeFileSync(path.join(job.dir,variant+'-'+i+suffix+'.png'),Buffer.from(png.split(',')[1],'base64'));
+   };
+   await capture('');
+   if(secondCamera){
+    await page.evaluate(pose=>View3D.automationCamera(pose),secondCamera);
+    await capture('-secondary');
+    await page.evaluate(pose=>View3D.automationCamera(pose),camera);
+   }
    const render=await page.evaluate(()=>furnitureBench.info());
    const cdp=await page.context().newCDPSession(page);
    const box=await page.locator('#view3d canvas').first().boundingBox();
