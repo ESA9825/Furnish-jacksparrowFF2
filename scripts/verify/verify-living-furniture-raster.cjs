@@ -22,6 +22,8 @@ const customTargets=!!process.env.FURNISH_RASTER_TARGETS;
 const daylightFile='src/render/interior-daylight.js';
 const secondCamera=process.env.FURNISH_RASTER_SECOND_CAMERA?JSON.parse(process.env.FURNISH_RASTER_SECOND_CAMERA):null;
 const rooms=process.env.FURNISH_RASTER_ROOMS?JSON.parse(fs.readFileSync(process.env.FURNISH_RASTER_ROOMS,'utf8')):null;
+const panCamera=rooms||process.env.FURNISH_RASTER_PAN==='1';
+const previewHours=(process.env.FURNISH_RASTER_HOURS||'').split(',').filter(Boolean).map(Number);
 const hash=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const read=file=>fs.readFileSync(file);
 const variants=(process.env.FURNISH_RASTER_RUNS||'before,after,no-sheen,no-sheen,after,before').split(',');
@@ -75,6 +77,7 @@ async function closeTestApp(app){
 
 async function run(){
  assert.ok(project&&baseline,'Usage: verify-living-furniture-raster.cjs <1601 workspace file> <before commit>');
+ assert.ok(previewHours.every(hour=>Number.isFinite(hour)&&hour>=0&&hour<=24),'Invalid preview hour');
  assert.ok(variants.every(v=>['before','after','no-sheen'].includes(v)),'Unknown benchmark variant');
  const source=read(project),after=collectSource(),before=Object.fromEntries(files.map(file=>
   [file,execFileSync('git',['show',baseline+':'+file],{cwd:root,maxBuffer:8*1024*1024})]));
@@ -193,6 +196,20 @@ async function run(){
      await capture('-secondary');
      await page.evaluate(pose=>View3D.automationCamera(pose),camera);
     }
+    if(previewHours.length){
+     const originalHour=scene.settings.hour;
+     const previewHour=hour=>page.evaluate(hour=>{
+      const slider=document.getElementById('sun');
+      slider.value=hour;slider.dispatchEvent(new Event('input',{bubbles:true}));
+      return +slider.value;
+     },hour);
+     for(const hour of previewHours){
+      assert.equal(await previewHour(hour),hour);
+      await capture('-hour-'+hour);
+     }
+     assert.equal(await previewHour(originalHour),originalHour);
+     await page.evaluate(()=>View3D.automationReady());
+    }
     const render=await page.evaluate(()=>furnitureBench.info());
     if(!movable){report.results.push({variant,name,scene,render});continue;}
     const box=await page.locator('#view3d canvas').first().boundingBox();
@@ -200,7 +217,7 @@ async function run(){
     const rotate=await measure(page,cdp,from,t=>({x:34*Math.sin(t*4*Math.PI)+12*t,y:8*Math.sin(t*2*Math.PI)}),
      async()=>Math.abs((await page.evaluate(()=>View3D.automationCamera())).position.y-camera.position.y)>1);
     let pan;
-    if(rooms){
+    if(panCamera){
      await page.evaluate(pose=>View3D.automationCamera(pose),camera);
      // Shift+left is OrbitControls' alternate pan gesture (CDP Shift=8).
      pan=await measure(page,cdp,from,t=>({x:96*t,y:14*Math.sin(t*Math.PI)}),async()=>{

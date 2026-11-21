@@ -980,8 +980,9 @@ const TEX = {
   terrazzo:{sx:.5, sy:.5, base:'#e6dfd3', rough:.4}, carpet:{sx:.3, sy:.3, base:'#c6bfd2', rough:1},
 };
 const floorMats = {};
-function floorMat(kind,color){
-  if (!color&&floorMats[kind]) return floorMats[kind];
+function floorMat(kind,color,{refined=false}={}){
+  const cacheKey=refined?kind+':satin':kind;
+  if (!color&&floorMats[cacheKey]) return floorMats[cacheKey];
   const s = {...(TEX[kind] || TEX.tile800),...(color?{base:color}:{})}, R = rng(kind.length*977 + 13), cv = document.createElement('canvas');
   const wood = kind === 'wood' || kind === 'walnut';
   cv.width = wood ? 1024 : 512; cv.height = wood ? 205 : 512;
@@ -1000,6 +1001,17 @@ function floorMat(kind,color){
       });
       g.fillStyle = rgbK(s.base, .62); g.fillRect(0, r*rowH, W, 2.5);
     }
+  } else if (refined){
+    // Satin, warm-neutral ceramic at the existing tile pitch. Work in
+    // normalized tile coordinates and leave the grout pixels to their owner.
+    const underlying=g.getImageData(0,0,W,Hh);
+    for(let y=0;y<Hh;y++)for(let x=0;x<W;x++){
+      const u=2*Math.PI*x/W,v=2*Math.PI*y/Hh;
+      const m=.978+.026*Math.sin(u+2*v)+.019*Math.cos(2*u-v)+.013*Math.sin(3*u+3*v)+.021*(R()-.5);
+      const at=4*(x+y*W);
+      for(let c=0;c<3;c++)underlying.data[at+c]*=m;
+    }
+    g.putImageData(underlying,0,0);
   } else if (kind === 'marble'){
     g.strokeStyle = 'rgba(160,150,135,.35)';
     for (let k = 0; k < 6; k++){ g.lineWidth = 1 + R()*3; g.beginPath(); g.moveTo(R()*W, 0); g.bezierCurveTo(R()*W, R()*Hh, R()*W, R()*Hh, R()*W, Hh); g.stroke(); }
@@ -1013,7 +1025,7 @@ function floorMat(kind,color){
   const t = new THREE.CanvasTexture(cv);
   t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1/s.sx, 1/s.sy);
   t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy();
-  const m=new THREE.MeshStandardMaterial({map:t, roughness:s.rough});if(s.grout)m.userData.tileFinish={legacy:true,color:s.base,groutPixels:3};if(color){m.userData.styleSurfaceOwned=true;return m;}return floorMats[kind]=m;
+  const m=new THREE.MeshStandardMaterial({map:t, roughness:s.rough});if(s.grout)m.userData.tileFinish={legacy:true,color:s.base,groutPixels:3};if(color){m.userData.styleSurfaceOwned=true;return m;}return floorMats[cacheKey]=m;
 }
 
 /* ======================= 几何小工具（y = 底面高度） ======================= */
@@ -1067,7 +1079,13 @@ const syncIdentity=FurnishPartIdentity;
   if(typeof FurnishCatTreeModel!=='undefined'&&FurnishCatTreeModel.supported(f)){const model=FurnishCatTreeModel.build(THREE,f,RoundedBoxGeometry);model.position.set(wx(f.cx),0,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.scale.x=f.flip?-1:1;model.userData.fid=f.id;return model;}
   if(typeof FurnishAirconMideaModel!=='undefined'&&FurnishAirconMideaModel.supported(f)){const model=FurnishAirconMideaModel.build(THREE,f);model.position.set(wx(f.cx),0,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.scale.x=f.flip?-1:1;model.userData.fid=f.id;return model;}
   if(typeof FurnishShoeBenchModel!=='undefined'&&FurnishShoeBenchModel.supported(f)){const model=FurnishShoeBenchModel.build(THREE,f,RoundedBoxGeometry);model.position.set(wx(f.cx),0,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.scale.x=f.flip?-1:1;model.userData.fid=f.id;return model;}
-  if(typeof FurnishCherryCoffeeTableModel!=='undefined'&&FurnishCherryCoffeeTableModel.supported(f)){const model=FurnishCherryCoffeeTableModel.build(THREE,f,{stoneMaterial:mat('#f5f5f1',{roughness:.28})});model.position.set(wx(f.cx),0,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.scale.x=f.flip?-1:1;model.userData.fid=f.id;return model;}
+  if(typeof FurnishCherryCoffeeTableModel!=='undefined'&&FurnishCherryCoffeeTableModel.supported(f)){
+   const stoneMaterial=mat('#f5f5f1',{roughness:.28});
+   // A shared glTF green/blue texture keeps the non-metallic factor at zero.
+   stoneMaterial.metalnessMap=stoneMaterial.roughnessMap??=FurnishCherryCoffeeTableModel.stoneRoughnessMap(THREE);
+   const model=FurnishCherryCoffeeTableModel.build(THREE,f,{stoneMaterial});
+   model.position.set(wx(f.cx),0,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.scale.x=f.flip?-1:1;model.userData.fid=f.id;return model;
+  }
   if(typeof FurnishTeaTableModel!=='undefined'&&FurnishTeaTableModel.supported(f)){const model=FurnishTeaTableModel.build(THREE,f);model.position.set(wx(f.cx),0,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.scale.x=f.flip?-1:1;model.userData.fid=f.id;return model;}
   if(typeof FurnishTeaBarModel!=='undefined'&&FurnishTeaBarModel.supported(f)){const model=FurnishTeaBarModel.build(THREE,f);model.position.set(wx(f.cx),0,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.scale.x=f.flip?-1:1;model.userData.fid=f.id;return model;}
   if(typeof FurnishPetFeederModel!=='undefined'&&FurnishPetFeederModel.supported(f)){const model=FurnishPetFeederModel.build(THREE,f,RoundedBoxGeometry);model.position.set(wx(f.cx),0,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.scale.x=f.flip?-1:1;model.userData.fid=f.id;return model;}
@@ -1400,10 +1418,12 @@ const syncIdentity=FurnishPartIdentity;
   const appearanceWork=globalThis.FurnishWorkflowTools?.styleWork(state)||state;
   const finishPlan=FurnishProject.effectivePlan(PLAN,state);floorScenePlan=finishPlan;
   ground.position.y=Math.min(-.015,...Object.values(finishPlan.floorFinish?.areas||{}).flatMap(a=>[a.rawZ,a.finishedZ].filter(Number.isFinite).map(v=>v/1000-.015)));
+  const satinFloor=['area_fmv3qb1oi4','area_fmv3qajd93','area_fmv3p2ig914'];
+  const floorAppearance=roomId=>({refined:finishPlan.id==='custom_mv37igji'&&satinFloor.includes(roomId)&&state.rooms[roomId]?.mat==='tile800'});
   syncIdentity.each("index.html:generator-40",FurnishWallFinish.spatial(finishPlan).rooms.filter(r=>r.poly.length),r => {
     const floor=finishPlan.floorFinish?.areas[r.id];
     const surfaceColor=FurnishStyles.surfaceColor(appearanceWork,r.counted===false?'bay':'floor',r.id);
-    const groutColor=FurnishTileGrout.color(state,r.id,'floor');let m = floor?.layout?FurnishFloorFinishModel.material(THREE,floor.layout,{wx,wz,color:surfaceColor||MATS[state.rooms[r.id].mat]?.sw,groutColor}):floorMat(state.rooms[r.id].mat,surfaceColor);if(!floor?.layout&&m.userData.tileFinish?.legacy&&groutColor){const original=m;m=FurnishFloorFinishModel.legacyMaterial(THREE,m,{groutColor});if(surfaceColor){original.map.dispose();original.dispose();m.userData.styleSurfaceOwned=true;}}const bay = r.counted === false, roomH=FurnishProject.roomCeilingHeight(state,r)/1000;
+    const groutColor=FurnishTileGrout.color(state,r.id,'floor');let m = floor?.layout?FurnishFloorFinishModel.material(THREE,floor.layout,{wx,wz,color:surfaceColor||MATS[state.rooms[r.id].mat]?.sw,groutColor}):floorMat(state.rooms[r.id].mat,surfaceColor,floorAppearance(r.id));if(!floor?.layout&&m.userData.tileFinish?.legacy&&groutColor){const original=m;m=FurnishFloorFinishModel.legacyMaterial(THREE,m,{groutColor});if(surfaceColor){original.map.dispose();original.dispose();m.userData.styleSurfaceOwned=true;}}const bay = r.counted === false, roomH=FurnishProject.roomCeilingHeight(state,r)/1000;
     const geo = bay ? new THREE.ExtrudeGeometry((r.polys||[r.poly]).map(p=>shapeOf(p)), {depth:r.height??.45, bevelEnabled:false}) : null;
     if(geo)geo.rotateX(-Math.PI/2);
     const fl=bay?syncIdentity.produce("index:site-223",()=>new THREE.Mesh(geo,[m,mat(surfaceColor||'#e9e4da')])):FurnishFloorFinishModel.surface(THREE,r,floor||{},{wx,wz,material:m});
@@ -1418,7 +1438,7 @@ const syncIdentity=FurnishPartIdentity;
   // its own grid and finished height. Legacy projects keep schematic sills.
   for(const a of finishPlan.floorFinish?.doorways||[]){
     const surfaceColor=FurnishStyles.surfaceColor(appearanceWork,'floor',a.roomId);
-    const m=a.layout?FurnishFloorFinishModel.material(THREE,a.layout,{color:surfaceColor||MATS[state.rooms[a.roomId].mat]?.sw,groutColor:FurnishTileGrout.color(state,a.roomId,'floor')}):floorMat(state.rooms[a.roomId].mat,surfaceColor);
+    const m=a.layout?FurnishFloorFinishModel.material(THREE,a.layout,{color:surfaceColor||MATS[state.rooms[a.roomId].mat]?.sw,groutColor:FurnishTileGrout.color(state,a.roomId,'floor')}):floorMat(state.rooms[a.roomId].mat,surfaceColor,floorAppearance(a.roomId));
     const mesh=FurnishFloorFinishModel.surface(THREE,a.room,a,{wx,wz,material:m});mesh.userData.doorway=a.id;mesh.userData.layerObject="floor:"+a.roomId;archFloor.add(mesh);
     const layers=FurnishFloorFinishModel.layers(THREE,a.room,a,{wx,wz});if(layers)archFloor.add(layers);
   }

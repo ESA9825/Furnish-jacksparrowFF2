@@ -28,12 +28,12 @@ function textures(THREE){
  const ribPhase=(x,y)=>2*Math.PI*(6*(x+.5)/64+.055*Math.sin(2*Math.PI*y/64));
  const ribs=texture(64,(x,y)=>{
   const phase=ribPhase(x,y);
-  const slope=(.62+.16*Math.cos(phase))*Math.sin(phase);
+  const slope=(.78+.18*Math.cos(phase))*Math.sin(phase);
   const length=Math.hypot(1,slope);
   return [Math.round(127.5*(1+slope/length)),128,Math.round(127.5*(1+1/length))];
  });
  // The pile also changes diffuse reflectance, so the ribs read in shade.
- const pile=texture(64,(x,y)=>gray(Math.round(239+13*Math.cos(ribPhase(x,y))+2*Math.cos(2*Math.PI*y/64))));
+ const pile=texture(64,(x,y)=>gray(Math.round(228+22*Math.cos(ribPhase(x,y))+3*Math.cos(2*Math.PI*y/64)+2*Math.sin(2*Math.PI*(x+3*y)/64))));
  pile.colorSpace=THREE.SRGBColorSpace;
  const maps={weave,grain,ribs,pile};
  modelTextures.set(THREE,maps);
@@ -73,8 +73,11 @@ function build(THREE,f,RoundedBoxGeometry,materials={}){
  wood.map=maps.grain;
  let cloth;
  if(corduroy){
-  cloth=new THREE.MeshPhysicalMaterial({color,map:maps.pile,roughness:.91,normalMap:maps.ribs,normalScale:new THREE.Vector2(.48,.48),
-   sheen:.44,sheenColor:'#819174',sheenRoughness:.76});
+  // Calibrate the saved green swatch against the fabric photo in linear
+  // light. The stored selection still identifies the same upholstery.
+  const pileColor=new THREE.Color(color).lerp(new THREE.Color('#a0a792'),.24);
+  cloth=new THREE.MeshPhysicalMaterial({color:pileColor,map:maps.pile,roughness:.91,normalMap:maps.ribs,normalScale:new THREE.Vector2(.6,.6),
+   sheen:.52,sheenColor:'#919982',sheenRoughness:.72});
  }else{
   cloth=materials.fabric?materials.fabric(color).clone():new THREE.MeshStandardMaterial({color,roughness:.94});
   cloth.bumpMap=maps.weave;cloth.bumpScale=.0006;

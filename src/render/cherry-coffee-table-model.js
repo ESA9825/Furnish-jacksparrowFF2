@@ -6,20 +6,42 @@
 const syncIdentity=root.FurnishPartIdentity||(typeof require==='function'?require('../core/part-identity.js'):null);
 
 const supported=f=>f.type==='coffeetable_yeswood_cherry'&&!f.obj;
+const textureCache=new WeakMap();
+function finishMaps(T){
+ if(textureCache.has(T))return textureCache.get(T);
+ function make(width,height,srgb,sample){
+  const pixels=new Uint8Array(width*height*4);
+  for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+   const v=Math.round(sample(x,y)),i=(y*width+x)*4;
+   pixels[i+1]=v;pixels[i]=pixels[i+2]=srgb?v:255;pixels[i+3]=255;
+  }
+  const map=new T.DataTexture(pixels,width,height);
+  if(srgb)map.colorSpace=T.SRGBColorSpace;
+  map.wrapS=map.wrapT=T.RepeatWrapping;
+  map.magFilter=T.LinearFilter;map.minFilter=T.LinearMipmapLinearFilter;
+  map.generateMipmaps=true;map.needsUpdate=true;
+  return map;
+ }
+ const wood=make(128,256,true,(x,y)=>{
+  const u=2*Math.PI*x/128,v=2*Math.PI*y/256;
+  const ring=10*u+1.6*Math.sin(v)+.8*Math.sin(3*v+u)+.55*Math.sin(3*u-2*v);
+  const latewood=Math.pow(.5+.5*Math.cos(ring),6);
+  const pores=Math.pow(.5+.5*Math.sin(47*u+4*Math.sin(3*v)),9);
+  return 246-23*latewood-11*pores+6*Math.sin(3*u+v);
+ });
+ // Very fine, low-contrast speckle. The product reference shows a plain white
+ // slab; this roughness variation leaves it free of decorative stone veins.
+ const stone=make(128,128,false,(x,y)=>{
+  const u=2*Math.PI*x/128,v=2*Math.PI*y/128;
+  return 226+9*Math.sin(3*u+4*v)+8*Math.cos(7*u-5*v)+5*Math.sin(23*u-19*v);
+ });
+ const maps={wood,stone};textureCache.set(T,maps);return maps;
+}
 function build(T,f,{stoneMaterial}={}){
  const result=new T.Group(),body=new T.Group();result.add(body);
- const wood=new T.MeshStandardMaterial({color:f.color||'#bd7846',roughness:.32});
- // Deterministic, local grain texture; shared within this model, no external assets.
- const pixels=new Uint8Array(128*256*4);
- for(let y=0;y<256;y++)for(let x=0;x<128;x++){
-  const wave=x+3*Math.sin(y*.029)+1.5*Math.sin(y*.073+x*.04);
-  const grain=Math.sin(wave*.7+Math.sin(wave*.13)*2),fine=Math.sin(wave*2.9+y*.08);
-  const v=Math.round(246+4*grain+2*fine),i=(y*128+x)*4;
-  pixels[i]=v;pixels[i+1]=v;pixels[i+2]=v;pixels[i+3]=255;
- }
- const texture=new T.DataTexture(pixels,128,256);texture.needsUpdate=true;texture.colorSpace=T.SRGBColorSpace;
- texture.wrapS=texture.wrapT=T.RepeatWrapping;wood.map=texture;
- const stone=stoneMaterial||new T.MeshStandardMaterial({color:'#f5f5f1',roughness:.28});
+ const maps=finishMaps(T);
+ const wood=new T.MeshStandardMaterial({color:f.color||'#bd7846',roughness:.43,map:maps.wood});
+ const stone=stoneMaterial||new T.MeshStandardMaterial({color:'#f5f5f1',roughness:.28,roughnessMap:maps.stone,metalnessMap:maps.stone});
  const dark=new T.MeshStandardMaterial({color:'#24221f',roughness:.55});
  const recess=wood.clone();recess.color.multiplyScalar(.72);
  function add(geometry,material,name,x,y,z){const o=syncIdentity.produce("cherry-coffee-table-model:site-1",()=>new T.Mesh(geometry,material));o.position.set(x,y,z);o.castShadow=o.receiveShadow=true;o.userData.cherryCoffeePart=name;body.add(o);return o;}
@@ -134,5 +156,5 @@ function build(T,f,{stoneMaterial}={}){
  body.scale.set((f.w??1200)/1200/1000,(f.h??450)/450/1000,(f.d??650)/650/1000);
  return result;
 }
-const api={supported,build};if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishCherryCoffeeTableModel=api;
+const api={supported,build,stoneRoughnessMap:T=>finishMaps(T).stone};if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishCherryCoffeeTableModel=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
