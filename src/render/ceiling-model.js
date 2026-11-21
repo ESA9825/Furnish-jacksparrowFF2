@@ -3,6 +3,7 @@
 'use strict';
 // Stable authoring-site labels: keep existing labels when moving code; allocate new labels for new sites.
 const syncIdentity=root.FurnishPartIdentity||(typeof require==='function'?require('../core/part-identity.js'):null);
+const washMasks=new WeakMap();
 
 function build(THREE,data,{wx=v=>v/1000,wz=v=>v/1000,top=Infinity,lamps=true,bodies=[],wash=true}={}){
  const C=root.FurnishCeiling||require('../core/ceiling-core.js'),group=new THREE.Group();group.name='ceilings';
@@ -136,7 +137,7 @@ function applyWash(T,group){
  if(!T.Raycaster||!T.DataTexture)return;
  group.updateWorldMatrix(true,true);
  const segments=[],blockers=[];
- group.traverse(o=>{if(o.userData.ceilingWash)segments.push(...o.userData.ceilingWash.map(s=>({a:new T.Vector3(...s[0]),b:new T.Vector3(...s[1]),sample:s[2]||0})));if(o.isMesh&&o.userData.ceiling?.part!=='light'&&o.userData.ceiling?.part!=='diffuser'&&!o.material?.transparent)blockers.push(o);});
+ group.traverse(o=>{if(o.userData.ceilingWash)segments.push(...o.userData.ceilingWash.map(s=>({a:new T.Vector3(...s[0]),b:new T.Vector3(...s[1]),sample:s[2]||0,id:o.userData.ceiling?.id})));if(o.isMesh&&o.userData.ceiling?.part!=='light'&&o.userData.ceiling?.part!=='diffuser'&&!o.material?.transparent)blockers.push(o);});
  if(!segments.length)return;
  const ray=new T.Raycaster(),up=new T.Vector3(0,1,0),smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
  group.traverse(o=>{
@@ -160,9 +161,11 @@ function applyWash(T,group){
   if(energy<.00001)return;
   const texture=new T.DataTexture(pixels,width,depth,T.RGBAFormat);texture.minFilter=texture.magFilter=T.LinearFilter;texture.generateMipmaps=false;texture.needsUpdate=true;
   const material=o.material.clone();o.material=material;o.userData.ceilingOwnMaterial=true;o.userData.ceilingWashApplied=true;material.addEventListener('dispose',()=>texture.dispose());
+  const maskBounds=new T.Vector4(bounds.min.x,bounds.min.z,size.x,size.z);
+  washMasks.set(o,{texture,bounds:maskBounds,ceilingIds:new Set(sources.map(source=>source.id))});
   material.customProgramCacheKey=()=> 'ceiling-visible-wash-v2';
   material.onBeforeCompile=shader=>{
-   shader.uniforms.furnishWashMask={value:texture};shader.uniforms.furnishWashBounds={value:new T.Vector4(bounds.min.x,bounds.min.z,size.x,size.z)};shader.uniforms.furnishWashColor={value:new T.Color('#ffde9e')};
+   shader.uniforms.furnishWashMask={value:texture};shader.uniforms.furnishWashBounds={value:maskBounds};shader.uniforms.furnishWashColor={value:new T.Color('#ffde9e')};
    const varying='varying vec3 vFurnishWashPosition;varying vec3 vFurnishWashNormal;\n';
    shader.vertexShader=varying+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvFurnishWashPosition=(modelMatrix*vec4(transformed,1.0)).xyz;vFurnishWashNormal=normalize(mat3(modelMatrix)*normal);');
    shader.fragmentShader=varying+'uniform sampler2D furnishWashMask;uniform vec4 furnishWashBounds;uniform vec3 furnishWashColor;\n'+shader.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
@@ -244,5 +247,5 @@ function createDisplay(THREE){
  }
  return {restore,clear,update,progressiveKey};
 }
-const api={build,preview,applyWash,createDisplay};if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishCeilingModel=api;
+const api={build,preview,applyWash,createDisplay,washMask:mesh=>washMasks.get(mesh)};if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishCeilingModel=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

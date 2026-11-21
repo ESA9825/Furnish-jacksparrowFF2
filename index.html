@@ -187,6 +187,7 @@
           <label class="range"><span id="sunMode" data-en="Sun">日照</span> <input type="range" id="sun" min="7" max="18" step=".25" value="10"><span id="sunT">10:00</span></label>
           <output id="sunAltitude" for="sun" hidden></output>
           <button class="btn chip" id="viewport-gtao" hidden aria-pressed="false" data-en="Ambient occlusion (GTAO)">环境遮蔽 GTAO</button>
+          <button class="btn chip" id="viewport-bloom" hidden aria-pressed="false" data-en="Lamp glow (Bloom)">灯具柔光 Bloom</button>
           <button class="btn" id="sunSettings" data-en="Sun settings">日照设置</button>
         </div>
         <div class="showsec"><b data-en="Appearance">外观</b>
@@ -522,6 +523,7 @@
 <script src="src/core/lighting-core.js"></script>
 <script src="src/render/interior-daylight.js"></script>
 <script src="src/render/viewport-gtao.js"></script>
+<script src="src/render/viewport-bloom.js"></script>
 <script src="src/core/progressive-view-core.js"></script>
 <script src="src/core/fridge-core.js"></script>
 <script src="src/core/electrical-box-core.js"></script>
@@ -774,18 +776,32 @@ const GRAPHICS_IDLE_MS=20000;
 let graphicsIdleTimer=0,graphicsParked=false,graphicsExtension=null,parkedPose=null;
 let renderer, labelRenderer, scene, camera, orbit, walkCtl, hemi, sun, ground, glassMat, wallMat, capMat, frameMat;
 let interiorDaylight,viewportAO;
-const gtaoButton=$('#viewport-gtao');
-let gtaoEnabled=false;
+const gtaoButton=$('#viewport-gtao'),bloomButton=$('#viewport-bloom');
+let gtaoEnabled=false,bloomEnabled=false,bloomNight=false,bloomRevision=0;
+let viewportPointer=null;
 try{gtaoEnabled=localStorage.getItem('furnish-viewport-gtao-v1')==='1';}catch{}
-const gtaoScope=()=>PLAN.id==='custom_mv37igji';
-function updateGtaoControl(){
-  const smooth=globalThis.FurnishProgressiveView?.mode()==='smooth';
-  const available=!!renderer?.capabilities.isWebGL2&&(!viewportAO||viewportAO.available());
-  gtaoButton.hidden=!gtaoScope()||!smooth;
-  gtaoButton.disabled=!available;
-  gtaoButton.classList.toggle('on',gtaoEnabled&&available);
-  gtaoButton.setAttribute('aria-pressed',String(gtaoEnabled&&available));
-  gtaoButton.dataset.state=available?(gtaoEnabled?'on':'off'):'unavailable';
+try{bloomEnabled=localStorage.getItem('furnish-viewport-bloom-v1')==='1';}catch{}
+const viewportEffectScope=()=>PLAN.id==='custom_mv37igji'&&globalThis.FurnishProgressiveView?.mode()==='smooth';
+const nightInteraction=()=>bloomNight&&viewportEffectScope()&&!anim&&opt.mode==='orbit'&&!!viewportPointer?.moving;
+function syncViewportPixelRatio(){
+  const ratio=Math.min(devicePixelRatio,nightInteraction()?1.25:2);
+  if(renderer.getPixelRatio()===ratio)return;
+  renderer.setPixelRatio(ratio);
+  invalidate();
+}
+function updateEffectControls(){
+  const hidden=!viewportEffectScope();
+  const webgl=!!renderer?.capabilities.isWebGL2&&THREE.REVISION==='160';
+  for(const [button,visible,enabled,available] of [
+    [gtaoButton,!hidden,gtaoEnabled,webgl&&(!viewportAO||viewportAO.available())],
+    [bloomButton,!hidden&&bloomNight,bloomEnabled,webgl&&(!viewportAO||viewportAO.bloomAvailable())]
+  ]){
+    button.hidden=!visible;
+    button.disabled=!available;
+    button.classList.toggle('on',enabled&&available);
+    button.setAttribute('aria-pressed',String(enabled&&available));
+    button.dataset.state=available?(enabled?'on':'off'):'unavailable';
+  }
 }
 let archFloor, archUp, furnG, clearanceG, labelG, wallLabelG, lampG, colliders = [], selKey = null, selHelper = null;
 let electricalG, electricalKey='';
@@ -812,11 +828,24 @@ function init(){
   gtaoButton.onclick=()=>{
     gtaoEnabled=!gtaoEnabled;
     try{localStorage.setItem('furnish-viewport-gtao-v1',gtaoEnabled?'1':'0');}catch{}
-    if(!gtaoEnabled)viewportAO?.release();
-    updateGtaoControl();
+    if(!gtaoEnabled){
+      if(bloomEnabled&&bloomNight)viewportAO?.releaseAO();
+      else viewportAO?.release();
+    }
+    updateEffectControls();
     invalidate();
   };
-  updateGtaoControl();
+  bloomButton.onclick=()=>{
+    bloomEnabled=!bloomEnabled;
+    try{localStorage.setItem('furnish-viewport-bloom-v1',bloomEnabled?'1':'0');}catch{}
+    if(!bloomEnabled){
+      if(gtaoEnabled)viewportAO?.releaseBloom();
+      else viewportAO?.release();
+    }
+    updateEffectControls();
+    invalidate();
+  };
+  updateEffectControls();
   renderer.setSize(SW(), SH());
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;
@@ -871,6 +900,24 @@ function init(){
   electricalG=new THREE.Group();electricalG.name='Electrical planning';scene.add(electricalG);
 
   const cv = renderer.domElement;
+  cv.addEventListener('pointerdown',e=>{
+    if(e.isPrimary&&e.button>=0&&e.button<=2)viewportPointer={id:e.pointerId,x:e.clientX,y:e.clientY,moving:false};
+  },true);
+  window.addEventListener('pointermove',e=>{
+    if(viewportPointer?.id===e.pointerId&&!viewportPointer.moving&&Math.hypot(e.clientX-viewportPointer.x,e.clientY-viewportPointer.y)>3){
+      viewportPointer.moving=true;
+      invalidate();
+    }
+  },true);
+  const stopViewportDrag=e=>{
+    if(!viewportPointer||(e.pointerId!==undefined&&viewportPointer.id!==e.pointerId))return;
+    viewportPointer=null;
+    invalidate();
+  };
+  window.addEventListener('pointerup',stopViewportDrag,true);
+  window.addEventListener('pointercancel',stopViewportDrag,true);
+  window.addEventListener('blur',stopViewportDrag);
+  cv.addEventListener('lostpointercapture',stopViewportDrag);
   sceneMeasure=FurnishSceneMeasure.create({THREE,stage,canvas:cv,camera,tr,invalidate,
     navigationHeld:()=>spaceDown,
     available:()=>active&&!anim&&opt.mode==='orbit'&&!globalThis.FurnishTilePresetUI?.inspecting(),
@@ -915,12 +962,15 @@ function init(){
       const model = furnG.children.find(o => o.userData.fid === id);
       if(model){model.position.x=wx(x.cx);model.position.z=wz(x.cy);} });
     if(clearanceG.visible)buildHeaterClearances();
-    invalidate(true);
+    // In the night preview, moving contacts follow the model but the six
+    // local shadow maps can keep their last settled poses until drop.
+    invalidate(!nightInteraction());
   });
   const endF = e => {
     if (!fdrag || e.pointerId !== fdrag.pid) return;
     const d = fdrag; fdrag = null; orbit.enabled = true; cv.style.cursor = '';
     if (d.moved){
+      invalidate(true);
       if (d.ids.length === 1){ const f = getF(d.id); if (f) pushOut(f); }
       try{commit(d.before,true,{sceneFirst:true});}catch(error){toast(error.message);} renderAll({sceneFirst:true});
     }
@@ -1689,7 +1739,7 @@ function syncElectrical(){
 
 function sync(force){
   if (!inited || (!active && !force)) return;
-  updateGtaoControl();
+  updateEffectControls();
   if(gtaoButton.hidden)viewportAO?.release();
   H=FurnishProject.ceilingHeight(state)/1000;
   const settings=FurnishDesign.sceneSettings(state.scene3d);
@@ -1721,7 +1771,10 @@ function sync(force){
   if(geometryChanged){sceneMeasure?.clear();buildHeaterClearances(furnitureWork);clearSceneIssue();selKey=null;}
   if (force || a !== sigArch){ sigArch = a; buildArch(); invalidate(true); }
   if (force || f !== sigFurn){ sigFurn = f; buildFurn(furnitureWork); invalidate(true); }
-  if(geometryChanged)interiorDaylight?.begin(opt.cut===2.8?floorScenePlan:null,archFloor,archUp,furnG,furnitureWork.furniture);
+  if(geometryChanged){
+    bloomRevision++;
+    interiorDaylight?.begin(opt.cut===2.8?floorScenePlan:null,archFloor,archUp,furnG,furnitureWork.furniture);
+  }
   if (force || l !== sigLabels){ sigLabels = l; buildLabels(); }
   syncReplacementFootprint(furnitureWork);
   applyObservationLayers();
@@ -1754,12 +1807,21 @@ function sceneSun(){
 }
 function applyLight(){
   const {position,altitude,night,environment:lighting,warm}=sceneSun();
+  if(bloomNight!==night){
+    bloomNight=night;
+    if(!night){
+      if(gtaoEnabled)viewportAO?.releaseBloom();
+      else viewportAO?.release();
+    }
+    updateEffectControls();
+  }
   sun.userData.radiometricLight=true;
   FurnishLighting.cabinetContours(furnG,lighting);
   FurnishDownlightModel.setLights(furnG,opt.lamps,{night,nightLights:opt.nightLights});
   sun.position.set(...position); sun.target.position.set(0, 0, 0);
   sun.color.setHSL(.09, .5 + warm*.4, .92 - warm*.12);
   sun.intensity = lighting.sun;
+  sun.visible = sun.intensity>0;
   hemi.intensity = lighting.ambient;
   scene.background = new THREE.Color(night ? 0x1c2130 : DK() ? 0x121110 : 0xf5f2ea);
   ground.material.color.set(night ? 0x2a2e38 : DK() ? 0x26231e : 0xf2eee7);
@@ -1983,6 +2045,8 @@ async function exit(){
   cancelElevationGesture();
   selectionTransform?.update(false);
   closeCameraPanel();
+  viewportPointer=null;
+  syncViewportPixelRatio();
   capturedImage=image();capturedState=JSON.stringify(state);
   parkedPose=opt.mode==='orbit'?curPose():null;
   clearObservation();
@@ -2391,10 +2455,13 @@ function bindUI(){
 function renderScene(){
   interiorDaylight?.contacts();
   FurnishDownlightModel.limitLights(scene,camera,renderer.capabilities);
-  if(gtaoEnabled&&gtaoScope()&&!anim&&globalThis.FurnishProgressiveView?.mode()==='smooth'){
+  const bloom=bloomEnabled&&bloomNight&&(!viewportAO||viewportAO.bloomAvailable());
+  if((gtaoEnabled||bloom)&&!anim&&viewportEffectScope()){
     viewportAO??=FurnishViewportGTAO.create(THREE,renderer);
-    if(viewportAO.draw(scene,camera))return;
-    updateGtaoControl();
+    const drawn=viewportAO.draw(scene,camera,{aoEnabled:gtaoEnabled,bloomRevision:bloom?bloomRevision:undefined});
+    if(!drawn||(bloom&&!viewportAO.bloomAvailable()))updateEffectControls();
+    if(drawn)return;
+    if(!gtaoEnabled)viewportAO.release();
   }
   renderer.render(scene,camera);
 }
@@ -2402,6 +2469,7 @@ const clock = new THREE.Clock();
 function startLoop(){ invalidate(); if (!raf){ clock.getDelta(); raf = requestAnimationFrame(loop); } }
 function loop(){
   raf = requestAnimationFrame(loop);
+  syncViewportPixelRatio();
   if(projectionPixelRatio!==devicePixelRatio){refreshCameraProjection(!!FurnishNavigation.cameraCalibration()?.orbitEnabled);invalidate();}
   const dt = Math.min(clock.getDelta(), .05), now = performance.now();
   if (anim){ const t = clamp01((now - anim.t0)/anim.dur); anim.fn(t); dirty = true; if (t >= 1){ const r = anim.res; anim = null; r(); } }

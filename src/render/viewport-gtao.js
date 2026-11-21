@@ -1,4 +1,4 @@
-/* Half-resolution, depth-reconstructed horizon AO for the r160 editing canvas. */
+/* Shared r160 viewport color/depth, with optional horizon AO and lamp Bloom. */
 (function(root){
 'use strict';
 
@@ -129,6 +129,8 @@ const resolve=`
  uniform sampler2D occlusion;
  uniform vec2 aoSize;
  uniform float strength;
+ uniform sampler2D bloom;
+ uniform bool hasBloom;
  ${positionSource}
  vec2 tap(vec2 coord,float weight,float depth){
   vec3 sampleAO=texture2D(occlusion,(coord+0.5)/aoSize).rgb;
@@ -138,8 +140,8 @@ const resolve=`
  }
  void main(){
   vec4 color=texture2D(beauty,screenUv);
-  float d=depthAt(screenUv);
-  if(d<0.999999&&strength>0.0){
+  float d=strength>0.0?depthAt(screenUv):1.0;
+  if(d<0.999999){
    float z=eyeDepth(d);
    vec2 p=screenUv*aoSize-0.5;
    vec2 base=floor(p),f=fract(p);
@@ -150,12 +152,17 @@ const resolve=`
    float dark=min(0.145,strength*sum.x/max(sum.y,0.09));
    color.rgb*=1.0-dark;
   }
+  if(hasBloom){
+   vec3 glow=texture2D(bloom,screenUv).rgb;
+   color.rgb+=min(vec3(0.095),glow*0.24)*(1.0-color.rgb*0.64);
+  }
   gl_FragColor=color;
  }
 `;
 
 function create(T,renderer){
  const screen=new T.Vector2();
+ const encodedBackground=new T.Color();
  const view=new T.Camera();
  const scene=new T.Scene();
  const geometry=new T.BufferGeometry();
@@ -167,18 +174,43 @@ function create(T,renderer){
  const ao=make(horizon,{pixel:{value:new T.Vector2()},focal:{value:new T.Vector2()}});
  const aoSize=new T.Vector2();
  const filter=make(denoise,{occlusion:{value:null},aoSize:{value:aoSize}});
- const composite=make(resolve,{beauty:{value:null},occlusion:{value:null},aoSize:{value:aoSize},strength:{value:.43}});
+ const composite=make(resolve,{beauty:{value:null},occlusion:{value:null},aoSize:{value:aoSize},
+  strength:{value:.43},bloom:{value:null},hasBloom:{value:false}});
  const triangle=new T.Mesh(geometry,ao);
  triangle.frustumCulled=false;scene.add(triangle);
  const gl=renderer.getContext();
- let beauty,buffer,filtered,failed=false;
+ let beauty,buffer,filtered,bloom,failed=false,bloomFailed=false;
  // r160's offscreen output normally omits material tone mapping. This
  // internal path gives the beauty target the same color output as the canvas.
  // RGBA8 stores the resulting encoded bytes without an additional sRGB step.
  const supported=renderer.capabilities.isWebGL2&&T.REVISION==='160';
+ function releaseAO(){
+  buffer?.dispose();filtered?.dispose();buffer=filtered=null;
+  filter.uniforms.occlusion.value=composite.uniforms.occlusion.value=null;
+ }
+ function releaseBloom(){
+  bloom?.dispose();bloom=null;
+  composite.uniforms.bloom.value=null;
+ }
  function release(){
-  beauty?.dispose();buffer?.dispose();filtered?.dispose();beauty=buffer=filtered=null;
-  uniforms.sceneDepth.value=filter.uniforms.occlusion.value=composite.uniforms.beauty.value=composite.uniforms.occlusion.value=null;
+  releaseAO();releaseBloom();
+  beauty?.dispose();beauty=null;
+  uniforms.sceneDepth.value=composite.uniforms.beauty.value=null;
+ }
+ function checkTarget(target){
+  renderer.setRenderTarget(target);
+  if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw Error('Incomplete viewport target');
+ }
+ function fullscreen(target,material){
+  triangle.material=material;
+  renderer.setRenderTarget(target);renderer.render(scene,view);
+ }
+ function renderBeauty(main,camera){
+  const background=main.background;
+  // r160 clears render targets with working-space values even when its
+  // materials emit display-space bytes. Encode solid clears the same way.
+  if(background?.isColor)main.background=background.getRGB(encodedBackground,renderer.outputColorSpace);
+  try{renderer.render(main,camera);}finally{main.background=background;}
  }
  function sizeTargets(){
   renderer.getDrawingBufferSize(screen);
@@ -192,43 +224,52 @@ function create(T,renderer){
   beauty.isXRRenderTarget=true;
   beauty.texture.colorSpace=renderer.outputColorSpace;
   beauty.texture.internalFormat='RGBA8';
-  buffer=new T.WebGLRenderTarget(Math.ceil(w/2),Math.ceil(h/2),{
-   format:T.RGBAFormat,depthBuffer:false,minFilter:T.NearestFilter,magFilter:T.NearestFilter});
   uniforms.sceneDepth.value=beauty.depthTexture;
   ao.uniforms.pixel.value.set(1/w,1/h);
   composite.uniforms.beauty.value=beauty.texture;
-  filtered=new T.WebGLRenderTarget(buffer.width,buffer.height,{
+  checkTarget(beauty);
+  return true;
+ }
+ function sizeAO(){
+  if(buffer)return;
+  const {width,height}=beauty;
+  const target=()=>new T.WebGLRenderTarget(Math.ceil(width/2),Math.ceil(height/2),{
    format:T.RGBAFormat,depthBuffer:false,minFilter:T.NearestFilter,magFilter:T.NearestFilter});
+  buffer=target();filtered=target();
   filter.uniforms.occlusion.value=buffer.texture;
   composite.uniforms.occlusion.value=filtered.texture;
   aoSize.set(buffer.width,buffer.height);
-  renderer.setRenderTarget(beauty);
-  if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw Error('Incomplete GTAO color/depth target');
-  for(const target of [buffer,filtered]){
-   renderer.setRenderTarget(target);
-   if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw Error('Incomplete GTAO half-resolution target');
-  }
-  return true;
+  checkTarget(buffer);checkTarget(filtered);
  }
- function draw(main,camera,mode='on'){
+ function draw(main,camera,{aoEnabled=true,bloomRevision}={}){
   if(!supported||failed||renderer.getRenderTarget()||gl.isContextLost())return false;
   const autoReset=renderer.info.autoReset;
   try{
    if(!sizeTargets())return false;
-   uniforms.inverseProjection.value.copy(camera.projectionMatrixInverse);
-   const projection=camera.projectionMatrix.elements;
-   ao.uniforms.focal.value.set(projection[0],projection[5]);
    renderer.info.reset();renderer.info.autoReset=false;
-   renderer.setRenderTarget(beauty);renderer.render(main,camera);
-   if(mode!=='beauty'){
-    triangle.material=ao;
-    renderer.setRenderTarget(buffer);renderer.render(scene,view);
-    triangle.material=filter;
-    renderer.setRenderTarget(filtered);renderer.render(scene,view);
+   renderer.setRenderTarget(beauty);renderBeauty(main,camera);
+   if(aoEnabled){
+    sizeAO();
+    uniforms.inverseProjection.value.copy(camera.projectionMatrixInverse);
+    const projection=camera.projectionMatrix.elements;
+    ao.uniforms.focal.value.set(projection[0],projection[5]);
+    fullscreen(buffer,ao);fullscreen(filtered,filter);
    }
-   composite.uniforms.strength.value=mode==='beauty'?0:.43;
-   triangle.material=composite;
-   renderer.setRenderTarget(null);renderer.render(scene,view);
+   let glow=null;
+   if(bloomRevision!==undefined&&!bloomFailed){
+    try{
+     bloom??=root.FurnishViewportBloom.create(T,renderer,make);
+     glow=bloom.draw(main,camera,bloomRevision,beauty,checkTarget,fullscreen);
+    }catch(error){
+     console.warn('Furnish Bloom:',error);
+     bloomFailed=true;releaseBloom();
+     if(!aoEnabled)return false;
+    }
+   }
+   composite.uniforms.strength.value=aoEnabled?.43:0;
+   composite.uniforms.bloom.value=glow;
+   composite.uniforms.hasBloom.value=!!glow;
+   fullscreen(null,composite);
    return true;
   }catch(error){
    console.warn('Furnish GTAO:',error);
@@ -241,7 +282,8 @@ function create(T,renderer){
   }
  }
  function dispose(){release();geometry.dispose();ao.dispose();filter.dispose();composite.dispose();}
- return {draw,release,dispose,available:()=>supported&&!failed};
+ return {draw,release,releaseAO,releaseBloom,dispose,available:()=>supported&&!failed,
+  bloomAvailable:()=>supported&&!failed&&!bloomFailed};
 }
 root.FurnishViewportGTAO={create};
 })(globalThis);

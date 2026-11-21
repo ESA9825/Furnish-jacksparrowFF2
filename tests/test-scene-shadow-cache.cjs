@@ -7,6 +7,7 @@ const empty={visible:true,traverse(){}},furnG={children:[{userData:{slidingDoor:
 const ctx=vm.createContext({selectionTransform:null,sceneMeasure:null,active:true,projectionPixelRatio:1,devicePixelRatio:1,FurnishDownlightModel:require("../src/render/downlight-model.js"),applyObservationLayers(){},wallLabelG:{children:[]},renderer,renderScene:()=>renderer.render(),scene:{},camera:{},clock:{getDelta:()=>.05},performance:{now:()=>0},requestAnimationFrame:()=>1,raf:0,anim:null,fly:null,opt:{mode:'orbit',furn:true},orbit:{update(){}},walkCtl:{isLocked:false},touchWalk:false,doors:[door],slidingDoors:[],furnG,clearanceG:empty,elevationG:empty,issueG:empty,selHelper:null,updateSel(){},updateObservation(){},labelRenderer:{render(){}},fitSceneAnnotationLabels(){}});
 // The initializer contains a semicolon inside the arrow body.
 const start=html.indexOf('const invalidate = '),end=html.indexOf('\n',start);
+ctx.syncViewportPixelRatio=()=>{};
 vm.runInContext('let dirty=false;'+html.slice(start,end)+html.slice(html.indexOf('function animateCurtains(dt){'),html.indexOf('function buildFurniture('))+html.slice(html.indexOf('function loop(){'),html.indexOf('function shot(){')),ctx);
 function frame(){ctx.loop();}
 vm.runInContext('invalidate()',ctx);frame();assert.equal(shadowPasses,1);
