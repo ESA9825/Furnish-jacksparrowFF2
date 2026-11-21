@@ -194,6 +194,20 @@ async function run(){
         calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,
         ...(${trialBloom}?{lights:lights.length,lightShadows:lights.filter(o=>o.castShadow).length}:{})};
       };
+      if(!metrics.lampState)metrics.lampState=ids=>{
+       const lamps={};
+       furnG.traverseVisible(o=>{
+        if(!o.userData.lightingRects?.length)return;
+        let model=o;
+        while(model&&!model.userData.fid)model=model.parent;
+        if(!ids.includes(model?.userData.fid))return;
+        const faces=lamps[model.userData.fid]??=[];
+        for(const face of o.userData.lightingRects)faces.push({
+         name:face.name,normal:face.normal,emission:face.material?.emissiveIntensity??0
+        });
+       });
+       return lamps;
+      };
       if(${trialBloom}&&!metrics.emitters)metrics.emitters=()=>{
        const emitters=[];
        scene.traverseVisible(o=>{
@@ -242,7 +256,7 @@ async function run(){
    await page.reload();
    await page.locator('#repository-loading').waitFor({state:'hidden',timeout:60000});
    const cdp=await page.context().newCDPSession(page);
-   for(const {name,camera,targets=[],secondCamera} of cases){
+   for(const {name,camera,targets=[],secondCamera,lampIds=[]} of cases){
     const scene=await page.evaluate(async ({camera,targets,nightTrial,revisionRound,scenePreset})=>{
      if(FurnishElectricalUI.active())FurnishElectricalUI.setMode('furniture');
      drawer('lib',false);drawer('panel',false);
@@ -288,6 +302,13 @@ async function run(){
      assert.equal(await control.getAttribute('aria-pressed'),String(variant!=='before'));
     }
     await page.evaluate(()=>View3D.automationReady());
+    if(lampIds.length){
+     scene.lamps=await page.evaluate(ids=>furnitureBench.lampState(ids),lampIds);
+     for(const id of lampIds){
+      const lit=scene.lamps[id]?.some(face=>face.emission>0)??false;
+      assert.equal(lit,scene.settings.lamps,'Unexpected visible emission for '+id);
+     }
+    }
     const capture=async (suffix,beauty=false)=>{
      const png=await page.evaluate(beauty=>beauty?furnitureBench.captureBeauty():View3D.image(),beauty);
      assert.ok(png,'Viewport capture is unavailable');

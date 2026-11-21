@@ -171,10 +171,24 @@ require('../src/render/interior-daylight.js');
  pilot.setLight(0);assert.equal(sky.visible,false);
  assert.equal(shader.uniforms.furnishDaylightStrength.value,0);
  const dining='area_fmv3qajd93';
- const nightPlan={...plan,rooms:[...plan.rooms,{id:dining,poly:[[4600,0],[4900,0],[4900,5000],[4600,5000]]}]};
+ const secondBedroom='area_fmv3oztg03';
+ const nightPlan={...plan,
+  winRefs:[...plan.winRefs,'cad_window_10_4:front'],
+  wins:[...plan.wins,{rect:[8700,5000,10100,5240],sill:.647,head:2.304}],
+  rooms:[...plan.rooms,{id:dining,poly:[[4600,0],[4900,0],[4900,5000],[4600,5000]]},
+   {id:secondBedroom,poly:[[8500,3400],[10500,3400],[10500,5000],[8500,5000]]}]};
  const roof=new T.Mesh(new T.PlaneGeometry(3.8,5),paint);
  roof.rotation.x=Math.PI/2;roof.position.set(1.9,2.7,2.5);
  roof.userData.layerObject='roomCeiling:'+id;archUp.add(roof);
+ const studyRoof=roof.clone(),secondRoof=roof.clone(),hallRoof=roof.clone();
+ studyRoof.position.x=6.25;studyRoof.userData.layerObject='roomCeiling:'+mainBedroom;
+ secondRoof.position.x=9.5;secondRoof.userData.layerObject='roomCeiling:'+secondBedroom;
+ hallRoof.position.x=4.2;hallRoof.userData.layerObject='roomCeiling:area_fmv3qb1oi5';
+ const secondGypsum=new T.Mesh(new T.BoxGeometry(1,.012,.4),paint);
+ secondGypsum.position.set(9.5,2.51,4.8);secondGypsum.userData.ceilingPaint=true;
+ const metalPanel=new T.Mesh(new T.BoxGeometry(.6,.012,.3),paint);
+ metalPanel.position.copy(secondGypsum.position);
+ archUp.add(studyRoof,secondRoof,hallRoof,secondGypsum,metalPanel);
  const lamp=new T.Group(),emitter=new T.MeshStandardMaterial({color:'#fff5e0',emissive:'#fff5e0'});
  lamp.position.set(1.9,2.5,2.5);
  lamp.userData.lightingRects=[{position:[0,0,0],normal:[0,-1,0],radiance:4,width:.6,height:.6,color:'#fff0d0',material:emitter}];
@@ -187,13 +201,26 @@ require('../src/render/interior-daylight.js');
  assert.match(nightShader.fragmentShader,/furnishNightMap/);
  assert.match(nightShader.fragmentShader,/paintGrain/,'The room ceiling uses the same paint grain as the wall');
  assert.equal(nightShader.uniforms.furnishFinishTexture.value,wallShader.uniforms.furnishFinishTexture.value);
+ for(const surface of [studyRoof,secondRoof,secondGypsum])assert.equal(surface.material,roof.material);
+ assert.equal(hallRoof.material,paint);
+ assert.equal(metalPanel.material,paint);
+ assert.match(nightShader.fragmentShader,/openings\.x\+openings\.y/,'The main bedroom ceiling receives both physical apertures');
+ const paintAt=(x,z)=>{
+  const {x:x0,y:z0,z:sx,w:sz}=nightShader.uniforms.furnishFinishBounds.value;
+  const {width,height,data}=nightShader.uniforms.furnishFinishField.value.image;
+  return data[4*(Math.floor((x-x0)*sx*width)+Math.floor((z-z0)*sz*height)*width)+1];
+ };
+ assert.equal(paintAt(6.25,4.8),255);
+ assert.equal(paintAt(9.5,4.2),255);
+ assert.equal(paintAt(6.25,-.3),255,'The painted window recess continues into the bay');
+ assert.equal(paintAt(4.1,2.5),0,'Corridor faces do not inherit bedroom paint');
+ assert.equal(paintAt(9.5,2.5),0,'Kitchen faces retain their finish');
  pilot.setNight(true,.015);
  assert.equal(nightShader.uniforms.furnishCeilingAmbient.value,.015*.44);
  const night=nightShader.uniforms;
- const map=night.furnishNightMap.value;
  const sampleNight=(x,z)=>{
   const {x:x0,y:z0,z:sx,w:sz}=night.furnishNightBounds.value;
-  const {width,height,data}=map.image;
+  const {width,height,data}=night.furnishNightMap.value.image;
   return data[4*(Math.floor((x-x0)*sx*width)+Math.floor((z-z0)*sz*height)*width)];
  };
  assert.ok(sampleNight(1.9,2.5)>sampleNight(.15,4.8));
@@ -201,6 +228,22 @@ require('../src/render/interior-daylight.js');
  assert.equal(sampleNight(4.7,2.5),0,'A darker adjacent zone has its own light budget');
  assert.equal(night.furnishNightActive.value,1);
  assert.ok(night.furnishFinishLights.value[0].w>0);
+ const bedroomLights=[[6.25,1.4],[6.25,4.3],[9.5,4.2]].map(([x,z])=>{
+  const light=lamp.clone(false);
+  light.userData.lightingRects=[{...lamp.userData.lightingRects[0],material:emitter.clone()}];
+  light.position.set(x,2.5,z);
+  furnG.add(light);
+  return light;
+ });
+ begin(nightPlan);pilot.contacts();
+ assert.ok(sampleNight(6.25,1.4)>0&&sampleNight(6.25,4.3)>0);
+ assert.ok(sampleNight(9.5,4.2)>0);
+ assert.equal(sampleNight(4.1,2.5),0);
+ assert.equal(sampleNight(9.5,2.5),0);
+ assert.equal(night.furnishFinishLights.value[1].w,0,'Bedroom lamps do not become dining finish lights');
+ bedroomLights[2].visible=false;pilot.contacts();
+ assert.equal(sampleNight(9.5,4.2),0,'Hidden bedroom lamps no longer illuminate the paint');
+ bedroomLights.forEach(light=>furnG.remove(light));
  const clothSource=new T.MeshPhysicalMaterial({sheen:.52});
  const cloth=new T.Mesh(new T.BoxGeometry(.8,.4,.7),clothSource);
  sofa.position.y=.06;sofa.add(cloth);

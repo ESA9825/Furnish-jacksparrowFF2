@@ -4,14 +4,16 @@
 const planId='custom_mv37igji';
 const livingRooms=['area_fmv3qb1oi4','area_fmv3p2ig914','area_fmv3qajd93'];
 const finishRooms=new Set([livingRooms[0],livingRooms[2]]);
+const bedrooms=['area_fmv3p1fkz7','area_fmv3oztg03'];
+const paintRooms=new Set([...finishRooms,...bedrooms,'bay_cad_window_11_5','bay_cad_window_10_4']);
 const adjoiningIds=new Set(['area_fmv3qb1oi5','area_fmv3qcck717']);
 const apertures=[
  // Opening ref, room receiving the light, additional continuous or bay floor.
  ['cad_window_9_3','area_fmv3p2ig914',livingRooms],
  ['cad_window_23_6','area_fmv3p2ig914',['area_fmv3p2ig914','area_fmv3qb1oi4']],
- ['cad_window_11_5:front','area_fmv3p1fkz7',['area_fmv3p1fkz7','bay_cad_window_11_5']],
- ['cad_window_8_2','area_fmv3p1fkz7',['area_fmv3p1fkz7']],
- ['cad_window_10_4:front','area_fmv3oztg03',['area_fmv3oztg03','bay_cad_window_10_4']],
+ ['cad_window_11_5:front',bedrooms[0],[bedrooms[0],'bay_cad_window_11_5']],
+ ['cad_window_8_2',bedrooms[0],[bedrooms[0]]],
+ ['cad_window_10_4:front',bedrooms[1],[bedrooms[1],'bay_cad_window_10_4']],
  ['cad_window_6_0','area_fmv3qcck717',['area_fmv3qcck717']],
  ['cad_window_7_1','area_fmv3qdfiz23',['area_fmv3qdfiz23']]
 ];
@@ -165,10 +167,9 @@ function create(T,scene,{wx,wz,inside}){
   }
   overlay.add(sky);
  }
- function mapFinishes(archUp){
-  const rooms=floors.filter(floor=>finishRooms.has(floor.userData.room));
+ function mapFinishes(archUp,rooms){
   if(!rooms.length)return;
-  const points=rooms.flatMap(floor=>floor.userData.interiorPolygon);
+  const points=rooms.flatMap(room=>room.poly);
   const minX=Math.min(...points.map(p=>p[0]))-.20,maxX=Math.max(...points.map(p=>p[0]))+.20;
   const minZ=Math.min(...points.map(p=>p[1]))-.20,maxZ=Math.max(...points.map(p=>p[1]))+.20;
   uniforms.furnishFinishBounds.value.set(minX,minZ,1/(maxX-minX),1/(maxZ-minZ));
@@ -184,11 +185,15 @@ function create(T,scene,{wx,wz,inside}){
    const polygon=mesh.userData.wallFinish?.poly?.map(([x,y])=>[wx(x),wz(y)]);
    bases.push({bounds:box.clone(),polygon,runsAlongX:box.max.x-box.min.x>=box.max.z-box.min.z});
   });
-  finishField=dataTexture(256,256,(i,j)=>{
-   const x=minX+(i+.5)/256*(maxX-minX),z=minZ+(j+.5)/256*(maxZ-minZ);
-   const room=rooms.find(floor=>inside(x,z,floor.userData.interiorPolygon));
+  // Preserve the spatial detail of the contact field as painted rooms spread
+  // across the plan. The material still samples a single texture.
+  const width=Math.min(768,Math.max(256,Math.ceil((maxX-minX)/.016)));
+  const height=Math.min(512,Math.max(256,Math.ceil((maxZ-minZ)/.030)));
+  finishField=dataTexture(width,height,(i,j)=>{
+   const x=minX+(i+.5)/width*(maxX-minX),z=minZ+(j+.5)/height*(maxZ-minZ);
+   const room=rooms.find(room=>inside(x,z,room.poly));
    if(!room)return [0,0,0,255];
-   const y=room.position.y;
+   const y=room.floor;
    let nearest=.18,alongX=.62,alongZ=.62;
    for(const {bounds:base,polygon,runsAlongX} of bases){
     if(base.min.y>y+.014||base.max.y<y+.08)continue;
@@ -493,7 +498,8 @@ function create(T,scene,{wx,wz,inside}){
     #include <aomap_fragment>
     ${ceiling?`
      vec2 openingUV=(furnishInteriorPosition.xz-furnishDaylightBounds.xy)*furnishDaylightBounds.zw;
-     float skyReturn=texture2D(furnishDaylightMap,openingUV).r*furnishDaylightStrength*0.045;
+     vec2 openings=texture2D(furnishDaylightMap,openingUV).rg;
+     float skyReturn=min(1.0,openings.x+openings.y)*furnishDaylightStrength*0.045;
      float facingDown=0.28+0.72*max(0.0,-wallNormal.y);
      reflectedLight.indirectDiffuse+=diffuseColor.rgb*hasPaint*facingDown*
       (vec3(0.88,0.94,1.0)*skyReturn+vec3(1.0,0.94,0.84)*furnishCeilingAmbient);
@@ -606,7 +612,7 @@ function create(T,scene,{wx,wz,inside}){
   return parts.slice(0,8);
  }
  function configureNight(furnG,archUp){
-  nightRooms=[...finishRooms].flatMap(id=>{
+  nightRooms=[...finishRooms,...bedrooms].flatMap(id=>{
    const room=roomById.get(id);
    return room?[{id,poly:room.poly.map(([x,y])=>[wx(x),wz(y)])}]:[];
   });
@@ -658,16 +664,18 @@ function create(T,scene,{wx,wz,inside}){
   const key=active.map(source=>source.o.id+':'+(source.rectangle?.material.id??'cove')).join(',');
   if(nightKey===key)return;
   nightKey=key;
-  for(const [i,slot] of uniforms.furnishFinishLights.value.entries()){
-   const main=active.filter(source=>!source.cove&&source.room===nightRooms[i]).sort((a,b)=>b.power-a.power)[0];
+  for(const [i,id] of [...finishRooms].entries()){
+   const slot=uniforms.furnishFinishLights.value[i];
+   const main=active.filter(source=>!source.cove&&source.room.id===id).sort((a,b)=>b.power-a.power)[0];
    if(main)slot.set(main.position.x,main.position.y,main.position.z,main.power);
    else slot.set(0,0,0,0);
   }
   const {x:xmin,y:zmin,z:sx,w:sz}=uniforms.furnishNightBounds.value;
-  const size=80;
+  const width=Math.min(192,Math.max(80,Math.ceil(1/(sx*.0625))));
+  const height=Math.min(192,Math.max(80,Math.ceil(1/(sz*.0625))));
   nightField?.dispose();
-  nightField=dataTexture(size,size,(i,j)=>{
-   const x=xmin+(i+.5)/(size*sx),z=zmin+(j+.5)/(size*sz);
+  nightField=dataTexture(width,height,(i,j)=>{
+   const x=xmin+(i+.5)/(width*sx),z=zmin+(j+.5)/(height*sz);
    const room=nightRooms.find(r=>inside(x,z,r.poly));
    if(!room)return [0,0,0,0];
    let r=0,g=0,b=0,cove=0;
@@ -751,20 +759,26 @@ function create(T,scene,{wx,wz,inside}){
    floor.userData.interiorPolygon=room?.poly.map(([x,y])=>[wx(x),wz(y)]);
    accepted.add(floor);
   }
-  if(!finishField)mapFinishes(archUp);
+  const paintedAreas=[...paintRooms].flatMap(id=>{
+   const room=roomById.get(id);
+   if(!room)return [];
+   const floor=floors.find(mesh=>mesh.userData.room===id);
+   return [{poly:floor?.userData.interiorPolygon??room.poly.map(([x,y])=>[wx(x),wz(y)]),
+    floor:floor?.position.y??(room.height??0)}];
+  });
+  if(!finishField)mapFinishes(archUp,paintedAreas);
   for(const floor of floors)paint(floor,finishRooms.has(floor.userData.room)?'floor':'');
   archUp.updateWorldMatrix(true,true);
-  const paintRooms=floors.filter(floor=>finishRooms.has(floor.userData.room)).map(floor=>
-   new T.Box3().setFromPoints(floor.userData.interiorPolygon.map(([x,z])=>new T.Vector3(x,0,z))));
+  const paintBounds=paintedAreas.map(({poly})=>new T.Box3().setFromPoints(poly.map(([x,z])=>new T.Vector3(x,0,z))));
   archUp.traverse(mesh=>{
-   const roomCeiling=mesh.userData.layerObject?.startsWith('roomCeiling:')&&finishRooms.has(mesh.userData.layerObject.slice(12));
+   const roomCeiling=mesh.userData.layerObject?.startsWith('roomCeiling:')&&paintRooms.has(mesh.userData.layerObject.slice(12));
    let paintedGypsum=false;
    if(mesh.isMesh&&mesh.userData.ceilingPaint){
     if(!mesh.geometry.boundingBox)mesh.geometry.computeBoundingBox();
     box.copy(mesh.geometry.boundingBox).applyMatrix4(mesh.matrixWorld);
     // A gypsum piece can continue across a plan zone. Finish the entire
-    // piece if its footprint overlaps the living or dining room.
-    paintedGypsum=paintRooms.some(room=>
+    // piece if its footprint overlaps a painted room.
+    paintedGypsum=paintBounds.some(room=>
      Math.min(box.max.x,room.max.x)-Math.max(box.min.x,room.min.x)>.012&&
      Math.min(box.max.z,room.max.z)-Math.max(box.min.z,room.min.z)>.012);
    }
