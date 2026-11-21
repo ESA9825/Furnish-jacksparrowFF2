@@ -1,0 +1,82 @@
+[
+  {
+    "name": "master",
+    "camera": {
+      "mode": "orbit",
+      "position": {
+        "x": 3410,
+        "y": 4240,
+        "z": 1660
+      },
+      "target": {
+        "x": 945,
+        "y": 3400,
+        "z": 1865
+      },
+      "horizontalFov": 84
+    },
+    "targets": [
+      "fmv3w361v2"
+    ],
+    "lampIds": [
+      "fmwf2mkf13",
+      "fmwf2mkf15",
+      "fmwfs0huy1",
+      "fmwfxghgb1"
+    ],
+    "stripId": "fmwfxghgb1",
+    "motionCamera": {
+      "mode": "orbit",
+      "position": {
+        "x": 3110,
+        "y": 6230,
+        "z": 1660
+      },
+      "target": {
+        "x": 2200,
+        "y": 3370,
+        "z": 1690
+      },
+      "horizontalFov": 77
+    }
+  },
+  {
+    "name": "second",
+    "camera": {
+      "mode": "orbit",
+      "position": {
+        "x": 6225,
+        "y": 3690,
+        "z": 1660
+      },
+      "target": {
+        "x": 3990,
+        "y": 3050,
+        "z": 1845
+      },
+      "horizontalFov": 84
+    },
+    "targets": [
+      "fmv3wyijp13"
+    ],
+    "lampIds": [
+      "fmwf2mkf16",
+      "fmwfxgofe2"
+    ],
+    "stripId": "fmwfxgofe2",
+    "motionCamera": {
+      "mode": "orbit",
+      "position": {
+        "x": 6160,
+        "y": 5060,
+        "z": 1660
+      },
+      "target": {
+        "x": 5270,
+        "y": 2990,
+        "z": 1640
+      },
+      "horizontalFov": 77
+    }
+  }
+]

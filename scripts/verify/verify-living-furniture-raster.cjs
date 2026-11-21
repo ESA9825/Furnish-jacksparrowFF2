@@ -29,6 +29,8 @@ const trialSMAA=process.env.FURNISH_RASTER_SMAA==='1';
 const revisionRound=process.env.FURNISH_RASTER_ROUND||'';
 const scenePreset=process.env.FURNISH_RASTER_SCENE||'';
 if(revisionRound==='latex-paint')files.push('src/render/ceiling-model.js');
+const washTrial=revisionRound==='bedside-wash';
+if(washTrial)files.push('src/render/cove-light-model.js','src/render/downlight-model.js');
 const materialRound=revisionRound==='material-response';
 const captureTrajectory=trialSMAA||materialRound||revisionRound==='thin-edges';
 const nightTrial=trialBloom||trialSMAA||!!revisionRound&&scenePreset!=='day';
@@ -191,7 +193,7 @@ async function run(){
        });
        return {renderer:ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),
         canvas:[gl.drawingBufferWidth,gl.drawingBufferHeight],dpr:devicePixelRatio,
-        calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,
+        calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,exposure:renderer.toneMappingExposure,
         ...(${trialBloom}?{lights:lights.length,lightShadows:lights.filter(o=>o.castShadow).length}:{})};
       };
       if(!metrics.lampState)metrics.lampState=ids=>{
@@ -203,10 +205,38 @@ async function run(){
         if(!ids.includes(model?.userData.fid))return;
         const faces=lamps[model.userData.fid]??=[];
         for(const face of o.userData.lightingRects)faces.push({
-         name:face.name,normal:face.normal,emission:face.material?.emissiveIntensity??0
+         name:face.name,normal:face.normal,emission:face.material?.emissiveIntensity??0,
+         position:new THREE.Vector3().fromArray(face.position).applyMatrix4(o.matrixWorld).toArray(),
+         width:face.width,height:face.height,color:face.color
         });
        });
        return lamps;
+      };
+      if(${washTrial}&&!metrics.washState)metrics.washState=id=>{
+       const fixture=furnG.children.find(model=>model.userData.fid===id);
+       const lights=[];
+       fixture?.traverseVisible(o=>{
+        if(o.isSpotLight&&o.intensity>0)lights.push({span:o.userData.coveSpan??0,shadow:o.castShadow});
+       });
+       return lights;
+      };
+      if(${washTrial}&&!metrics.washBlocker)metrics.washBlocker=(id,enabled)=>{
+       if(enabled){
+        const fixture=furnG.children.find(model=>model.userData.fid===id);
+        const face=fixture.userData.lightingRects[0],block=new THREE.Mesh(
+         new THREE.BoxGeometry(.44,.025,.20),new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false})
+        );
+        block.position.fromArray(face.position);
+        block.position.x-=face.width/4;
+        block.position.y+=.12;
+        block.castShadow=true;
+        fixture.add(block);
+        metrics.block=block;
+       }else{
+        const block=metrics.block;
+        block.removeFromParent();block.geometry.dispose();block.material.dispose();metrics.block=null;
+       }
+       invalidate(true);
       };
       if(${trialBloom}&&!metrics.emitters)metrics.emitters=()=>{
        const emitters=[];
@@ -256,7 +286,7 @@ async function run(){
    await page.reload();
    await page.locator('#repository-loading').waitFor({state:'hidden',timeout:60000});
    const cdp=await page.context().newCDPSession(page);
-   for(const {name,camera,targets=[],secondCamera,lampIds=[]} of cases){
+   for(const {name,camera,targets=[],secondCamera,lampIds=[],stripId,motionCamera} of cases){
     const scene=await page.evaluate(async ({camera,targets,nightTrial,revisionRound,scenePreset})=>{
      if(FurnishElectricalUI.active())FurnishElectricalUI.setMode('furniture');
      drawer('lib',false);drawer('panel',false);
@@ -317,6 +347,74 @@ async function run(){
      return hash(buffer);
     };
     const visual=await capture('');
+    if(washTrial){
+     assert.ok(stripId&&scene.lamps[stripId]?.length);
+     scene.strip=await page.evaluate(id=>{
+      const {cx,cy,rot,w,d,h,mountHeight,lightKelvin,lightPreviewLevel}=getF(id);
+      return {cx,cy,rot,w,d,h,mountHeight,lightKelvin,lightPreviewLevel};
+     },stripId);
+     const spots=()=>page.evaluate(id=>furnitureBench.washState(id),stripId);
+     scene.stripSpots=await spots();
+     assert.equal(scene.strip.lightPreviewLevel,30);
+     assert.equal(scene.strip.lightKelvin,3000);
+     if(variant==='after'){
+      assert.ok(scene.stripSpots.length&&scene.stripSpots.every(s=>s.shadow&&s.span>0));
+      assert.ok(Math.abs(scene.stripSpots.reduce((sum,s)=>sum+s.span,0)-scene.lamps[stripId][0].width)<1e-6);
+     }
+     const reference=report.results.find(result=>result.name===name);
+     if(reference){
+      for(const field of ['pose','settings','lamps','strip','lampLayerVisible'])assert.deepEqual(scene[field],reference.scene[field],field);
+      assert.equal(await page.evaluate(()=>furnitureBench.info().exposure),reference.render.exposure);
+     }
+     if(i<=1){
+      const dim=level=>page.evaluate(({id,level})=>mutate(()=>{
+       getF(id).lightPreviewLevel=level;
+      }),{id:stripId,level});
+      const setOn=lamps=>page.evaluate(lamps=>mutate(()=>{
+       state.scene3d=FurnishDesign.patchSceneSettings(state.scene3d,{lamps});
+      },{sceneFirst:true}),lamps);
+      const hide=hidden=>page.evaluate(({id,hidden})=>mutate(()=>{
+       const layer='test-bedside-strip';
+       if(hidden){
+        furnitureBench.originalLayers=state.objectLayers;
+        const added=FurnishLayers.create(state,layer,'洗墙验证');
+        const placed=FurnishLayers.assign(added,['furniture:'+id],layer);
+        state.objectLayers=FurnishLayers.update(placed,layer,{visible:false}).objectLayers;
+       }else{
+        state.objectLayers=furnitureBench.originalLayers;
+       }
+      }),{id:stripId,hidden});
+      await dim(0);
+      await page.evaluate(()=>View3D.automationReady());
+      assert.equal((await page.evaluate(id=>furnitureBench.lampState([id])[id],stripId))[0].emission,0);
+      assert.deepEqual(await spots(),[]);
+      assert.notEqual(await capture('-strip-off'),visual);
+      await dim(scene.strip.lightPreviewLevel);
+      await setOn(false);
+      await page.evaluate(()=>View3D.automationReady());
+      assert.equal((await page.evaluate(id=>furnitureBench.lampState([id])[id],stripId))[0].emission,0);
+      assert.deepEqual(await spots(),[]);
+      assert.notEqual(await capture('-lamps-off'),visual);
+      await setOn(true);
+      await hide(true);
+      await page.evaluate(()=>View3D.automationReady());
+      assert.equal(await page.evaluate(id=>furnitureBench.lampState([id])[id],stripId),undefined);
+      assert.deepEqual(await spots(),[]);
+      assert.notEqual(await capture('-layer-hidden'),visual);
+      await hide(false);
+      await page.evaluate(pose=>View3D.automationCamera(pose),camera);
+      await page.evaluate(()=>View3D.automationReady());
+      assert.deepEqual(await spots(),scene.stripSpots);
+      if(variant==='after'){
+       const unobstructed=await capture('-restored');
+       const blocker=enabled=>page.evaluate(({id,enabled})=>furnitureBench.washBlocker(id,enabled),{id:stripId,enabled});
+       await blocker(true);
+       assert.notEqual(await capture('-shadow-probe'),unobstructed);
+       await blocker(false);
+       assert.equal(await capture('-shadow-cleared'),unobstructed);
+      }
+     }
+    }
     if(trialBloom)scene.emitters=await page.evaluate(()=>furnitureBench.emitters());
     if(trialEffect&&variant!=='before'){
      const unprocessed=await capture('-beauty',true);
@@ -374,8 +472,9 @@ async function run(){
     if(scene.track&&i===1)assert.deepEqual(scene.track,report.results.find(result=>result.name===name)?.scene.track,
      'Camera trajectory or interaction resolution differed between the two variants');
     if(!movable){report.results.push({variant,name,scene,render});continue;}
-    const motion=gestureCamera||camera;
-    if(gestureCamera||scene.track)await page.evaluate(pose=>View3D.automationCamera(pose),motion);
+    const motion=motionCamera||gestureCamera||camera;
+    if(motion!==camera||scene.track)await page.evaluate(pose=>View3D.automationCamera(pose),motion);
+    const motionRender=motionCamera?await page.evaluate(()=>furnitureBench.info()):undefined;
     const box=await page.locator('#view3d canvas').first().boundingBox();
     const from={x:box.x+box.width*.45,y:box.y+box.height*.49};
     const rotate=await measure(page,cdp,from,t=>({x:34*Math.sin(t*4*Math.PI)+12*t,y:8*Math.sin(t*2*Math.PI)}),
@@ -414,7 +513,7 @@ async function run(){
      await page.waitForFunction(ratio=>furnitureBench.info().canvas[0]===ratio,render.canvas[0]);
     }
     assert.deepEqual(errors,[]);
-    report.results.push({variant,name,scene,render,rotate,...(pan?{pan}:{}),move});
+    report.results.push({variant,name,scene,render,...(motionRender?{motionRender}:{}),rotate,...(pan?{pan}:{}),move});
     console.log(variant,name||'',JSON.stringify({render,rotate:rotate.frameIntervalMs,...(pan?{pan:pan.frameIntervalMs}:{}),move:move.frameIntervalMs,
      snap:move.snapMs,poseChanges:move.poseChanges,poseInputToSubmissionMs:move.poseInputToSubmissionMs}));
     if(rooms){

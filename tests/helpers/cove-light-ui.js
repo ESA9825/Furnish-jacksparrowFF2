@@ -1,5 +1,8 @@
 module.exports=async(p,V)=>{
  const assert=require('node:assert/strict'),fs=require('node:fs'),errors=[];p.on('dialog',d=>d.accept());p.on('pageerror',e=>errors.push(e.message));p.on('console',m=>{if(m.type()==='error'&&/shader|WebGL|GPUValidation/i.test(m.text()))errors.push(m.text().slice(0,300));});
+ // The saved-control reload below opens a fresh page in raster mode.
+ // Only the explicit independent preview branch may start path tracing.
+ await p.addInitScript(()=>localStorage.setItem('furnish-observation-v1','smooth'));
  if(V.mode!=='desktop'){
   const s=require('../../scripts/workspace-files.cjs').create(require('node:path').resolve(__dirname,'../..')).read().workspace;s.work={[s.planId]:s.work[s.planId]};s.designs=s.designs.filter(d=>d.id===s.activeDesigns[s.planId]);s.customPlans=s.customPlans.filter(d=>d.id===s.planId);
   await p.evaluate(async s=>{s.updatedAt=Date.now()+1000;delete s._repository;localStorage.setItem('huxing-design-v'+s.v,JSON.stringify(s));await FurnishStorage.write(s);},s);await p.reload({waitUntil:'domcontentloaded',timeout:120000});await p.waitForFunction(()=>!repositoryBooting);
@@ -15,6 +18,8 @@ module.exports=async(p,V)=>{
  await p.setViewportSize({width:1640,height:1060});for(const key of ['#tgLib','#tgPanel'])if(await p.locator(key).getAttribute('class').then(c=>c.includes('on')))await p.locator(key).click();
  for(const shot of (V.mode==='desktop'?['main','elder']:['main'])){
   await p.evaluate(async shot=>{await setView('3d');await View3D.automationCamera({view:'3d',mode:'orbit',horizontalFov:68,position:shot==='main'?{x:3350,y:3900,z:1450}:{x:6300,y:3650,z:1450},target:shot==='main'?{x:950,y:3837,z:1050}:{x:4050,y:3352.625,z:1050}});await View3D.automationReady();},shot);
+  assert.equal(await p.locator('#progressive-controls').getAttribute('data-state'),'smooth');
+  assert.equal(await p.locator('#progressive-frame').count(),0);
   await p.evaluate(async()=>{let previous=null,stable=0;const samples=[];for(let i=0;i<60;i++){const key=View3D.highQualitySignature();samples.push(key);stable=key&&key===previous?stable+1:0;if(stable>=4)return;previous=key;await new Promise(r=>setTimeout(r,50));}throw Error('Camera did not settle: '+JSON.stringify(samples.slice(-3)));});
   const snapshot=await p.evaluate(async()=>{const d=await View3D.highQualityScene(),v=new DataView(d.buffer),j=JSON.parse(new TextDecoder().decode(new Uint8Array(d.buffer,20,v.getUint32(12,true))));return {lighting:d.lighting,coves:state.furniture.filter(f=>f.type==='cove_light'),parts:j.nodes.filter(n=>n.extras?.furnishId&&state.furniture.some(f=>f.type==='cove_light'&&f.id===n.extras.furnishId)&&n.mesh!==undefined).length,scene:state.scene3d};});assert.equal(snapshot.parts,16);for(const f of lamps){const r=snapshot.lighting.rects.filter(r=>r.owner===f.id);assert.equal(r.length,1);assert(r[0].normal[1]>.999);}fs.writeFileSync(V.artifact(V.mode+'-'+shot+'-sources.json'),JSON.stringify(snapshot,null,2));
   if(renderHD){

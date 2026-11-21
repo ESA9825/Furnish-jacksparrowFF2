@@ -9,6 +9,25 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),P=require('../s
   D.setLights(g,true);const rects=L.collect(T,[g]).rects;assert.equal(rects.length,1);assert(rects[0].normal[1]>.999);near(rects[0].radiance*rects[0].width*rects[0].height*683,60);const out=E.snapshot(T,{groups:[g],camera:new T.PerspectiveCamera()});assert.equal(out.meshCount,8);assert.equal(out.scene.children.filter(o=>o.isLight).length,0);assert.equal(out.scene.children.filter(o=>o.userData.furnishAreaEmitter).length,1);out.dispose();D.setLights(g,false);assert.equal(L.collect(T,[g]).rects.length,0,'master switch disables bedside emitter');g.visible=false;assert.equal(L.collect(T,[g]).rects.length,0,'hidden fixture stays dark');g.visible=true;D.setLights(g,true);assert.equal(L.collect(T,[g]).rects.length,1);
  }
  for(const level of [0,1,30,100]){const g=M.build(T,{...f,lightPreviewLevel:level});D.setLights(g,true);const r=L.collect(T,[g]).rects;assert.equal(r.length,level?1:0);if(level)near(r[0].radiance*r[0].width*r[0].height*683,2*level);}
+ const scene=new T.Scene(),camera=new T.PerspectiveCamera(),strip=M.build(T,f,{continuous:true});
+ strip.rotation.y=-.64;strip.scale.x=-1;strip.userData.fid=f.id;scene.add(strip);
+ assert(M.installRaster(T));const source=T.ShaderChunk.lights_fragment_begin;
+ assert(M.installRaster(T));assert.equal(T.ShaderChunk.lights_fragment_begin,source,'install the raster shader once');
+ const spans=strip.children.filter(o=>o.isSpotLight);
+ const face=L.collect(T,[strip]).rects[0];
+ assert.equal(spans.length,2);
+ near(spans.reduce((sum,o)=>sum+o.userData.coveSpan,0),face.width);
+ near(spans.reduce((sum,o)=>sum+o.intensity*o.userData.coveSpan,0),60/683);
+ assert.equal(D.limitLights(scene,camera).shadows,2);
+ for(const lamp of spans){
+  const azimuth=lamp.angle*(1-lamp.penumbra);
+  near(Math.abs(new T.Vector3(Math.cos(azimuth),0,-Math.sin(azimuth)).dot(new T.Vector3().fromArray(face.u))),1);
+  assert(lamp.visible&&lamp.castShadow);
+ }
+ assert.equal(D.limitLights(scene,camera).coveShadowAdded,false);
+ assert.equal(D.limitLights(scene,camera,{shadows:0}).lights,0,'unshadowed spans do not leak light');
+ assert.equal(D.limitLights(scene,camera).coveShadowAdded,true,'reassigned spans need a shadow refresh');
+ strip.visible=false;assert.equal(D.limitLights(scene,camera).lights,0);
  const H=require('../src/render/bath-heater-model.js'),surface={type:'surface_light',w:600,d:400,h:50,mountHeight:2500},old=H.build(T,surface),before=JSON.stringify(surface);D.setLights(old,true);near(L.collect(T,[old]).rects[0].radiance*.59*.39*683,100);assert.equal(JSON.stringify(surface),before);const off=H.build(T,{...surface,lightPreviewLevel:0});D.setLights(off,true);assert.equal(L.collect(T,[off]).rects.length,0);off.traverse(o=>{if(o.isLight)near(o.intensity,0);});
  const fixture=require('./helpers/wall-finish-fixture.cjs').fixture(),work={...fixture.work,furniture:[f]},restore=W.create({makeId:()=> 'x',colorFor:()=> '#fff',materials:require('../src/data/catalog.js').materials}).restore;let saved=work;for(let i=0;i<3;i++){const pack=J.pack({planId:fixture.plan.id,current:saved,designs:[{name:'床头灯带',work:saved}],catalog:[{...f,id:'template',price:0}]});assert.deepEqual(J.unpack(pack).catalog[0],{...f,id:'template',price:0});assert.equal(pack.version,91);saved=restore(J.unpack(pack).current,fixture.plan);assert.deepEqual(saved.furniture,work.furniture);}
  assert.equal(J.checkFingerprint({},fixture.plan,[f],800),J.checkFingerprint({},fixture.plan,[{...f,lightPreviewLevel:0,lightKelvin:4000,color:'#aaaaaa',price:5}],800),'light-only edits do not invalidate spatial confirmation');assert.notEqual(J.checkFingerprint({},fixture.plan,[f],800),J.checkFingerprint({},fixture.plan,[{...f,mountHeight:1300}],800));assert.equal(P.replacement(f,{...f,type:'chair'},{type:'chair'}).lightPreviewLevel,undefined);assert.equal(P.replacement(f,{...f},{type:'cove_light'}).lightPreviewLevel,30);

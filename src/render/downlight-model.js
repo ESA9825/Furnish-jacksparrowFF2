@@ -60,12 +60,23 @@ function limitLights(scene,camera,{lights=24,shadows=6,maxFragmentUniforms=1024,
  scene.traverse(o=>{if(!o.isLight||!(o.userData.downlightLight||o.userData.ceilingPanelLight||o.userData.pathLight||o.userData.ceilingStripLight))return;
   o.userData.previewShadowRequested??=o.castShadow;let visible=o.userData.previewLightEnabled!==false,owner=o.parent;
   for(let p=o.parent;p;p=p.parent){if(!p.visible)visible=false;if(p.userData.fid||p.userData.ceiling)owner=p;}
-  o.visible=false;o.castShadow=false;if(visible)candidates.push({o,owner,distance:o.getWorldPosition(eye.clone()).distanceToSquared(eye)});
+  if(visible)candidates.push({o,owner,hadShadow:o.castShadow,distance:o.getWorldPosition(eye.clone()).distanceToSquared(eye)});
+  o.visible=false;o.castShadow=false;
  });
- let remaining=lights,shadowCount=0;for(const c of lighting().prioritize(candidates).slice(0,lights)){
-  c.o.visible=true;c.o.castShadow=!!c.o.userData.previewShadowRequested&&shadowCount<shadows;if(c.o.castShadow)shadowCount++;remaining--;
+ const ordered=lighting().prioritize(candidates);
+ const spans=ordered.filter(({o})=>o.userData.coveSpan).slice(0,Math.min(lights,shadows));
+ const active=spans.concat(ordered.filter(({o})=>!o.userData.coveSpan).slice(0,lights-spans.length));
+ let shadowCount=0,coveShadowAdded=false;
+ for(const {o,hadShadow} of active){
+  o.visible=true;
+  o.castShadow=!!o.userData.previewShadowRequested&&shadowCount<shadows;
+  if(o.castShadow)shadowCount++;
+  if(o.userData.coveSpan){
+   root.FurnishCoveLightModel.orientSpan(o);
+   coveShadowAdded||=o.castShadow&&!hadShadow;
+  }
  }
- return {candidates:candidates.length,lights:lights-remaining,shadows:shadowCount};
+ return {candidates:candidates.length,lights:active.length,shadows:shadowCount,coveShadowAdded};
 }
 const api={supported,build,setLights,limitLights};if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishDownlightModel=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
