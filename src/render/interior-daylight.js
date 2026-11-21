@@ -237,11 +237,12 @@ function create(T,scene,{wx,wz,inside}){
   const rect=new T.Vector4(min.x,min.y,1/Math.max(.001,max.x-min.x),1/Math.max(.001,max.y-min.y));
   return new Map(backboards.map(mesh=>[mesh,{rect,transform:transforms.get(mesh),key:mesh.id}]));
  }
- function appearance(source,profile,niche){
+ function appearance(source,profile,niche,seam){
   if(!source?.isMeshStandardMaterial||source.transparent)return source;
   if(!finishField||source.flatShading||(profile==='wall'&&(source.map||source.roughness<.8)))profile='';
   const pool=variants.get(source)||new Map();
-  const variantKey=profile==='niche'?profile+':'+niche.key:profile;
+  const fineEdge=profile==='cabinet'&&!!seam;
+  const variantKey=profile==='niche'?profile+':'+niche.key:fineEdge?profile+':'+seam.toArray().join(','):profile;
   if(pool.has(variantKey))return pool.get(variantKey);
   const material=source.clone();
   const satinTile=source.userData.satinTile===true||profile==='floor'&&!!source.userData.tileFinish?.layout;
@@ -257,16 +258,17 @@ function create(T,scene,{wx,wz,inside}){
   // Keep source PBR values and pre-existing shaders. Export strips these
   // raster hooks and keeps the source values.
   const cacheKey=source.customProgramCacheKey();
-  material.customProgramCacheKey=()=>cacheKey+'|room-daylight-v6|'+smoothReflection+'|'+satinTile+'|'+profile;
+  material.customProgramCacheKey=()=>cacheKey+'|room-daylight-v7|'+smoothReflection+'|'+satinTile+'|'+profile+'|'+fineEdge;
   material.onBeforeCompile=function(shader,renderer){
    source.onBeforeCompile.call(this,shader,renderer);
    Object.assign(shader.uniforms,uniforms);
    if(tileDetail)shader.uniforms.furnishFinishJoint={value:groutHalfWidth};
+   if(fineEdge)shader.uniforms.furnishDoorHeights={value:seam};
    if(nicheDetail){
     shader.uniforms.furnishNicheRect={value:niche.rect};
     shader.uniforms.furnishNicheLocal={value:niche.transform};
    }
-   shader.vertexShader='varying vec3 furnishInteriorPosition;\n'+(cabinetDetail?'varying vec2 furnishBoardPosition;\n':'')+(nicheDetail?'varying vec3 furnishNiche;\nuniform vec4 furnishNicheRect;\nuniform mat4 furnishNicheLocal;\n':'')+shader.vertexShader.replace('#include <project_vertex>',`
+   shader.vertexShader='varying vec3 furnishInteriorPosition;\n'+(cabinetDetail?'varying vec2 furnishBoardPosition;\n':'')+(fineEdge?'varying float furnishIsDoorFace;\n':'')+(nicheDetail?'varying vec3 furnishNiche;\nuniform vec4 furnishNicheRect;\nuniform mat4 furnishNicheLocal;\n':'')+shader.vertexShader.replace('#include <project_vertex>',`
     #include <project_vertex>
     vec4 furnishInteriorVertex=vec4(transformed,1.0);
     #ifdef USE_INSTANCING
@@ -274,6 +276,7 @@ function create(T,scene,{wx,wz,inside}){
     #endif
     furnishInteriorPosition=(modelMatrix*furnishInteriorVertex).xyz;
     ${cabinetDetail?'furnishBoardPosition=position.xy;':''}
+    ${fineEdge?'furnishIsDoorFace=abs(normal.z);':''}
     ${nicheDetail?`
      vec3 boardAt=(furnishNicheLocal*vec4(position,1.0)).xyz;
      furnishNiche=vec3((boardAt.xy-furnishNicheRect.xy)*furnishNicheRect.zw,normal.z);
@@ -310,6 +313,7 @@ function create(T,scene,{wx,wz,inside}){
     ${nicheDetail?'varying vec3 furnishNiche;':''}
     ${tileDetail?'uniform float furnishFinishJoint;':''}
     ${cabinetDetail?'varying vec2 furnishBoardPosition;':''}
+    ${fineEdge?'varying float furnishIsDoorFace; uniform vec2 furnishDoorHeights;':''}
     void furnishWindowLight(int sourceIndex,float energy,vec3 normal,vec3 view,vec3 diffuse,
                             float metalness,float roughness,inout vec3 indirectDiffuse,inout vec3 indirectSpecular){
      if(sourceIndex==0||energy<=0.0)return;
@@ -410,6 +414,18 @@ function create(T,scene,{wx,wz,inside}){
      vec2 lacquer=texture2D(furnishFinishTexture,furnishBoardPosition*vec2(2.1,1.3)).rg;
      diffuseColor.rgb*=0.985+0.093*(lacquer.r-.5)+0.042*(lacquer.g-.5);
      roughnessFactor=min(roughnessFactor,0.43+0.14*(lacquer.r-.5));
+    `:''}
+    ${fineEdge?`
+     // Prefilter the upper and lower door lip finish, around one
+     // screen pixel wide at room distance. Geometry still resolves the gap.
+     float toDoorEdge=min(furnishBoardPosition.y-furnishDoorHeights.x,
+                          furnishDoorHeights.y-furnishBoardPosition.y);
+     vec2 footprint=fwidth(furnishBoardPosition);
+     float fade=1.0-smoothstep(0.0,clamp(footprint.y*1.28,0.0008,0.0055),toDoorEdge);
+     float edge=fade*smoothstep(0.0008,0.0024,max(footprint.x,footprint.y))
+      *smoothstep(0.82,0.98,furnishIsDoorFace);
+     diffuseColor.rgb*=1.0-0.23*edge;
+     roughnessFactor=mix(roughnessFactor,0.68,0.7*edge);
     `:''}
     ${stone?`
      diffuseColor.rgb*=0.91;
@@ -516,9 +532,9 @@ function create(T,scene,{wx,wz,inside}){
   pool.set(variantKey,material);variants.set(source,pool);
   return material;
  }
- function paint(mesh,profile='',niche){
+ function paint(mesh,profile='',niche,seam){
   if(!bounds||!mesh.isMesh||decorated.has(mesh)||!box.setFromObject(mesh).intersectsBox(bounds))return;
-  const source=mesh.material,next=Array.isArray(source)?source.map(m=>appearance(m,profile,niche)):appearance(source,profile,niche);
+  const source=mesh.material,next=Array.isArray(source)?source.map(m=>appearance(m,profile,niche,seam)):appearance(source,profile,niche,seam);
   if(Array.isArray(source)?source.every((m,i)=>m===next[i]):source===next)return;
   decorated.set(mesh,{source,next});
   mesh.material=next;
@@ -714,7 +730,13 @@ function create(T,scene,{wx,wz,inside}){
     const coffeePart=inSuite&&part.cherryCoffeePart;
     const finish=pile?'pile':coffeePart==='white-stone'?'stone':
      coffeePart&&mesh.material?.map?'wood':niche?'niche':satin?'cabinet':'';
-    accepted.add(mesh);paint(mesh,finish,niche);
+    let seam;
+    if(f.id==='fmv62bwbp1'&&finish==='cabinet'&&part.cabinetDoorSize){
+     if(!mesh.geometry.boundingBox)mesh.geometry.computeBoundingBox();
+     const {min,max}=mesh.geometry.boundingBox;
+     seam=new T.Vector2(min.y,max.y);
+    }
+    accepted.add(mesh);paint(mesh,finish,niche,seam);
    });
    if(contactTypes.test(f.type)&&!f.pose3D&&model.userData.floorBase.known&&Math.abs(model.position.y-model.userData.floorBase.z/1000)<.025){
     supports.set(model,findSupports(model,scopedCabinet));
