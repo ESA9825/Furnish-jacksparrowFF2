@@ -186,6 +186,7 @@
           </div>
           <label class="range"><span id="sunMode" data-en="Sun">日照</span> <input type="range" id="sun" min="7" max="18" step=".25" value="10"><span id="sunT">10:00</span></label>
           <output id="sunAltitude" for="sun" hidden></output>
+          <button class="btn chip" id="viewport-gtao" hidden aria-pressed="false" data-en="Ambient occlusion (GTAO)">环境遮蔽 GTAO</button>
           <button class="btn" id="sunSettings" data-en="Sun settings">日照设置</button>
         </div>
         <div class="showsec"><b data-en="Appearance">外观</b>
@@ -520,6 +521,7 @@
 <script src="src/core/product-rules.js"></script>
 <script src="src/core/lighting-core.js"></script>
 <script src="src/render/interior-daylight.js"></script>
+<script src="src/render/viewport-gtao.js"></script>
 <script src="src/core/progressive-view-core.js"></script>
 <script src="src/core/fridge-core.js"></script>
 <script src="src/core/electrical-box-core.js"></script>
@@ -771,7 +773,20 @@ let capturedImage=null,capturedState='';
 const GRAPHICS_IDLE_MS=20000;
 let graphicsIdleTimer=0,graphicsParked=false,graphicsExtension=null,parkedPose=null;
 let renderer, labelRenderer, scene, camera, orbit, walkCtl, hemi, sun, ground, glassMat, wallMat, capMat, frameMat;
-let interiorDaylight;
+let interiorDaylight,viewportAO;
+const gtaoButton=$('#viewport-gtao');
+let gtaoEnabled=false;
+try{gtaoEnabled=localStorage.getItem('furnish-viewport-gtao-v1')==='1';}catch{}
+const gtaoScope=()=>PLAN.id==='custom_mv37igji';
+function updateGtaoControl(){
+  const smooth=globalThis.FurnishProgressiveView?.mode()==='smooth';
+  const available=!!renderer?.capabilities.isWebGL2&&(!viewportAO||viewportAO.available());
+  gtaoButton.hidden=!gtaoScope()||!smooth;
+  gtaoButton.disabled=!available;
+  gtaoButton.classList.toggle('on',gtaoEnabled&&available);
+  gtaoButton.setAttribute('aria-pressed',String(gtaoEnabled&&available));
+  gtaoButton.dataset.state=available?(gtaoEnabled?'on':'off'):'unavailable';
+}
 let archFloor, archUp, furnG, clearanceG, labelG, wallLabelG, lampG, colliders = [], selKey = null, selHelper = null;
 let electricalG, electricalKey='';
 let elevationG,issueG,sceneIssue=null,issueTimer=0,selectionTransform=null,sceneMeasure=null;
@@ -794,6 +809,14 @@ function init(){
   if (inited) return; inited = true;
   renderer = new THREE.WebGLRenderer({antialias:true, preserveDrawingBuffer:true});
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  gtaoButton.onclick=()=>{
+    gtaoEnabled=!gtaoEnabled;
+    try{localStorage.setItem('furnish-viewport-gtao-v1',gtaoEnabled?'1':'0');}catch{}
+    if(!gtaoEnabled)viewportAO?.release();
+    updateGtaoControl();
+    invalidate();
+  };
+  updateGtaoControl();
   renderer.setSize(SW(), SH());
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;
@@ -1666,6 +1689,8 @@ function syncElectrical(){
 
 function sync(force){
   if (!inited || (!active && !force)) return;
+  updateGtaoControl();
+  if(gtaoButton.hidden)viewportAO?.release();
   H=FurnishProject.ceilingHeight(state)/1000;
   const settings=FurnishDesign.sceneSettings(state.scene3d);
   const preview=opt.sunPreview;
@@ -1898,6 +1923,7 @@ function parkGraphics(){
   colliders=[];
   selKey=null;
   sigArch=sigFurn=sigLabels=sigNorth='';
+  viewportAO?.dispose();viewportAO=null;
   renderer.renderLists.dispose();
   sun.shadow.dispose();
   sun.shadow.map=null;
@@ -1968,6 +1994,7 @@ async function exit(){
   stage.classList.remove('is3d');                    // 正俯视与 2D 重合后淡出，不缩放实体
   await wait(160);
   active = false; cancelAnimationFrame(raf); raf = 0;
+  viewportAO?.release();
   stage.classList.remove('animating');
   graphicsIdleTimer=setTimeout(parkGraphics,GRAPHICS_IDLE_MS);
 }
@@ -2361,7 +2388,16 @@ function bindUI(){
 }
 
 /* ======================= 主循环 ======================= */
-function renderScene(){interiorDaylight?.contacts();FurnishDownlightModel.limitLights(scene,camera,renderer.capabilities);renderer.render(scene,camera);}
+function renderScene(){
+  interiorDaylight?.contacts();
+  FurnishDownlightModel.limitLights(scene,camera,renderer.capabilities);
+  if(gtaoEnabled&&gtaoScope()&&!anim&&globalThis.FurnishProgressiveView?.mode()==='smooth'){
+    viewportAO??=FurnishViewportGTAO.create(THREE,renderer);
+    if(viewportAO.draw(scene,camera))return;
+    updateGtaoControl();
+  }
+  renderer.render(scene,camera);
+}
 const clock = new THREE.Clock();
 function startLoop(){ invalidate(); if (!raf){ clock.getDelta(); raf = requestAnimationFrame(loop); } }
 function loop(){

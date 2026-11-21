@@ -34,7 +34,7 @@ function enter(){if(current)return;const host=document.querySelector('#view3d');
  function interact(e){if(e.type==='pointerdown')s.held=true;s.quiet=performance.now();hide();if(s.frame){s.pause=true;post('pause');}}
  function release(){s.held=false;s.quiet=performance.now();}
  host.addEventListener('pointerdown',interact,true);host.addEventListener('wheel',interact,{capture:true,passive:true});window.addEventListener('pointerup',release,true);window.addEventListener('pointercancel',release,true);
- function retry(){dispose();s.blocked=false;s.quiet=performance.now();s.policy=FurnishProgressivePolicy.performancePolicy(mode);bar.querySelector('#progressive-retry').hidden=true;status('准备渐进预览…');}
+ function retry(){dispose();s.blocked=false;s.quiet=performance.now();s.policy=FurnishProgressivePolicy.performancePolicy(mode);bar.querySelector('#progressive-retry').hidden=true;status('准备渐进预览…');root.View3D?.sync();}
  const select=bar.querySelector('select');select.value=mode;select.onchange=()=>{mode=select.value;try{localStorage.setItem('furnish-observation-v1',mode);}catch{}retry();};bar.querySelector('#progressive-retry').onclick=()=>{mode='auto';select.value=mode;try{localStorage.setItem('furnish-observation-v1',mode);}catch{}retry();};
  async function build(state){dispose();const token=s.token;s.building=true;s.sceneKey=state.sceneKey;bar.dataset.state='preparing';status('准备渐进预览…');s.policy.reset();
   try{const data=await root.View3D.progressiveScene();if(!s.active||s.token!==token)return;const fresh=root.View3D.progressiveState();if(!fresh||fresh.sceneKey!==state.sceneKey){dispose();s.quiet=performance.now();return;}
@@ -66,5 +66,5 @@ function enter(){if(current)return;const host=document.querySelector('#view3d');
  const timer=setInterval(tick,160);s.close=()=>{s.active=false;dispose();clearInterval(timer);host.removeEventListener('pointerdown',interact,true);host.removeEventListener('wheel',interact,true);window.removeEventListener('pointerup',release,true);window.removeEventListener('pointercancel',release,true);window.removeEventListener('message',receive);bar.remove();};status('准备渐进预览…');tick();
 }
 function exit(){current?.close();current=null;}
-root.FurnishProgressiveView={enter,exit};
+root.FurnishProgressiveView={enter,exit,mode:()=>mode};
 })(globalThis);

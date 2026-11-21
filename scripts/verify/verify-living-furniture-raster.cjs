@@ -22,11 +22,12 @@ const customTargets=!!process.env.FURNISH_RASTER_TARGETS;
 const daylightFile='src/render/interior-daylight.js';
 const secondCamera=process.env.FURNISH_RASTER_SECOND_CAMERA?JSON.parse(process.env.FURNISH_RASTER_SECOND_CAMERA):null;
 const rooms=process.env.FURNISH_RASTER_ROOMS?JSON.parse(fs.readFileSync(process.env.FURNISH_RASTER_ROOMS,'utf8')):null;
+const trialGTAO=process.env.FURNISH_RASTER_GTAO==='1';
 const panCamera=rooms||process.env.FURNISH_RASTER_PAN==='1';
 const previewHours=(process.env.FURNISH_RASTER_HOURS||'').split(',').filter(Boolean).map(Number);
 const hash=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const read=file=>fs.readFileSync(file);
-const variants=(process.env.FURNISH_RASTER_RUNS||'before,after,no-sheen,no-sheen,after,before').split(',');
+const variants=(process.env.FURNISH_RASTER_RUNS||(trialGTAO?'before,after,after,before':'before,after,no-sheen,no-sheen,after,before')).split(',');
 const collectSource=()=>Object.fromEntries([...files,daylightFile].map(file=>[file,read(path.join(root,file))]));
 const summary=values=>{
  const sorted=[...values].sort((a,b)=>a-b);
@@ -78,26 +79,27 @@ async function closeTestApp(app){
 async function run(){
  assert.ok(project&&baseline,'Usage: verify-living-furniture-raster.cjs <1601 workspace file> <before commit>');
  assert.ok(previewHours.every(hour=>Number.isFinite(hour)&&hour>=0&&hour<=24),'Invalid preview hour');
- assert.ok(variants.every(v=>['before','after','no-sheen'].includes(v)),'Unknown benchmark variant');
+ assert.ok(variants.every(v=>v==='before'||v==='after'||(!trialGTAO&&v==='no-sheen')),'Unknown benchmark variant');
  const source=read(project),after=collectSource(),before=Object.fromEntries(files.map(file=>
   [file,execFileSync('git',['show',baseline+':'+file],{cwd:root,maxBuffer:8*1024*1024})]));
  if(execFileSync('git',['ls-tree',baseline,'--',daylightFile],{cwd:root}).length)
   before[daylightFile]=execFileSync('git',['show',baseline+':'+daylightFile],{cwd:root});
  const job=artifacts.createRun({parent:path.join(root,'output/desktop-verification.noindex'),prefix:rooms||customTargets?'room-raster-':'living-furniture-'});
  const cases=rooms||[{camera,targets,secondCamera}];
- const report={sourceHash:hash(source),baseline,...(rooms?{rooms}:{camera,targets,...(secondCamera?{secondCamera}:{})}),results:[]};
+ const report={sourceHash:hash(source),baseline,trialGTAO,...(rooms?{rooms}:{camera,targets,...(secondCamera?{secondCamera}:{})}),results:[]};
  let passed=false,app;
  console.log(job.dir);
  try{
   const work=job.workspace('workspace',root,{directories:['src','styles','vendor'],files:['index.html','manifest.webmanifest']});
   for(const file of runtimeFiles)job.copy(path.join(root,'scripts',file),path.join('workspace/scripts',file));
   const save=path.join(work,'projects/workspace.furnish.json');
-  report.sources=Object.fromEntries(files.map(file=>[file,{before:hash(before[file]),after:hash(after[file])}]));
-  report.sources[daylightFile]={...(before[daylightFile]?{before:hash(before[daylightFile])}:{}),after:hash(after[daylightFile])};
+  report.sources=Object.fromEntries(files.map(file=>[file,{before:hash(trialGTAO?after[file]:before[file]),after:hash(after[file])}]));
+  if(trialGTAO)report.sources['src/render/viewport-gtao.js']={after:hash(read(path.join(root,'src/render/viewport-gtao.js')))};
+  report.sources[daylightFile]={...(before[daylightFile]?{before:hash(trialGTAO?after[daylightFile]:before[daylightFile])}:{}),after:hash(after[daylightFile])};
   for(const [i,variant] of variants.entries()){
    const profile=job.discard('profile-'+i);
    fs.writeFileSync(save,source);
-   const version=variant==='before'?before:after;
+   const version=variant==='before'&&!trialGTAO?before:after;
    for(const [file,buffer] of Object.entries(version)){
     let code=buffer.toString();
     if(file.endsWith('yeswood-sofa-model.js')&&variant==='no-sheen'){
@@ -105,9 +107,9 @@ async function run(){
      assert.notEqual(code,buffer.toString(),'Could not isolate the sheen parameter');
     }
     if(file==='index.html'){
-     const render='renderer.render(scene,camera);}';
+     const render='function renderScene(){';
      assert.equal(code.split(render).length,2,'Production render hook changed');
-     code=code.replace(render,`const started=performance.now();renderer.render(scene,camera);
+     code=code.replace(render,`function renderScene(){const started=performance.now();drawBenchmarkScene();
       const metrics=window.furnitureBench;if(metrics.samples)metrics.samples.push({at:started,cpu:performance.now()-started});
       if(!metrics.target)metrics.target=(id)=>{
        const rect=renderer.domElement.getBoundingClientRect();
@@ -121,6 +123,10 @@ async function run(){
         if(Number.isFinite(x)&&Number.isFinite(y)&&document.elementFromPoint(x,y)===renderer.domElement&&pick({clientX:x,clientY:y})?.fid===id)return {x,y};
        }
        return null;
+      };
+      if(!metrics.captureBeauty)metrics.captureBeauty=()=>{
+       if(typeof viewportAO==='undefined'||!viewportAO?.draw(scene,camera,'beauty'))return null;
+       return renderer.domElement.toDataURL('image/png');
       };
       if(!metrics.info)metrics.info=()=>{
        const gl=renderer.getContext(),ext=gl.getExtension('WEBGL_debug_renderer_info');
@@ -137,7 +143,7 @@ async function run(){
         reader.readAsDataURL(new Blob([buffer]));
        });
       };
-     }`);
+     }function drawBenchmarkScene(){`);
     }
     fs.writeFileSync(path.join(work,file),code);
    }
@@ -151,7 +157,7 @@ async function run(){
    const page=await app.firstWindow();
    const errors=[];
    page.on('pageerror',error=>errors.push(error.message));
-   page.on('console',message=>{if(message.type()==='error'&&/WebGLProgram|Shader Error/.test(message.text()))errors.push(message.text());});
+   page.on('console',message=>{if((message.type()==='error'&&/WebGLProgram|Shader Error/.test(message.text()))||(trialGTAO&&/Furnish GTAO:|INVALID_(?:FRAMEBUFFER_OPERATION|OPERATION)/.test(message.text())))errors.push(message.text());});
    await app.context().addInitScript(()=>{
     localStorage.setItem('furnish-observation-v1','smooth');
     window.furnitureBench={samples:null,moves:null,takeSamples(){
@@ -185,12 +191,24 @@ async function run(){
     assert.ok(scene.pose,'Production 3D did not open');
     await page.waitForFunction(()=>document.querySelector('#progressive-controls')?.dataset.state==='smooth');
     assert.equal(await page.locator('#progressive-frame').count(),0);
+    if(trialGTAO&&variant!=='before'){
+     await page.locator('#showMenu > summary').click();
+     await page.locator('#viewport-gtao').click();
+     await page.locator('#showMenu > summary').click();
+     assert.equal(await page.locator('#viewport-gtao').getAttribute('aria-pressed'),'true');
+    }
     await page.evaluate(()=>View3D.automationReady());
     const capture=async suffix=>{
      const png=await page.evaluate(()=>View3D.image());
      fs.writeFileSync(path.join(job.dir,variant+'-'+i+(name?'-'+name:'')+suffix+'.png'),Buffer.from(png.split(',')[1],'base64'));
     };
     await capture('');
+    if(trialGTAO&&variant!=='before'){
+     const raw=await page.evaluate(()=>furnitureBench.captureBeauty());
+     assert.ok(raw,'GTAO offscreen capture is unavailable');
+     fs.writeFileSync(path.join(job.dir,variant+'-'+i+'-beauty.png'),Buffer.from(raw.split(',')[1],'base64'));
+     await page.evaluate(()=>View3D.automationReady());
+    }
     if(secondCamera){
      await page.evaluate(pose=>View3D.automationCamera(pose),secondCamera);
      await capture('-secondary');
@@ -278,6 +296,7 @@ async function run(){
       await setView('3d');await View3D.automationCamera(camera);
       return await furnitureBench.exportModels(scene.targets.map(f=>f.id));
      },{camera,scene});
+     if(trialGTAO)assert.equal(await page.locator('#viewport-gtao').getAttribute('aria-pressed'),'true','GTAO preference did not survive reload');
      const glb=Buffer.from(data.split(',')[1],'base64');
      const document=JSON.parse(glb.subarray(20,20+glb.readUInt32LE(12)));
      const fabrics=document.materials.filter(m=>m.extensions?.KHR_materials_sheen);
