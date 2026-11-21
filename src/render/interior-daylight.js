@@ -53,7 +53,9 @@ function create(T,scene,{wx,wz,inside}){
   furnishSkyTint:{value:new T.Vector3(.80,.91,1)},
   furnishInteriorSun:{value:new T.Vector4(0,1,0,0)},
   furnishFinishField:{value:null},furnishFinishBounds:{value:new T.Vector4()},
-  furnishFinishTexture:{value:null},furnishWallContact:{value:1}
+  furnishFinishTexture:{value:null},furnishWallContact:{value:1},
+  furnishSofaPose:{value:new T.Vector4()},furnishSofaSize:{value:new T.Vector4()},
+  furnishSofaVisible:{value:0}
  };
  const decorated=new Map(),variants=new Map(),supports=new Map();
  const inverse=new T.Matrix4(),matrix=new T.Matrix4(),box=new T.Box3();
@@ -63,7 +65,7 @@ function create(T,scene,{wx,wz,inside}){
  const overlay=new T.Group();
  scene.add(overlay);
  let patch,sky,field,finishField,finishTexture,wallsGroup,floors=[],bounds=null,lastPose='',daylight=0;
- let roomById=new Map();
+ let roomById=new Map(),sofa=null;
 
  function dataTexture(width,height,fill){
   const bytes=new Uint8Array(width*height*4);
@@ -164,23 +166,27 @@ function create(T,scene,{wx,wz,inside}){
    // Lintels and open doorways leave no footprint.
    if(box.max.y-box.min.y<.20)return;
    const polygon=mesh.userData.wallFinish?.poly?.map(([x,y])=>[wx(x),wz(y)]);
-   bases.push({bounds:box.clone(),polygon});
+   bases.push({bounds:box.clone(),polygon,runsAlongX:box.max.x-box.min.x>=box.max.z-box.min.z});
   });
   finishField=dataTexture(256,256,(i,j)=>{
    const x=minX+(i+.5)/256*(maxX-minX),z=minZ+(j+.5)/256*(maxZ-minZ);
    const room=rooms.find(floor=>inside(x,z,floor.userData.interiorPolygon));
    if(!room)return [0,0,0,255];
    const y=room.position.y;
-   let nearest=.18;
-   for(const {bounds:base,polygon} of bases){
+   let nearest=.18,alongX=.62,alongZ=.62;
+   for(const {bounds:base,polygon,runsAlongX} of bases){
     if(base.min.y>y+.014||base.max.y<y+.08)continue;
     const dx=Math.max(0,base.min.x-x,x-base.max.x),dz=Math.max(0,base.min.z-z,z-base.max.z);
-    if(dx>=nearest||dz>=nearest)continue;
+    if(dx>=.62||dz>=.62)continue;
     const distance=polygon?(inside(x,z,polygon)?0:edgeDistance(x,z,polygon)):Math.hypot(dx,dz);
     nearest=Math.min(nearest,distance);
+    if(runsAlongX)alongX=Math.min(alongX,distance);else alongZ=Math.min(alongZ,distance);
    }
    const contact=Math.pow(Math.max(0,1-nearest/.18),1.65);
-   return [Math.round(255*contact),255,0,255];
+   // Two converging surfaces reduce aperture visibility more than a single
+   // flat wall. Door gaps and above-floor solids keep the same exclusions.
+   const corner=(1-alongX/.62)*(1-alongZ/.62);
+   return [Math.round(255*contact),255,Math.round(255*corner),255];
   });
   uniforms.furnishFinishField.value=finishField;
   finishTexture=dataTexture(128,128,(x,y)=>{
@@ -194,34 +200,77 @@ function create(T,scene,{wx,wz,inside}){
   finishTexture.generateMipmaps=true;
   uniforms.furnishFinishTexture.value=finishTexture;
  }
- function appearance(source,profile){
+ // Widen the existing directional shadow filter on the selected
+ // receivers. Negative radius is a local flag; spot shadows stay unchanged.
+ function softenSun(shader){
+  if(!T.ShaderChunk)return;
+  const shadow=T.ShaderChunk.shadowmap_pars_fragment;
+  const soft=shadow.indexOf('#elif defined( SHADOWMAP_TYPE_PCF_SOFT )');
+  const vsm=shadow.indexOf('#elif defined( SHADOWMAP_TYPE_VSM )',soft);
+  if(soft<0||vsm<0)return;
+  const lighting=T.ShaderChunk.lights_fragment_begin;
+  if(!lighting.includes('directionalLightShadow.shadowRadius, vDirectionalShadowCoord'))return;
+  const branch=shadow.slice(soft,vsm).replace('float dx = texelSize.x;','vec2 filterStep = texelSize * max( 1.0, -shadowRadius );\nfloat dx = filterStep.x;')
+   .replace('float dy = texelSize.y;','float dy = filterStep.y;').replace('uv + texelSize,','uv + filterStep,');
+  shader.fragmentShader=shader.fragmentShader.replace('#include <shadowmap_pars_fragment>',shadow.slice(0,soft)+branch+shadow.slice(vsm))
+   .replace('#include <lights_fragment_begin>',lighting.replace('directionalLightShadow.shadowRadius, vDirectionalShadowCoord',
+    '\n#ifdef SHADOWMAP_TYPE_PCF_SOFT\n-furnishReceiverSpread,\n#else\ndirectionalLightShadow.shadowRadius,\n#endif\nvDirectionalShadowCoord'));
+ }
+ function nichePanelling(model){
+  const backboards=[];
+  model.traverse(mesh=>{
+   if(mesh.isMesh&&mesh.userData.cabinetSection==='operationBack')backboards.push(mesh);
+  });
+  if(!backboards.length)return new Map();
+  inverse.copy(model.matrixWorld).invert();
+  const nicheBounds=new T.Box3(),transforms=new Map();
+  for(const mesh of backboards){
+   const localTransform=new T.Matrix4().multiplyMatrices(inverse,mesh.matrixWorld);
+   if(!mesh.geometry.boundingBox)mesh.geometry.computeBoundingBox();
+   nicheBounds.union(box.copy(mesh.geometry.boundingBox).applyMatrix4(localTransform));
+   transforms.set(mesh,localTransform);
+  }
+  const {min,max}=nicheBounds;
+  const rect=new T.Vector4(min.x,min.y,1/Math.max(.001,max.x-min.x),1/Math.max(.001,max.y-min.y));
+  return new Map(backboards.map(mesh=>[mesh,{rect,transform:transforms.get(mesh),key:mesh.id}]));
+ }
+ function appearance(source,profile,niche){
   if(!source?.isMeshStandardMaterial||source.transparent)return source;
   if(!finishField||source.flatShading||(profile==='wall'&&(source.map||source.roughness<.8)))profile='';
   const pool=variants.get(source)||new Map();
-  if(pool.has(profile))return pool.get(profile);
+  const variantKey=profile==='niche'?profile+':'+niche.key:profile;
+  if(pool.has(variantKey))return pool.get(variantKey);
   const material=source.clone();
   const satinTile=source.userData.satinTile===true||profile==='floor'&&!!source.userData.tileFinish?.layout;
   const tileDetail=profile==='floor'&&satinTile;
   const layout=source.userData.tileFinish?.layout;
   const groutHalfWidth=layout?layout.gap/(2*(Math.min(layout.width,layout.height)+layout.gap)):.006;
-  const paintDetail=profile==='wall',cabinetDetail=profile==='cabinet';
+  const paintDetail=profile==='wall',cabinetDetail=profile==='cabinet',nicheDetail=profile==='niche';
   const smoothReflection=!!source.envMap&&source.roughness<=.30&&source.metalness===0;
   // Keep source PBR values and pre-existing shaders. Export strips these
   // raster hooks and keeps the source values.
   const cacheKey=source.customProgramCacheKey();
-  material.customProgramCacheKey=()=>cacheKey+'|room-daylight-v4|'+smoothReflection+'|'+satinTile+'|'+profile;
+  material.customProgramCacheKey=()=>cacheKey+'|room-daylight-v5|'+smoothReflection+'|'+satinTile+'|'+profile;
   material.onBeforeCompile=function(shader,renderer){
    source.onBeforeCompile.call(this,shader,renderer);
    Object.assign(shader.uniforms,uniforms);
    if(tileDetail)shader.uniforms.furnishFinishJoint={value:groutHalfWidth};
-   shader.vertexShader='varying vec3 furnishInteriorPosition;\n'+(cabinetDetail?'varying vec2 furnishBoardPosition;\n':'')+shader.vertexShader.replace('#include <project_vertex>',`
+   if(nicheDetail){
+    shader.uniforms.furnishNicheRect={value:niche.rect};
+    shader.uniforms.furnishNicheLocal={value:niche.transform};
+   }
+   shader.vertexShader='varying vec3 furnishInteriorPosition;\n'+(cabinetDetail?'varying vec2 furnishBoardPosition;\n':'')+(nicheDetail?'varying vec3 furnishNiche;\nuniform vec4 furnishNicheRect;\nuniform mat4 furnishNicheLocal;\n':'')+shader.vertexShader.replace('#include <project_vertex>',`
     #include <project_vertex>
     vec4 furnishInteriorVertex=vec4(transformed,1.0);
     #ifdef USE_INSTANCING
      furnishInteriorVertex=instanceMatrix*furnishInteriorVertex;
     #endif
     furnishInteriorPosition=(modelMatrix*furnishInteriorVertex).xyz;
-    ${cabinetDetail?'furnishBoardPosition=position.xy;':''}`);
+    ${cabinetDetail?'furnishBoardPosition=position.xy;':''}
+    ${nicheDetail?`
+     vec3 boardAt=(furnishNicheLocal*vec4(position,1.0)).xyz;
+     furnishNiche=vec3((boardAt.xy-furnishNicheRect.xy)*furnishNicheRect.zw,normal.z);
+    `:''}`);
    shader.fragmentShader=`
     varying vec3 furnishInteriorPosition;
     uniform sampler2D furnishDaylightMap;
@@ -240,6 +289,12 @@ function create(T,scene,{wx,wz,inside}){
       return (planPoint-furnishFinishBounds.xy)*furnishFinishBounds.zw;
      }
     `:''}
+    ${paintDetail?`
+     uniform vec4 furnishSofaPose;
+     uniform vec4 furnishSofaSize;
+     uniform float furnishSofaVisible;
+    `:''}
+    ${nicheDetail?'varying vec3 furnishNiche;':''}
     ${tileDetail?'uniform float furnishFinishJoint;':''}
     ${cabinetDetail?'varying vec2 furnishBoardPosition;':''}
     void furnishWindowLight(int sourceIndex,float energy,vec3 normal,vec3 view,vec3 diffuse,
@@ -291,12 +346,22 @@ function create(T,scene,{wx,wz,inside}){
       `}
      `:``}
     }
-   `+shader.fragmentShader.replace('#include <roughnessmap_fragment>',`
+   `+shader.fragmentShader.replace('#include <lights_fragment_begin>',`
+    ${profile?`
+     float furnishReceiver=1.0;
+     ${paintDetail?`
+      furnishReceiver=paintAndCorner.x;
+     `:''}
+     float furnishReceiverSpread=mix(1.0,2.9,furnishReceiver);
+    `:''}
+    #include <lights_fragment_begin>
+   `).replace('#include <roughnessmap_fragment>',`
     #include <roughnessmap_fragment>
     ${paintDetail?`
      vec3 wallNormal=normalize((vec4(vNormal,0.0)*viewMatrix).xyz);
      vec2 wallPlan=furnishInteriorPosition.xz+wallNormal.xz*.065;
-     float hasPaint=texture2D(furnishFinishField,furnishFinishUV(wallPlan)).g*(1.0-abs(wallNormal.y));
+     vec2 paintAndCorner=texture2D(furnishFinishField,furnishFinishUV(wallPlan)).gb;
+     float hasPaint=paintAndCorner.x*(1.0-abs(wallNormal.y));
      vec2 wallUV=abs(wallNormal.x)>abs(wallNormal.z)?furnishInteriorPosition.zy:furnishInteriorPosition.xy;
      vec2 plaster=texture2D(furnishFinishTexture,wallUV*.72).rg;
      diffuseColor.rgb*=mix(1.0,0.98+0.34*(plaster.r-.5)+0.07*(plaster.g-.5),hasPaint);
@@ -344,19 +409,54 @@ function create(T,scene,{wx,wz,inside}){
     }
     #include <aomap_fragment>
     ${profile==='floor'?`
-     float floorContact=texture2D(furnishFinishField,furnishFinishUV(furnishInteriorPosition.xz)).r*furnishWallContact;
+     vec3 floorProximity=texture2D(furnishFinishField,furnishFinishUV(furnishInteriorPosition.xz)).rgb;
+     float floorContact=floorProximity.r*furnishWallContact;
+     reflectedLight.indirectDiffuse*=1.0-0.30*floorProximity.b*furnishWallContact;
      reflectedLight.indirectDiffuse*=1.0-0.64*floorContact;
      reflectedLight.directDiffuse*=1.0-0.26*floorContact;
      reflectedLight.indirectSpecular*=1.0-0.48*floorContact;
     `:''}
+    ${paintDetail?`
+     if(hasPaint>0.0){
+      float localCorner=paintAndCorner.y;
+      float nearFloor=1.0-smoothstep(0.23,1.48,furnishInteriorPosition.y);
+      vec2 toSofa=furnishInteriorPosition.xz-furnishSofaPose.xy;
+      float couchX=dot(toSofa,vec2(furnishSofaPose.z,-furnishSofaPose.w));
+      float couchZ=dot(toSofa,vec2(furnishSofaPose.w,furnishSofaPose.z));
+      float behind=1.0-smoothstep(0.022,0.34,max(0.0,-couchZ-furnishSofaSize.y));
+      behind*=1.0-smoothstep(-furnishSofaSize.y+0.015,-furnishSofaSize.y+0.11,couchZ);
+      float along=1.0-smoothstep(furnishSofaSize.x-0.05,furnishSofaSize.x+0.18,abs(couchX));
+      float above=1.0-smoothstep(furnishSofaSize.w-0.035,furnishSofaSize.w+0.27,furnishInteriorPosition.y);
+      float low=smoothstep(furnishSofaSize.z-0.04,furnishSofaSize.z+0.10,furnishInteriorPosition.y);
+      float sofaShade=behind*along*above*low*furnishSofaVisible;
+      reflectedLight.indirectDiffuse*=1.0-hasPaint*(0.40*localCorner*(0.32+0.68*nearFloor)+0.45*sofaShade);
+      // A retained, broad floor bounce softens the transition over the
+      // contact zone. The existing room colour and daylight drive the tint.
+      reflectedLight.indirectDiffuse+=diffuseColor.rgb*vec3(0.95,0.82,0.66)
+       *(0.065*nearFloor*(1.0-localCorner)*(1.0-sofaShade)*hasPaint*furnishDaylightStrength);
+     }
+    `:''}
+    ${nicheDetail?`
+     vec2 openingAt=clamp(furnishNiche.xy,0.0,1.0);
+     float side=1.0-smoothstep(0.0,0.23,min(openingAt.x,1.0-openingAt.x));
+     float hood=smoothstep(0.62,1.0,openingAt.y);
+     float bottom=1.0-smoothstep(0.0,0.15,openingAt.y);
+     float face=step(0.55,furnishNiche.z);
+     float occlusion=face*(0.14+0.19*side+0.30*hood+0.07*bottom);
+     reflectedLight.indirectDiffuse*=1.0-occlusion;
+     reflectedLight.indirectSpecular*=1.0-0.65*occlusion;
+     reflectedLight.indirectDiffuse+=diffuseColor.rgb*vec3(1.0,0.78,0.56)
+      *(0.17*face*(1.0-hood)*(1.0-side)*furnishDaylightStrength);
+    `:''}
    `);
+   if(profile)softenSun(shader);
   };
-  pool.set(profile,material);variants.set(source,pool);
+  pool.set(variantKey,material);variants.set(source,pool);
   return material;
  }
- function paint(mesh,profile=''){
+ function paint(mesh,profile='',niche){
   if(!bounds||!mesh.isMesh||decorated.has(mesh)||!box.setFromObject(mesh).intersectsBox(bounds))return;
-  const source=mesh.material,next=Array.isArray(source)?source.map(m=>appearance(m,profile)):appearance(source,profile);
+  const source=mesh.material,next=Array.isArray(source)?source.map(m=>appearance(m,profile,niche)):appearance(source,profile,niche);
   if(Array.isArray(source)?source.every((m,i)=>m===next[i]):source===next)return;
   decorated.set(mesh,{source,next});
   mesh.material=next;
@@ -388,12 +488,21 @@ function create(T,scene,{wx,wz,inside}){
   const entries=[...supports];
   const group=entries[0]?.[0].parent;
   if(!group?.visible||group.scale.y<.99){
+   uniforms.furnishSofaVisible.value=0;
    patch.count=0;lastPose='';return;
   }
   const key=entries.map(([model])=>[model.visible,model.position.x,model.position.y,model.position.z,model.rotation.y,model.scale.x].join(',')).join('|')
    +floors.map(floor=>floor.visible?'1':'0').join('');
   if(key===lastPose)return;
   lastPose=key;
+  const model=sofa?.model;
+  const showSofa=model?.visible&&Math.abs(model.position.y-sofa.floor)<.026;
+  uniforms.furnishSofaVisible.value=showSofa?1:0;
+  if(showSofa){
+   const yaw=model.rotation.y;
+   uniforms.furnishSofaPose.value.set(model.position.x,model.position.z,Math.cos(yaw),Math.sin(yaw));
+   uniforms.furnishSofaSize.value.set(sofa.width/2,sofa.depth/2,sofa.floor,sofa.floor+sofa.height);
+  }
   let count=0;
   for(const [model,parts] of entries){
    if(!model.visible||!model.parent?.visible)continue;
@@ -449,17 +558,23 @@ function create(T,scene,{wx,wz,inside}){
   });
   const byId=new Map(furniture.map(f=>[f.id,f]));
   furnG.updateWorldMatrix(true,true);
-  supports.clear();
+  supports.clear();sofa=null;
   for(const model of furnG.children){
    const f=byId.get(model.userData.fid);
    if(!f||!roomById.has(model.userData.floorBase?.roomId))continue;
-   const scopedCabinet=f.type==='cabinet'&&finishRooms.has(model.userData.floorBase.roomId);
+   const base=model.userData.floorBase;
+   const scopedCabinet=f.type==='cabinet'&&finishRooms.has(base.roomId);
+   const niches=scopedCabinet?nichePanelling(model):null;
+   if(!sofa&&f.type==='sofa_yeswood_cherry'&&finishRooms.has(base.roomId)&&base.known&&!f.pose3D){
+    sofa={model,floor:base.z/1000,width:(f.w??2160)/1000,depth:(f.d??892)/1000,height:(f.h??895)/1000};
+   }
    model.traverse(mesh=>{
     if(!mesh.isMesh)return;
     const part=mesh.userData;
     const satin=scopedCabinet&&(part.cabinetDoorSize||part.cabinetDrawerBoard==='front')&&
      !part.cabinetHardware&&!mesh.material?.map&&mesh.material?.metalness===0;
-    accepted.add(mesh);paint(mesh,satin?'cabinet':'');
+    const niche=niches?.get(mesh);
+    accepted.add(mesh);paint(mesh,niche?'niche':satin?'cabinet':'',niche);
    });
    if(contactTypes.test(f.type)&&!f.pose3D&&model.userData.floorBase.known&&Math.abs(model.position.y-model.userData.floorBase.z/1000)<.025){
     supports.set(model,findSupports(model,scopedCabinet));
@@ -514,7 +629,7 @@ function create(T,scene,{wx,wz,inside}){
   field?.dispose();uniforms.furnishDaylightMap.value=null;
   finishField?.dispose();finishTexture?.dispose();
   uniforms.furnishFinishField.value=uniforms.furnishFinishTexture.value=null;
-  patch=sky=field=finishField=finishTexture=wallsGroup=bounds=null;roomById.clear();floors=[];lastPose='';
+  patch=sky=field=finishField=finishTexture=wallsGroup=bounds=null;roomById.clear();floors=[];sofa=null;uniforms.furnishSofaVisible.value=0;lastPose='';
  }
  return {begin,contacts,setLight,reset,overlay};
 }
