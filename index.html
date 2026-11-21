@@ -188,6 +188,7 @@
           <output id="sunAltitude" for="sun" hidden></output>
           <button class="btn chip" id="viewport-gtao" hidden aria-pressed="false" data-en="Ambient occlusion (GTAO)">环境遮蔽 GTAO</button>
           <button class="btn chip" id="viewport-bloom" hidden aria-pressed="false" data-en="Lamp glow (Bloom)">灯具柔光 Bloom</button>
+          <button class="btn chip" id="viewport-smaa" hidden aria-pressed="false" data-en="Edge antialiasing (SMAA)">边缘抗锯齿 SMAA</button>
           <button class="btn" id="sunSettings" data-en="Sun settings">日照设置</button>
         </div>
         <div class="showsec"><b data-en="Appearance">外观</b>
@@ -524,6 +525,8 @@
 <script src="src/render/interior-daylight.js"></script>
 <script src="src/render/viewport-gtao.js"></script>
 <script src="src/render/viewport-bloom.js"></script>
+<script src="vendor/three-r160/smaa.offline.js"></script>
+<script src="src/render/viewport-smaa.js"></script>
 <script src="src/core/progressive-view-core.js"></script>
 <script src="src/core/fridge-core.js"></script>
 <script src="src/core/electrical-box-core.js"></script>
@@ -776,11 +779,12 @@ const GRAPHICS_IDLE_MS=20000;
 let graphicsIdleTimer=0,graphicsParked=false,graphicsExtension=null,parkedPose=null;
 let renderer, labelRenderer, scene, camera, orbit, walkCtl, hemi, sun, ground, glassMat, wallMat, capMat, frameMat;
 let interiorDaylight,viewportAO;
-const gtaoButton=$('#viewport-gtao'),bloomButton=$('#viewport-bloom');
-let gtaoEnabled=false,bloomEnabled=false,bloomNight=false,bloomRevision=0;
+const gtaoButton=$('#viewport-gtao'),bloomButton=$('#viewport-bloom'),smaaButton=$('#viewport-smaa');
+let gtaoEnabled=false,bloomEnabled=false,smaaEnabled=false,bloomNight=false,bloomRevision=0;
 let viewportPointer=null;
 try{gtaoEnabled=localStorage.getItem('furnish-viewport-gtao-v1')==='1';}catch{}
 try{bloomEnabled=localStorage.getItem('furnish-viewport-bloom-v1')==='1';}catch{}
+try{smaaEnabled=localStorage.getItem('furnish-viewport-smaa-v1')==='1';}catch{}
 const viewportEffectScope=()=>PLAN.id==='custom_mv37igji'&&globalThis.FurnishProgressiveView?.mode()==='smooth';
 const nightInteraction=()=>bloomNight&&viewportEffectScope()&&!anim&&opt.mode==='orbit'&&!!viewportPointer?.moving;
 function syncViewportPixelRatio(){
@@ -794,7 +798,8 @@ function updateEffectControls(){
   const webgl=!!renderer?.capabilities.isWebGL2&&THREE.REVISION==='160';
   for(const [button,visible,enabled,available] of [
     [gtaoButton,!hidden,gtaoEnabled,webgl&&(!viewportAO||viewportAO.available())],
-    [bloomButton,!hidden&&bloomNight,bloomEnabled,webgl&&(!viewportAO||viewportAO.bloomAvailable())]
+    [bloomButton,!hidden&&bloomNight,bloomEnabled,webgl&&(!viewportAO||viewportAO.bloomAvailable())],
+    [smaaButton,!hidden,smaaEnabled,webgl&&(!viewportAO||viewportAO.smaaAvailable())]
   ]){
     button.hidden=!visible;
     button.disabled=!available;
@@ -802,6 +807,9 @@ function updateEffectControls(){
     button.setAttribute('aria-pressed',String(enabled&&available));
     button.dataset.state=available?(enabled?'on':'off'):'unavailable';
   }
+}
+function releaseViewportIfIdle(){
+  if(!gtaoEnabled&&!(bloomEnabled&&bloomNight)&&!smaaEnabled)viewportAO?.release();
 }
 let archFloor, archUp, furnG, clearanceG, labelG, wallLabelG, lampG, colliders = [], selKey = null, selHelper = null;
 let electricalG, electricalKey='';
@@ -828,20 +836,24 @@ function init(){
   gtaoButton.onclick=()=>{
     gtaoEnabled=!gtaoEnabled;
     try{localStorage.setItem('furnish-viewport-gtao-v1',gtaoEnabled?'1':'0');}catch{}
-    if(!gtaoEnabled){
-      if(bloomEnabled&&bloomNight)viewportAO?.releaseAO();
-      else viewportAO?.release();
-    }
+    if(!gtaoEnabled)viewportAO?.releaseAO();
+    releaseViewportIfIdle();
     updateEffectControls();
     invalidate();
   };
   bloomButton.onclick=()=>{
     bloomEnabled=!bloomEnabled;
     try{localStorage.setItem('furnish-viewport-bloom-v1',bloomEnabled?'1':'0');}catch{}
-    if(!bloomEnabled){
-      if(gtaoEnabled)viewportAO?.releaseBloom();
-      else viewportAO?.release();
-    }
+    if(!bloomEnabled)viewportAO?.releaseBloom();
+    releaseViewportIfIdle();
+    updateEffectControls();
+    invalidate();
+  };
+  smaaButton.onclick=()=>{
+    smaaEnabled=!smaaEnabled;
+    try{localStorage.setItem('furnish-viewport-smaa-v1',smaaEnabled?'1':'0');}catch{}
+    if(!smaaEnabled)viewportAO?.releaseSMAA();
+    releaseViewportIfIdle();
     updateEffectControls();
     invalidate();
   };
@@ -1810,8 +1822,8 @@ function applyLight(){
   if(bloomNight!==night){
     bloomNight=night;
     if(!night){
-      if(gtaoEnabled)viewportAO?.releaseBloom();
-      else viewportAO?.release();
+      viewportAO?.releaseBloom();
+      releaseViewportIfIdle();
     }
     updateEffectControls();
   }
@@ -2456,12 +2468,13 @@ function renderScene(){
   interiorDaylight?.contacts();
   FurnishDownlightModel.limitLights(scene,camera,renderer.capabilities);
   const bloom=bloomEnabled&&bloomNight&&(!viewportAO||viewportAO.bloomAvailable());
-  if((gtaoEnabled||bloom)&&!anim&&viewportEffectScope()){
-    viewportAO??=FurnishViewportGTAO.create(THREE,renderer);
-    const drawn=viewportAO.draw(scene,camera,{aoEnabled:gtaoEnabled,bloomRevision:bloom?bloomRevision:undefined});
-    if(!drawn||(bloom&&!viewportAO.bloomAvailable()))updateEffectControls();
+  const smaa=smaaEnabled&&(!viewportAO||viewportAO.smaaAvailable());
+  if((gtaoEnabled||bloom||smaa)&&!anim&&viewportEffectScope()){
+    viewportAO??=FurnishViewportGTAO.create(THREE,renderer,{onSmaaChange:()=>invalidate()});
+    const drawn=viewportAO.draw(scene,camera,{aoEnabled:gtaoEnabled,bloomRevision:bloom?bloomRevision:undefined,smaaEnabled:smaa});
+    if(!drawn||(bloom&&!viewportAO.bloomAvailable())||(smaa&&!viewportAO.smaaAvailable()))updateEffectControls();
     if(drawn)return;
-    if(!gtaoEnabled)viewportAO.release();
+    viewportAO.release();
   }
   renderer.render(scene,camera);
 }

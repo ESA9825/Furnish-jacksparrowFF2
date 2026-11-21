@@ -1,4 +1,4 @@
-/* Shared r160 viewport color/depth, with optional horizon AO and lamp Bloom. */
+/* Shared r160 viewport color/depth and optional AO, Bloom and SMAA. */
 (function(root){
 'use strict';
 
@@ -160,7 +160,7 @@ const resolve=`
  }
 `;
 
-function create(T,renderer){
+function create(T,renderer,{onSmaaChange=()=>{}}={}){
  const screen=new T.Vector2();
  const encodedBackground=new T.Color();
  const view=new T.Camera();
@@ -179,7 +179,7 @@ function create(T,renderer){
  const triangle=new T.Mesh(geometry,ao);
  triangle.frustumCulled=false;scene.add(triangle);
  const gl=renderer.getContext();
- let beauty,buffer,filtered,bloom,failed=false,bloomFailed=false;
+ let beauty,buffer,filtered,bloom,smaa,smaaInput,failed=false,bloomFailed=false,smaaFailed=false;
  // r160's offscreen output normally omits material tone mapping. This
  // internal path gives the beauty target the same color output as the canvas.
  // RGBA8 stores the resulting encoded bytes without an additional sRGB step.
@@ -192,11 +192,17 @@ function create(T,renderer){
   bloom?.dispose();bloom=null;
   composite.uniforms.bloom.value=null;
  }
- function release(){
+ function releaseColor(){
   releaseAO();releaseBloom();
+  smaaInput?.dispose();smaaInput=null;
   beauty?.dispose();beauty=null;
   uniforms.sceneDepth.value=composite.uniforms.beauty.value=null;
  }
+ function releaseSMAA(){
+  smaa?.dispose();smaa=null;
+  smaaInput?.dispose();smaaInput=null;
+ }
+ function release(){releaseSMAA();releaseColor();}
  function checkTarget(target){
   renderer.setRenderTarget(target);
   if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw Error('Incomplete viewport target');
@@ -217,7 +223,7 @@ function create(T,renderer){
   const {x:w,y:h}=screen;
   if(beauty&&beauty.width===w&&beauty.height===h)return true;
   if(w<2||h<2)return false;
-  release();
+  releaseColor();
   const samples=Math.min(renderer.capabilities.maxSamples,gl.getParameter(gl.SAMPLES));
   beauty=new T.WebGLRenderTarget(w,h,{samples,depthTexture:new T.DepthTexture(w,h,T.UnsignedIntType),
    minFilter:T.NearestFilter,magFilter:T.NearestFilter,format:T.RGBAFormat,type:T.UnsignedByteType});
@@ -241,7 +247,20 @@ function create(T,renderer){
   aoSize.set(buffer.width,buffer.height);
   checkTarget(buffer);checkTarget(filtered);
  }
- function draw(main,camera,{aoEnabled=true,bloomRevision}={}){
+ function drawSMAA(withEffects){
+  if(!withEffects){
+   smaaInput?.dispose();smaaInput=null;
+   return smaa.draw(beauty,checkTarget,fullscreen);
+  }
+  if(!smaaInput){
+   smaaInput=new T.WebGLRenderTarget(beauty.width,beauty.height,{depthBuffer:false,
+    minFilter:T.NearestFilter,magFilter:T.NearestFilter});
+   checkTarget(smaaInput);
+  }
+  fullscreen(smaaInput,composite);
+  return smaa.draw(smaaInput,checkTarget,fullscreen);
+ }
+ function draw(main,camera,{aoEnabled=true,bloomRevision,smaaEnabled=false}={}){
   if(!supported||failed||renderer.getRenderTarget()||gl.isContextLost())return false;
   const autoReset=renderer.info.autoReset;
   try{
@@ -263,12 +282,22 @@ function create(T,renderer){
     }catch(error){
      console.warn('Furnish Bloom:',error);
      bloomFailed=true;releaseBloom();
-     if(!aoEnabled)return false;
+     if(!aoEnabled&&!smaaEnabled)return false;
     }
    }
    composite.uniforms.strength.value=aoEnabled?.43:0;
    composite.uniforms.bloom.value=glow;
    composite.uniforms.hasBloom.value=!!glow;
+   if(smaaEnabled&&!smaaFailed){
+    try{
+     smaa??=root.FurnishViewportSMAA.create(T,onSmaaChange);
+     if(drawSMAA(aoEnabled||!!glow))return true;
+    }catch(error){
+     console.warn('Furnish SMAA:',error);
+     smaaFailed=true;releaseSMAA();
+     if(!aoEnabled&&!glow)return false;
+    }
+   }
    fullscreen(null,composite);
    return true;
   }catch(error){
@@ -282,8 +311,8 @@ function create(T,renderer){
   }
  }
  function dispose(){release();geometry.dispose();ao.dispose();filter.dispose();composite.dispose();}
- return {draw,release,releaseAO,releaseBloom,dispose,available:()=>supported&&!failed,
-  bloomAvailable:()=>supported&&!failed&&!bloomFailed};
+ return {draw,release,releaseAO,releaseBloom,releaseSMAA,dispose,available:()=>supported&&!failed,
+  bloomAvailable:()=>supported&&!failed&&!bloomFailed,smaaAvailable:()=>supported&&!failed&&!smaaFailed};
 }
 root.FurnishViewportGTAO={create};
 })(globalThis);

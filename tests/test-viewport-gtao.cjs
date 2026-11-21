@@ -3,15 +3,18 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 require('../src/render/viewport-gtao.js');
 require('../src/render/viewport-bloom.js');
+require('../vendor/three-r160/smaa.offline.js');
+require('../src/render/viewport-smaa.js');
 
 (async()=>{
  const html=fs.readFileSync(require.resolve('../index.html'),'utf8');
  const imports=JSON.parse(html.match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports;
  const T=await import(imports.three);
- let target=null,width=2841,height=1555,status=1;
+ let target=null,width=2841,height=1555,status=1,failSmaa=false;
  const recorded=[];
  const gl={SAMPLES:1,FRAMEBUFFER:2,FRAMEBUFFER_COMPLETE:1,
-  getParameter:()=>4,checkFramebufferStatus:()=>target?.width===200?0:status,isContextLost:()=>false};
+  getParameter:()=>4,checkFramebufferStatus:()=>target?.width===200||(failSmaa&&target?.texture.format===T.RGFormat)?0:status,
+  isContextLost:()=>false};
  const renderer={
   capabilities:{isWebGL2:true,maxSamples:4},
   info:{autoReset:true,reset(){}},
@@ -21,7 +24,9 @@ require('../src/render/viewport-bloom.js');
   getDrawingBufferSize(out){return out.set(width,height);},
   render(scene){recorded.push({scene,target,background:scene.background?.clone()});}
  };
- const effect=FurnishViewportGTAO.create(T,renderer);
+ let lookupsLoaded=0;
+ global.Image=class {set src(value){assert.match(value,/^data:image\/png;base64,/);this.onload();}};
+ const effect=FurnishViewportGTAO.create(T,renderer,{onSmaaChange:()=>lookupsLoaded++});
  const model=new T.Scene(),camera=new T.PerspectiveCamera();
  const background=new T.Color(0x1c2130);
  model.background=background;
@@ -42,6 +47,23 @@ require('../src/render/viewport-bloom.js');
  assert.equal(effect.draw(model,camera,{aoEnabled:false}),true);
  assert.equal(recorded.length,2);
  assert.equal(recorded[0].target,first);
+ recorded.length=0;
+ assert.equal(effect.draw(model,camera,{aoEnabled:false,smaaEnabled:true}),true);
+ assert.equal(lookupsLoaded,2);
+ assert.equal(recorded.length,4);
+ assert.equal(recorded[0].target,first);
+ assert.equal(recorded[1].target.texture.format,T.RGFormat);
+ assert.deepEqual([recorded[1].target.width,recorded[1].target.height],[2841,1555]);
+ assert.equal(recorded[3].target,null);
+ let smaaBuffersReleased=0;
+ for(const {target} of recorded.slice(1,3))target.addEventListener('dispose',()=>smaaBuffersReleased++);
+ recorded.length=0;
+ assert.equal(effect.draw(model,camera,{aoEnabled:true,smaaEnabled:true}),true);
+ assert.equal(recorded.length,7);
+ assert.equal(recorded[1].target,half);
+ assert.equal(lookupsLoaded,2);
+ effect.releaseSMAA();
+ assert.equal(smaaBuffersReleased,2);
  const lamp=new T.Group();
  lamp.userData.fid='fmwf2mkf12';
  const mesh=new T.Mesh(new T.BoxGeometry(),new T.MeshStandardMaterial({emissive:0xffde9e}));
@@ -91,6 +113,10 @@ require('../src/render/viewport-bloom.js');
  try{assert.equal(effect.draw(model,camera,{aoEnabled:true,bloomRevision:1}),true);}finally{console.warn=warn;}
  assert.equal(effect.available(),true,'Bloom framebuffer failure must keep GTAO available');
  assert.equal(effect.bloomAvailable(),false);
+ failSmaa=true;console.warn=()=>{};
+ try{assert.equal(effect.draw(model,camera,{aoEnabled:true,smaaEnabled:true}),true);}finally{console.warn=warn;}
+ assert.equal(effect.smaaAvailable(),false);
+ assert.equal(effect.available(),true,'SMAA framebuffer failure must keep GTAO available');
  target=first;assert.equal(effect.draw(model,camera),false);
  assert.equal(target,first);
  target=null;status=0;width=700;
@@ -100,5 +126,6 @@ require('../src/render/viewport-bloom.js');
  assert.equal(effect.available(),false);
  assert.equal(renderer.info.autoReset,true);
  effect.dispose();
- console.log('PASS shared beauty, GTAO and selective Bloom, independent fallback and resource lifecycle');
+ delete global.Image;
+ console.log('PASS shared beauty, GTAO, selective Bloom and SMAA, independent fallback and resource lifecycle');
 })().catch(error=>{console.error(error);process.exitCode=1;});

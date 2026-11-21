@@ -25,7 +25,14 @@ const gestureCamera=process.env.FURNISH_RASTER_GESTURE_CAMERA?JSON.parse(process
 const rooms=process.env.FURNISH_RASTER_ROOMS?JSON.parse(fs.readFileSync(process.env.FURNISH_RASTER_ROOMS,'utf8')):null;
 const trialGTAO=process.env.FURNISH_RASTER_GTAO==='1';
 const trialBloom=process.env.FURNISH_RASTER_BLOOM==='1';
-const trialEffect=trialGTAO?'viewport-gtao':trialBloom?'viewport-bloom':null;
+const trialSMAA=process.env.FURNISH_RASTER_SMAA==='1';
+const nightTrial=trialBloom||trialSMAA;
+const trialEffect=trialGTAO?'viewport-gtao':trialBloom?'viewport-bloom':trialSMAA?'viewport-smaa':null;
+const trackAngles=Array.from({length:29},(_,i)=>-.052+(i/28)*.104);
+const trackCrops={
+ living:[['window',[.485,.405,.27,.34]],['strip',[.26,.135,.56,.245]]],
+ dining:[['seam',[.663,.258,.30,.425]]]
+};
 const panCamera=rooms||process.env.FURNISH_RASTER_PAN==='1';
 const previewHours=(process.env.FURNISH_RASTER_HOURS||'').split(',').filter(Boolean).map(Number);
 const hash=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
@@ -82,7 +89,8 @@ async function closeTestApp(app){
 async function run(){
  assert.ok(project&&baseline,'Usage: verify-living-furniture-raster.cjs <1601 workspace file> <before commit>');
  assert.ok(previewHours.every(hour=>Number.isFinite(hour)&&hour>=0&&hour<=24),'Invalid preview hour');
- assert.ok(!(trialGTAO&&trialBloom),'Vary only one viewport effect');
+ assert.ok([trialGTAO,trialBloom,trialSMAA].filter(Boolean).length<=1,'Vary only one viewport effect');
+ if(trialSMAA)assert.ok(secondCamera||rooms?.every(r=>r.secondCamera),'SMAA comparison needs both room cameras');
  assert.ok(variants.every(v=>v==='before'||v==='after'||(!trialEffect&&v==='no-sheen')),'Unknown benchmark variant');
  const source=read(project),after=collectSource(),before=Object.fromEntries(files.map(file=>
   [file,execFileSync('git',['show',baseline+':'+file],{cwd:root,maxBuffer:8*1024*1024})]));
@@ -90,7 +98,8 @@ async function run(){
   before[daylightFile]=execFileSync('git',['show',baseline+':'+daylightFile],{cwd:root});
  const job=artifacts.createRun({parent:path.join(root,'output/desktop-verification.noindex'),prefix:rooms||customTargets?'room-raster-':'living-furniture-'});
  const cases=rooms||[{camera,targets,secondCamera}];
- const report={sourceHash:hash(source),baseline,trialGTAO,trialBloom,...(gestureCamera?{gestureCamera}:{}),
+ const report={sourceHash:hash(source),baseline,trialGTAO,trialBloom,trialSMAA,...(gestureCamera?{gestureCamera}:{}),
+  ...(trialSMAA?{trajectory:{anglesRadians:trackAngles,crops:trackCrops},gtao:false,bloom:false}:{}),
   ...(rooms?{rooms}:{camera,targets,...(secondCamera?{secondCamera}:{})}),results:[]};
  let passed=false,app;
  console.log(job.dir);
@@ -99,8 +108,12 @@ async function run(){
   for(const file of runtimeFiles)job.copy(path.join(root,'scripts',file),path.join('workspace/scripts',file));
   const save=path.join(work,'projects/workspace.furnish.json');
   report.sources=Object.fromEntries(files.map(file=>[file,{before:hash(trialEffect?after[file]:before[file]),after:hash(after[file])}]));
-  if(trialEffect)for(const name of ['viewport-gtao','viewport-bloom',...(trialBloom?['ceiling-model']:[])]){
+  if(trialEffect)for(const name of ['viewport-gtao','viewport-bloom',...(nightTrial?['ceiling-model']:[])]){
    const file='src/render/'+name+'.js',digest=hash(read(path.join(root,file)));
+   report.sources[file]={before:digest,after:digest};
+  }
+  if(trialSMAA)for(const file of ['src/render/viewport-smaa.js','vendor/three-r160/smaa.offline.js']){
+   const digest=hash(read(path.join(root,file)));
    report.sources[file]={before:digest,after:digest};
   }
   report.sources[daylightFile]={...(before[daylightFile]?{before:hash(trialEffect?after[daylightFile]:before[daylightFile])}:{}),after:hash(after[daylightFile])};
@@ -119,7 +132,7 @@ async function run(){
      assert.equal(code.split(render).length,2,'Production render hook changed');
      code=code.replace(render,`function renderScene(){const started=performance.now();drawBenchmarkScene();
       const metrics=window.furnitureBench;if(metrics.samples)metrics.samples.push({
-       at:started,cpu:performance.now()-started,...(${trialBloom}?{pixelRatio:renderer.getPixelRatio()}: {})
+       at:started,cpu:performance.now()-started,...(${nightTrial}?{pixelRatio:renderer.getPixelRatio()}: {})
       });
       if(!metrics.target)metrics.target=(id)=>{
        const rect=renderer.domElement.getBoundingClientRect();
@@ -137,6 +150,29 @@ async function run(){
       if(!metrics.captureBeauty)metrics.captureBeauty=()=>{
        if(typeof viewportAO==='undefined'||!viewportAO?.draw(scene,camera,{aoEnabled:false}))return null;
        return renderer.domElement.toDataURL('image/png');
+      };
+      if(${trialSMAA}&&!metrics.holdTrack)metrics.holdTrack=active=>{
+       viewportPointer=active?{moving:true}:null;syncViewportPixelRatio();
+      };
+      if(${trialSMAA}&&!metrics.trackFrame)metrics.trackFrame=(yaw,regions)=>{
+       const original=curPose();
+       try{
+        camera.position.copy(original.p).sub(original.t)
+         .applyAxisAngle(new THREE.Vector3(0,1,0),yaw).add(original.t);
+        camera.lookAt(original.t);camera.updateMatrixWorld(true);
+        applyObservationLayers();drawBenchmarkScene();
+        const source=renderer.domElement,output=document.createElement('canvas');
+        const ctx=output.getContext('2d');
+        const crops=regions.map(([label,[x,y,w,h]])=>{
+         const sx=Math.round(x*source.width),sy=Math.round(y*source.height);
+         output.width=Math.round(w*source.width);output.height=Math.round(h*source.height);
+         ctx.drawImage(source,sx,sy,output.width,output.height,0,0,output.width,output.height);
+         return [label,output.toDataURL('image/png')];
+        });
+        return {crops,position:camera.position.toArray(),target:original.t.toArray(),size:[source.width,source.height]};
+       }finally{
+        camera.position.copy(original.p);camera.lookAt(original.t);camera.updateMatrixWorld(true);
+       }
       };
       if(!metrics.info)metrics.info=()=>{
        const gl=renderer.getContext(),ext=gl.getExtension('WEBGL_debug_renderer_info');
@@ -183,7 +219,7 @@ async function run(){
    const page=await app.firstWindow();
    const errors=[];
    page.on('pageerror',error=>errors.push(error.message));
-   page.on('console',message=>{if((message.type()==='error'&&/WebGLProgram|Shader Error/.test(message.text()))||(trialEffect&&/Furnish (?:GTAO|Bloom):|INVALID_(?:FRAMEBUFFER_OPERATION|OPERATION)/.test(message.text())))errors.push(message.text());});
+   page.on('console',message=>{if((message.type()==='error'&&/WebGLProgram|Shader Error/.test(message.text()))||(trialEffect&&/Furnish (?:GTAO|Bloom|SMAA):|INVALID_(?:FRAMEBUFFER_OPERATION|OPERATION)/.test(message.text())))errors.push(message.text());});
    await app.context().addInitScript(()=>{
     localStorage.setItem('furnish-observation-v1','smooth');
     window.furnitureBench={samples:null,moves:null,takeSamples(){
@@ -198,11 +234,11 @@ async function run(){
    await page.locator('#repository-loading').waitFor({state:'hidden',timeout:60000});
    const cdp=await page.context().newCDPSession(page);
    for(const {name,camera,targets=[],secondCamera} of cases){
-    const scene=await page.evaluate(async ({camera,targets,trialBloom})=>{
+    const scene=await page.evaluate(async ({camera,targets,nightTrial})=>{
      if(FurnishElectricalUI.active())FurnishElectricalUI.setMode('furniture');
      drawer('lib',false);drawer('panel',false);
      select(null);
-     if(trialBloom)mutate(()=>{
+     if(nightTrial)mutate(()=>{
       state.scene3d=FurnishDesign.patchSceneSettings(state.scene3d,{hour:21,night:true,lamps:true,nightLights:false});
       const lampLayer=FurnishLayers.layerId(state,'furniture:fmwf2mkf01');
       if(!FurnishLayers.visible(state,'furniture:fmwf2mkf01')){
@@ -217,7 +253,7 @@ async function run(){
      }));
      return {name:PLAN.name,count:state.furniture.length,settings:state.scene3d,pose,openings,
       targets:targets.map(id=>({id,type:getF(id)?.type,locked:furnitureLocked(getF(id))}))};
-    },{camera,targets,trialBloom});
+    },{camera,targets,nightTrial});
     assert.ok(scene.targets.every(f=>f.type),'Missing benchmark furniture');
     if(!rooms&&!customTargets)assert.deepEqual(scene.targets.map(f=>f.type),['sofa_yeswood_cherry','coffeetable_yeswood_cherry']);
     const movable=scene.targets.at(-1);
@@ -225,13 +261,14 @@ async function run(){
     await page.waitForFunction(()=>document.querySelector('#progressive-controls')?.dataset.state==='smooth');
     assert.equal(await page.locator('#progressive-frame').count(),0);
     if(trialEffect){
-     await page.locator('#showMenu > summary').click();
+     await page.locator('#showMenu').evaluate(menu=>{menu.open=true;});
      const control=page.locator('#'+trialEffect);
      assert.ok(await control.isVisible());
      assert.equal(await control.getAttribute('aria-pressed'),'false');
-     if(trialBloom)assert.equal(await page.locator('#viewport-gtao').getAttribute('aria-pressed'),'false');
+     if(nightTrial)assert.equal(await page.locator('#viewport-gtao').getAttribute('aria-pressed'),'false');
+     if(trialSMAA)assert.equal(await page.locator('#viewport-bloom').getAttribute('aria-pressed'),'false');
      if(variant!=='before')await control.click();
-     await page.locator('#showMenu > summary').click();
+     await page.locator('#showMenu').evaluate(menu=>{menu.open=false;});
      assert.equal(await control.getAttribute('aria-pressed'),String(variant!=='before'));
     }
     await page.evaluate(()=>View3D.automationReady());
@@ -253,7 +290,7 @@ async function run(){
      await page.evaluate(pose=>View3D.automationCamera(pose),secondCamera);
      const secondaryVisual=await capture('-secondary');
      if(trialBloom)scene.secondaryEmitters=await page.evaluate(()=>furnitureBench.emitters());
-     if(trialBloom&&variant!=='before')assert.notEqual(await capture('-secondary-beauty',true),secondaryVisual);
+     if(nightTrial&&variant!=='before')assert.notEqual(await capture('-secondary-beauty',true),secondaryVisual);
      await page.evaluate(pose=>View3D.automationCamera(pose),camera);
     }
     if(previewHours.length){
@@ -276,9 +313,32 @@ async function run(){
      assert.ok(scene.emitters.some(source=>source.name==='diffuser'&&source.emission>1),'The installed lamp shade was hidden or unlit');
      assert.equal(render.canvas[0],Math.floor((await page.locator('#view3d canvas').first().boundingBox()).width*Math.min(2,render.dpr)));
     }
+    const recordTrack=async()=>{
+     if(!trialSMAA||i>1)return;
+     scene.track={};
+     for(const [room,pose] of [['living',camera],['dining',secondCamera]]){
+      await page.evaluate(pose=>View3D.automationCamera(pose),pose);
+      // Hold the interaction DPR for a complete sequence so GPU targets stay warm.
+      await page.evaluate(()=>furnitureBench.holdTrack(true));
+      try{
+       scene.track[room]=[];
+       for(const [step,yaw] of trackAngles.entries()){
+        const {crops,...frame}=await page.evaluate(({yaw,regions})=>furnitureBench.trackFrame(yaw,regions),{yaw,regions:trackCrops[room]});
+        scene.track[room].push(frame);
+        for(const [label,png] of crops){
+         const filename=[variant,String(i),name,label,String(step).padStart(2,'0')].filter(Boolean).join('-')+'.png';
+         fs.writeFileSync(path.join(job.dir,filename),Buffer.from(png.split(',')[1],'base64'));
+        }
+       }
+      }finally{await page.evaluate(()=>furnitureBench.holdTrack(false));}
+     }
+    };
+    await recordTrack();
+    if(scene.track&&i===1)assert.deepEqual(scene.track,report.results.find(result=>result.name===name)?.scene.track,
+     'Camera trajectory or interaction resolution differed between the two variants');
     if(!movable){report.results.push({variant,name,scene,render});continue;}
     const motion=gestureCamera||camera;
-    if(gestureCamera)await page.evaluate(pose=>View3D.automationCamera(pose),motion);
+    if(gestureCamera||scene.track)await page.evaluate(pose=>View3D.automationCamera(pose),motion);
     const box=await page.locator('#view3d canvas').first().boundingBox();
     const from={x:box.x+box.width*.45,y:box.y+box.height*.49};
     const rotate=await measure(page,cdp,from,t=>({x:34*Math.sin(t*4*Math.PI)+12*t,y:8*Math.sin(t*2*Math.PI)}),
@@ -310,8 +370,9 @@ async function run(){
     const move=await measure(page,cdp,drag.point,t=>({x:30+110*t+29*Math.sin(t*2*Math.PI),y:18+23*Math.sin(t*Math.PI)}),
      ()=>page.evaluate(({id,cx,cy})=>getF(id).cx!==cx||getF(id).cy!==cy,{...drag,id:movable.id}));
     assert.equal(await page.locator('#progressive-frame').count(),0);
-    if(trialBloom)assert.equal(await page.locator('#viewport-gtao').getAttribute('aria-pressed'),'false');
-    if(trialBloom){
+    if(nightTrial)assert.equal(await page.locator('#viewport-gtao').getAttribute('aria-pressed'),'false');
+    if(trialSMAA)assert.equal(await page.locator('#viewport-bloom').getAttribute('aria-pressed'),'false');
+    if(nightTrial){
      for(const gesture of [rotate,pan,move].filter(Boolean))assert.ok(gesture.frames.some(frame=>frame.pixelRatio===Math.min(1.25,render.dpr)));
      await page.waitForFunction(ratio=>furnitureBench.info().canvas[0]===ratio,render.canvas[0]);
     }
