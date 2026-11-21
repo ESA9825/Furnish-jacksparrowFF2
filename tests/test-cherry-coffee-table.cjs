@@ -65,6 +65,14 @@ for(const rot of [0,37,90])for(const flip of [false,true]){
  assert(Array.from({length:sp.count},(_,i)=>[sp.getY(i),sp.getZ(i)]).some(([y,z])=>Math.abs(y-9)<1e-5&&Math.abs(z-263)<1e-5),'shelf top face rolls back 7 mm');
  assert(Array.from({length:sp.count},(_,i)=>[sp.getY(i),sp.getZ(i)]).some(([y,z])=>Math.abs(y-2)<1e-5&&Math.abs(z-270)<1e-5),'shelf outermost edge remains at the original envelope');
  assert.equal(parts['white-stone'][0].material.color.getHexString(),'f5f5f1');
+ const stoneMaterial=new T.MeshStandardMaterial({color:'#f5f5f1',roughness:.28,envMap:new T.Texture()});
+ let stoneCount=0;
+ Model.build(T,f,{stoneMaterial}).traverse(mesh=>{
+  if(!mesh.isMesh)return;
+  assert.equal(mesh.material===stoneMaterial,mesh.userData.cherryCoffeePart==='white-stone');
+  if(mesh.material===stoneMaterial)stoneCount++;
+ });
+ assert.equal(stoneCount,1);
  const hit=(x,y)=>new T.Raycaster(new T.Vector3(x,y,1),new T.Vector3(0,0,-1)).intersectObject(o,true)[0]?.object.userData.cherryCoffeePart;
  assert.equal(hit(0,.35),undefined,'open bay');assert.equal(hit(0,.06),undefined,'floor gap');assert.equal(hit(0,.20),'drawer-front');
  console.log('PASS cherry coffee table: defaults, project/named roundtrip, repeated restore, copy/replacement, white SVG, production geometry, scaled/rotated/mirrored bounds and open bay');

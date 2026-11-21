@@ -6,7 +6,7 @@
 const syncIdentity=root.FurnishPartIdentity||(typeof require==='function'?require('../core/part-identity.js'):null);
 
 const supported=f=>f.type==='coffeetable_yeswood_cherry'&&!f.obj;
-function build(T,f){
+function build(T,f,{stoneMaterial}={}){
  const result=new T.Group(),body=new T.Group();result.add(body);
  const wood=new T.MeshStandardMaterial({color:f.color||'#bd7846',roughness:.32});
  // Deterministic, local grain texture; shared within this model, no external assets.
@@ -19,7 +19,7 @@ function build(T,f){
  }
  const texture=new T.DataTexture(pixels,128,256);texture.needsUpdate=true;texture.colorSpace=T.SRGBColorSpace;
  texture.wrapS=texture.wrapT=T.RepeatWrapping;wood.map=texture;
- const stone=new T.MeshStandardMaterial({color:'#f5f5f1',roughness:.28});
+ const stone=stoneMaterial||new T.MeshStandardMaterial({color:'#f5f5f1',roughness:.28});
  const dark=new T.MeshStandardMaterial({color:'#24221f',roughness:.55});
  const recess=wood.clone();recess.color.multiplyScalar(.72);
  function add(geometry,material,name,x,y,z){const o=syncIdentity.produce("cherry-coffee-table-model:site-1",()=>new T.Mesh(geometry,material));o.position.set(x,y,z);o.castShadow=o.receiveShadow=true;o.userData.cherryCoffeePart=name;body.add(o);return o;}

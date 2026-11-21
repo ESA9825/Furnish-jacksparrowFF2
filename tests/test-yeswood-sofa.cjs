@@ -13,6 +13,28 @@ const model=require('../src/render/yeswood-sofa-model.js'),catalog=require('../s
  require('./helpers/production-source.cjs').loadSceneFurniture(html,ctx);
  const item=catalog.library.flatMap(c=>c.items).find(i=>i[0]===model.type);assert.deepEqual([item[2],item[3],item[6]],model.spec);assert.equal(item[5],0);
  const f={id:'yeswood',type:model.type,name:item[1],w:item[2],d:item[3],h:item[6],color:item[4],cx:700,cy:900,rot:0};
+ const green={...f,color:'#53634b'},original=model.build(THREE,f,RoundedBoxGeometry),refined=model.build(THREE,green,RoundedBoxGeometry);
+ const solids=require('../src/core/furniture-solids.js');
+ assert.deepEqual(solids.parts(green),solids.parts(f),'Corduroy variant keeps the numeric production solids');
+ assert.equal(refined.children.length,original.children.length);
+ const upholstery=refined.children.filter(mesh=>mesh.material.isMeshPhysicalMaterial);
+ assert.equal(upholstery.length,6);
+ const fabric=upholstery[0].material,second=model.build(THREE,green,RoundedBoxGeometry);
+ assert.ok(fabric.sheen>0&&fabric.normalMap.isDataTexture&&fabric.normalMap.generateMipmaps);
+ assert.equal(fabric.normalMap,second.children.find(mesh=>mesh.material.isMeshPhysicalMaterial).material.normalMap);
+ for(const [i,mesh] of refined.children.entries()){
+  const {position,normal}=mesh.geometry.attributes;
+  assert.deepEqual(position.array,original.children[i].geometry.attributes.position.array,'Appearance keeps contact geometry');
+  if(mesh.material!==fabric)continue;
+  const byPoint=new Map();
+  for(let j=0;j<position.count;j++){
+   const key=[position.getX(j),position.getY(j),position.getZ(j)].map(v=>Math.round(v*1e7)).join(',');
+   const n=[normal.getX(j),normal.getY(j),normal.getZ(j)];
+   near(Math.hypot(...n),1);
+   if(byPoint.has(key))assert.deepEqual(n,byPoint.get(key),'Cushion normals must agree across UV seams');
+   else byPoint.set(key,n);
+  }
+ }
  assert.deepEqual(P.unpack(P.pack({planId:'p1',current:{furniture:[f]},designs:[],catalog:[]})).current.furniture[0],f);
  assert.ok(!/NaN|undefined/.test(svg.render(f.type,f.w,f.d,f.color,{ink:'#333'})));
  assert.equal(D.furnitureVerticalBounds({...f,h:undefined}).top,895);

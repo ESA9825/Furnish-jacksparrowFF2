@@ -5,14 +5,80 @@
 const syncIdentity=root.FurnishPartIdentity||(typeof require==='function'?require('../core/part-identity.js'):null);
 
 const type='sofa_yeswood_cherry',spec=[2160,892,895];
+const corduroyColor='#53634b',corduroyTileMetres=.036;
+const modelTextures=new WeakMap();
+function textures(THREE){
+ if(modelTextures.has(THREE))return modelTextures.get(THREE);
+ function texture(size,pixel){
+  const data=new Uint8Array(size*size*4);
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++)data.set([...pixel(x,y),255],(y*size+x)*4);
+  const map=new THREE.DataTexture(data,size,size);
+  map.wrapS=map.wrapT=THREE.RepeatWrapping;
+  map.magFilter=THREE.LinearFilter;
+  map.minFilter=THREE.LinearMipmapLinearFilter;
+  map.generateMipmaps=true;map.needsUpdate=true;
+  return map;
+ }
+ function gray(v){return [v,v,v];}
+ const weave=texture(64,(x,y)=>gray(Math.round(120+40*Math.sin(x*Math.PI/2)*Math.sin(y*Math.PI/2)+12*Math.sin(x*17+y*23))));
+ weave.repeat.set(35,22);
+ const grain=texture(128,(x,y)=>gray(Math.round(223+12*Math.sin(y*.32+3*Math.sin(x*.032))+7*Math.sin(y*1.7+Math.sin(x*.085)))));
+ grain.colorSpace=THREE.SRGBColorSpace;
+ // Six rounded wales per tile. A small periodic waviness breaks perfectly straight ridges.
+ const ribPhase=(x,y)=>2*Math.PI*(6*(x+.5)/64+.055*Math.sin(2*Math.PI*y/64));
+ const ribs=texture(64,(x,y)=>{
+  const phase=ribPhase(x,y);
+  const slope=(.62+.16*Math.cos(phase))*Math.sin(phase);
+  const length=Math.hypot(1,slope);
+  return [Math.round(127.5*(1+slope/length)),128,Math.round(127.5*(1+1/length))];
+ });
+ // The pile also changes diffuse reflectance, so the ribs read in shade.
+ const pile=texture(64,(x,y)=>gray(Math.round(239+13*Math.cos(ribPhase(x,y))+2*Math.cos(2*Math.PI*y/64))));
+ pile.colorSpace=THREE.SRGBColorSpace;
+ const maps={weave,grain,ribs,pile};
+ modelTextures.set(THREE,maps);
+ return maps;
+}
+
+function smoothCushionNormals(THREE,geometry){
+ // RoundedBox is non-indexed with separate UVs on each panel. Accumulate the
+ // deformed face normals across coincident vertices without welding UV seams.
+ const position=geometry.attributes.position,normal=geometry.attributes.normal;
+ const byPoint=new Map(),normals=[];
+ for(let i=0;i<position.count;i++){
+  const key=[position.getX(i),position.getY(i),position.getZ(i)].map(v=>Math.round(v*1e7)).join(',');
+  let sum=byPoint.get(key);
+  if(!sum){sum=new THREE.Vector3();byPoint.set(key,sum);}
+  normals.push(sum);
+ }
+ const a=new THREE.Vector3(),b=new THREE.Vector3(),c=new THREE.Vector3();
+ for(let i=0;i<position.count;i+=3){
+  a.fromBufferAttribute(position,i);
+  b.fromBufferAttribute(position,i+1).sub(a);
+  c.fromBufferAttribute(position,i+2).sub(a);
+  b.cross(c).normalize();
+  normals[i].add(b);normals[i+1].add(b);normals[i+2].add(b);
+ }
+ for(const sum of byPoint.values())sum.normalize();
+ for(let i=0;i<position.count;i++){
+  const sum=normals[i];
+  if(sum.lengthSq()>0)normal.setXYZ(i,sum.x,sum.y,sum.z);
+ }
+}
 function build(THREE,f,RoundedBoxGeometry,materials={}){
  const g=new THREE.Group();
- const wood=materials.wood?materials.wood('#b77749'):new THREE.MeshStandardMaterial({color:'#b77749',roughness:.48});
- const cloth=materials.fabric?materials.fabric(f.color||'#eee9df'):new THREE.MeshStandardMaterial({color:f.color||'#eee9df',roughness:.94});
- // Small local procedural maps keep the viewer and application fully offline.
- function texture(size,pixel){const data=new Uint8Array(size*size*4);for(let y=0;y<size;y++)for(let x=0;x<size;x++){const i=(y*size+x)*4,v=pixel(x,y);data[i]=data[i+1]=data[i+2]=v;data[i+3]=255;}const t=new THREE.DataTexture(data,size,size);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.magFilter=THREE.LinearFilter;t.minFilter=THREE.LinearMipmapLinearFilter;t.generateMipmaps=true;t.needsUpdate=true;return t;}
- cloth.bumpMap=texture(64,(x,y)=>Math.round(120+40*Math.sin(x*Math.PI/2)*Math.sin(y*Math.PI/2)+12*Math.sin(x*17+y*23)));cloth.bumpMap.repeat.set(35,22);cloth.bumpScale=.0006;
- wood.map=texture(128,(x,y)=>Math.round(223+12*Math.sin(y*.32+3*Math.sin(x*.032))+7*Math.sin(y*1.7+Math.sin(x*.085))));wood.map.colorSpace=THREE.SRGBColorSpace;
+ const color=f.color||'#eee9df',corduroy=typeof color==='string'&&color.toLowerCase()===corduroyColor;
+ const maps=textures(THREE);
+ const wood=materials.wood?materials.wood('#b77749').clone():new THREE.MeshStandardMaterial({color:'#b77749',roughness:.48});
+ wood.map=maps.grain;
+ let cloth;
+ if(corduroy){
+  cloth=new THREE.MeshPhysicalMaterial({color,map:maps.pile,roughness:.91,normalMap:maps.ribs,normalScale:new THREE.Vector2(.48,.48),
+   sheen:.44,sheenColor:'#819174',sheenRoughness:.76});
+ }else{
+  cloth=materials.fabric?materials.fabric(color).clone():new THREE.MeshStandardMaterial({color,roughness:.94});
+  cloth.bumpMap=maps.weave;cloth.bumpScale=.0006;
+ }
  const seam=new THREE.MeshStandardMaterial({color:f.color||'#eee9df',roughness:1});
  function add(geo,material,x,y,z){const mesh=syncIdentity.produce("yeswood-sofa-model:site-1",()=>new THREE.Mesh(geo,material));mesh.position.set(x,y,z);mesh.castShadow=mesh.receiveShadow=true;g.add(mesh);return mesh;}
  function block(w,h,d,material,x,y,z,r=.012){return syncIdentity.produce("yeswood-sofa-model:site-2",()=>add(new RoundedBoxGeometry(w,h,d,4,Math.min(r,w/2,h/2,d/2)*.99),material,x,y+h/2,z));}
@@ -26,7 +92,15 @@ function build(THREE,f,RoundedBoxGeometry,materials={}){
    const puff=.017*Math.max(0,1-u**4)*Math.max(0,1-v**4)*Math.abs(n.getZ(i))+.013*Math.max(0,1-u**4)*Math.max(0,1-t**4)*Math.abs(n.getY(i))+gather;
    p.setXYZ(i,px+n.getX(i)*puff,py+n.getY(i)*puff,pz+n.getZ(i)*puff);
   }
-  geo.computeVertexNormals();const mesh=syncIdentity.produce("yeswood-sofa-model:site-3",()=>add(geo,cloth,x,y+h/2,z));mesh.rotation.x=angle;return mesh;
+  if(corduroy&&geo.attributes.uv){
+   smoothCushionNormals(THREE,geo);
+   const uv=geo.attributes.uv,faceSize=uv.count/6;
+   for(let i=0;i<uv.count;i++){
+    const face=Math.floor(i/faceSize);
+    uv.setXY(i,uv.getX(i)*(face<2?d:w)/corduroyTileMetres,uv.getY(i)*(face===2||face===3?d:h)/corduroyTileMetres);
+   }
+  }else geo.computeVertexNormals();
+  const mesh=syncIdentity.produce("yeswood-sofa-model:site-3",()=>add(geo,cloth,x,y+h/2,z));mesh.rotation.x=angle;return mesh;
  }
  // Lower frame is open underneath; six feet including two middle supports.
  syncIdentity.produce("yeswood-sofa-model.js:generator-call-1",()=>block(2.06,.075,.83,wood,0,.155,0,.016));

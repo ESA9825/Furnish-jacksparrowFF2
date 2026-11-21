@@ -872,7 +872,7 @@ function init(){
     if (!g) return;
     const items = selItems();
     if (items.some(x => furnitureLocked(x))){ toast(tr('已锁定的家具不能移动', 'Locked items cannot be moved')); return; }
-    fdrag = {id:f.id, ids, start:Object.fromEntries(items.map(x => [x.id, [x.cx, x.cy]])), pid:e.pointerId, sx:e.clientX, sy:e.clientY, ox:g.x - f.cx, oy:g.y - f.cy, before:snap(), moved:false};
+    fdrag = {id:f.id, ids, skip:new Set(ids), start:Object.fromEntries(items.map(x => [x.id, [x.cx, x.cy]])), pid:e.pointerId, sx:e.clientX, sy:e.clientY, ox:g.x - f.cx, oy:g.y - f.cy, scale:g.s>0?g.s:view.s, before:snap(), moved:false};
     orbit.enabled = false; fly = null; cv.setPointerCapture(e.pointerId);
   }, true);
   cv.addEventListener('pointermove', e => {
@@ -880,19 +880,23 @@ function init(){
     if (!fdrag.moved && Math.hypot(e.clientX - fdrag.sx, e.clientY - fdrag.sy) < TAP) return;
     const f = getF(fdrag.id), g = groundAt(e.clientX, e.clientY); if (!f || !g) return;
     fdrag.moved = true; cv.style.cursor = 'grabbing';
-    const [nx, ny] = snapMove(f, g.x - fdrag.ox, g.y - fdrag.oy, new Set(fdrag.ids));
+    // Keep the magnet radius tied to this drag's 3D projection.
+    const [nx, ny] = snapMove(f, g.x - fdrag.ox, g.y - fdrag.oy, fdrag.skip, false, undefined, undefined, fdrag.scale);
     const dx = nx - fdrag.start[f.id][0], dy = ny - fdrag.start[f.id][1];
+    if(f.cx===nx&&f.cy===ny)return;
     fdrag.ids.forEach(id => { const x = getF(id); if (!x) return;            // 拖动中只挪模型，松手再整体同步
       x.cx = fdrag.start[id][0] + dx; x.cy = fdrag.start[id][1] + dy;
-      furnG.children.find(o => o.userData.fid === id)?.position.set(wx(x.cx), 0, wz(x.cy)); });
-    buildHeaterClearances();renderPanel();selKey = null; invalidate(true);
+      const model = furnG.children.find(o => o.userData.fid === id);
+      if(model){model.position.x=wx(x.cx);model.position.z=wz(x.cy);} });
+    if(clearanceG.visible)buildHeaterClearances();
+    invalidate(true);
   });
   const endF = e => {
     if (!fdrag || e.pointerId !== fdrag.pid) return;
     const d = fdrag; fdrag = null; orbit.enabled = true; cv.style.cursor = '';
     if (d.moved){
       if (d.ids.length === 1){ const f = getF(d.id); if (f) pushOut(f); }
-      try{commit(d.before,true);}catch(error){toast(error.message);} renderAll();
+      try{commit(d.before,true,{sceneFirst:true});}catch(error){toast(error.message);} renderAll({sceneFirst:true});
     }
   };
   cv.addEventListener('pointerup', endF); cv.addEventListener('pointercancel', endF);
@@ -1060,7 +1064,7 @@ const syncIdentity=FurnishPartIdentity;
   if(typeof FurnishCatTreeModel!=='undefined'&&FurnishCatTreeModel.supported(f)){const model=FurnishCatTreeModel.build(THREE,f,RoundedBoxGeometry);model.position.set(wx(f.cx),0,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.scale.x=f.flip?-1:1;model.userData.fid=f.id;return model;}
   if(typeof FurnishAirconMideaModel!=='undefined'&&FurnishAirconMideaModel.supported(f)){const model=FurnishAirconMideaModel.build(THREE,f);model.position.set(wx(f.cx),0,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.scale.x=f.flip?-1:1;model.userData.fid=f.id;return model;}
   if(typeof FurnishShoeBenchModel!=='undefined'&&FurnishShoeBenchModel.supported(f)){const model=FurnishShoeBenchModel.build(THREE,f,RoundedBoxGeometry);model.position.set(wx(f.cx),0,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.scale.x=f.flip?-1:1;model.userData.fid=f.id;return model;}
-  if(typeof FurnishCherryCoffeeTableModel!=='undefined'&&FurnishCherryCoffeeTableModel.supported(f)){const model=FurnishCherryCoffeeTableModel.build(THREE,f);model.position.set(wx(f.cx),0,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.scale.x=f.flip?-1:1;model.userData.fid=f.id;return model;}
+  if(typeof FurnishCherryCoffeeTableModel!=='undefined'&&FurnishCherryCoffeeTableModel.supported(f)){const model=FurnishCherryCoffeeTableModel.build(THREE,f,{stoneMaterial:mat('#f5f5f1',{roughness:.28})});model.position.set(wx(f.cx),0,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.scale.x=f.flip?-1:1;model.userData.fid=f.id;return model;}
   if(typeof FurnishTeaTableModel!=='undefined'&&FurnishTeaTableModel.supported(f)){const model=FurnishTeaTableModel.build(THREE,f);model.position.set(wx(f.cx),0,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.scale.x=f.flip?-1:1;model.userData.fid=f.id;return model;}
   if(typeof FurnishTeaBarModel!=='undefined'&&FurnishTeaBarModel.supported(f)){const model=FurnishTeaBarModel.build(THREE,f);model.position.set(wx(f.cx),0,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.scale.x=f.flip?-1:1;model.userData.fid=f.id;return model;}
   if(typeof FurnishPetFeederModel!=='undefined'&&FurnishPetFeederModel.supported(f)){const model=FurnishPetFeederModel.build(THREE,f,RoundedBoxGeometry);model.position.set(wx(f.cx),0,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.scale.x=f.flip?-1:1;model.userData.fid=f.id;return model;}
