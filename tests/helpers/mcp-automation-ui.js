@@ -13,6 +13,8 @@ module.exports=async(p,V)=>{
  const chair=(await call('get_product_info',{ids:[chairId]})).items[0];
  assert.equal(chair.model,'VIHALS 维哈斯 · 805.927.53 · 绿色');assert.match(chair.sourceUrl,/80592753\/$/);
  await p.evaluate(()=>{let f=FurnishCabinetBuilder.create({id:'automation-cabinet',cx:3000,cy:3000,rot:0});f=FurnishCabinetBuilder.add(f,'shelf',{boxId:'box1'}).furniture;f=FurnishCabinetBuilder.add(f,'door',{boxId:'box1'}).furniture;mutate(()=>state.furniture.push(f));});await p.evaluate(()=>repositoryClient.flush());
+ const {parameters}=await call('get_furniture_parameters',{id:'automation-cabinet'});
+ assert.equal(parameters.mountHeight.value,0);assert.equal(parameters.mountHeight.default,null);
  const components=await call('get_cabinet_components',{id:'automation-cabinet'}),box=components.modules[0].boxes[0],shelf=box.components.find(c=>c.kind==='shelf'),pick={boxId:box.id,componentId:shelf.id};
  const production=()=>p.evaluate(()=>FurnishCabinetMotion.boards(getF('automation-cabinet'),{includeStatic:true}).map(b=>({bottom:b.bottom,top:b.top,poly:b.poly})));
  const geometryBefore=await production(),info=await p.evaluate(pick=>FurnishCabinetBuilder.componentEditInfo(getF('automation-cabinet'),pick),pick);
