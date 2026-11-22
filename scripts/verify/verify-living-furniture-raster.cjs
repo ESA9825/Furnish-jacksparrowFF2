@@ -37,6 +37,7 @@ const kitchenProbes=kitchenRound&&process.env.FURNISH_RASTER_KITCHEN_PROBES==='1
 if(kitchenRound)files.push('src/render/downlight-model.js','src/render/bath-heater-model.js');
 const bedRound=revisionRound==='bed-bedding';
 if(bedRound)files.push('src/render/basic-furniture-model.js','src/core/product-rules.js');
+const finishRound=revisionRound==='finish-surfaces';
 const washTrial=revisionRound==='bedside-wash';
 if(washTrial)files.push('src/render/cove-light-model.js','src/render/downlight-model.js');
 const materialRound=revisionRound==='material-response';
@@ -485,13 +486,13 @@ async function run(){
       assert.equal(scene.probes.restored,visual);
      }
     }
-    if(bedRound||(['upper-return','upper-edge'].includes(revisionRound)&&['master','kitchen'].includes(name))||
+    if(bedRound||finishRound||(['upper-return','upper-edge'].includes(revisionRound)&&['master','kitchen'].includes(name))||
      (kitchenRound&&['kitchen','hall'].includes(name))){
      scene.controlImages={};
      const apply=patch=>page.evaluate(patch=>mutate(()=>{
       state.scene3d=FurnishDesign.patchSceneSettings(state.scene3d,patch);
      },{sceneFirst:true}),patch);
-     const controls=bedRound?[['day',{lamps:false,night:false,hour:11}]]:
+     const controls=bedRound||finishRound?[['day',{lamps:false,night:false,hour:11}]]:
       [['lamps-off',{lamps:false}],['day',{lamps:false,night:false,hour:11}]];
      for(const [label,patch] of controls){
       await apply(patch);

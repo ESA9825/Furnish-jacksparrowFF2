@@ -22,6 +22,13 @@ const apertures=[
 const contactTypes=/^(sofa|armchair|chair|coffeetable|table|roundtable|bed|nightstand|desk|cabinet|bookshelf|cat_tree|cat_tower|plant_clivia|plant_spider|aircon_floor)/;
 const resolution=192;
 const maxApertures=apertures.length+1; // slot zero is always unlit
+// Tile lengths in metres and micro-height in metres. Painted boards and
+// stone use local board coordinates; veneer uses its existing physical UVs.
+const finishSurfaces={
+ matte:{uv:'furnishFinishPosition.xy',tile:.115,roughness:.78,variation:.13,height:.000055,tone:1,contrast:.033,channel:'b'},
+ stone:{uv:'furnishFinishPosition.xz',tile:.175,roughness:.38,variation:.17,height:.000080,tone:.94,contrast:.09,channel:'r'},
+ veneer:{uv:'vMapUv',tile:1,roughness:.56,variation:.15,tone:1,contrast:.045,channel:'r'}
+};
 
 function edgeDistance(x,y,polygon){
  let nearest=Infinity;
@@ -274,14 +281,19 @@ function create(T,scene,{wx,wz,inside}){
   const ceiling=profile==='ceiling',pile=profile==='pile',stone=profile==='stone';
   const latex=paintDetail||ceiling;
   const replacePaintColor=ceiling||paintDetail&&source.color.getHex()===0x37332b;
-  const wood=profile==='wood'||nicheDetail;
+  const veneer=profile==='veneer'||nicheDetail&&!!source.userData.cabinetSurface&&!!source.map;
+  const wood=profile==='wood'||nicheDetail||veneer;
+  const finishKind=veneer?'veneer':stone?'stone':profile==='matte'?'matte':'';
+  const finishSurface=finishSurfaces[finishKind];
+  const localFinish=finishSurface&&!veneer;
+  if(veneer&&source.normalMap)material.normalScale.multiplyScalar(1.13);
   const finishResponse=pile||stone||wood||cabinetDetail;
   const nightReceiver=ceiling||paintDetail||cabinetDetail;
   const smoothReflection=!!source.envMap&&source.roughness<=.30&&source.metalness===0;
   // Keep source PBR values and pre-existing shaders. Export strips these
   // raster hooks and keeps the source values.
   const cacheKey=source.customProgramCacheKey();
-  material.customProgramCacheKey=()=>cacheKey+'|room-daylight-v11|'+smoothReflection+'|'+satinTile+'|'+profile+'|'+fineEdge+'|'+replacePaintColor+'|'+upperReceiver+'|'+kitchenReceiver;
+  material.customProgramCacheKey=()=>cacheKey+'|room-daylight-v12|'+smoothReflection+'|'+satinTile+'|'+profile+'|'+fineEdge+'|'+replacePaintColor+'|'+upperReceiver+'|'+kitchenReceiver+'|'+finishKind;
   material.onBeforeCompile=function(shader,renderer){
    source.onBeforeCompile.call(this,shader,renderer);
    Object.assign(shader.uniforms,uniforms);
@@ -291,13 +303,14 @@ function create(T,scene,{wx,wz,inside}){
     shader.uniforms.furnishNicheRect={value:niche.rect};
     shader.uniforms.furnishNicheLocal={value:niche.transform};
    }
-   shader.vertexShader='varying vec3 furnishInteriorPosition;\n'+(cabinetDetail?'varying vec2 furnishBoardPosition;\n':'')+(fineEdge?'varying float furnishIsDoorFace;\n':'')+(nicheDetail?'varying vec3 furnishNiche;\nuniform vec4 furnishNicheRect;\nuniform mat4 furnishNicheLocal;\n':'')+shader.vertexShader.replace('#include <project_vertex>',`
+   shader.vertexShader='varying vec3 furnishInteriorPosition;\n'+(localFinish?'varying vec3 furnishFinishPosition;\n':'')+(cabinetDetail?'varying vec2 furnishBoardPosition;\n':'')+(fineEdge?'varying float furnishIsDoorFace;\n':'')+(nicheDetail?'varying vec3 furnishNiche;\nuniform vec4 furnishNicheRect;\nuniform mat4 furnishNicheLocal;\n':'')+shader.vertexShader.replace('#include <project_vertex>',`
     #include <project_vertex>
     vec4 furnishInteriorVertex=vec4(transformed,1.0);
     #ifdef USE_INSTANCING
      furnishInteriorVertex=instanceMatrix*furnishInteriorVertex;
     #endif
     furnishInteriorPosition=(modelMatrix*furnishInteriorVertex).xyz;
+    ${localFinish?'furnishFinishPosition=position;':''}
     ${cabinetDetail?'furnishBoardPosition=position.xy;':''}
     ${fineEdge?'furnishIsDoorFace=abs(normal.z);':''}
     ${nicheDetail?`
@@ -306,6 +319,7 @@ function create(T,scene,{wx,wz,inside}){
     `:''}`);
    shader.fragmentShader=`
     varying vec3 furnishInteriorPosition;
+    ${localFinish?'varying vec3 furnishFinishPosition;':''}
     uniform sampler2D furnishDaylightMap;
     uniform vec4 furnishDaylightBounds;
     uniform vec4 furnishDaylightSources[${maxApertures}];
@@ -465,6 +479,14 @@ function create(T,scene,{wx,wz,inside}){
      diffuseColor.rgb*=0.91;
      roughnessFactor=max(roughnessFactor,0.31);
     `:''}
+    ${finishSurface?`
+     ${veneer?'#ifdef USE_MAP':''}
+     vec3 finishGrain=texture2D(furnishFinishTexture,${finishSurface.uv}/${finishSurface.tile.toFixed(4)}).rgb;
+     float finishRoughness=${finishSurface.roughness.toFixed(3)}+${finishSurface.variation.toFixed(3)}*(finishGrain.r-.5);
+     roughnessFactor=mix(roughnessFactor,finishRoughness,${veneer?'0.42':'0.78'});
+     diffuseColor.rgb*=${finishSurface.tone.toFixed(3)}+${finishSurface.contrast.toFixed(3)}*(finishGrain.${finishSurface.channel}-.5);
+     ${veneer?'#endif':''}
+    `:''}
    `).replace('#include <normal_fragment_maps>',`
     #include <normal_fragment_maps>
     ${latex?`
@@ -475,6 +497,14 @@ function create(T,scene,{wx,wz,inside}){
      vec2 paintGradient=vec2(dFdx(paintGrain.b),dFdy(paintGrain.b))*0.00027*hasPaint;
      normal=normalize(normal*max(abs(paintArea),1e-10)
       -sign(paintArea)*(paintGradient.x*paintU+paintGradient.y*paintV));
+    `:''}
+    ${localFinish?`
+     vec3 finishDx=dFdx(-vViewPosition),finishDy=dFdy(-vViewPosition);
+     vec3 finishU=cross(finishDy,normal),finishV=cross(normal,finishDx);
+     float finishArea=dot(finishDx,finishU);
+     vec2 finishGradient=vec2(dFdx(finishGrain.b),dFdy(finishGrain.b))*${finishSurface.height.toFixed(6)};
+     normal=normalize(normal*max(abs(finishArea),1e-10)
+      -sign(finishArea)*(finishGradient.x*finishU+finishGradient.y*finishV));
     `:''}
    `).replace('#include <aomap_fragment>',`
     ${upperReceiver==='ceiling'||ceiling?'':`
@@ -899,16 +929,19 @@ function create(T,scene,{wx,wz,inside}){
     const inSuite=finishRooms.has(base.roomId);
     const pile=inSuite&&f.type==='sofa_yeswood_cherry'&&mesh.material?.sheen>0;
     const coffeePart=inSuite&&part.cherryCoffeePart;
+    const kitchenReceiver=base.roomId===kitchenRoom&&
+     (f.kitchen||f.type==='kitchenwall'||f.type==='rangehood_fotile_jcd10ta')&&!part.cabinetHardware;
+    const matte=kitchenReceiver&&(part.cabinetDoorSize||part.cabinetDrawerBoard==='front')&&
+     !mesh.material?.map&&mesh.material?.metalness===0;
+    const veneer=scopedCabinet&&mesh.material?.map&&part.cabinetSurface&&part.cabinetSurface!=='solid';
     const finish=pile?'pile':coffeePart==='white-stone'?'stone':
-     coffeePart&&mesh.material?.map?'wood':niche?'niche':satin?'cabinet':'';
+     coffeePart&&mesh.material?.map?'wood':niche?'niche':satin?'cabinet':veneer?'veneer':matte?'matte':'';
     let seam;
     if(f.id==='fmv62bwbp1'&&finish==='cabinet'&&part.cabinetDoorSize){
      if(!mesh.geometry.boundingBox)mesh.geometry.computeBoundingBox();
      const {min,max}=mesh.geometry.boundingBox;
      seam=new T.Vector2(min.y,max.y);
     }
-    const kitchenReceiver=base.roomId===kitchenRoom&&
-     (f.kitchen||f.type==='kitchenwall'||f.type==='rangehood_fotile_jcd10ta')&&!part.cabinetHardware;
     accepted.add(mesh);paint(mesh,finish,niche,seam,'',!!kitchenReceiver);
    });
    if(contactTypes.test(f.type)&&!f.pose3D&&model.userData.floorBase.known&&Math.abs(model.position.y-model.userData.floorBase.z/1000)<.025){

@@ -1,0 +1,84 @@
+[
+  {
+    "name": "living",
+    "camera": {
+      "mode": "orbit",
+      "position": {
+        "x": 9530,
+        "y": 5320,
+        "z": 1660
+      },
+      "target": {
+        "x": 7700,
+        "y": 4100,
+        "z": 710
+      },
+      "horizontalFov": 68
+    },
+    "motionCamera": {
+      "mode": "orbit",
+      "position": {
+        "x": 9530,
+        "y": 5320,
+        "z": 1470
+      },
+      "target": {
+        "x": 7600,
+        "y": 3800,
+        "z": 610
+      },
+      "horizontalFov": 51
+    },
+    "targets": [
+      "fmvglvcws1"
+    ]
+  },
+  {
+    "name": "dining",
+    "camera": {
+      "mode": "orbit",
+      "position": {
+        "x": 9320,
+        "y": 6180,
+        "z": 1660
+      },
+      "target": {
+        "x": 8060,
+        "y": 7530,
+        "z": 1520
+      },
+      "horizontalFov": 82
+    },
+    "secondCamera": {
+      "mode": "orbit",
+      "position": {
+        "x": 9000,
+        "y": 6130,
+        "z": 1660
+      },
+      "target": {
+        "x": 8490,
+        "y": 7640,
+        "z": 1430
+      },
+      "horizontalFov": 64
+    }
+  },
+  {
+    "name": "kitchen",
+    "camera": {
+      "mode": "orbit",
+      "position": {
+        "x": 8100,
+        "y": 8650,
+        "z": 1660
+      },
+      "target": {
+        "x": 6590,
+        "y": 9470,
+        "z": 1610
+      },
+      "horizontalFov": 86
+    }
+  }
+]
