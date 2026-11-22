@@ -71,4 +71,31 @@ assert.notEqual(carried.cy,dishes.cy);
 assert(checks(dishes).some(i=>i.kind==='cabinetdoor'&&i.column===1),'the adjacent door still detects the carried load');
 assert(!checks(dishes).some(i=>i.kind==='cabinetdrawer'&&i.column===2),'the drawer does not block its own carried load');
 assert(checks({...carried,model:'other'}).some(i=>i.kind==='cabinetdrawer'&&i.column===2),'an independent object at the same pose still blocks the drawer');
+
+for(const rot of [37,180])for(const flip of [false,true]){
+ const host={...structuredClone(fixture),rot,flip};
+ const part=K.moduleFurniture(host,moduleOf(host));
+ const {box,component}=B.selection(part,choice);
+ const travel=box.d-15;
+ assert.throws(()=>B.update(part,choice,{travelMm:box.d+1}),/行程/);
+ const rice={...placement(host,'rice','F40H8093S',false),brand:'苏泊尔'};
+ assert.equal(D.attachment(rice,[host,rice]),null,'legacy drawer does not carry appliances');
+ for(const phase of [0,.45,1]){
+  const {cabinet}=B.update(part,choice,{travelMm:travel,open:phase>0,extension:phase});
+  host.kitchen.modules[2].structure.cabinet=cabinet;
+  const all=[host,rice];
+  const {poly}=B.linearZones(K.moduleFurniture(host,moduleOf(host))).find(z=>z.kind==='cabinetdrawer'&&z.componentId===choice.componentId);
+  near(poly[2][1]-poly[1][1],travel);
+  const actual=board(host,false);
+  near(actual.motion.travel,travel);
+  const match=D.attachment(rice,all);
+  assert.equal(match.componentId,component.id);
+  near(Math.hypot(match.dx,match.dy),phase*travel);
+  assert.equal(D.attachment({...rice,brand:'其他'},all),null);
+  const saved=P.pack({planId:'drawer-fixture',current:{furniture:all},designs:[],catalog:[]});
+  assert.equal(saved.version,104);
+  const recovered=P.unpack(saved).current.furniture;
+  assert.deepEqual(D.pose(recovered[1],recovered),D.pose(rice,all));
+ }
+}
 console.log(`PASS ${scenarios} drawer poses, project round-trip, and separate checks for supported loads and independent obstacles`);

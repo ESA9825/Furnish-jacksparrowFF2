@@ -1,6 +1,7 @@
 /* Same-origin loopback archive API. Paths change only through explicit settings. */
 'use strict';
 const Files=require('./workspace-files.cjs'),C=require('../src/core/repository-core.js'),digest=Files.digest;
+const workspaceRequestLimit=128e6;
 function create(root){
  const files=Files.create(root),{read,write,recover,recoveries}=files;
  async function handle(req,res){
@@ -17,7 +18,11 @@ function create(root){
    if(req.method==='GET'&&route.startsWith('/api/furnish/backups/')){reply(200,files.getBackup(route.slice('/api/furnish/backups/'.length)));return true;}
    if(!['PUT','POST'].includes(req.method))throw Object.assign(Error('不支持的请求'),{status:405});
    if(req.headers['content-type']!=='application/json'||req.headers['x-furnish-request']!=='workspace-v1')throw Object.assign(Error('无效的保存请求'),{status:403});
-   let size=0,chunks=[];for await(const chunk of req){size+=chunk.length;if(size>64e6)throw Object.assign(Error('工作区上限 64 MB'),{status:413});chunks.push(chunk);}
+   const savesWorkspace=route==='/api/furnish/workspace'&&req.method==='PUT'||route==='/api/furnish/recoveries'&&req.method==='POST';
+   const limit=savesWorkspace?workspaceRequestLimit:64e6;
+   const tooLarge=()=>Object.assign(Error(`工作区上限 ${limit/1e6} MB`),{status:413});
+   if(Number(req.headers['content-length'])>limit)throw tooLarge();
+   let size=0,chunks=[];for await(const chunk of req){size+=chunk.length;if(size>limit)throw tooLarge();chunks.push(chunk);}
    const body=JSON.parse(Buffer.concat(chunks).toString('utf8'));
    if(route==='/api/furnish/workspace'&&req.method==='PUT')reply(200,write(body.workspace,body.baseRevision));
    else if(route==='/api/furnish/recoveries'&&req.method==='POST')reply(200,recover(body.workspace));
