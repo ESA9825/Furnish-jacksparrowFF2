@@ -1,0 +1,18 @@
+[
+  {
+    "name": "kitchen",
+    "camera": {
+      "mode": "orbit",
+      "position": {"x": 8100, "y": 8800, "z": 1660},
+      "target": {"x": 6590, "y": 9470, "z": 920},
+      "horizontalFov": 86
+    },
+    "motionCamera": {
+      "mode": "orbit",
+      "position": {"x": 8100, "y": 8800, "z": 1660},
+      "target": {"x": 6590, "y": 9470, "z": 920},
+      "horizontalFov": 86
+    },
+    "targets": ["fmwd89b7u1"]
+  }
+]

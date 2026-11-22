@@ -29,8 +29,9 @@ const trialSMAA=process.env.FURNISH_RASTER_SMAA==='1';
 const revisionRound=process.env.FURNISH_RASTER_ROUND||'';
 const scenePreset=process.env.FURNISH_RASTER_SCENE||'';
 const traceRotation=process.env.FURNISH_RASTER_TRACE_ROTATION==='1';
+const traceDrag=process.env.FURNISH_RASTER_TRACE_DRAG==='1';
 const kitchenRotation=revisionRound==='kitchen-rotation';
-const diagnose=revisionRound==='bedroom-rotation'||kitchenRotation;
+const diagnose=revisionRound==='bedroom-rotation'||kitchenRotation||traceDrag;
 if(diagnose)files.push('src/ui/workflow-tools.js');
 if(revisionRound==='latex-paint')files.push('src/render/ceiling-model.js');
 const kitchenRound=revisionRound==='kitchen-light';
@@ -112,8 +113,11 @@ async function measure(page,cdp,start,offset,check,modifiers=0){
 
 async function traceGesture(cdp,file,run){
  const complete=new Promise(resolve=>cdp.once('Tracing.tracingComplete',resolve));
+ const categories=['toplevel','devtools.timeline','v8','blink.user_timing','gpu','renderer.scheduler','cc',
+  'disabled-by-default-devtools.timeline'];
+ if(traceDrag)categories.push('disabled-by-default-v8.cpu_profiler');
  await cdp.send('Tracing.start',{transferMode:'ReturnAsStream',
-  categories:'toplevel,devtools.timeline,v8,blink.user_timing,gpu,renderer.scheduler,cc,disabled-by-default-devtools.timeline'});
+  categories:categories.join(',')});
  try{return await run();}
  finally{
   await cdp.send('Tracing.end');
@@ -188,9 +192,9 @@ async function run(){
      assert.equal(code.split(render).length,2,'Production render hook changed');
      code=code.replace(render,`function renderScene(){const started=performance.now();
       const diagnostics=${diagnose}?{shadowPending:renderer.shadowMap.needsUpdate,programs:renderer.info.programs.length}:null;
-      if(${traceRotation}&&window.furnitureBench.samples)performance.mark('furnish-draw-start');
+      if(${traceRotation||traceDrag}&&window.furnitureBench.samples)performance.mark('furnish-draw-start');
       drawBenchmarkScene();
-      if(${traceRotation}&&window.furnitureBench.samples)performance.mark('furnish-draw-end');
+      if(${traceRotation||traceDrag}&&window.furnitureBench.samples)performance.mark('furnish-draw-end');
       const metrics=window.furnitureBench;
       if(${kitchenRound||ceilingAreaRound}&&!metrics.kitchenState)metrics.kitchenState=()=>{
        const positions=[];
@@ -384,7 +388,7 @@ async function run(){
    const errors=[];
    page.on('pageerror',error=>errors.push(error.message));
    page.on('console',message=>{if((message.type()==='error'&&/WebGLProgram|Shader Error/.test(message.text()))||(trialEffect&&/Furnish (?:GTAO|Bloom|SMAA):|INVALID_(?:FRAMEBUFFER_OPERATION|OPERATION)/.test(message.text())))errors.push(message.text());});
-   await app.context().addInitScript(({diagnose,traceRotation})=>{
+   await app.context().addInitScript(({diagnose,tracing})=>{
     localStorage.setItem('furnish-observation-v1','smooth');
     window.furnitureBench={samples:null,moves:null,takeSamples(){
      const result={frames:this.samples,moves:this.moves,inputs:this.inputs};
@@ -396,10 +400,10 @@ async function run(){
      bench.inputAt=performance.now();
      if(diagnose&&bench.samples){
       (bench.inputs??=[]).push({at:bench.inputAt,eventAt:e.timeStamp,x:e.clientX,y:e.clientY});
-      if(traceRotation)performance.mark('furnish-pointer');
+      if(tracing)performance.mark('furnish-pointer');
      }
     },true);
-   },{diagnose,traceRotation});
+   },{diagnose,tracing:traceRotation||traceDrag});
    await page.waitForURL(`http://127.0.0.1:${port}/`);
    await page.reload();
    await page.locator('#repository-loading').waitFor({state:'hidden',timeout:60000});
@@ -710,14 +714,16 @@ async function run(){
      console.log(variant,name,'camera',JSON.stringify({rotate:rotate.frameIntervalMs,pan:pan?.frameIntervalMs}));
      continue;
     }
-    const drag=await page.evaluate(async ({camera,id,diagnose})=>{
+    const drag=await page.evaluate(async ({camera,id,diagnose,traceDrag})=>{
      await View3D.automationCamera(camera);
      selectIds([id]);ui.sceneMove=true;View3D.sync();renderFab();
      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
      furnitureBench.originalSnap??=snapMove;
      snapMove=(f,...args)=>{
       const start=performance.now();
+      if(traceDrag&&furnitureBench.samples)performance.mark('furnish-snap-start');
       const position=furnitureBench.originalSnap(f,...args);
+      if(traceDrag&&furnitureBench.samples)performance.mark('furnish-snap-end');
       const changed=position[0]!==f.cx||position[1]!==f.cy;
       const step=furnitureBench.inputs?.length-1;
       if(diagnose&&changed)furnitureBench.poseMove=step;
@@ -727,14 +733,21 @@ async function run(){
      };
      const f=getF(id);
      return {point:furnitureBench.target(id),cx:f.cx,cy:f.cy,locked:furnitureLocked(f)};
-    },{camera:motion,id:movable.id,diagnose});
+    },{camera:motion,id:movable.id,diagnose,traceDrag});
     assert.ok(drag.point&&!drag.locked,`Furniture ${movable.id} must be pickable and unlocked`);
-    const move=await measure(page,cdp,drag.point,t=>({x:30+110*t+29*Math.sin(t*2*Math.PI),y:18+23*Math.sin(t*Math.PI)}),
+    if(diagnose)scene.dragStart=drag;
+    const dragFurniture=()=>measure(page,cdp,drag.point,t=>({x:30+110*t+29*Math.sin(t*2*Math.PI),y:18+23*Math.sin(t*Math.PI)}),
      ()=>page.evaluate(({id,cx,cy})=>getF(id).cx!==cx||getF(id).cy!==cy,{...drag,id:movable.id}));
+    const move=traceDrag?
+     await traceGesture(cdp,path.join(job.dir,`trace-drag-${variant}-${i}-${name||'room'}.json`),dragFurniture):await dragFurniture();
     if(diagnose){
-     const reference=report.results.find(result=>result.name===name)?.move;
+     scene.dragEnd=await page.evaluate(id=>{const {cx,cy}=getF(id);return {cx,cy};},movable.id);
+     const reference=report.results.find(result=>result.name===name);
      const poses=result=>result.moves.map(({projection,position})=>({projection,position}));
-     if(reference)assert.deepEqual(poses(move),poses(reference),'drag projection or snapped path changed');
+     if(reference){
+      assert.deepEqual(drag,reference.scene.dragStart,'drag starting pose or picked point changed');
+      assert.deepEqual(poses(move),poses(reference.move),'drag projection or snapped path changed');
+     }
     }
     assert.equal(await page.locator('#progressive-frame').count(),0);
     if(nightTrial)assert.equal(await page.locator('#viewport-gtao').getAttribute('aria-pressed'),'false');
