@@ -32,9 +32,11 @@ const traceRotation=process.env.FURNISH_RASTER_TRACE_ROTATION==='1';
 const traceDrag=process.env.FURNISH_RASTER_TRACE_DRAG==='1';
 const kitchenRotation=revisionRound==='kitchen-rotation';
 const furnitureDrag=revisionRound==='furniture-drag';
-const diagnose=revisionRound==='bedroom-rotation'||kitchenRotation||furnitureDrag||traceDrag;
+const dragSnapToggle=revisionRound==='drag-snap-toggle';
+const diagnose=revisionRound==='bedroom-rotation'||kitchenRotation||furnitureDrag||dragSnapToggle||traceDrag;
 if(diagnose)files.push('src/ui/workflow-tools.js');
 if(furnitureDrag)files.push('src/core/snapping.js','src/core/cabinet-core.js','src/core/layout-geometry.js');
+if(dragSnapToggle)files.push('src/app.js','src/core/snapping.js');
 if(revisionRound==='latex-paint')files.push('src/render/ceiling-model.js');
 const kitchenRound=revisionRound==='kitchen-light';
 const ceilingAreaRound=revisionRound==='ceiling-area';
@@ -63,7 +65,9 @@ const panCamera=rooms||process.env.FURNISH_RASTER_PAN==='1';
 const previewHours=(process.env.FURNISH_RASTER_HOURS||'').split(',').filter(Boolean).map(Number);
 const hash=bytes=>crypto.createHash('sha256').update(bytes).digest('hex');
 const read=file=>fs.readFileSync(file);
-const variants=(process.env.FURNISH_RASTER_RUNS||((trialEffect||revisionRound)?'before,after,after,before':'before,after,no-sheen,no-sheen,after,before')).split(',');
+const dragVariants=['both-on','snap-off','collision-off','both-off'];
+const variants=(process.env.FURNISH_RASTER_RUNS||(dragSnapToggle?'both-on,snap-off,collision-off,both-off,snap-off,both-on':
+ (trialEffect||revisionRound)?'before,after,after,before':'before,after,no-sheen,no-sheen,after,before')).split(',');
 const collectSource=()=>Object.fromEntries([...files,daylightFile].map(file=>[file,read(path.join(root,file))]));
 const summary=values=>{
  const sorted=[...values].sort((a,b)=>a-b);
@@ -152,8 +156,9 @@ async function run(){
  assert.ok(previewHours.every(hour=>Number.isFinite(hour)&&hour>=0&&hour<=24),'Invalid preview hour');
  assert.ok([trialGTAO,trialBloom,trialSMAA].filter(Boolean).length<=1,'Vary only one viewport effect');
  if(captureTrajectory)assert.ok(secondCamera||rooms?.every(r=>r.secondCamera),'Trajectory comparison needs both room cameras');
- assert.ok(variants.every(v=>v==='before'||v==='after'||(!trialEffect&&v==='no-sheen')||
-  (kitchenRound&&v==='no-kitchen-return')),'Unknown benchmark variant');
+ assert.ok(variants.every(v=>dragSnapToggle?dragVariants.includes(v):
+  v==='before'||v==='after'||(!trialEffect&&v==='no-sheen')||(kitchenRound&&v==='no-kitchen-return')),'Unknown benchmark variant');
+ if(dragSnapToggle)assert.ok(rooms?.length===1&&rooms[0].targets?.length===1,'Drag toggle tests need one room and one movable item');
  const source=read(project),after=collectSource(),before=Object.fromEntries(files.map(file=>
   [file,execFileSync('git',['show',baseline+':'+file],{cwd:root,maxBuffer:8*1024*1024})]));
  if(execFileSync('git',['ls-tree',baseline,'--',daylightFile],{cwd:root}).length)
@@ -169,7 +174,8 @@ async function run(){
   const work=job.workspace('workspace',root,{directories:['src','styles','vendor'],files:['index.html','manifest.webmanifest']});
   for(const file of runtimeFiles)job.copy(path.join(root,'scripts',file),path.join('workspace/scripts',file));
   const save=path.join(work,'projects/workspace.furnish.json');
-  report.sources=Object.fromEntries(files.map(file=>[file,{before:hash(trialEffect?after[file]:before[file]),after:hash(after[file])}]));
+  const compareCurrent=trialEffect||dragSnapToggle;
+  report.sources=Object.fromEntries(files.map(file=>[file,{before:hash(compareCurrent?after[file]:before[file]),after:hash(after[file])}]));
   if(trialEffect)for(const name of ['viewport-gtao','viewport-bloom',...(nightTrial?['ceiling-model']:[])]){
    const file='src/render/'+name+'.js',digest=hash(read(path.join(root,file)));
    report.sources[file]={before:digest,after:digest};
@@ -178,7 +184,7 @@ async function run(){
    const digest=hash(read(path.join(root,file)));
    report.sources[file]={before:digest,after:digest};
   }
-  report.sources[daylightFile]={...(before[daylightFile]?{before:hash(trialEffect?after[daylightFile]:before[daylightFile])}:{}),after:hash(after[daylightFile])};
+  report.sources[daylightFile]={...(before[daylightFile]?{before:hash(compareCurrent?after[daylightFile]:before[daylightFile])}:{}),after:hash(after[daylightFile])};
   for(const [i,variant] of variants.entries()){
    const profile=job.discard('profile-'+i);
    fs.writeFileSync(save,source);
@@ -446,6 +452,23 @@ async function run(){
     assert.equal(await page.locator('#progressive-frame').count(),0);
     if(revisionRound){
      for(const id of ['gtao','bloom','smaa'])assert.equal(await page.locator('#viewport-'+id).getAttribute('aria-pressed'),'false');
+    }
+    if(dragSnapToggle){
+     const prefs=()=>page.evaluate(()=>({wallSnap:ui.layers.wallSnap,guides:ui.layers.guides,collide:ui.layers.collide,grid:ui.grid}));
+     const planAids=await prefs(),beforeState=await page.evaluate(()=>snap());
+     scene.dragOptions={grid:planAids.grid,snap:variant==='both-on'||variant==='collision-off',collision:variant==='both-on'||variant==='snap-off'};
+     const menu=page.locator('#showMenu');
+     for(const [name,enabled] of [['snap',scene.dragOptions.snap],['collision',scene.dragOptions.collision]]){
+      await menu.evaluate(element=>{element.open=true;});
+      const control=page.locator('#scene-drag-'+name);
+      assert.ok(await control.isVisible());
+      assert.equal(await control.getAttribute('aria-pressed'),'true');
+      if(!enabled)await control.click();
+      assert.equal(await control.getAttribute('aria-pressed'),String(enabled));
+      await menu.evaluate(element=>{element.open=false;});
+     }
+     assert.deepEqual(await prefs(),planAids,'3D switches must keep 2D preferences');
+     assert.equal(await page.evaluate(()=>snap()),beforeState,'Toggling 3D drag aids must leave the project alone');
     }
     if(trialEffect){
      await page.locator('#showMenu').evaluate(menu=>{menu.open=true;});
@@ -716,7 +739,7 @@ async function run(){
      console.log(variant,name,'camera',JSON.stringify({rotate:rotate.frameIntervalMs,pan:pan?.frameIntervalMs}));
      continue;
     }
-    const drag=await page.evaluate(async ({camera,id,diagnose,traceDrag})=>{
+    const drag=await page.evaluate(async ({camera,id,diagnose,traceDrag,dragSnapToggle})=>{
      await View3D.automationCamera(camera);
      selectIds([id]);ui.sceneMove=true;View3D.sync();renderFab();
      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
@@ -733,9 +756,14 @@ async function run(){
        ...(diagnose?{step,projection:args.slice(0,2),position}: {})});
       return position;
      };
+     if(dragSnapToggle){
+      furnitureBench.originalPushOut=pushOut;
+      furnitureBench.dropChecks=0;
+      pushOut=(...args)=>{furnitureBench.dropChecks++;return furnitureBench.originalPushOut(...args);};
+     }
      const f=getF(id);
      return {point:furnitureBench.target(id),cx:f.cx,cy:f.cy,locked:furnitureLocked(f)};
-    },{camera:motion,id:movable.id,diagnose,traceDrag});
+    },{camera:motion,id:movable.id,diagnose,traceDrag,dragSnapToggle});
     assert.ok(drag.point&&!drag.locked,`Furniture ${movable.id} must be pickable and unlocked`);
     if(diagnose)scene.dragStart=drag;
     const dragFurniture=()=>measure(page,cdp,drag.point,t=>({x:30+110*t+29*Math.sin(t*2*Math.PI),y:18+23*Math.sin(t*Math.PI)}),
@@ -748,8 +776,25 @@ async function run(){
      const poses=result=>result.moves.map(({projection,position})=>({projection,position}));
      if(reference){
       assert.deepEqual(drag,reference.scene.dragStart,'drag starting pose or picked point changed');
-      assert.deepEqual(poses(move),poses(reference.move),'drag projection or snapped path changed');
+      if(dragSnapToggle){
+       const inputs=result=>result.inputs.map(({x,y})=>[x,y]);
+       const projection=result=>result.moves.map(({step,projection})=>[step,projection]);
+       assert.deepEqual(inputs(move),inputs(reference.move),'drag pointer path changed');
+       assert.deepEqual(projection(move),projection(reference.move),'drag ground projection changed');
+      }else assert.deepEqual(poses(move),poses(reference.move),'drag projection or snapped path changed');
      }
+    }
+    if(dragSnapToggle){
+     const {grid,snap,collision}=scene.dragOptions;
+     const sameState=report.results.find(result=>result.name===name&&result.variant===variant);
+     if(sameState){
+      assert.deepEqual(move.moves.map(m=>m.position),sameState.move.moves.map(m=>m.position),'same switches produced a different trajectory');
+      assert.deepEqual(scene.dragEnd,sameState.scene.dragEnd,'same switches produced a different drop position');
+     }
+     if(!snap)for(const {projection,position} of move.moves)
+      assert.deepEqual(position,projection.map(value=>Math.round(value/grid)*grid),'disabled attraction should use only the grid step');
+     scene.dropChecks=await page.evaluate(()=>{pushOut=furnitureBench.originalPushOut;return furnitureBench.dropChecks;});
+     assert.equal(scene.dropChecks,collision?1:0,'wall correction did not follow the collision switch');
     }
     assert.equal(await page.locator('#progressive-frame').count(),0);
     if(nightTrial)assert.equal(await page.locator('#viewport-gtao').getAttribute('aria-pressed'),'false');
@@ -810,6 +855,25 @@ async function run(){
    await cdp.detach();
    assert.deepEqual(errors,[]);
    assert.ok(await page.evaluate(()=>saveNow()),'Isolated workspace save failed');
+   if(dragSnapToggle&&variant==='both-off'){
+    await page.reload();
+    await page.locator('#repository-loading').waitFor({state:'hidden',timeout:60000});
+    await page.evaluate(()=>setView('3d'));
+    const menu=page.locator('#showMenu');
+    const controls=['scene-drag-snap','scene-drag-collision'].map(id=>page.locator('#'+id));
+    for(const control of controls)assert.equal(await control.getAttribute('aria-pressed'),'false','switch preference did not survive reload');
+    const captureMenu=async state=>{
+     await menu.evaluate(element=>{element.open=true;});
+     await menu.locator('.showsec.only3d').screenshot({path:path.join(job.dir,`drag-settings-${i}-${state}.png`)});
+    };
+    await captureMenu('off');
+    for(const control of controls){
+     await menu.evaluate(element=>{element.open=true;});
+     await control.click();
+     assert.equal(await control.getAttribute('aria-pressed'),'true');
+    }
+    await captureMenu('on');
+   }
    await closeTestApp(app);
    app=null;
   }

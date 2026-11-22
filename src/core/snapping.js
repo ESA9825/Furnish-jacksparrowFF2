@@ -42,12 +42,14 @@
       if(Math.abs(q.t-p.t)>1e-9)for(const t of [lo,hi]){const k=(t-p.t)/(q.t-p.t);if(k>=0&&k<=1)max=Math.max(max,p.n+k*(q.n-p.n));}
     }return max;
   }
-  function move(f,cx,cy,{grid,scale,wallSnap,guides,rects,furniture,skip,moving,disabled=false,axis,anchor,finishFaces=[],plan}){
+  function move(f,cx,cy,{grid,scale,wallSnap,guides,rects,furniture,skip,moving,disabled=false,axis,anchor,finishFaces=[],plan,checkCollision=true}){
     if(f.cx===undefined||f.cy===undefined)f={...f,cx:f.cx??cx,cy:f.cy??cy};
     if(axis==='x')cy=anchor.y;else if(axis==='y')cx=anchor.x;
     if(disabled)return {position:[cx,cy],guides:[]};
+    const gridX=Math.round(cx/grid)*grid,gridY=Math.round(cy/grid)*grid;
+    if(!wallSnap&&!guides)return {position:[axis==='y'?cx:Math.round(gridX),axis==='x'?cy:Math.round(gridY)],guides:[]};
     if(guides&&(!moving||moving.length===1)){
-      const hit=cabinetMove({...f,cx,cy},{furniture:furniture.filter(o=>!skip?.has(o.id)),scale,axis,plan});if(hit)return hit;
+      const hit=cabinetMove({...f,cx,cy},{furniture:furniture.filter(o=>!skip?.has(o.id)),scale,axis,plan,checkCollision});if(hit)return hit;
     }
     const products=root.FurnishProducts||(typeof require==='function'?require('./product-rules.js'):null),surfaceDevice=!f.obj&&products.definition(f)?.measureSurfaceBoundary&&(!moving||moving.length===1);
     if(surfaceDevice&&guides){const hit=surfaceMove(f,cx,cy,{furniture,skip,scale,axis});if(hit)return hit;}
@@ -114,7 +116,7 @@
       const x=axis==='y'?cx:cx+feature.point.x-feature.source.point.x,y=axis==='x'?cy:cy+feature.point.y-feature.source.point.y;
       return {position:[finish[0]?.value??x,finish[1]?.value??y],guides:finishGuides.length?finishGuides:[{point:feature.point,kind:feature.kind,sourceKind:feature.source.kind,edge:feature.edge}]};
     }
-    let nx=Math.round(cx/grid)*grid,ny=Math.round(cy/grid)*grid;
+    let nx=gridX,ny=gridY;
     if(axis==='x')ny=cy;else if(axis==='y')nx=cx;
     // Long, thin curtains need a wider visible capture area at overview zoom.
     const {hw,hh}=geometry.aabb(f),tol=tolerance(f,scale),bounds=geometry.localOutline(f)?geometry.bbox(geometry.footprints(f).flat()):[f.cx-hw,f.cy-hh,f.cx+hw,f.cy+hh],xs=[bounds[0]-f.cx,0,bounds[2]-f.cx],ys=[bounds[1]-f.cy,0,bounds[3]-f.cy];
@@ -577,7 +579,7 @@
   }
   // A target is an ordinary component-cabinet bay, never a type-based void.
   // Shell dimensions suggest an alignment; production solids decide validity.
-  function cabinetTargets(f,{furniture=[],plan}={},reachable){
+  function cabinetTargets(f,{furniture=[],plan}={},{reachable,checkCollision=true}={}){
     const B=root.FurnishCabinetBuilder||require('./cabinet-builder-core.js'),K=root.FurnishKitchen||require('./kitchen-core.js'),P=root.FurnishProducts||require('./product-rules.js'),D=root.FurnishDesign||require('./design-core.js'),out=[];
     for(const host of furniture){
       if(host.id===f.id||host.obj||!B.is(host)&&!host.kitchen||P.modelError(host))continue;
@@ -600,7 +602,7 @@
       for(const {target,row,placed} of bays){
         const {cx,cy,rot,flip}=target,candidate={...f,cx,cy,rot,flip};
         const range=D.furnitureVerticalBounds(candidate,plan,furniture),base=floor.z+P.value(row.furniture,'mountHeight')+(row.module?K.baseElevation(host):0),bottom=base+placed.y,top=bottom+B.bodyHeight(placed.box);
-        if(!floor.known||!range||range.bottom<bottom-1e-6||range.top>top+1e-6||geometry.volumeOverlap(candidate,host,plan,furniture))continue;
+        if(!floor.known||!range||range.bottom<bottom-1e-6||range.top>top+1e-6||checkCollision&&geometry.volumeOverlap(candidate,host,plan,furniture))continue;
         const {hostId,moduleId,boxId,bay,...dimensions}=target;
         out.push({hostId,moduleId,boxId,bay,name:(host.name||'柜体')+' · 柜箱 '+(out.filter(t=>t.hostId===host.id).length+1),...dimensions});
       }
@@ -613,7 +615,7 @@
     if(!current)throw Error('柜内净空不足或与实际板件相交，请核对尺寸、离地高度和安装预留');
     const {cx,cy,rot,flip}=current,next={...f,cx,cy,rot,flip};delete next.laundryHostId;return next;
   }
-  function cabinetMove(f,{furniture=[],scale=1,axis,plan}={}){
+  function cabinetMove(f,{furniture=[],scale=1,axis,plan,checkCollision=true}={}){
     const P=root.FurnishProducts||require('./product-rules.js');if(f.obj||f.kitchen||f.cabinet||P.definition(f)?.measureSurfaceBoundary)return null;
     const capture=12/scale;let best=null;
     const landing=t=>{
@@ -625,10 +627,10 @@
       if(axis==='x'&&Math.abs(cy-f.cy)>1e-6||axis==='y'&&Math.abs(cx-f.cx)>1e-6)return null;
       return [cx,cy];
     };
-    for(const t of cabinetTargets(f,{furniture,plan},landing)){
+    for(const t of cabinetTargets(f,{furniture,plan},{reachable:landing,checkCollision})){
       const position=landing(t);if(!position)continue;
       const [cx,cy]=position,a=t.rot*Math.PI/180;
-      const candidate={...f,cx,cy},host=furniture.find(o=>o.id===t.hostId);if(geometry.volumeOverlap(candidate,host,plan,furniture))continue;
+      if(checkCollision&&geometry.volumeOverlap({...f,cx,cy},furniture.find(o=>o.id===t.hostId),plan,furniture))continue;
       const distance=Math.hypot(cx-f.cx,cy-f.cy);if(!best||distance<best.distance)best={position,guides:[{line:[{x:t.cx-Math.cos(a)*t.width/2,y:t.cy-Math.sin(a)*t.width/2},{x:t.cx+Math.cos(a)*t.width/2,y:t.cy+Math.sin(a)*t.width/2}]}],cabinetTarget:t,distance};
     }
     return best;

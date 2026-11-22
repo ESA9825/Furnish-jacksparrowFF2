@@ -130,7 +130,7 @@ applyPlanData();
 let state = store.work[PLAN.id] || (store.work[PLAN.id] = freshWork(PLAN));
 state.open = state.open || {};   // 旧版本存档补默认字段
 const ui = {tool:'select', sel:null, mA:null, mCur:null, guides:null, marq:null, ptr:null, tab:'overview',
-  layers:{dims:true, labels:true, furn:true, notes:true, grid:false, bearing:false, wallSnap:true, guides:true, clear:true, collide:true, directions:true}, grid:10};
+  layers:{dims:true, labels:true, furn:true, notes:true, grid:false, bearing:false, wallSnap:true, guides:true, sceneDragSnap:true, sceneDragCollision:true, clear:true, collide:true, directions:true}, grid:10};
 // 图层与编辑辅助设置跨会话记住
 const UI_KEY = 'huxing-ui';
 ui.planMode='furniture';
@@ -605,7 +605,7 @@ function openReset(){
           ui.sel = null; commit(before); renderAll();
         }
         if (on('view')){
-          Object.assign(ui.layers, {dims:true, labels:true, furn:true, notes:true, grid:false, bearing:false, wallSnap:true, guides:true, clear:true, collide:true}); ui.grid = 10;
+          Object.assign(ui.layers, {dims:true, labels:true, furn:true, notes:true, grid:false, bearing:false, wallSnap:true, guides:true, sceneDragSnap:true, sceneDragCollision:true, clear:true, collide:true}); ui.grid = 10;
           saveUI(); syncLayerBtns(); setTool('select'); renderDims(); renderAll(); fitView();
         }
         toast(tr('已恢复所选内容', 'Restored'), any ? {label:tr('撤销', 'Undo'), fn:undo} : null);
@@ -978,10 +978,14 @@ function setLayer(k, v){
   ui.layers[k] = v; saveUI(); syncLayerBtns();
   if (k === 'dims') $('#gDims').setAttribute('display', ui.layers.dims ? 'inline' : 'none');
   else if (k === 'clear' || k === 'directions') renderSel();
-  else if (k !== 'wallSnap' && k !== 'guides') renderAll();
+  else if (!['wallSnap','guides','sceneDragSnap','sceneDragCollision'].includes(k)) renderAll();
 }
 function syncLayerBtns(){
-  document.querySelectorAll('[data-layer]').forEach(b => b.classList.toggle('on', !!ui.layers[b.dataset.layer]));
+  document.querySelectorAll('[data-layer]').forEach(b => {
+    const on=!!ui.layers[b.dataset.layer];
+    b.classList.toggle('on',on);
+    if(b.hasAttribute('aria-pressed'))b.setAttribute('aria-pressed',String(on));
+  });
   document.querySelectorAll('[data-grid]').forEach(b => b.classList.toggle('on', +b.dataset.grid === ui.grid));
 }
 document.querySelectorAll('[data-layer]').forEach(b => b.onclick = () => setLayer(b.dataset.layer, !ui.layers[b.dataset.layer]));

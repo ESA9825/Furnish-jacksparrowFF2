@@ -172,6 +172,8 @@
             <button class="btn chip on" data-cut="2.8" data-en="Full walls">全高墙</button>
             <button class="btn chip" data-cut="1.2" data-en="Cut walls">剖切墙</button>
             <button class="btn chip on" data-t="furn" data-en="Furniture">家具</button>
+            <button type="button" class="btn chip on" id="scene-drag-snap" data-layer="sceneDragSnap" aria-pressed="true" title="控制拖动时的贴墙和家具对齐吸附" data-en-title="Toggle wall snapping and furniture alignment while dragging" data-en="Drag snapping">拖动吸附</button>
+            <button type="button" class="btn chip on" id="scene-drag-collision" data-layer="sceneDragCollision" aria-pressed="true" title="控制拖动时的柜内板件碰撞筛选和松手时的单件防穿墙处理" data-en-title="Toggle cabinet-board collision checks while dragging and wall correction when dropping one item" data-en="Drag collision checks">碰撞检查</button>
             <button class="btn chip on" id="wall-tile-numbers" data-t="wallNumbers" title="显示或隐藏墙面编号，点击编号可编辑铺贴" data-en-title="Show wall face numbers; click a number to edit tiling" data-en="Wall numbers">墙面编号</button>
             <button class="btn chip on" data-t="clearances" title="显示或隐藏家电安装预留框、检查结果及无数据提示" data-en-title="Show appliance installation clearances, checks and missing data" data-en="Clearance checks">预留检查</button>
             <button class="btn chip on" data-t="labels" data-en="Labels">房间名</button>
@@ -974,8 +976,9 @@ function init(){
     if (!fdrag.moved && Math.hypot(e.clientX - fdrag.sx, e.clientY - fdrag.sy) < TAP) return;
     const f = getF(fdrag.id), g = groundAt(e.clientX, e.clientY); if (!f || !g) return;
     fdrag.moved = true; cv.style.cursor = 'grabbing';
-    // Keep the magnet radius tied to this drag's 3D projection.
-    const [nx, ny] = snapMove(f, g.x - fdrag.ox, g.y - fdrag.oy, fdrag.skip, false, undefined, undefined, fdrag.scale);
+    // When enabled, keep the magnet radius tied to this drag's 3D projection.
+    const [nx, ny] = snapMove(f, g.x - fdrag.ox, g.y - fdrag.oy, fdrag.skip, false, undefined, undefined, fdrag.scale,
+      {gridOnly:!ui.layers.sceneDragSnap,checkCollision:ui.layers.sceneDragCollision});
     const dx = nx - fdrag.start[f.id][0], dy = ny - fdrag.start[f.id][1];
     if(f.cx===nx&&f.cy===ny)return;
     fdrag.ids.forEach(id => { const x = getF(id); if (!x) return;            // 拖动中只挪模型，松手再整体同步
@@ -992,7 +995,7 @@ function init(){
     const d = fdrag; fdrag = null; orbit.enabled = true; cv.style.cursor = '';
     if (d.moved){
       invalidate(true);
-      if (d.ids.length === 1){ const f = getF(d.id); if (f) pushOut(f); }
+      if (ui.layers.sceneDragCollision && d.ids.length === 1){ const f = getF(d.id); if (f) pushOut(f); }
       try{commit(d.before,true,{sceneFirst:true});}catch(error){toast(error.message);} renderAll({sceneFirst:true});
     }
   };

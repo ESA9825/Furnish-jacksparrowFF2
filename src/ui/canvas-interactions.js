@@ -59,16 +59,21 @@ function toMM(e){
 }
 
 /* ======================= 吸附适配 ======================= */
-function snapMove(f,cx,cy,skip,disabled=false,axis,anchor,scale=view.s){
-  return withCanvasPlan(()=>snapCanvasMove(f,cx,cy,skip,disabled,axis,anchor,scale));
+function snapMove(f,cx,cy,skip,disabled=false,axis,anchor,scale=view.s,{gridOnly=false,checkCollision=true}={}){
+  if(gridOnly){
+    const result=FurnishSnapping.move(f,cx,cy,{grid:ui.grid,wallSnap:false,guides:false,disabled,axis,anchor});
+    ui.guides=result.guides;
+    return result.position;
+  }
+  return withCanvasPlan(()=>snapCanvasMove(f,cx,cy,skip,disabled,axis,anchor,scale,checkCollision));
 }
-function snapCanvasMove(f,cx,cy,skip,disabled,axis,anchor,scale){
+function snapCanvasMove(f,cx,cy,skip,disabled,axis,anchor,scale,checkCollision){
   const service=!f.obj&&FurnishProducts.definition(f)?.wallFinishOpening,target=service?{...f,cx,cy}:null,work=service?{...state,furniture:[...state.furniture.filter(o=>o.id!==f.id),target]}:state;
   const finishPlan=state.wallFinishes?(service?FurnishProject.effectivePlan(PLAN,work):canvasEffectivePlan()):null,vertical=finishPlan?FurnishDesign.furnitureVerticalBounds(target||f,finishPlan,work.furniture):null;
   const result=FurnishSnapping.move(f,cx,cy,{finishFaces:finishPlan?FurnishWallFinish.snapFaces(finishPlan,vertical):[],grid:ui.grid,scale,
     wallSnap:ui.layers.wallSnap,guides:ui.layers.guides,
     rects:ui.layers.wallSnap?snapRects(target):[],furniture:ui.layers.furn?state.furniture:[],skip,
-    moving:skip?state.furniture.filter(o=>skip.has(o.id)):[f],disabled,axis,anchor});
+    moving:skip?state.furniture.filter(o=>skip.has(o.id)):[f],disabled,axis,anchor,checkCollision});
   ui.guides=result.guides;
   if(globalThis.FurnishElectricalUI?.active()&&FurnishElectrical.panel(f)&&!disabled&&!axis&&(!skip||skip.size===1)&&ui.layers.wallSnap){const next={...f,cx:result.position[0],cy:result.position[1]},hit=FurnishElectrical.nearest(next,FurnishElectrical.surfaces(canvasEffectivePlan(),state,next),12/scale);if(hit)return [hit.position.cx,hit.position.cy];}
   return result.position;
