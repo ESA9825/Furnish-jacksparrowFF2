@@ -35,6 +35,8 @@ if(revisionRound==='latex-paint')files.push('src/render/ceiling-model.js');
 const kitchenRound=revisionRound==='kitchen-light';
 const kitchenProbes=kitchenRound&&process.env.FURNISH_RASTER_KITCHEN_PROBES==='1';
 if(kitchenRound)files.push('src/render/downlight-model.js','src/render/bath-heater-model.js');
+const bedRound=revisionRound==='bed-bedding';
+if(bedRound)files.push('src/render/basic-furniture-model.js','src/core/product-rules.js');
 const washTrial=revisionRound==='bedside-wash';
 if(washTrial)files.push('src/render/cove-light-model.js','src/render/downlight-model.js');
 const materialRound=revisionRound==='material-response';
@@ -483,13 +485,15 @@ async function run(){
       assert.equal(scene.probes.restored,visual);
      }
     }
-    if((['upper-return','upper-edge'].includes(revisionRound)&&['master','kitchen'].includes(name))||
+    if(bedRound||(['upper-return','upper-edge'].includes(revisionRound)&&['master','kitchen'].includes(name))||
      (kitchenRound&&['kitchen','hall'].includes(name))){
      scene.controlImages={};
      const apply=patch=>page.evaluate(patch=>mutate(()=>{
       state.scene3d=FurnishDesign.patchSceneSettings(state.scene3d,patch);
      },{sceneFirst:true}),patch);
-     for(const [label,patch] of [['lamps-off',{lamps:false}],['day',{lamps:false,night:false,hour:11}]]){
+     const controls=bedRound?[['day',{lamps:false,night:false,hour:11}]]:
+      [['lamps-off',{lamps:false}],['day',{lamps:false,night:false,hour:11}]];
+     for(const [label,patch] of controls){
       await apply(patch);
       await page.evaluate(()=>View3D.automationReady());
       scene.controlImages[label]=await capture('-'+label);
@@ -589,6 +593,16 @@ async function run(){
      if(trialBloom)scene.secondaryEmitters=await page.evaluate(()=>furnitureBench.emitters());
      if((trialBloom||trialSMAA)&&variant!=='before')assert.notEqual(await capture('-secondary-beauty',true),secondaryVisual);
      await page.evaluate(pose=>View3D.automationCamera(pose),camera);
+    }
+    if(bedRound&&variant==='after'&&name==='master'&&!report.productionExport){
+     const data=await page.evaluate(ids=>furnitureBench.exportModels(ids),targets);
+     const glb=Buffer.from(data.split(',')[1],'base64');
+     const asset=JSON.parse(glb.subarray(20,20+glb.readUInt32LE(12)));
+     const fabric=asset.materials.filter(m=>m.extensions?.KHR_materials_sheen);
+     assert.ok(fabric.length>=4&&fabric.every(m=>m.normalTexture&&m.pbrMetallicRoughness.baseColorTexture));
+     assert.ok(asset.meshes.some(mesh=>mesh.primitives.some(p=>p.attributes.COLOR_0!==undefined)));
+     fs.writeFileSync(path.join(job.dir,'production-bed.glb'),glb);
+     report.productionExport={filename:'production-bed.glb',sha256:hash(glb),fabricMaterials:fabric.length};
     }
     if(previewHours.length){
      const originalHour=scene.settings.hour;

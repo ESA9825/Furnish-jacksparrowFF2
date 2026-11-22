@@ -1,0 +1,23 @@
+{
+  "version": "5.3.0",
+  "dimensionsMetres": [
+    2.000000476837158,
+    1.8500002026557922,
+    1.080000102519989
+  ],
+  "meshes": 17,
+  "fabrics": [
+    "Material_2",
+    "Material_4",
+    "Material_5",
+    "Material_6",
+    "Material_7",
+    "Material_8",
+    "Material_9"
+  ],
+  "vertexColorMeshes": [
+    "Furniture_fmv3w361v2_11",
+    "Furniture_fmv3w361v2_12",
+    "Furniture_fmv3w361v2_13"
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "baseline": "06e26965",
+  "sourceUnchanged": true,
+  "passed": true,
+  "productionExport": {
+    "filename": "production-bed.glb",
+    "sha256": "86bc87c58d2f57acb8e8c55401475fdfeed10733c05ebdd652d898e2a5b7e853",
+    "fabricMaterials": 7
+  },
+  "measurements": [
+    {
+      "variant": "before",
+      "name": "master",
+      "render": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M6, Unspecified Version)",
+        "canvas": [
+          2840,
+          1554
+        ],
+        "dpr": 2,
+        "calls": 197,
+        "triangles": 63962,
+        "exposure": 10
+      },
+      "rotate": {
+        "n": 71,
+        "p50": 16.69999998807907,
+        "p95": 18.80000001192093,
+        "max": 29.69999998807907
+      },
+      "pan": {
+        "n": 71,
+        "p50": 16.69999998807907,
+        "p95": 18.600000023841858,
+        "max": 19.80000001192093
+      },
+      "move": {
+        "n": 44,
+        "p50": 30.19999998807907,
+        "p95": 166.19999998807907,
+        "max": 168.19999998807907
+      },
+      "poseChanges": 45
+    },
+    {
+      "variant": "before",
+      "name": "second",
+      "render": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M6, Unspecified Version)",
+        "canvas": [
+          2840,
+          1554
+        ],
+        "dpr": 2,
+        "calls": 481,
+        "triangles": 147747,
+        "exposure": 10
+      }
+    },
+    {
+      "variant": "after",
+      "name": "master",
+      "render": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M6, Unspecified Version)",
+        "canvas": [
+          2840,
+          1554
+        ],
+        "dpr": 2,
+        "calls": 197,
+        "triangles": 71150,
+        "exposure": 10
+      },
+      "rotate": {
+        "n": 71,
+        "p50": 16.600000023841858,
+        "p95": 18.69999998807907,
+        "max": 28.5
+      },
+      "pan": {
+        "n": 71,
+        "p50": 16.69999998807907,
+        "p95": 17.600000023841858,
+        "max": 20.19999998807907
+      },
+      "move": {
+        "n": 44,
+        "p50": 30.5,
+        "p95": 163.5,
+        "max": 170.70000004768372
+      },
+      "poseChanges": 45
+    },
+    {
+      "variant": "after",
+      "name": "second",
+      "render": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M6, Unspecified Version)",
+        "canvas": [
+          2840,
+          1554
+        ],
+        "dpr": 2,
+        "calls": 481,
+        "triangles": 160783,
+        "exposure": 10
+      }
+    }
+  ]
+}

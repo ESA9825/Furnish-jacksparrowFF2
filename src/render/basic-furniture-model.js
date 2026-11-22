@@ -5,23 +5,147 @@ const syncIdentity=root.FurnishPartIdentity||(typeof require==='function'?requir
 
 const types=["bed","sofa","armchair","cornersofa","dresser","desk","chair","coffeetable","table","roundtable","island","barstool","officechair","bench"];
 function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const bedWeaves=new WeakMap();
+const beddingTile=.009,upholsteryTile=.013;
+function bedCloth(T,color,pile=false){
+ // A repeat contains eight warp and eight weft rows. Use the same unit
+ // on the 1200 and 1800 mm beds, irrespective of their mesh proportions.
+ if(!T.LinearMipmapLinearFilter)return new T.MeshStandardMaterial({color,roughness:.92});
+ let textures=bedWeaves.get(T);
+ if(!textures){
+  const size=64;
+  const height=(x,y)=>{
+   const u=(x+.5)/8,v=(y+.5)/8;
+   const over=(Math.floor(u)+Math.floor(v))%2===0;
+   const warp=Math.sin(Math.PI*(u%1)),weft=Math.sin(Math.PI*(v%1));
+   return over?.73*warp+.27*weft:.27*warp+.73*weft;
+  };
+  const diffuse=new Uint8Array(size*size*4),normals=new Uint8Array(diffuse.length);
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+   const index=4*(y*size+x);
+   const base=Math.round(233+20*height(x,y));
+   diffuse.set([base,base,base,255],index);
+   const dx=.9*(height((x+1)%size,y)-height((x+size-1)%size,y));
+   const dy=.9*(height(x,(y+1)%size)-height(x,(y+size-1)%size));
+   const length=Math.hypot(dx,dy,1);
+   normals.set([-dx,-dy,1].map(v=>Math.round(127.5*(1+v/length))).concat(255),index);
+  }
+  const texture=data=>{
+   const map=new T.DataTexture(data,size,size);
+   map.wrapS=map.wrapT=T.RepeatWrapping;
+   map.magFilter=T.LinearFilter;
+   map.minFilter=T.LinearMipmapLinearFilter;
+   map.generateMipmaps=true;map.needsUpdate=true;
+   return map;
+  };
+  textures={map:texture(diffuse),normalMap:texture(normals)};
+  textures.map.colorSpace=T.SRGBColorSpace;
+  bedWeaves.set(T,textures);
+ }
+ return new T.MeshPhysicalMaterial({color,...textures,roughness:pile?.93:.84,
+  normalScale:new T.Vector2(pile?.62:.39,pile?.62:.39),
+  sheen:pile?.36:.19,sheenRoughness:.80,sheenColor:new T.Color(color)});
+}
+function bedClothUV(geometry,w,h,d,tile){
+ const uv=geometry.attributes.uv;
+ if(!uv)return;
+ const side=uv.count/6;
+ for(let i=0;i<uv.count;i++){
+  const face=Math.floor(i/side);
+  uv.setXY(i,uv.getX(i)*(face<2?d:w)/tile,uv.getY(i)*(face===2||face===3?d:h)/tile);
+ }
+}
+function beddingGeometry(T,w,h,d,radius,fold){
+ const size=[w,h,d],radiusLimit=Math.min(radius,...size.map(length=>length*.45));
+ const core=size.map(length=>length/2-radiusLimit);
+ const counts=size.map(length=>Math.max(3,Math.min(24,Math.ceil(length/.067))));
+ const positions=[],uv=[],indices=[],colors=[];
+ // Add an extra vertex row at each round-over side. The centre stays
+ // finely divided so creases alter the cloth silhouette and shading.
+ const grid=(length,count)=>{
+  const half=length/2,edge=half-radiusLimit;
+  return [-half,-half+radiusLimit*.23,...Array.from({length:count+1},(_,i)=>edge*(2*i/count-1)),half-radiusLimit*.23,half];
+ };
+ const axes=size.map((length,i)=>grid(length,counts[i]));
+ // Outward winding, with the same six face layouts as Three's BoxGeometry.
+ const faces=[[0,2,1,1,-1],[0,2,1,-1,1],[1,0,2,1,-1],[1,0,2,-1,1],[2,0,1,1,1],[2,0,1,-1,-1]];
+ const linked=new Map();
+ for(const [axis,u,v,side,direction] of faces){
+  const start=positions.length/3;
+  const cols=axes[u].length,rows=axes[v].length;
+  for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
+   const raw=[0,0,0];
+   raw[axis]=side*size[axis]/2;raw[u]=axes[u][i]*direction;raw[v]=axes[v][j];
+   const inner=raw.map((value,k)=>Math.max(-core[k],Math.min(core[k],value)));
+   const delta=raw.map((value,k)=>value-inner[k]);
+   const scale=radiusLimit/Math.hypot(...delta);
+   const p=inner.map((value,k)=>value+delta[k]*scale);
+   const x=p[0],z=p[2],top=Math.max(0,(p[1]+h/2)/h);
+   const phase=17*z+2.3*x+1.15*Math.sin(5.5*x+3.8*z);
+   const taper=Math.max(0,1-Math.abs(x)/(w/2))*.65+.35;
+   const dip=fold*top*top*taper*(.68*Math.sin(phase)**2+.32*Math.sin(9*x-4*z)**2);
+   p[1]-=dip;
+   const key=p.map(value=>value.toFixed(7)).join(',');
+   const group=linked.get(key)||[];
+   group.push(positions.length/3);linked.set(key,group);
+   positions.push(...p);
+   // Approximate the short light path inside a fabric crease. Keep the
+   // same base colour and let the geometric normal respond to scene light.
+   const shade=1-.13*Math.pow(dip/.035,1.4);
+   colors.push(shade,shade,shade);
+   uv.push((raw[u]*direction+size[u]/2)/beddingTile,(raw[v]+size[v]/2)/beddingTile);
+   if(i&&j){
+    const c=start+i+j*cols,a=c-cols-1,b=c-cols,e=c-1;
+    indices.push(a,b,c,a,c,e);
+   }
+  }
+ }
+ const geo=new T.BufferGeometry();
+ geo.setAttribute('position',new T.Float32BufferAttribute(positions,3));
+ geo.setAttribute('color',new T.Float32BufferAttribute(colors,3));
+ geo.setAttribute('uv',new T.Float32BufferAttribute(uv,2));geo.setIndex(indices);geo.computeVertexNormals();
+ const normals=geo.attributes.normal;
+ for(const group of linked.values()){
+  if(group.length===1)continue;
+  let x=0,y=0,z=0;
+  for(const i of group){x+=normals.getX(i);y+=normals.getY(i);z+=normals.getZ(i);}
+  const l=Math.hypot(x,y,z);
+  if(l>0)for(const i of group)normals.setXYZ(i,x/l,y/l,z/l);
+ }
+ return geo;
+}
 function build(THREE,f,RoundedBoxGeometry,options={}){
 const P=root.FurnishModelPrimitives||(typeof require==='function'?require('./model-primitives.js'):null),primitives=options.primitives||P.create(THREE,RoundedBoxGeometry),{asMat,sh,mesh,rot,box,rbox,cyl,lathe,rod,tube,blob,ring,rrect,shell,darker,lighter,legs,metal,chrome,hwMat,blackMetal,mirror,ceramic,fabric,woodM,screenMat,glowMat,pull,knob,fronts,vasePts,vase,tableLamp,plate,mat}=primitives;
 const M=v=>v/1000,g=new THREE.Group(),w=M(f.w),d=M(f.d),c=f.color||'#ddd',bz=-d/2,R=rng(Math.round(f.w*7+f.d*13+f.cx+f.cy));
 switch(f.type){
     case 'bed': {
-      const fr = woodM('#8d7258'), fab = fabric(c), fh = .3, mt = .22, top = fh + mt, n = Math.max(3, Math.round(w/.28)), sw = (w - .04)/n;
+      const fr=woodM('#8d7258'),fh=.3,mt=.22,top=fh+mt,n=Math.max(3,Math.round(w/.28)),sw=(w-.04)/n;
+      const duvet=bedCloth(THREE,c),linen=bedCloth(THREE,'#fbfaf7'),pillow=bedCloth(THREE,'#ffffff'),runner=bedCloth(THREE,darker(c,.62),true);
+      const upholstery=bedCloth(THREE,darker(c,.8),true);
+      const cushion=(width,height,depth,material,x,y,z,radius,tile=beddingTile)=>{
+        const node=rbox(width,height,depth,material,x,y,z,radius);
+        bedClothUV(node.geometry,width,height,depth,tile);
+        node.userData.bedCloth=true;
+        return node;
+      };
+      const drape=(width,height,depth,material,y,z,radius,fold)=>{
+        const node=mesh(beddingGeometry(THREE,width,height,depth,radius,fold),material);
+        material.vertexColors=true;
+        node.position.set(0,y+height/2,z);
+        node.userData.bedCloth=true;
+        return node;
+      };
       g.add(syncIdentity.produce("basic-furniture-model:site-1",()=>box(w - .12, .06, d - .14, '#4a3e33', 0, 0, .03)), syncIdentity.produce("basic-furniture-model:site-2",()=>rbox(w, fh - .06, d - .08, fr, 0, .06, .04, .015)));        // 内缩踢脚 + 床箱
       g.add(syncIdentity.produce("basic-furniture-model:site-3",()=>rbox(w, 1.08, .06, fr, 0, 0, bz + .03, .012)));                                                                 // 床头板
-      for(let i of syncIdentity.range("basic-furniture-model.js:generator-1",0,n,1,false))g.add(syncIdentity.produce("basic-furniture-model:site-4",()=>rbox(sw - .006, .62, .06, fabric(darker(c, .8)), -w/2 + .02 + sw*(i + .5), .42, bz + .08, .025)));   // 竖向软包
+      for(let i of syncIdentity.range("basic-furniture-model.js:generator-1",0,n,1,false))g.add(syncIdentity.produce("basic-furniture-model:site-4",()=>cushion(sw - .006, .62, .06, upholstery, -w/2 + .02 + sw*(i + .5), .42, bz + .08, .025, upholsteryTile)));   // 竖向软包
       const md = d - .13, dd = md*.66, dz = d/2 - .015 - dd/2;
       g.add(syncIdentity.produce("basic-furniture-model:site-5",()=>rbox(w - .06, mt, md, '#f6f3ee', 0, fh, bz + .11 + md/2, .07)));                                              // 床垫
-      g.add(syncIdentity.produce("basic-furniture-model:site-6",()=>rbox(w + .02, .27, dd, fab, 0, top - .2, dz, .04)), syncIdentity.produce("basic-furniture-model:site-7",()=>rbox(w + .024, .06, .22, fabric('#fbfaf7'), 0, top + .025, dz - dd/2 + .11, .025)));   // 被子 + 翻边
-      g.add(syncIdentity.produce("basic-furniture-model:site-8",()=>rbox(w + .05, .285, .42, fabric(darker(c, .62)), 0, top - .205, d/2 - .35, .03)));                               // 床尾巾
+      g.add(syncIdentity.produce("basic-furniture-model:site-6",()=>drape(w + .02, .27, dd, duvet, top - .2, dz, .049, .035)), syncIdentity.produce("basic-furniture-model:site-7",()=>drape(w + .024, .06, .22, linen, top + .025, dz - dd/2 + .11, .026, .014)));   // 被子 + 翻边
+      g.add(syncIdentity.produce("basic-furniture-model:site-8",()=>drape(w + .05, .285, .42, runner, top - .205, d/2 - .35, .033, .009)));                               // 床尾巾
       const np = w >= 1.3 ? 2 : 1, pw = (w - .16 - (np-1)*.06)/np;
       for(let i of syncIdentity.range("basic-furniture-model.js:generator-2",0,np,1,false)){
         const x = -w/2 + .08 + pw/2 + i*(pw + .06);
-        g.add(rot(syncIdentity.produce("basic-furniture-model:site-9",()=>rbox(pw, .15, .42, fabric('#ffffff'), x, top - .01, bz + .34, .07)), -.28), rot(syncIdentity.produce("basic-furniture-model:site-10",()=>rbox(pw*.62, .3, .1, fabric(i ? '#efe7da' : darker(c, .7)), x, top, bz + .54, .045)), -.3));
+        g.add(rot(syncIdentity.produce("basic-furniture-model:site-9",()=>cushion(pw, .15, .42, pillow, x, top - .01, bz + .34, .07)), -.28), rot(syncIdentity.produce("basic-furniture-model:site-10",()=>cushion(pw*.62, .3, .1, bedCloth(THREE,i ? '#efe7da' : darker(c, .7),true), x, top, bz + .54, .045, upholsteryTile)), -.3));
       }
       break;
     }
