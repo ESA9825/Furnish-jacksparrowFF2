@@ -522,6 +522,10 @@
   <script data-src="src/data/mijia-kettle-mjjysh01ym-blender-asset.js" data-asset="FurnishMijiaKettleAsset"></script>
   <script data-src="src/data/joyoung-air-fryer-kl65-v573-blender-asset.js" data-asset="FurnishJoyoungV573Asset"></script>
   <script data-src="src/data/liven-griddle-lr-d3027s-blender-asset.js" data-asset="FurnishLivenD3027SAsset"></script>
+  <script data-src="src/data/supor-rice-cooker-f40h8093s-blender-asset.js" data-asset="FurnishSuporF40H8093SAsset"></script>
+  <script data-src="src/data/ikea-vardagen-wok-10488383-blender-asset.js" data-asset="FurnishIkeaVardagenWokAsset"></script>
+  <script data-src="src/data/ikea-365-steam-pot-40484251-blender-asset.js" data-asset="FurnishIkea365SteamerPotAsset"></script>
+  <script data-src="src/data/ikea-stabil-steamer-90163525-blender-asset.js" data-asset="FurnishIkeaStabilSteamerAsset"></script>
   <script data-src="src/data/acwall-midea-mxc3p-blender-asset.js" data-asset="FurnishMXC3PAsset"></script>
   <script data-src="src/data/track-socket-bull-gb50k-blender-asset.js" data-asset="FurnishBullGB50KAsset"></script>
   <script data-src="src/data/fridge-blender-asset.js" data-asset="FurnishFridgeBlenderAsset"></script>
@@ -613,6 +617,7 @@
 <script src="src/core/model-solid-recorder.js"></script>
 <script src="src/core/furniture-solids.js"></script>
 <script src="src/core/cabinet-motion.js"></script>
+<script src="src/core/drawer-contents.js"></script>
 <script src="src/core/board-motion-collision.js"></script>
 <script src="src/render/solid-cut.js"></script>
 <script src="src/render/scene-observation.js"></script>
@@ -1179,7 +1184,7 @@ const syncIdentity=FurnishPartIdentity;
   const furniture=context.furniture||(typeof state!=='undefined'?state.furniture.filter(item=>typeof furnitureError!=='function'||!furnitureError(item)):[]);
   const kitchenAppliance=FurnishKitchenCountertopApplianceModel.asset(f);
   if(kitchenAppliance){
-    const model=FurnishKitchenCountertopApplianceModel.build(THREE,kitchenAppliance,f);
+    const model=FurnishKitchenCountertopApplianceModel.build(THREE,kitchenAppliance,f,mat);
     model.position.set(wx(f.cx),0,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.userData.fid=f.id;return model;
   }
   if(f.obj?.positions?.length){
@@ -1655,7 +1660,7 @@ function buildFurn(work=state){
   const byId = new Map(furnG.children.map(o => [o.userData.fid, o])), keep = new Set(), validFurniture=work.furniture.filter(f=>!furnitureError(f));
   const preview=globalThis.FurnishWorkflowTools?.styleId(),plan=FurnishProject.effectivePlan(PLAN,work);
   for (const saved of work.furniture){
-    const f=saved;
+    const f=FurnishDrawerContents.pose(saved,validFurniture,plan);
     keep.add(f.id);
     try{
     const error=furnitureError(f);if(error)throw Error(error);

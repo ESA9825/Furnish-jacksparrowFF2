@@ -114,7 +114,7 @@ const syncIdentity=root.FurnishPartIdentity||(typeof require==='function'?requir
      if(p.innerTray){const q=p.innerTray,phase=p.open?(p.extension??1):0,innerPhase=q.open?Math.min(phase,q.extension):0,node=components.drawer({column,depth:b.d/1000,state:{open:innerPhase>0,extension:innerPhase},travel:b.d/1000*C.drawerMotionRules().travel}),level=bottom+p.height-q.topInset-q.height;
       syncIdentity.produce('inner-tray',()=>{
        const R=(root.FurnishProducts||require('../core/product-rules.js')),r=R.cabinetService.innerTray,depth=C.drawerDepthLayout(row.furniture,b.d,row.furniture.cabinet),floor={x:bay.center,z:depth.center},W=bay.width-2*R.cabinetDrawerBox.sideClearance,D=depth.depth,t=r.wall;
-       syncIdentity.produce('floor',()=>components.board(node,W/1000,t/1000,D/1000,floor.x/1000,level/1000,floor.z/1000,'#d4d2ca'));
+       syncIdentity.produce('floor',()=>components.board(node,W/1000,t/1000,D/1000,floor.x/1000,level/1000,floor.z/1000,'#d4d2ca')).userData.cabinetInnerTrayFloor=true;
        for(const side of [-1,1])syncIdentity.produce('side:'+side,()=>components.board(node,t/1000,(q.height-t)/1000,D/1000,(floor.x+side*(W-t)/2)/1000,(level+t)/1000,floor.z/1000,'#d4d2ca'));
        for(const end of [-1,1])syncIdentity.produce('end:'+end,()=>components.board(node,(W-2*t)/1000,(q.height-t)/1000,t/1000,floor.x/1000,(level+t)/1000,(floor.z+end*(D-t)/2)/1000,'#d4d2ca'));
        for(let i=1;i<r.cells;i++)syncIdentity.produce('cutlery-divider:'+i,()=>components.board(node,r.divider/1000,Math.min(30,q.height-t)/1000,(D-2*t)/1000,(floor.x-W/2+W*i/r.cells)/1000,(level+t)/1000,floor.z/1000,'#d4d2ca'));

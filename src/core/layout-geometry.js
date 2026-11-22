@@ -2,6 +2,7 @@
  * Coordinates and lengths use mm; area() returns m² and perim() returns m. */
 (function(root){
 'use strict';
+const drawerContents=()=>root.FurnishDrawerContents||(typeof require==='function'?require('./drawer-contents.js'):null);
 const area = poly => Math.abs(poly.reduce((a,p,i) => { const q = poly[(i+1)%poly.length]; return a + p[0]*q[1] - q[0]*p[1]; }, 0)) / 2 / 1e6;
 const perim = poly => poly.reduce((a,p,i) => { const q = poly[(i+1)%poly.length]; return a + Math.hypot(q[0]-p[0], q[1]-p[1]); }, 0) / 1000;
 const bbox = poly => { const xs = poly.map(p=>p[0]), ys = poly.map(p=>p[1]); return [Math.min(...xs),Math.min(...ys),Math.max(...xs),Math.max(...ys)]; };
@@ -26,7 +27,7 @@ function obbOverlap(a, b){
   }
   return true;
 }
-function footprints(f,context){if(context&&typeof context==='object'&&(root.FurnishProducts||require('./product-rules.js')).definition(f)?.telescopic&&!f.obj){const parts=bodyParts(f,context.plan,context.furniture),motion=root.FurnishCabinetMotion||require('./cabinet-motion.js');return [motion.section({vertices:parts.flatMap(p=>p.vertices)},null)];}const K=root.FurnishKitchen||(typeof require==='function'?require('./kitchen-core.js'):null);if(f.kitchen)return K.footprints(f);const outline=localOutline(f);if(!outline)return [corners(f)];const a=(f.rot||0)*Math.PI/180,c=Math.cos(a),s=Math.sin(a);return [outline.map(([x,y])=>{x*=f.flip?-1:1;return [f.cx+x*c-y*s,f.cy+x*s+y*c];})];}
+function footprints(f,context){if(context?.furniture)f=drawerContents()?.pose(f,context.furniture,context.plan)||f;if(context&&typeof context==='object'&&(root.FurnishProducts||require('./product-rules.js')).definition(f)?.telescopic&&!f.obj){const parts=bodyParts(f,context.plan,context.furniture),motion=root.FurnishCabinetMotion||require('./cabinet-motion.js');return [motion.section({vertices:parts.flatMap(p=>p.vertices)},null)];}const K=root.FurnishKitchen||(typeof require==='function'?require('./kitchen-core.js'):null);if(f.kitchen)return K.footprints(f);const outline=localOutline(f);if(!outline)return [corners(f)];const a=(f.rot||0)*Math.PI/180,c=Math.cos(a),s=Math.sin(a);return [outline.map(([x,y])=>{x*=f.flip?-1:1;return [f.cx+x*c-y*s,f.cy+x*s+y*c];})];}
 // Union the chosen rooms, then subtract the union of floor-standing envelopes.
 // Uses the saved room boundaries (including holes), independent of layer visibility.
 function regionAreas(rooms,furniture=[]){
@@ -46,7 +47,8 @@ function regionAreas(rooms,furniture=[]){
 function polygonOverlap(A,B,tolerance=5){if(A.length<3||B.length<3)return false;for(const P of [A,B])for(let i=0;i<P.length;i++){const q=P[(i+1)%P.length],nx=q[1]-P[i][1],ny=P[i][0]-q[0],L=Math.hypot(nx,ny)||1,pa=A.map(p=>(p[0]*nx+p[1]*ny)/L),pb=B.map(p=>(p[0]*nx+p[1]*ny)/L);if(Math.max(...pa)<=Math.min(...pb)+tolerance||Math.max(...pb)<=Math.min(...pa)+tolerance)return false;}return true;}
 const groundedPartsCache=new WeakMap();
 function bodyParts(f,plan,furniture){
-  const parts=relativeBodyParts(f,furniture,plan);if(!plan)return parts;
+  const posed=furniture?drawerContents()?.pose(f,furniture,plan)||f:f;
+  const parts=relativeBodyParts(posed,furniture,plan);if(!plan)return parts;
   const base=(root.FurnishProducts||require('./product-rules.js')).floorBase(plan,f,furniture);
   // Relative production arrays are immutable cached records. Resolve the datum
   // every time, and reuse the shifted records only at the same known elevation.

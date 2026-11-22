@@ -10,7 +10,7 @@ globalThis.FurnishModelPrimitives=require('../src/render/model-primitives.js');
 globalThis.FurnishStaticAssetModel=require('../src/render/static-asset-model.js');
 require('../src/render/kitchen-countertop-appliance-model.js');
 const M=globalThis.FurnishKitchenCountertopApplianceModel;
-const sourceFiles=['kettle','air','griddle'];
+const sourceFiles=['kettle','air','griddle','rice','wok','pot','insert'];
 const near=(a,b)=>assert(Math.abs(a-b)<.001,`${a} != ${b}`);
 
 (async()=>{
@@ -40,10 +40,12 @@ const near=(a,b)=>assert(Math.abs(a-b)<.001,`${a} != ${b}`);
   for(const [axis,mm] of [['x',w],['y',h],['z',d]])near((max[axis]-min[axis])*1000,mm);
   assert(model.children.every(o=>o.material.color.getHexString()!=='ff0000'));
   const lens=model.children.find(o=>o.name==='Smoked inspection window lens');
+  const lid=model.children.find(o=>o.name==='Thin curved smoked glass lid');
   const deck=model.children.find(o=>o.name==='Gloss black lower deck and touch control arc');
   if(lens){near(lens.material.transmission,.24);assert(lens.material.isMeshPhysicalMaterial);assert(lens.geometry.attributes.position.array[2]<0);}
+  if(lid){near(lid.material.transmission,.52);assert(lid.material.isMeshPhysicalMaterial);}
   if(deck){near(deck.material.specularIntensity,.48);assert(deck.material.isMeshPhysicalMaterial);}
-  assert(model.children.filter(o=>o.material.isMeshPhysicalMaterial).length===(lens||deck?1:0));
+  assert(model.children.filter(o=>o.material.isMeshPhysicalMaterial).length===(lens||lid||deck?1:0));
   model.userData.fid=f.id;
   model.position.y=f.mountHeight/1000;
   const snapshot=E.snapshot(T,{groups:[model],camera:new T.PerspectiveCamera()});
@@ -52,11 +54,11 @@ const near=(a,b)=>assert(Math.abs(a-b)<.001,`${a} != ${b}`);
    assert.equal(meshes.length,spec.parts.length);
    assert.equal(new Set(meshes.map(o=>o.userData.furnishPartKey)).size,spec.parts.length);
    assert(meshes.every(o=>o.userData.furnishId===f.id));
-   assert(meshes.filter(o=>o.material.isMeshPhysicalMaterial).length===(lens||deck?1:0));
+   assert(meshes.filter(o=>o.material.isMeshPhysicalMaterial).length===(lens||lid||deck?1:0));
   }finally{snapshot.dispose();}
   const work={furniture:[f]};
   const project=P.pack({planId:'kitchen-test',current:work,designs:[],catalog:[]});
   assert.deepEqual(P.unpack(project).current.furniture,[original]);
  }
- console.log('PASS three authored assets, exact product matching, original envelope and project data, physical materials and stable production parts');
+ console.log('PASS seven authored assets, exact product matching, original envelope and project data, physical materials and stable production parts');
 })().catch(e=>{console.error(String(e.stack||e).replace(/data:text\/javascript;base64,[A-Za-z0-9+/=]+/g,'three-r160'));process.exitCode=1;});

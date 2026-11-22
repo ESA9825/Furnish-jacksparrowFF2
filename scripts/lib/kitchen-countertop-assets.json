@@ -208,5 +208,128 @@
       "Rounded shallow domed cream lid",
       "Small gold lid release clip"
     ]
+  },
+  "supor-rice-cooker-f40h8093s": {
+    "global": "FurnishSuporF40H8093SAsset",
+    "size": [
+      270,
+      235,
+      326
+    ],
+    "product": {
+      "brand": "苏泊尔",
+      "model": "F40H8093S",
+      "sourceUrl": "https://item.jd.com/100256686079.html"
+    },
+    "parts": [
+      "Black rounded touch panel",
+      "Brushed champagne body wrap",
+      "Capacitive key outline 0 -40",
+      "Capacitive key outline 0 -68",
+      "Capacitive key outline 0 42",
+      "Capacitive key outline 0 67",
+      "Capacitive key outline 1 -40",
+      "Capacitive key outline 1 -68",
+      "Capacitive key outline 1 42",
+      "Capacitive key outline 1 67",
+      "Capacitive key outline 2 -40",
+      "Capacitive key outline 2 -68",
+      "Capacitive key outline 2 42",
+      "Capacitive key outline 2 67",
+      "Capacitive key outline 3 -40",
+      "Capacitive key outline 3 -68",
+      "Capacitive key outline 3 42",
+      "Capacitive key outline 3 67",
+      "Dark moulded base",
+      "Front SUPOR mark",
+      "Inset champagne lid release",
+      "Metal clad lid apron",
+      "Orange timer digits",
+      "Polished push-release bezel",
+      "Raised rear steam outlet ring",
+      "Rear lid hinge cover",
+      "Recess behind centre lid release",
+      "Recessed dark steam outlet",
+      "Thin polished horizontal lid seam",
+      "Top digital window"
+    ]
+  },
+  "ikea-vardagen-wok-10488383": {
+    "global": "FurnishIkeaVardagenWokAsset",
+    "size": [
+      376.39,
+      158.01,
+      481.4
+    ],
+    "product": {
+      "brand": "宜家/IKEA",
+      "model": "104.883.83",
+      "sourceUrl": "https://www.ikea.cn/cn/zh/p/vardagen-wok-with-lid-carbon-steel-10488383/"
+    },
+    "parts": [
+      "Black hanging eye",
+      "Black steel handle ferrule",
+      "Handle rivet",
+      "Handle rivet.001",
+      "Handle rivet.002",
+      "Handle rivet.003",
+      "Hollow spun carbon steel bowl",
+      "Loop helper handle",
+      "Raised tapered black lid knob",
+      "Rolled black bowl rim",
+      "Solid birch handle",
+      "Stainless glass rim",
+      "Steam vent eyelet",
+      "Thin curved smoked glass lid"
+    ]
+  },
+  "ikea-365-steam-pot-40484251": {
+    "global": "FurnishIkea365SteamerPotAsset",
+    "size": [
+      311.63,
+      263.95,
+      234.38
+    ],
+    "product": {
+      "brand": "宜家/IKEA",
+      "model": "404.842.51",
+      "sourceUrl": "https://www.ikea.cn/cn/zh/p/ikea-365-dai-gai-guo-bu-xiu-gang-40484251/"
+    },
+    "parts": [
+      "Closed loop side grip -1",
+      "Closed loop side grip 1",
+      "Closed satin stainless lid disc",
+      "Deep brushed stainless pot shell",
+      "Lid raised U grip",
+      "Riveted grip seat -1 -23",
+      "Riveted grip seat -1 23",
+      "Riveted grip seat 1 -23",
+      "Riveted grip seat 1 23",
+      "Rolled lid mating rim",
+      "Rolled pouring edge",
+      "Subtle exposed base sandwich edge"
+    ]
+  },
+  "ikea-stabil-steamer-90163525": {
+    "global": "FurnishIkeaStabilSteamerAsset",
+    "size": [
+      327.95,
+      80.01,
+      230.08
+    ],
+    "product": {
+      "brand": "宜家/IKEA",
+      "model": "901.635.25",
+      "sourceUrl": "https://www.ikea.cn/cn/zh/p/stabil-si-ta-bi-er-zheng-ti-bu-xiu-gang-90163525/"
+    },
+    "parts": [
+      "Grip root -136",
+      "Grip root 136",
+      "Perforated stainless steam plate",
+      "Recessed step and rolled lip",
+      "Stamped oval grip -136",
+      "Stamped oval grip 136",
+      "Tapered hollow stainless steamer shell"
+    ]
   }
 }
