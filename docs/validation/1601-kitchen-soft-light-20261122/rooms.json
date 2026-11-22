@@ -1,0 +1,98 @@
+[
+  {
+    "name": "kitchen",
+    "camera": {
+      "mode": "orbit",
+      "position": {
+        "x": 8100,
+        "y": 8650,
+        "z": 1660
+      },
+      "target": {
+        "x": 6590,
+        "y": 9470,
+        "z": 1610
+      },
+      "horizontalFov": 86
+    },
+    "secondCamera": {
+      "mode": "orbit",
+      "position": {
+        "x": 8040,
+        "y": 8590,
+        "z": 1660
+      },
+      "target": {
+        "x": 7180,
+        "y": 9940,
+        "z": 1190
+      },
+      "horizontalFov": 78
+    },
+    "motionCamera": {
+      "mode": "orbit",
+      "position": {
+        "x": 8100,
+        "y": 8800,
+        "z": 1660
+      },
+      "target": {
+        "x": 6590,
+        "y": 9470,
+        "z": 1610
+      },
+      "horizontalFov": 86
+    }
+  },
+  {
+    "name": "hall",
+    "camera": {
+      "mode": "orbit",
+      "position": {
+        "x": 4190,
+        "y": 5940,
+        "z": 1660
+      },
+      "target": {
+        "x": 6470,
+        "y": 5920,
+        "z": 1860
+      },
+      "horizontalFov": 84
+    }
+  },
+  {
+    "name": "master",
+    "camera": {
+      "mode": "orbit",
+      "position": {
+        "x": 3410,
+        "y": 4240,
+        "z": 1660
+      },
+      "target": {
+        "x": 945,
+        "y": 3400,
+        "z": 1865
+      },
+      "horizontalFov": 84
+    },
+    "motionCamera": {
+      "mode": "orbit",
+      "position": {
+        "x": 3110,
+        "y": 6230,
+        "z": 1660
+      },
+      "target": {
+        "x": 2200,
+        "y": 3370,
+        "z": 1690
+      },
+      "horizontalFov": 77
+    },
+    "targets": [
+      "fmv3w361v2"
+    ]
+  }
+]

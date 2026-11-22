@@ -2470,8 +2470,8 @@ function bindUI(){
 /* ======================= 主循环 ======================= */
 function renderScene(){
   interiorDaylight?.contacts();
-  const budget=FurnishDownlightModel.limitLights(scene,camera,renderer.capabilities);
-  if(budget.coveShadowAdded)renderer.shadowMap.needsUpdate=true;
+  const budget=FurnishDownlightModel.limitLights(scene,camera,renderer.capabilities,interiorDaylight?.panelRoom(camera.position));
+  if(budget.coveShadowAdded||budget.panelShadowAdded)renderer.shadowMap.needsUpdate=true;
   const bloom=bloomEnabled&&bloomNight&&(!viewportAO||viewportAO.bloomAvailable());
   const smaa=smaaEnabled&&(!viewportAO||viewportAO.smaaAvailable());
   if((gtaoEnabled||bloom||smaa)&&!anim&&viewportEffectScope()){

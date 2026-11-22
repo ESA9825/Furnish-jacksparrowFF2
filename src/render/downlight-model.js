@@ -54,29 +54,47 @@ function setLights(group,on,{night=false,nightLights=on}={}){
 }
 // WebGL forward lighting compiles every enabled light into each material. Keep
 // a bounded local preview; emissive faces and all production geometry remain.
-function limitLights(scene,camera,{lights=24,shadows=6,maxFragmentUniforms=1024,maxTextures=16}={}){
+function limitLights(scene,camera,{lights=24,shadows=6,maxFragmentUniforms=1024,maxTextures=16}={},panelRoom){
  lights=Math.min(lights,Math.max(1,Math.floor((maxFragmentUniforms-128)/16)));shadows=Math.min(shadows,Math.max(0,maxTextures-8));
  const candidates=[];scene.updateMatrixWorld(true);const eye=camera.getWorldPosition(camera.position.clone());
  scene.traverse(o=>{if(!o.isLight||!(o.userData.downlightLight||o.userData.ceilingPanelLight||o.userData.pathLight||o.userData.ceilingStripLight))return;
   o.userData.previewShadowRequested??=o.castShadow;let visible=o.userData.previewLightEnabled!==false,owner=o.parent;
   for(let p=o.parent;p;p=p.parent){if(!p.visible)visible=false;if(p.userData.fid||p.userData.ceiling)owner=p;}
-  if(visible)candidates.push({o,owner,hadShadow:o.castShadow,distance:o.getWorldPosition(eye.clone()).distanceToSquared(eye)});
+  if(o.userData.panelSample)o.intensity=o.userData.panelSample.power;
+  if(visible&&o.intensity>0)candidates.push({o,owner,hadShadow:o.castShadow,distance:o.getWorldPosition(eye.clone()).distanceToSquared(eye)});
   o.visible=false;o.castShadow=false;
  });
  const ordered=lighting().prioritize(candidates);
- const spans=ordered.filter(({o})=>o.userData.coveSpan).slice(0,Math.min(lights,shadows));
- const active=spans.concat(ordered.filter(({o})=>!o.userData.coveSpan).slice(0,lights-spans.length));
- let shadowCount=0,coveShadowAdded=false;
+ const local=panelRoom?ordered.filter(({owner})=>owner.userData.floorBase?.roomId===panelRoom):[];
+ const panelOwner=local.find(({o})=>o.userData.panelSample)?.owner;
+ const capacity=Math.min(lights,shadows);
+ const panel=panelOwner&&capacity?local.filter(({o,owner})=>{
+  const sample=o.userData.panelSample;
+  return owner===panelOwner&&sample&&(capacity>=4?sample.outer:sample.center);
+ }):[];
+ for(const {o} of panel)o.intensity*=o.userData.panelSample.total/panel.length;
+ // Budget the rectangular emitter as one fixture. Mixing shadowed and
+ // unshadowed quadrature samples would light through the same cabinet edge.
+ const task=panel.length&&capacity>panel.length?local.find(({o})=>
+  o.userData.ceilingPanelLight&&o.userData.areaSurrogate&&!o.userData.panelSample):null;
+ const reserved=task?[...panel,task]:panel;
+ const spans=ordered.filter(({o})=>o.userData.coveSpan).slice(0,capacity-reserved.length);
+ const remaining=ordered.filter(c=>!c.o.userData.coveSpan&&c!==task&&!(panel.length&&c.owner===panelOwner&&c.o.userData.panelSample));
+ const active=reserved.concat(spans,remaining.slice(0,lights-reserved.length-spans.length));
+ let shadowCount=0,coveShadowAdded=false,panelShadowAdded=false;
  for(const {o,hadShadow} of active){
   o.visible=true;
   o.castShadow=!!o.userData.previewShadowRequested&&shadowCount<shadows;
-  if(o.castShadow)shadowCount++;
+  if(o.castShadow){
+   shadowCount++;
+   panelShadowAdded||=!hadShadow&&(o.userData.panelSample!==undefined||reserved.some(c=>c.o===o));
+  }
   if(o.userData.coveSpan){
    root.FurnishCoveLightModel.orientSpan(o);
    coveShadowAdded||=o.castShadow&&!hadShadow;
   }
  }
- return {candidates:candidates.length,lights:active.length,shadows:shadowCount,coveShadowAdded};
+ return {candidates:candidates.length,lights:active.length,shadows:shadowCount,coveShadowAdded,panelShadowAdded};
 }
 const api={supported,build,setLights,limitLights};if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishDownlightModel=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

@@ -8,6 +8,7 @@ const bedrooms=['area_fmv3p1fkz7','area_fmv3oztg03'];
 const nightFinishRooms=new Set([...finishRooms,...bedrooms]);
 const paintRooms=new Set([...finishRooms,...bedrooms,'bay_cad_window_11_5','bay_cad_window_10_4']);
 const adjoiningIds=new Set(['area_fmv3qb1oi5','area_fmv3qcck717']);
+const kitchenRoom='area_fmv3qcck717';
 const apertures=[
  // Opening ref, room receiving the light, additional continuous or bay floor.
  ['cad_window_9_3','area_fmv3p2ig914',livingRooms],
@@ -257,12 +258,12 @@ function create(T,scene,{wx,wz,inside}){
   const rect=new T.Vector4(min.x,min.y,1/Math.max(.001,max.x-min.x),1/Math.max(.001,max.y-min.y));
   return new Map(backboards.map(mesh=>[mesh,{rect,transform:transforms.get(mesh),key:mesh.id}]));
  }
- function appearance(source,profile,niche,seam,upperReceiver){
+ function appearance(source,profile,niche,seam,upperReceiver,kitchenReceiver){
   if(!source?.isMeshStandardMaterial||source.transparent)return source;
   if(!finishField||source.flatShading||(profile==='wall'&&(source.map||source.roughness<.8)))profile='';
   const pool=variants.get(source)||new Map();
   const fineEdge=profile==='cabinet'&&!!seam;
-  const variantKey=(profile==='niche'?profile+':'+niche.key:fineEdge?profile+':'+seam.toArray().join(','):profile)+'|'+upperReceiver;
+  const variantKey=(profile==='niche'?profile+':'+niche.key:fineEdge?profile+':'+seam.toArray().join(','):profile)+'|'+upperReceiver+'|'+kitchenReceiver;
   if(pool.has(variantKey))return pool.get(variantKey);
   const material=source.clone();
   const satinTile=source.userData.satinTile===true||profile==='floor'&&!!source.userData.tileFinish?.layout;
@@ -280,7 +281,7 @@ function create(T,scene,{wx,wz,inside}){
   // Keep source PBR values and pre-existing shaders. Export strips these
   // raster hooks and keeps the source values.
   const cacheKey=source.customProgramCacheKey();
-  material.customProgramCacheKey=()=>cacheKey+'|room-daylight-v10|'+smoothReflection+'|'+satinTile+'|'+profile+'|'+fineEdge+'|'+replacePaintColor+'|'+upperReceiver;
+  material.customProgramCacheKey=()=>cacheKey+'|room-daylight-v11|'+smoothReflection+'|'+satinTile+'|'+profile+'|'+fineEdge+'|'+replacePaintColor+'|'+upperReceiver+'|'+kitchenReceiver;
   material.onBeforeCompile=function(shader,renderer){
    source.onBeforeCompile.call(this,shader,renderer);
    Object.assign(shader.uniforms,uniforms);
@@ -314,7 +315,7 @@ function create(T,scene,{wx,wz,inside}){
     uniform vec4 furnishInteriorSun;
     ${replacePaintColor?'uniform vec3 furnishPaintColor;':''}
     ${ceiling?'uniform float furnishCeilingAmbient;':''}
-    ${nightReceiver||finishResponse||upperReceiver?`
+    ${nightReceiver||finishResponse||upperReceiver||kitchenReceiver?`
      uniform sampler2D furnishNightMap;
      uniform vec4 furnishNightBounds;
      uniform float furnishNightActive;
@@ -518,6 +519,17 @@ function create(T,scene,{wx,wz,inside}){
       }
      }
     `:''}
+    ${kitchenReceiver?`
+     if(furnishNightActive>0.0){
+      vec3 receiver=normalize((vec4(geometryNormal,0.0)*viewMatrix).xyz);
+      vec2 uv=(furnishInteriorPosition.xz+receiver.xz*0.085-furnishNightBounds.xy)*furnishNightBounds.zw;
+      vec3 returned=texture2D(furnishNightMap,uv).rgb;
+      // Cabinet undersides see the lit worktop and floor. Vertical
+      // surfaces receive both this return and adjacent wall scatter.
+      float gain=mix(0.32,0.19,abs(receiver.y));
+      reflectedLight.indirectDiffuse+=diffuseColor.rgb*returned*gain*(1.0-metalnessFactor);
+     }
+    `:''}
     #include <aomap_fragment>
     ${ceiling?`
      vec2 openingUV=(furnishInteriorPosition.xz-furnishDaylightBounds.xy)*furnishDaylightBounds.zw;
@@ -606,9 +618,9 @@ function create(T,scene,{wx,wz,inside}){
   pool.set(variantKey,material);variants.set(source,pool);
   return material;
  }
- function paint(mesh,profile='',niche,seam,upperReceiver=''){
+ function paint(mesh,profile='',niche,seam,upperReceiver='',kitchenReceiver=false){
   if(!bounds||!mesh.isMesh||decorated.has(mesh)||!box.setFromObject(mesh).intersectsBox(bounds))return;
-  const source=mesh.material,next=Array.isArray(source)?source.map(m=>appearance(m,profile,niche,seam,upperReceiver)):appearance(source,profile,niche,seam,upperReceiver);
+  const source=mesh.material,next=Array.isArray(source)?source.map(m=>appearance(m,profile,niche,seam,upperReceiver,kitchenReceiver)):appearance(source,profile,niche,seam,upperReceiver,kitchenReceiver);
   if(Array.isArray(source)?source.every((m,i)=>m===next[i]):source===next)return;
   decorated.set(mesh,{source,next});
   mesh.material=next;
@@ -745,7 +757,7 @@ function create(T,scene,{wx,wz,inside}){
      const tint=source.upperTint??source.tint;
      upperR+=tint.r*returned;upperG+=tint.g*returned;upperB+=tint.b*returned;
     }
-    if(interior&&nightFinishRooms.has(room.id)&&!source.axis){
+    if((room.id===kitchenRoom||interior&&nightFinishRooms.has(room.id))&&!source.axis){
      if(source.cove)cove+=weight;
      else{r+=source.tint.r*weight;g+=source.tint.g*weight;b+=source.tint.b*weight;}
     }
@@ -755,7 +767,7 @@ function create(T,scene,{wx,wz,inside}){
    const encode=value=>Math.round(255*Math.min(1,value/(1+.85*value)));
    upper.set([encode(upperR),encode(upperG),encode(upperB),Math.round(255*Math.min(1,room.roof/6))],at);
    const distance=Math.min(1,edge/.52);
-   const fade=distance*distance*(3-2*distance);
+   const fade=room.id===kitchenRoom?1:distance*distance*(3-2*distance);
    return [r,g,b,cove].map(value=>Math.round(255*fade*Math.min(1,value/(1+.60*value))));
   });
   uniforms.furnishNightMap.value=nightField;
@@ -862,7 +874,7 @@ function create(T,scene,{wx,wz,inside}){
    if(mesh.userData.recessWall||mesh.userData.wallFinish||mesh.userData.wallTiling||mesh.userData.room?.startsWith('bay_')){
     const wall=mesh.userData.recessWall||mesh.userData.wallFinish;
     accepted.add(mesh);paint(mesh,wall&&!mesh.userData.walkOnly?'wall':'',undefined,undefined,
-     wall||mesh.userData.wallTiling?'wall':'');
+     wall||mesh.userData.wallTiling?'wall':'',mesh.userData.wallTiling?.roomId===kitchenRoom);
    }
   });
   const byId=new Map(furniture.map(f=>[f.id,f]));
@@ -895,7 +907,9 @@ function create(T,scene,{wx,wz,inside}){
      const {min,max}=mesh.geometry.boundingBox;
      seam=new T.Vector2(min.y,max.y);
     }
-    accepted.add(mesh);paint(mesh,finish,niche,seam);
+    const kitchenReceiver=base.roomId===kitchenRoom&&
+     (f.kitchen||f.type==='kitchenwall'||f.type==='rangehood_fotile_jcd10ta')&&!part.cabinetHardware;
+    accepted.add(mesh);paint(mesh,finish,niche,seam,'',!!kitchenReceiver);
    });
    if(contactTypes.test(f.type)&&!f.pose3D&&model.userData.floorBase.known&&Math.abs(model.position.y-model.userData.floorBase.z/1000)<.025){
     supports.set(model,findSupports(model,scopedCabinet));
@@ -959,7 +973,11 @@ function create(T,scene,{wx,wz,inside}){
   nightEnabled=enabled;
   uniforms.furnishCeilingAmbient.value=ambient*.44;
  }
- return {begin,contacts,setLight,setNight,reset,overlay};
+ function panelRoom(position){
+  const room=nightRooms.find(room=>room.id===kitchenRoom);
+  if(room&&inside(position.x,position.z,room.poly))return room.id;
+ }
+ return {begin,contacts,setLight,setNight,reset,overlay,panelRoom};
 }
 root.FurnishInteriorDaylight={create};
 })(globalThis);

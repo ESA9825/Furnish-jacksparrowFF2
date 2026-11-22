@@ -65,6 +65,13 @@ function build(T,f){
    const x=((col+.5)/light.columns-.5)*(w-2*edge),z=((row+.5)/light.rows-.5)*(d-2*edge);
    lamp.position.set(x,base-.001,z);target.position.set(x,base-1,z);lamp.target=target;
    lamp.name='Panel diffuser '+row+':'+col;lamp.userData.ceilingPanelLight=true;direct(lamp);g.add(lamp,target);
+   // Keep the hemispherical photometric lobe. A perspective shadow camera
+   // needs a finite angle to resolve the geometry underneath the diffuser.
+   lamp.shadow.focus=.85;
+   if(f.type==='panel_light_300x600'){
+    lamp.userData.panelSample={power:lamp.intensity,total:light.rows*light.columns,
+     outer:row===0||row===light.rows-1,center:row===1&&col===0};
+   }
   }
   // Raster-only returned light from lower room surfaces; shadowed to stay local.
   if(T.SpotLight&&T.Object3D)for(const side of [-1,1]){

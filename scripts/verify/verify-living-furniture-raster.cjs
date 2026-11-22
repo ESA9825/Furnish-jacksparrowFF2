@@ -32,6 +32,9 @@ const traceRotation=process.env.FURNISH_RASTER_TRACE_ROTATION==='1';
 const diagnose=revisionRound==='bedroom-rotation';
 if(diagnose)files.push('src/ui/workflow-tools.js');
 if(revisionRound==='latex-paint')files.push('src/render/ceiling-model.js');
+const kitchenRound=revisionRound==='kitchen-light';
+const kitchenProbes=kitchenRound&&process.env.FURNISH_RASTER_KITCHEN_PROBES==='1';
+if(kitchenRound)files.push('src/render/downlight-model.js','src/render/bath-heater-model.js');
 const washTrial=revisionRound==='bedside-wash';
 if(washTrial)files.push('src/render/cove-light-model.js','src/render/downlight-model.js');
 const materialRound=revisionRound==='material-response';
@@ -134,7 +137,8 @@ async function run(){
  assert.ok(previewHours.every(hour=>Number.isFinite(hour)&&hour>=0&&hour<=24),'Invalid preview hour');
  assert.ok([trialGTAO,trialBloom,trialSMAA].filter(Boolean).length<=1,'Vary only one viewport effect');
  if(captureTrajectory)assert.ok(secondCamera||rooms?.every(r=>r.secondCamera),'Trajectory comparison needs both room cameras');
- assert.ok(variants.every(v=>v==='before'||v==='after'||(!trialEffect&&v==='no-sheen')),'Unknown benchmark variant');
+ assert.ok(variants.every(v=>v==='before'||v==='after'||(!trialEffect&&v==='no-sheen')||
+  (kitchenRound&&v==='no-kitchen-return')),'Unknown benchmark variant');
  const source=read(project),after=collectSource(),before=Object.fromEntries(files.map(file=>
   [file,execFileSync('git',['show',baseline+':'+file],{cwd:root,maxBuffer:8*1024*1024})]));
  if(execFileSync('git',['ls-tree',baseline,'--',daylightFile],{cwd:root}).length)
@@ -178,7 +182,40 @@ async function run(){
       if(${traceRotation}&&window.furnitureBench.samples)performance.mark('furnish-draw-start');
       drawBenchmarkScene();
       if(${traceRotation}&&window.furnitureBench.samples)performance.mark('furnish-draw-end');
-      const metrics=window.furnitureBench;if(metrics.samples)metrics.samples.push({
+      const metrics=window.furnitureBench;
+      if(${kitchenRound}&&!metrics.kitchenState)metrics.kitchenState=()=>{
+       const positions=[];
+       const faces=metrics.lampState(state.furniture.map(f=>f.id));
+       furnG.traverse(o=>{
+        if(!o.isSpotLight||!FurnishLighting.isPreviewLight(o))return;
+        let parent=o.parent;
+        while(parent&&!parent.userData.fid)parent=parent.parent;
+        if(!parent)return;
+        positions.push({id:parent.userData.fid,name:o.name,active:o.visible&&FurnishLighting.requested(o),
+         shadow:o.castShadow,map:!!o.shadow.map,fov:o.shadow.camera.fov,intensity:o.intensity,color:o.color.getHexString()});
+       });
+       return {positions,faces,capabilities:{textures:renderer.capabilities.maxTextures,uniforms:renderer.capabilities.maxFragmentUniforms}};
+      };
+      if(${kitchenProbes&&variant==='before'}&&!metrics.kitchenProbe)metrics.kitchenProbe=label=>{
+       metrics.probe=label;
+       const shadowOwners=['fmv9mqxz91','fmv9qrzqy1'];
+       for(const group of furnG.children.filter(model=>shadowOwners.includes(model.userData.fid))){
+        group.traverse(o=>{
+         if(!o.isMesh)return;
+         o.userData.benchShadow??=o.castShadow;
+         const hood=group.userData.fid===shadowOwners[1];
+         o.castShadow=o.userData.benchShadow&&label!==(hood?'no-hood-caster':'no-upper-caster');
+         if(hood&&['sloped-glass','fixed-lower-glass'].includes(o.name)){
+          o.userData.benchColor??=o.material.color.clone();
+          o.material.color.copy(o.userData.benchColor);
+          if(label==='light-glass')o.material.color.set('#747474');
+         }
+        });
+       }
+       furnG.traverse(o=>{if(o.isSpotLight&&o.name.startsWith('Panel diffuser '))o.shadow.focus=1;});
+       invalidate(true);
+      };
+      if(metrics.samples)metrics.samples.push({
        at:started,cpu:performance.now()-started,...(${nightTrial}?{pixelRatio:renderer.getPixelRatio()}: {}),
        ...(diagnostics?{...diagnostics,newPrograms:renderer.info.programs.length-diagnostics.programs,poseMove:metrics.poseMove}: {})
       });
@@ -297,6 +334,33 @@ async function run(){
       };
      }function drawBenchmarkScene(){`);
     }
+    if(file==='index.html'&&kitchenProbes&&variant==='before')code=code.replace(
+     'if(budget.coveShadowAdded)renderer.shadowMap.needsUpdate=true;',
+     `if(['all-panel-shadows','finite-panel-shadows','no-upper-caster','no-hood-caster'].includes(window.furnitureBench.probe)){
+      const active=[];
+      const panel=[];
+      scene.traverse(o=>{
+       if(!o.isSpotLight)return;
+       o.castShadow=false;
+       if(o.name.startsWith('Panel diffuser ')&&o.parent.userData.fid==='fmvqr5qlt1')panel.push(o);
+       else if(o.visible&&FurnishLighting.isPreviewLight(o))active.push(o);
+      });
+      for(const o of panel){
+       o.visible=o.castShadow=true;
+       o.shadow.focus=window.furnitureBench.probe==='all-panel-shadows'?1:.85;
+      }
+      const eye=camera.position;
+      const distance=o=>o.getWorldPosition(new THREE.Vector3()).distanceToSquared(eye);
+      active.sort((a,b)=>distance(a)-distance(b));
+      for(const o of active.slice(budget.lights-panel.length))o.visible=false;
+      renderer.shadowMap.needsUpdate=true;
+     }
+     if(budget.coveShadowAdded)renderer.shadowMap.needsUpdate=true;`);
+    if(file===daylightFile&&variant==='no-kitchen-return'){
+     const original=code;
+     code=code.replace('float gain=mix(0.32,0.19,abs(receiver.y));','float gain=0.0;');
+     assert.notEqual(code,original,'Kitchen return gain changed');
+    }
     fs.writeFileSync(path.join(work,file),code);
    }
    const server=http.createServer();
@@ -401,7 +465,26 @@ async function run(){
        .map(({id,name})=>({id,name,faces:faces[id]}));
      });
     }
-    if(['upper-return','upper-edge'].includes(revisionRound)&&['master','kitchen'].includes(name)){
+    if(kitchenRound&&name==='kitchen'){
+     scene.kitchen=await page.evaluate(()=>furnitureBench.kitchenState());
+     if(variant==='after'){
+      const panel=scene.kitchen.positions.filter(o=>o.id==='fmvqr5qlt1'&&o.name.startsWith('Panel diffuser'));
+      const direct=panel.filter(o=>o.active);
+      assert.ok(direct.length>=4&&direct.every(o=>o.shadow&&o.map&&o.fov<180));
+      assert.ok(Math.abs(direct.reduce((sum,o)=>sum+o.intensity,0)*683-60)<1e-6);
+     }
+     if(kitchenProbes&&variant==='before'){
+      scene.probes={};
+      for(const label of ['all-panel-shadows','finite-panel-shadows','no-upper-caster','no-hood-caster','light-glass','restored']){
+       await page.evaluate(label=>furnitureBench.kitchenProbe(label),label);
+       await page.evaluate(()=>View3D.automationReady());
+       scene.probes[label]=await capture('-'+label);
+      }
+      assert.equal(scene.probes.restored,visual);
+     }
+    }
+    if((['upper-return','upper-edge'].includes(revisionRound)&&['master','kitchen'].includes(name))||
+     (kitchenRound&&['kitchen','hall'].includes(name))){
      scene.controlImages={};
      const apply=patch=>page.evaluate(patch=>mutate(()=>{
       state.scene3d=FurnishDesign.patchSceneSettings(state.scene3d,patch);
@@ -558,7 +641,7 @@ async function run(){
     await recordTrack();
     if(scene.track&&i===1)assert.deepEqual(scene.track,report.results.find(result=>result.name===name)?.scene.track,
      'Camera trajectory or interaction resolution differed between the two variants');
-    if(!movable){report.results.push({variant,name,scene,render});continue;}
+    if(!movable&&!motionCamera){report.results.push({variant,name,scene,render});continue;}
     const motion=motionCamera||gestureCamera||camera;
     if(motion!==camera||scene.track)await page.evaluate(pose=>View3D.automationCamera(pose),motion);
     const motionRender=motionCamera?await page.evaluate(()=>furnitureBench.info()):undefined;
@@ -576,6 +659,11 @@ async function run(){
       const {target}=await page.evaluate(()=>View3D.automationCamera());
       return Math.hypot(target.x-motion.target.x,target.y-motion.target.y)>1;
      },8);
+    }
+    if(!movable){
+     report.results.push({variant,name,scene,render,motionRender,rotate,pan});
+     console.log(variant,name,'camera',JSON.stringify({rotate:rotate.frameIntervalMs,pan:pan?.frameIntervalMs}));
+     continue;
     }
     const drag=await page.evaluate(async ({camera,id,diagnose})=>{
      await View3D.automationCamera(camera);

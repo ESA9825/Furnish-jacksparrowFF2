@@ -1,0 +1,816 @@
+{
+  "baseline": "5f89981f",
+  "sourceHash": "d95eb950e95103007b745b490e6d6d3ddd1dad26131038d8cfc8074a4566b535",
+  "sourceUnchanged": true,
+  "passed": true,
+  "results": [
+    {
+      "variant": "before",
+      "name": "kitchen",
+      "settings": {
+        "cut": 2.8,
+        "furn": true,
+        "labels": false,
+        "wallNumbers": false,
+        "clearances": false,
+        "lamps": true,
+        "night": true,
+        "nightLights": false,
+        "hour": 21,
+        "solar": {
+          "latitude": 38,
+          "date": "2026-07-19"
+        }
+      },
+      "pose": {
+        "mode": "orbit",
+        "position": {
+          "x": 8100,
+          "y": 8650,
+          "z": 1660
+        },
+        "target": {
+          "x": 6590,
+          "y": 9470,
+          "z": 1610
+        },
+        "horizontalFov": 86,
+        "verticalFov": 54.066485960120914,
+        "aspect": 1.8275418275418276,
+        "unit": "mm",
+        "coordinateSystem": "x/y 为户型模型坐标，z 为绝对离地高度",
+        "cut": 2.8,
+        "focusIds": [],
+        "temporaryFocusClipping": false
+      },
+      "controls": {
+        "lamps-off": "d053cd00840f969e0ce01cef9094f4772d126a418b86f6bf706031e0085a85da",
+        "day": "b5547f870cfe0ea17cee40c584f3de2b9aa746e6c8ef5e86c5d1bedc6cb16a1b"
+      },
+      "kitchenFaces": {
+        "fmvqr5qlt1": [
+          {
+            "normal": [
+              0,
+              -1,
+              0
+            ],
+            "emission": 0.5030333413516849,
+            "position": [
+              2.095,
+              2.4770000000000003,
+              3.626
+            ],
+            "width": 0.294,
+            "height": 0.594,
+            "color": "#fff4e4"
+          }
+        ],
+        "fmwf2mkf19": [
+          {
+            "normal": [
+              0,
+              -1,
+              0
+            ],
+            "emission": 1.2407871553713679,
+            "position": [
+              1.25,
+              1.6340000000000001,
+              4.265
+            ],
+            "width": 0.59,
+            "height": 0.03,
+            "color": "#fff1dc"
+          }
+        ]
+      },
+      "localSpots": [
+        {
+          "id": "fmvqr5qlt1",
+          "name": "Panel diffuser 0:0",
+          "active": true,
+          "shadow": true,
+          "map": true,
+          "fov": 180,
+          "intensity": 0.014641288433382138,
+          "color": "fff4e4"
+        },
+        {
+          "id": "fmvqr5qlt1",
+          "name": "Panel diffuser 0:1",
+          "active": true,
+          "shadow": false,
+          "map": false,
+          "fov": 50,
+          "intensity": 0.014641288433382138,
+          "color": "fff4e4"
+        },
+        {
+          "id": "fmvqr5qlt1",
+          "name": "Panel diffuser 1:0",
+          "active": false,
+          "shadow": false,
+          "map": false,
+          "fov": 50,
+          "intensity": 0.014641288433382138,
+          "color": "fff4e4"
+        },
+        {
+          "id": "fmvqr5qlt1",
+          "name": "Panel diffuser 1:1",
+          "active": false,
+          "shadow": false,
+          "map": false,
+          "fov": 50,
+          "intensity": 0.014641288433382138,
+          "color": "fff4e4"
+        },
+        {
+          "id": "fmvqr5qlt1",
+          "name": "Panel diffuser 2:0",
+          "active": false,
+          "shadow": false,
+          "map": false,
+          "fov": 50,
+          "intensity": 0.014641288433382138,
+          "color": "fff4e4"
+        },
+        {
+          "id": "fmvqr5qlt1",
+          "name": "Panel diffuser 2:1",
+          "active": false,
+          "shadow": false,
+          "map": false,
+          "fov": 50,
+          "intensity": 0.014641288433382138,
+          "color": "fff4e4"
+        },
+        {
+          "id": "fmvqr5qlt1",
+          "name": "Panel reflected light -1",
+          "active": false,
+          "shadow": false,
+          "map": false,
+          "fov": 50,
+          "intensity": 0.0021961932650073207,
+          "color": "fff4e4"
+        },
+        {
+          "id": "fmvqr5qlt1",
+          "name": "Panel reflected light 1",
+          "active": false,
+          "shadow": false,
+          "map": false,
+          "fov": 50,
+          "intensity": 0.0021961932650073207,
+          "color": "fff4e4"
+        },
+        {
+          "id": "fmwf2mkf19",
+          "name": "Panel diffuser 0:0",
+          "active": true,
+          "shadow": false,
+          "map": false,
+          "fov": 50,
+          "intensity": 0.021961932650073207,
+          "color": "fff1dc"
+        },
+        {
+          "id": "fmwf2mkf19",
+          "name": "Panel reflected light -1",
+          "active": false,
+          "shadow": false,
+          "map": false,
+          "fov": 50,
+          "intensity": 0.0004392386530014641,
+          "color": "fff1dc"
+        },
+        {
+          "id": "fmwf2mkf19",
+          "name": "Panel reflected light 1",
+          "active": false,
+          "shadow": false,
+          "map": false,
+          "fov": 50,
+          "intensity": 0.0004392386530014641,
+          "color": "fff1dc"
+        }
+      ],
+      "render": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M6, Unspecified Version)",
+        "canvas": [
+          2840,
+          1554
+        ],
+        "dpr": 2,
+        "calls": 1084,
+        "triangles": 224684,
+        "exposure": 10
+      },
+      "rotate": {
+        "frameIntervalMs": {
+          "n": 71,
+          "p50": 16.69999998807907,
+          "p95": 18,
+          "max": 19.100000023841858
+        },
+        "renderSubmissionMs": {
+          "n": 72,
+          "p50": 5.400000035762787,
+          "p95": 6.800000011920929,
+          "max": 15.300000011920929
+        },
+        "framesOver33ms": 0,
+        "framesOver50ms": 0
+      },
+      "pan": {
+        "frameIntervalMs": {
+          "n": 71,
+          "p50": 16.600000023841858,
+          "p95": 18.399999976158142,
+          "max": 19.19999998807907
+        },
+        "renderSubmissionMs": {
+          "n": 72,
+          "p50": 4.800000011920929,
+          "p95": 5.399999976158142,
+          "max": 6.5
+        },
+        "framesOver33ms": 0,
+        "framesOver50ms": 0
+      }
+    },
+    {
+      "variant": "before",
+      "name": "hall",
+      "settings": {
+        "cut": 2.8,
+        "furn": true,
+        "labels": false,
+        "wallNumbers": false,
+        "clearances": false,
+        "lamps": true,
+        "night": true,
+        "nightLights": false,
+        "hour": 21,
+        "solar": {
+          "latitude": 38,
+          "date": "2026-07-19"
+        }
+      },
+      "pose": {
+        "mode": "orbit",
+        "position": {
+          "x": 4190,
+          "y": 5940,
+          "z": 1659.9999999999998
+        },
+        "target": {
+          "x": 6470,
+          "y": 5920,
+          "z": 1860
+        },
+        "horizontalFov": 84,
+        "verticalFov": 52.457633046831866,
+        "aspect": 1.8275418275418276,
+        "unit": "mm",
+        "coordinateSystem": "x/y 为户型模型坐标，z 为绝对离地高度",
+        "cut": 2.8,
+        "focusIds": [],
+        "temporaryFocusClipping": false
+      },
+      "controls": {
+        "lamps-off": "68b373e3e0e05980641715cebeca81950c1527b42a8001dc3868ba8aa3f26507",
+        "day": "d5bc9be3a8e27bd0aab0ecf2694deec461013b58b8c5c07c88a7b20d0b51ddd6"
+      },
+      "render": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M6, Unspecified Version)",
+        "canvas": [
+          2840,
+          1554
+        ],
+        "dpr": 2,
+        "calls": 2840,
+        "triangles": 1430733,
+        "exposure": 10
+      }
+    },
+    {
+      "variant": "before",
+      "name": "master",
+      "settings": {
+        "cut": 2.8,
+        "furn": true,
+        "labels": false,
+        "wallNumbers": false,
+        "clearances": false,
+        "lamps": true,
+        "night": true,
+        "nightLights": false,
+        "hour": 21,
+        "solar": {
+          "latitude": 38,
+          "date": "2026-07-19"
+        }
+      },
+      "pose": {
+        "mode": "orbit",
+        "position": {
+          "x": 3410.000000000001,
+          "y": 4240,
+          "z": 1660
+        },
+        "target": {
+          "x": 945.0000000000009,
+          "y": 3400,
+          "z": 1864.9999999999998
+        },
+        "horizontalFov": 84,
+        "verticalFov": 52.457633046831866,
+        "aspect": 1.8275418275418276,
+        "unit": "mm",
+        "coordinateSystem": "x/y 为户型模型坐标，z 为绝对离地高度",
+        "cut": 2.8,
+        "focusIds": [],
+        "temporaryFocusClipping": false
+      },
+      "render": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M6, Unspecified Version)",
+        "canvas": [
+          2840,
+          1554
+        ],
+        "dpr": 2,
+        "calls": 203,
+        "triangles": 42446,
+        "exposure": 10
+      },
+      "rotate": {
+        "frameIntervalMs": {
+          "n": 71,
+          "p50": 16.600000023841858,
+          "p95": 17.599999964237213,
+          "max": 18.69999998807907
+        },
+        "renderSubmissionMs": {
+          "n": 72,
+          "p50": 3.600000023841858,
+          "p95": 4,
+          "max": 4.199999988079071
+        },
+        "framesOver33ms": 0,
+        "framesOver50ms": 0
+      },
+      "pan": {
+        "frameIntervalMs": {
+          "n": 71,
+          "p50": 16.600000023841858,
+          "p95": 18.80000001192093,
+          "max": 19.099999964237213
+        },
+        "renderSubmissionMs": {
+          "n": 72,
+          "p50": 3.300000011920929,
+          "p95": 3.899999976158142,
+          "max": 3.900000035762787
+        },
+        "framesOver33ms": 0,
+        "framesOver50ms": 0
+      },
+      "move": {
+        "frameIntervalMs": {
+          "n": 44,
+          "p50": 32.89999997615814,
+          "p95": 164.5,
+          "max": 167.80000001192093
+        },
+        "renderSubmissionMs": {
+          "n": 45,
+          "p50": 3.699999988079071,
+          "p95": 4.800000011920929,
+          "max": 5.300000011920929
+        },
+        "framesOver33ms": 20,
+        "framesOver50ms": 12,
+        "snapMs": {
+          "n": 72,
+          "p50": 20.200000047683716,
+          "p95": 27.19999998807907,
+          "max": 28.399999976158142
+        },
+        "poseChanges": 45,
+        "poseInputToSubmissionMs": {
+          "n": 45,
+          "p50": 23.80000001192093,
+          "p95": 32.30000001192093,
+          "max": 33.90000003576279
+        }
+      }
+    },
+    {
+      "variant": "after",
+      "name": "kitchen",
+      "settings": {
+        "cut": 2.8,
+        "furn": true,
+        "labels": false,
+        "wallNumbers": false,
+        "clearances": false,
+        "lamps": true,
+        "night": true,
+        "nightLights": false,
+        "hour": 21,
+        "solar": {
+          "latitude": 38,
+          "date": "2026-07-19"
+        }
+      },
+      "pose": {
+        "mode": "orbit",
+        "position": {
+          "x": 8100,
+          "y": 8650,
+          "z": 1660
+        },
+        "target": {
+          "x": 6590,
+          "y": 9470,
+          "z": 1610
+        },
+        "horizontalFov": 86,
+        "verticalFov": 54.066485960120914,
+        "aspect": 1.8275418275418276,
+        "unit": "mm",
+        "coordinateSystem": "x/y 为户型模型坐标，z 为绝对离地高度",
+        "cut": 2.8,
+        "focusIds": [],
+        "temporaryFocusClipping": false
+      },
+      "controls": {
+        "lamps-off": "d053cd00840f969e0ce01cef9094f4772d126a418b86f6bf706031e0085a85da",
+        "day": "b34ca1a00a0c00694a6e4515fdc84c7fd1e5818331242c52eb66414e1248fd37"
+      },
+      "kitchenFaces": {
+        "fmvqr5qlt1": [
+          {
+            "normal": [
+              0,
+              -1,
+              0
+            ],
+            "emission": 0.5030333413516849,
+            "position": [
+              2.095,
+              2.4770000000000003,
+              3.626
+            ],
+            "width": 0.294,
+            "height": 0.594,
+            "color": "#fff4e4"
+          }
+        ],
+        "fmwf2mkf19": [
+          {
+            "normal": [
+              0,
+              -1,
+              0
+            ],
+            "emission": 1.2407871553713679,
+            "position": [
+              1.25,
+              1.6340000000000001,
+              4.265
+            ],
+            "width": 0.59,
+            "height": 0.03,
+            "color": "#fff1dc"
+          }
+        ]
+      },
+      "localSpots": [
+        {
+          "id": "fmvqr5qlt1",
+          "name": "Panel diffuser 0:0",
+          "active": true,
+          "shadow": true,
+          "map": true,
+          "fov": 153,
+          "intensity": 0.021961932650073207,
+          "color": "fff4e4"
+        },
+        {
+          "id": "fmvqr5qlt1",
+          "name": "Panel diffuser 0:1",
+          "active": true,
+          "shadow": true,
+          "map": true,
+          "fov": 153,
+          "intensity": 0.021961932650073207,
+          "color": "fff4e4"
+        },
+        {
+          "id": "fmvqr5qlt1",
+          "name": "Panel diffuser 1:0",
+          "active": false,
+          "shadow": false,
+          "map": false,
+          "fov": 50,
+          "intensity": 0.014641288433382138,
+          "color": "fff4e4"
+        },
+        {
+          "id": "fmvqr5qlt1",
+          "name": "Panel diffuser 1:1",
+          "active": false,
+          "shadow": false,
+          "map": false,
+          "fov": 50,
+          "intensity": 0.014641288433382138,
+          "color": "fff4e4"
+        },
+        {
+          "id": "fmvqr5qlt1",
+          "name": "Panel diffuser 2:0",
+          "active": true,
+          "shadow": true,
+          "map": true,
+          "fov": 153,
+          "intensity": 0.021961932650073207,
+          "color": "fff4e4"
+        },
+        {
+          "id": "fmvqr5qlt1",
+          "name": "Panel diffuser 2:1",
+          "active": true,
+          "shadow": true,
+          "map": true,
+          "fov": 153,
+          "intensity": 0.021961932650073207,
+          "color": "fff4e4"
+        },
+        {
+          "id": "fmvqr5qlt1",
+          "name": "Panel reflected light -1",
+          "active": false,
+          "shadow": false,
+          "map": false,
+          "fov": 50,
+          "intensity": 0.0021961932650073207,
+          "color": "fff4e4"
+        },
+        {
+          "id": "fmvqr5qlt1",
+          "name": "Panel reflected light 1",
+          "active": false,
+          "shadow": false,
+          "map": false,
+          "fov": 50,
+          "intensity": 0.0021961932650073207,
+          "color": "fff4e4"
+        },
+        {
+          "id": "fmwf2mkf19",
+          "name": "Panel diffuser 0:0",
+          "active": true,
+          "shadow": true,
+          "map": true,
+          "fov": 153,
+          "intensity": 0.021961932650073207,
+          "color": "fff1dc"
+        },
+        {
+          "id": "fmwf2mkf19",
+          "name": "Panel reflected light -1",
+          "active": false,
+          "shadow": false,
+          "map": false,
+          "fov": 50,
+          "intensity": 0.0004392386530014641,
+          "color": "fff1dc"
+        },
+        {
+          "id": "fmwf2mkf19",
+          "name": "Panel reflected light 1",
+          "active": false,
+          "shadow": false,
+          "map": false,
+          "fov": 50,
+          "intensity": 0.0004392386530014641,
+          "color": "fff1dc"
+        }
+      ],
+      "render": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M6, Unspecified Version)",
+        "canvas": [
+          2840,
+          1554
+        ],
+        "dpr": 2,
+        "calls": 1084,
+        "triangles": 224684,
+        "exposure": 10
+      },
+      "rotate": {
+        "frameIntervalMs": {
+          "n": 71,
+          "p50": 16.600000023841858,
+          "p95": 18.799999952316284,
+          "max": 19
+        },
+        "renderSubmissionMs": {
+          "n": 72,
+          "p50": 5.299999952316284,
+          "p95": 6.899999976158142,
+          "max": 14.900000035762787
+        },
+        "framesOver33ms": 0,
+        "framesOver50ms": 0
+      },
+      "pan": {
+        "frameIntervalMs": {
+          "n": 71,
+          "p50": 16.69999998807907,
+          "p95": 18.599999964237213,
+          "max": 19.600000023841858
+        },
+        "renderSubmissionMs": {
+          "n": 72,
+          "p50": 4.899999976158142,
+          "p95": 5.399999976158142,
+          "max": 5.700000047683716
+        },
+        "framesOver33ms": 0,
+        "framesOver50ms": 0
+      }
+    },
+    {
+      "variant": "after",
+      "name": "hall",
+      "settings": {
+        "cut": 2.8,
+        "furn": true,
+        "labels": false,
+        "wallNumbers": false,
+        "clearances": false,
+        "lamps": true,
+        "night": true,
+        "nightLights": false,
+        "hour": 21,
+        "solar": {
+          "latitude": 38,
+          "date": "2026-07-19"
+        }
+      },
+      "pose": {
+        "mode": "orbit",
+        "position": {
+          "x": 4190,
+          "y": 5940,
+          "z": 1659.9999999999998
+        },
+        "target": {
+          "x": 6470,
+          "y": 5920,
+          "z": 1860
+        },
+        "horizontalFov": 84,
+        "verticalFov": 52.457633046831866,
+        "aspect": 1.8275418275418276,
+        "unit": "mm",
+        "coordinateSystem": "x/y 为户型模型坐标，z 为绝对离地高度",
+        "cut": 2.8,
+        "focusIds": [],
+        "temporaryFocusClipping": false
+      },
+      "controls": {
+        "lamps-off": "68b373e3e0e05980641715cebeca81950c1527b42a8001dc3868ba8aa3f26507",
+        "day": "d5bc9be3a8e27bd0aab0ecf2694deec461013b58b8c5c07c88a7b20d0b51ddd6"
+      },
+      "render": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M6, Unspecified Version)",
+        "canvas": [
+          2840,
+          1554
+        ],
+        "dpr": 2,
+        "calls": 2840,
+        "triangles": 1430733,
+        "exposure": 10
+      }
+    },
+    {
+      "variant": "after",
+      "name": "master",
+      "settings": {
+        "cut": 2.8,
+        "furn": true,
+        "labels": false,
+        "wallNumbers": false,
+        "clearances": false,
+        "lamps": true,
+        "night": true,
+        "nightLights": false,
+        "hour": 21,
+        "solar": {
+          "latitude": 38,
+          "date": "2026-07-19"
+        }
+      },
+      "pose": {
+        "mode": "orbit",
+        "position": {
+          "x": 3410.000000000001,
+          "y": 4240,
+          "z": 1660
+        },
+        "target": {
+          "x": 945.0000000000009,
+          "y": 3400,
+          "z": 1864.9999999999998
+        },
+        "horizontalFov": 84,
+        "verticalFov": 52.457633046831866,
+        "aspect": 1.8275418275418276,
+        "unit": "mm",
+        "coordinateSystem": "x/y 为户型模型坐标，z 为绝对离地高度",
+        "cut": 2.8,
+        "focusIds": [],
+        "temporaryFocusClipping": false
+      },
+      "render": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M6, Unspecified Version)",
+        "canvas": [
+          2840,
+          1554
+        ],
+        "dpr": 2,
+        "calls": 203,
+        "triangles": 42446,
+        "exposure": 10
+      },
+      "rotate": {
+        "frameIntervalMs": {
+          "n": 71,
+          "p50": 16.600000023841858,
+          "p95": 18.69999998807907,
+          "max": 20
+        },
+        "renderSubmissionMs": {
+          "n": 72,
+          "p50": 3.800000011920929,
+          "p95": 4.800000011920929,
+          "max": 5
+        },
+        "framesOver33ms": 0,
+        "framesOver50ms": 0
+      },
+      "pan": {
+        "frameIntervalMs": {
+          "n": 71,
+          "p50": 16.69999998807907,
+          "p95": 18.099999964237213,
+          "max": 19.5
+        },
+        "renderSubmissionMs": {
+          "n": 72,
+          "p50": 3.5,
+          "p95": 4,
+          "max": 5.300000011920929
+        },
+        "framesOver33ms": 0,
+        "framesOver50ms": 0
+      },
+      "move": {
+        "frameIntervalMs": {
+          "n": 44,
+          "p50": 32.5,
+          "p95": 165.0999999642372,
+          "max": 167.69999998807907
+        },
+        "renderSubmissionMs": {
+          "n": 45,
+          "p50": 3.900000035762787,
+          "p95": 5.199999988079071,
+          "max": 5.300000011920929
+        },
+        "framesOver33ms": 19,
+        "framesOver50ms": 12,
+        "snapMs": {
+          "n": 72,
+          "p50": 20.5,
+          "p95": 27.100000023841858,
+          "max": 27.899999976158142
+        },
+        "poseChanges": 45,
+        "poseInputToSubmissionMs": {
+          "n": 45,
+          "p50": 23.700000047683716,
+          "p95": 32.69999998807907,
+          "max": 33.299999952316284
+        }
+      }
+    }
+  ]
+}
