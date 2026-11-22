@@ -188,9 +188,14 @@
           </div>
           <label class="range"><span id="sunMode" data-en="Sun">日照</span> <input type="range" id="sun" min="7" max="18" step=".25" value="10"><span id="sunT">10:00</span></label>
           <output id="sunAltitude" for="sun" hidden></output>
-          <button class="btn chip" id="viewport-gtao" hidden aria-pressed="false" data-en="Ambient occlusion (GTAO)">环境遮蔽 GTAO</button>
-          <button class="btn chip" id="viewport-bloom" hidden aria-pressed="false" data-en="Lamp glow (Bloom)">灯具柔光 Bloom</button>
-          <button class="btn chip" id="viewport-smaa" hidden aria-pressed="false" data-en="Edge antialiasing (SMAA)">边缘抗锯齿 SMAA</button>
+          <div id="viewport-advanced-quality" hidden>
+            <button type="button" class="btn" id="viewport-quality-toggle" aria-expanded="false" aria-controls="viewport-quality-effects"><span data-en="Advanced quality">高级画质</span></button>
+            <div class="chiprow" id="viewport-quality-effects" hidden>
+              <button class="btn chip" id="viewport-gtao" hidden aria-pressed="false" data-en="Ambient occlusion (GTAO)">环境遮蔽 GTAO</button>
+              <button class="btn chip" id="viewport-bloom" hidden aria-pressed="false" data-en="Lamp glow (Bloom)">灯具柔光 Bloom</button>
+              <button class="btn chip" id="viewport-smaa" hidden aria-pressed="false" data-en="Edge antialiasing (SMAA)">边缘抗锯齿 SMAA</button>
+            </div>
+          </div>
           <button class="btn" id="sunSettings" data-en="Sun settings">日照设置</button>
         </div>
         <div class="showsec"><b data-en="Appearance">外观</b>
@@ -800,6 +805,7 @@ function syncViewportPixelRatio(){
 }
 function updateEffectControls(){
   const hidden=!viewportEffectScope();
+  $('#viewport-advanced-quality').hidden=hidden;
   const webgl=!!renderer?.capabilities.isWebGL2&&THREE.REVISION==='160';
   for(const [button,visible,enabled,available] of [
     [gtaoButton,!hidden,gtaoEnabled,webgl&&(!viewportAO||viewportAO.available())],

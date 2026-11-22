@@ -192,6 +192,11 @@ body.m3d .only2d,body:not(.m3d) .only3d{display:none!important}
 .chiprow{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
 .chiprow .btn{padding:5px 10px;font-size:12px;border-radius:var(--r-pill)}
 .chiprow .btn.chip.on{border-color:var(--accent)}
+#viewport-quality-toggle{width:100%;padding:6px 8px;gap:9px}
+#viewport-quality-toggle::before{content:"";width:6px;height:6px;border:solid currentColor;border-width:1.5px 1.5px 0 0;transform:rotate(45deg)}
+#viewport-quality-toggle[aria-expanded="true"]::before{transform:rotate(135deg)}
+#viewport-quality-effects{margin:5px 0 0 8px}
+#viewport-quality-effects[hidden]{display:none}
 .range{display:flex;align-items:center;gap:8px;padding:0 6px;color:var(--muted);font-size:12px}
 .range input{width:120px;accent-color:var(--accent)}
 .range span{font-family:var(--mono);color:var(--ink)}

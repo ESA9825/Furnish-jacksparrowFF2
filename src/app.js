@@ -967,9 +967,19 @@ async function setView(m){
   }
 }
 document.querySelectorAll('.menu-pop .btn').forEach(b => b.addEventListener('click', () => {
+  if (b.closest('#viewport-advanced-quality')) return;
   const menu = b.closest('details.menu');
   if (menu) menu.open = false; // Some controls are later moved into the canvas toolbar.
 }));
+const qualityToggle=$('#viewport-quality-toggle'),qualityEffects=$('#viewport-quality-effects');
+function setAdvancedQualityOpen(open){
+  qualityEffects.hidden=!open;
+  qualityToggle.setAttribute('aria-expanded',String(open));
+}
+qualityToggle.onclick=()=>setAdvancedQualityOpen(qualityEffects.hidden);
+$('#showMenu').addEventListener('toggle',e=>{
+  if(!e.currentTarget.open)setAdvancedQualityOpen(false);
+});
 document.querySelectorAll('#viewSeg .btn').forEach(b => b.onclick = () => setView(b.dataset.view));
 ['pointerenter', 'pointerdown', 'focusin'].forEach(t => $('#viewSeg').addEventListener(t, () => window.View3D?.load().catch(() => {}), {once:true}));
 

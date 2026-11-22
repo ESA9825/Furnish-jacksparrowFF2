@@ -472,6 +472,7 @@ async function run(){
     }
     if(trialEffect){
      await page.locator('#showMenu').evaluate(menu=>{menu.open=true;});
+     await page.locator('#viewport-quality-toggle').click();
      const control=page.locator('#'+trialEffect);
      assert.ok(await control.isVisible());
      assert.equal(await control.getAttribute('aria-pressed'),'false');
