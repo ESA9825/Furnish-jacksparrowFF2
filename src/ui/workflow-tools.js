@@ -130,15 +130,18 @@ function exportDXF(){openDialog({title:t('导出 DXF 布局图','Export DXF layo
 function afterRender(){
  styleId();clearTimeout(checkTimer);const plan=effective(),key=checkSignature(plan);checking=key!==checkKey;
  const generation=++checkGeneration;
+ const gestureActive=()=>globalThis.View3D?.interacting()||(typeof drag!=='undefined'&&(drag||pinch));
+ // Review steps can contain expensive geometry reads even with a slice budget.
+ // Let foreground input finish before starting or resuming background work.
  const update=()=>{
   if(generation!==checkGeneration)return;
-  if(typeof drag!=='undefined'&&(drag||pinch)){checkTimer=setTimeout(update,180);return;}
+  if(gestureActive()){checkTimer=setTimeout(update,180);return;}
   const steps=P.reviewSteps(plan,state);
   const advance=()=>{
    if(generation!==checkGeneration)return;
-   // A gesture changes live furniture in place before its commit/render. Drop
-   // this partial read; release schedules a fresh review of the final scene.
-   if(typeof drag!=='undefined'&&(drag||pinch)){checkTimer=setTimeout(update,180);return;}
+   // Furniture gestures change live inputs before their commit/render.
+   // Discard partial reads and restart once the main canvas is idle.
+   if(gestureActive()){steps.return();checkTimer=setTimeout(update,180);return;}
    try{const start=performance.now();let step;do{step=steps.next();}while(!step.done&&performance.now()-start<8);
     if(!step.done){checkTimer=setTimeout(advance,0);return;}
     issues=step.value;checkKey=key;checking=false;syncBadge();if(!ui.sel&&ui.tab==='space')renderPanel();

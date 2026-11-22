@@ -716,6 +716,7 @@ window.View3D = {
   tileLayoutPreview:(host,options) => load().then(() => impl.tileLayoutPreview(host,options)),
   cabinetPreview:(host,f,onToggle) => load().then(() => impl.cabinetPreview(host,f,onToggle)),
   walking:() => !!impl?.walking(),
+  interacting:() => !!impl?.interacting(),
   blenderScene:options => load().then(() => impl.blenderScene(options)),
   blenderSyncSignature:() => impl?.blenderSyncSignature(),
   highQualityScene:() => load().then(() => impl.highQualityScene()),
@@ -2630,7 +2631,7 @@ function cabinetPreview(host,f,actions){
 
 function ceilingPreview(host,data,options){return FurnishCeilingModel.preview({THREE,OrbitControls,host,data,...options});}
 function tileLayoutPreview(host,options){return FurnishTileLayoutPreview.create({THREE,OrbitControls,host,...options});}
-return {automationCamera,resetPreviewObservation:clearObservation,automationReady,furnitureScreenPoint,blenderScene,blenderSyncSignature,highQualityScene,highQualitySignature,progressiveState,progressiveScene,refreshObservationLayers,tileLayoutPreview,tileRoomAt,refreshTileInspection,ceilingPreview,cabinetPreview, enter, exit, relang, sync:() => sync(), shot, image, focusSelection, highlightIssue, groundAt, flyToRoom:id => active && !anim && flyToRoom(id), walking:() => active && opt.mode === 'walk', replan, retheme};
+return {automationCamera,resetPreviewObservation:clearObservation,automationReady,furnitureScreenPoint,blenderScene,blenderSyncSignature,highQualityScene,highQualitySignature,progressiveState,progressiveScene,refreshObservationLayers,tileLayoutPreview,tileRoomAt,refreshTileInspection,ceilingPreview,cabinetPreview, enter, exit, relang, sync:() => sync(), shot, image, focusSelection, highlightIssue, groundAt, flyToRoom:id => active && !anim && flyToRoom(id), walking:() => active && opt.mode === 'walk', interacting:() => active && !!(viewportPointer || anim || fly), replan, retheme};
 }
 </script>
 </body>

@@ -42,8 +42,12 @@ async function main() {
     const page = await app.firstWindow();
     page.on('pageerror', error => errors.push(error.message));
     await page.waitForFunction(() => typeof repositoryBooting !== 'undefined' && !repositoryBooting);
+    await page.addInitScript(() => localStorage.setItem('furnish-observation-v1', 'smooth'));
+    await page.reload();
+    await page.waitForFunction(() => !repositoryBooting);
     await page.locator('[data-view="3d"]').click();
     await page.waitForFunction(() => is3D() && !switching, null, { timeout: 120000 });
+    await page.waitForFunction(() => document.querySelector('#progressive-controls')?.dataset.state === 'smooth');
     const camera = () => page.evaluate(() => View3D.automationCamera());
     const canvas = page.locator('#view3d canvas').filter({ visible: true }).first();
     const { x, y, width, height } = await canvas.boundingBox();
@@ -54,6 +58,7 @@ async function main() {
       await page.mouse.move(start.x, start.y);
       if (pan) await page.keyboard.down('Space');
       await page.mouse.down();
+      assert.equal(await page.evaluate(() => View3D.interacting()), true);
       await page.evaluate(() => {
         window.dragStart = new Promise(resolve => document.addEventListener('pointermove', () => {
           resolve(View3D.automationCamera());
@@ -66,6 +71,7 @@ async function main() {
       const [before, moved] = await page.evaluate(() => Promise.all([window.dragStart, window.dragEnd]));
       await page.mouse.up();
       if (pan) await page.keyboard.up('Space');
+      assert.equal(await page.evaluate(() => View3D.interacting()), false);
       checkMotion(before, moved);
       return moved;
     }

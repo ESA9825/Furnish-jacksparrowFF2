@@ -28,6 +28,9 @@ const trialBloom=process.env.FURNISH_RASTER_BLOOM==='1';
 const trialSMAA=process.env.FURNISH_RASTER_SMAA==='1';
 const revisionRound=process.env.FURNISH_RASTER_ROUND||'';
 const scenePreset=process.env.FURNISH_RASTER_SCENE||'';
+const traceRotation=process.env.FURNISH_RASTER_TRACE_ROTATION==='1';
+const diagnose=revisionRound==='bedroom-rotation';
+if(diagnose)files.push('src/ui/workflow-tools.js');
 if(revisionRound==='latex-paint')files.push('src/render/ceiling-model.js');
 const washTrial=revisionRound==='bedside-wash';
 if(washTrial)files.push('src/render/cove-light-model.js','src/render/downlight-model.js');
@@ -59,7 +62,10 @@ const summary=values=>{
 async function measure(page,cdp,start,offset,check,modifiers=0){
  await cdp.send('Input.dispatchMouseEvent',{type:'mouseMoved',...start,modifiers});
  await cdp.send('Input.dispatchMouseEvent',{type:'mousePressed',...start,button:'left',buttons:1,clickCount:1,modifiers});
- await page.evaluate(()=>{window.furnitureBench.samples=[];window.furnitureBench.moves=[];});
+ await page.evaluate(()=>{
+  const bench=window.furnitureBench;
+  bench.samples=[];bench.moves=[];bench.inputs=[];bench.poseMove=null;
+ });
  let last;
  const began=performance.now();
  for(let i=1;i<=72;i++){
@@ -68,7 +74,8 @@ async function measure(page,cdp,start,offset,check,modifiers=0){
   last={x:start.x+point.x,y:start.y+point.y};
   await cdp.send('Input.dispatchMouseEvent',{type:'mouseMoved',...last,button:'left',buttons:1,modifiers});
  }
- const {frames,moves}=await page.evaluate(()=>window.furnitureBench.takeSamples());
+ if(diagnose)await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+ const {frames,moves,inputs}=await page.evaluate(()=>window.furnitureBench.takeSamples());
  const changed=await check();
  await cdp.send('Input.dispatchMouseEvent',{type:'mouseReleased',...last,button:'left',buttons:0,clickCount:1,modifiers});
  assert.ok(changed,'The real pointer gesture did not move the camera or furniture');
@@ -76,13 +83,38 @@ async function measure(page,cdp,start,offset,check,modifiers=0){
  const intervals=frames.slice(1).map((f,i)=>f.at-frames[i].at);
  const changes=moves.filter(move=>move.changed);
  const responses=changes.flatMap(move=>{
-  const frame=frames.find(f=>f.at>=move.at);
+  const frame=frames.find(f=>f.at>=move.at&&(!diagnose||f.poseMove===move.step));
   return frame?[frame.at+frame.cpu-move.at]:[];
  });
+ const nativeResponses=diagnose?changes.flatMap(move=>{
+  const frame=frames.find(f=>f.at>=move.at&&f.poseMove===move.step);
+  return frame?[frame.at+frame.cpu-inputs[move.step].eventAt]:[];
+ }):[];
  return {frameIntervalMs:summary(intervals),renderSubmissionMs:summary(frames.map(f=>f.cpu)),
   framesOver33ms:intervals.filter(ms=>ms>33.5).length,framesOver50ms:intervals.filter(ms=>ms>50).length,
   ...(moves.length?{snapMs:summary(moves.map(move=>move.cpu)),poseChanges:changes.length,
-   poseInputToSubmissionMs:summary(responses)}:{}),frames,moves};
+   poseInputToSubmissionMs:summary(responses),
+   ...(diagnose?{poseEventToSubmissionMs:summary(nativeResponses)}:{})}:{}),
+  frames,moves,...(diagnose?{inputs}:{})};
+}
+
+async function traceGesture(cdp,file,run){
+ const complete=new Promise(resolve=>cdp.once('Tracing.tracingComplete',resolve));
+ await cdp.send('Tracing.start',{transferMode:'ReturnAsStream',
+  categories:'toplevel,devtools.timeline,v8,blink.user_timing,gpu,renderer.scheduler,cc,disabled-by-default-devtools.timeline'});
+ try{return await run();}
+ finally{
+  await cdp.send('Tracing.end');
+  const {stream}=await complete;
+  const fd=fs.openSync(file,'w');
+  try{
+   let result;
+   do{
+    result=await cdp.send('IO.read',{handle:stream});
+    fs.writeSync(fd,Buffer.from(result.data,result.base64Encoded?'base64':'utf8'));
+   }while(!result.eof);
+  }finally{fs.closeSync(fd);await cdp.send('IO.close',{handle:stream});}
+ }
 }
 
 async function closeTestApp(app){
@@ -141,9 +173,14 @@ async function run(){
     if(file==='index.html'){
      const render='function renderScene(){';
      assert.equal(code.split(render).length,2,'Production render hook changed');
-     code=code.replace(render,`function renderScene(){const started=performance.now();drawBenchmarkScene();
+     code=code.replace(render,`function renderScene(){const started=performance.now();
+      const diagnostics=${diagnose}?{shadowPending:renderer.shadowMap.needsUpdate,programs:renderer.info.programs.length}:null;
+      if(${traceRotation}&&window.furnitureBench.samples)performance.mark('furnish-draw-start');
+      drawBenchmarkScene();
+      if(${traceRotation}&&window.furnitureBench.samples)performance.mark('furnish-draw-end');
       const metrics=window.furnitureBench;if(metrics.samples)metrics.samples.push({
-       at:started,cpu:performance.now()-started,...(${nightTrial}?{pixelRatio:renderer.getPixelRatio()}: {})
+       at:started,cpu:performance.now()-started,...(${nightTrial}?{pixelRatio:renderer.getPixelRatio()}: {}),
+       ...(diagnostics?{...diagnostics,newPrograms:renderer.info.programs.length-diagnostics.programs,poseMove:metrics.poseMove}: {})
       });
       if(!metrics.target)metrics.target=(id)=>{
        const rect=renderer.domElement.getBoundingClientRect();
@@ -273,20 +310,30 @@ async function run(){
    const errors=[];
    page.on('pageerror',error=>errors.push(error.message));
    page.on('console',message=>{if((message.type()==='error'&&/WebGLProgram|Shader Error/.test(message.text()))||(trialEffect&&/Furnish (?:GTAO|Bloom|SMAA):|INVALID_(?:FRAMEBUFFER_OPERATION|OPERATION)/.test(message.text())))errors.push(message.text());});
-   await app.context().addInitScript(()=>{
+   await app.context().addInitScript(({diagnose,traceRotation})=>{
     localStorage.setItem('furnish-observation-v1','smooth');
     window.furnitureBench={samples:null,moves:null,takeSamples(){
-     const result={frames:this.samples,moves:this.moves};
-     this.samples=this.moves=null;
+     const result={frames:this.samples,moves:this.moves,inputs:this.inputs};
+     this.samples=this.moves=this.inputs=null;
      return result;
     }};
-    window.addEventListener('pointermove',()=>{window.furnitureBench.inputAt=performance.now();},true);
-   });
+    window.addEventListener('pointermove',e=>{
+     const bench=window.furnitureBench;
+     bench.inputAt=performance.now();
+     if(diagnose&&bench.samples){
+      (bench.inputs??=[]).push({at:bench.inputAt,eventAt:e.timeStamp,x:e.clientX,y:e.clientY});
+      if(traceRotation)performance.mark('furnish-pointer');
+     }
+    },true);
+   },{diagnose,traceRotation});
    await page.waitForURL(`http://127.0.0.1:${port}/`);
    await page.reload();
    await page.locator('#repository-loading').waitFor({state:'hidden',timeout:60000});
    const cdp=await page.context().newCDPSession(page);
-   for(const {name,camera,targets=[],secondCamera,lampIds=[],stripId,motionCamera} of cases){
+   // Pair the variants with the same room order, with each room going first
+   // in half of a four-round run.
+   const orderedRooms=diagnose&&variants.length>=4&&i>=variants.length/2?[...cases].reverse():cases;
+   for(const {name,camera,targets=[],secondCamera,lampIds=[],stripId,motionCamera} of orderedRooms){
     const scene=await page.evaluate(async ({camera,targets,nightTrial,revisionRound,scenePreset})=>{
      if(FurnishElectricalUI.active())FurnishElectricalUI.setMode('furniture');
      drawer('lib',false);drawer('panel',false);
@@ -444,6 +491,14 @@ async function run(){
      await page.evaluate(()=>View3D.automationReady());
     }
     const render=await page.evaluate(()=>furnitureBench.info());
+    if(diagnose){
+     scene.imageHash=visual;
+     const reference=report.results.find(result=>result.name===name);
+     if(reference){
+      for(const field of ['settings','pose','lamps','lampLayerVisible','imageHash'])assert.deepEqual(scene[field],reference.scene[field],field);
+      assert.equal(render.exposure,reference.render.exposure);
+     }
+    }
     if(trialBloom){
      assert.ok(scene.emitters.some(source=>source.name==='diffuser'&&source.emission>1),'The installed lamp shade was hidden or unlit');
      assert.equal(render.canvas[0],Math.floor((await page.locator('#view3d canvas').first().boundingBox()).width*Math.min(2,render.dpr)));
@@ -477,8 +532,10 @@ async function run(){
     const motionRender=motionCamera?await page.evaluate(()=>furnitureBench.info()):undefined;
     const box=await page.locator('#view3d canvas').first().boundingBox();
     const from={x:box.x+box.width*.45,y:box.y+box.height*.49};
-    const rotate=await measure(page,cdp,from,t=>({x:34*Math.sin(t*4*Math.PI)+12*t,y:8*Math.sin(t*2*Math.PI)}),
+    const rotation=()=>measure(page,cdp,from,t=>({x:34*Math.sin(t*4*Math.PI)+12*t,y:8*Math.sin(t*2*Math.PI)}),
      async()=>Math.abs((await page.evaluate(()=>View3D.automationCamera())).position.y-motion.position.y)>1);
+    const rotate=traceRotation?
+     await traceGesture(cdp,path.join(job.dir,`trace-${variant}-${i}-${name||'room'}.json`),rotation):await rotation();
     let pan;
     if(panCamera){
      await page.evaluate(pose=>View3D.automationCamera(pose),motion);
@@ -488,7 +545,7 @@ async function run(){
       return Math.hypot(target.x-motion.target.x,target.y-motion.target.y)>1;
      },8);
     }
-    const drag=await page.evaluate(async ({camera,id})=>{
+    const drag=await page.evaluate(async ({camera,id,diagnose})=>{
      await View3D.automationCamera(camera);
      selectIds([id]);ui.sceneMove=true;View3D.sync();renderFab();
      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
@@ -496,15 +553,24 @@ async function run(){
      snapMove=(f,...args)=>{
       const start=performance.now();
       const position=furnitureBench.originalSnap(f,...args);
-      furnitureBench.moves?.push({at:furnitureBench.inputAt,cpu:performance.now()-start,changed:position[0]!==f.cx||position[1]!==f.cy});
+      const changed=position[0]!==f.cx||position[1]!==f.cy;
+      const step=furnitureBench.inputs?.length-1;
+      if(diagnose&&changed)furnitureBench.poseMove=step;
+      furnitureBench.moves?.push({at:furnitureBench.inputAt,cpu:performance.now()-start,changed,
+       ...(diagnose?{step,projection:args.slice(0,2),position}: {})});
       return position;
      };
      const f=getF(id);
      return {point:furnitureBench.target(id),cx:f.cx,cy:f.cy,locked:furnitureLocked(f)};
-    },{camera:motion,id:movable.id});
+    },{camera:motion,id:movable.id,diagnose});
     assert.ok(drag.point&&!drag.locked,`Furniture ${movable.id} must be pickable and unlocked`);
     const move=await measure(page,cdp,drag.point,t=>({x:30+110*t+29*Math.sin(t*2*Math.PI),y:18+23*Math.sin(t*Math.PI)}),
      ()=>page.evaluate(({id,cx,cy})=>getF(id).cx!==cx||getF(id).cy!==cy,{...drag,id:movable.id}));
+    if(diagnose){
+     const reference=report.results.find(result=>result.name===name)?.move;
+     const poses=result=>result.moves.map(({projection,position})=>({projection,position}));
+     if(reference)assert.deepEqual(poses(move),poses(reference),'drag projection or snapped path changed');
+    }
     assert.equal(await page.locator('#progressive-frame').count(),0);
     if(nightTrial)assert.equal(await page.locator('#viewport-gtao').getAttribute('aria-pressed'),'false');
     if(trialSMAA)assert.equal(await page.locator('#viewport-bloom').getAttribute('aria-pressed'),'false');

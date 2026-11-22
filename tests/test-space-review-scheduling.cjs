@@ -11,4 +11,15 @@ const code=fs.readFileSync(require.resolve('../src/ui/workflow-tools.js'),'utf8'
 let clock=0,id=0;const timers=new Map(),published=[],ctx={state:{revision:1},ui:{sel:{kind:'furn'}},drag:null,pinch:null,checkGeneration:0,checkTimer:0,checkKey:'',checking:false,issues:[],performance:{now:()=>clock},styleId(){},effective:()=>({revision:ctx.state.revision}),checkSignature:p=>String(p.revision),syncBadge:()=>published.push(ctx.issues),$:()=>({remove(){},textContent:''}),t:v=>v,setTimeout:cb=>{timers.set(++id,cb);return id;},clearTimeout:key=>timers.delete(key),P:{*reviewSteps(p){for(let i=0;i<10;i++){clock+=5;yield;}return [{revision:p.revision}];}}};vm.createContext(ctx);vm.runInContext(fn,ctx);
 const tick=()=>{const entry=timers.entries().next().value;assert(entry);timers.delete(entry[0]);entry[1]();};
 ctx.afterRender();tick();assert(timers.size);assert.equal(published.length,0,'partial results are not published');ctx.drag={kind:'move'};tick();assert.equal(published.length,0,'gesture suspends review');ctx.state.revision=2;ctx.afterRender();ctx.drag=null;while(timers.size)tick();assert.deepEqual(published,[[{revision:2}]],'only newest render may publish');assert.equal(ctx.checkKey,'2');assert.equal(ctx.checking,false);
-console.log('PASS incremental spatial findings, thresholds/unknown height/rotation/mirror, input immutability, abandoned cache, gesture cancellation and newest-result publication');
+let interacting=true;
+ctx.View3D={interacting:()=>interacting};
+ctx.state.revision=3;ctx.afterRender();
+const start=clock;
+for(let i=0;i<9;i++)tick();
+assert.equal(clock,start,'automatic review does no geometry work during a 3D gesture');
+interacting=false;tick();assert(clock>start,'review starts again after release');
+interacting=true;
+const interrupted=clock;tick();assert.equal(clock,interrupted,'3D gesture also interrupts a running review');
+interacting=false;while(timers.size)tick();
+assert.deepEqual(published,[[{revision:2}],[{revision:3}]],'the final result is published once after release');
+console.log('PASS incremental spatial findings, thresholds/unknown height/rotation/mirror, input immutability, abandoned cache, 2D/3D gesture cancellation and newest-result publication');
