@@ -1,0 +1,81 @@
+[
+  {
+    "name": "kitchen",
+    "camera": {
+      "mode": "orbit",
+      "position": {
+        "x": 8100,
+        "y": 8650,
+        "z": 1660
+      },
+      "target": {
+        "x": 6590,
+        "y": 9470,
+        "z": 1610
+      },
+      "horizontalFov": 86
+    },
+    "secondCamera": {
+      "mode": "orbit",
+      "position": {
+        "x": 7850,
+        "y": 9160,
+        "z": 1660
+      },
+      "target": {
+        "x": 6240,
+        "y": 9210,
+        "z": 1600
+      },
+      "horizontalFov": 71
+    },
+    "motionCamera": {
+      "mode": "orbit",
+      "position": {
+        "x": 8100,
+        "y": 8800,
+        "z": 1660
+      },
+      "target": {
+        "x": 6590,
+        "y": 9470,
+        "z": 1610
+      },
+      "horizontalFov": 86
+    }
+  },
+  {
+    "name": "living",
+    "camera": {
+      "mode": "orbit",
+      "position": {
+        "x": 9530,
+        "y": 5320,
+        "z": 1660
+      },
+      "target": {
+        "x": 7700,
+        "y": 4100,
+        "z": 710
+      },
+      "horizontalFov": 68
+    },
+    "motionCamera": {
+      "mode": "orbit",
+      "position": {
+        "x": 9530,
+        "y": 5320,
+        "z": 1470
+      },
+      "target": {
+        "x": 7600,
+        "y": 3800,
+        "z": 610
+      },
+      "horizontalFov": 51
+    },
+    "targets": [
+      "fmvglvcws1"
+    ]
+  }
+]

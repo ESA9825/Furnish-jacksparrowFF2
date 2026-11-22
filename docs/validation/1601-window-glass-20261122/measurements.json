@@ -1,0 +1,175 @@
+{
+  "baseline": "1b35da62",
+  "sourceUnchanged": true,
+  "passed": true,
+  "measurements": [
+    {
+      "variant": "before",
+      "name": "kitchen",
+      "render": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M6, Unspecified Version)",
+        "canvas": [
+          2840,
+          1554
+        ],
+        "dpr": 2,
+        "calls": 1084,
+        "triangles": 224684,
+        "exposure": 10
+      },
+      "controls": {
+        "lamps-off": "ae949b312c5a0f1569b8ce422edeadf33235cb9bbc32807325e04b5bd1796a55",
+        "day": "e4c1e7e785a6b3c59a18abe95905877706de1ecb3539621e37c14d0ab16befd2"
+      },
+      "rotate": {
+        "n": 71,
+        "p50": 16.69999998807907,
+        "p95": 18.5,
+        "max": 18.600000023841858
+      },
+      "pan": {
+        "n": 71,
+        "p50": 16.69999998807907,
+        "p95": 18.69999998807907,
+        "max": 19.099999964237213
+      }
+    },
+    {
+      "variant": "before",
+      "name": "living",
+      "render": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M6, Unspecified Version)",
+        "canvas": [
+          2840,
+          1554
+        ],
+        "dpr": 2,
+        "calls": 2288,
+        "triangles": 1020966,
+        "exposure": 10
+      },
+      "rotate": {
+        "n": 71,
+        "p50": 16.69999998807907,
+        "p95": 17.5,
+        "max": 18.69999998807907
+      },
+      "pan": {
+        "n": 71,
+        "p50": 16.69999998807907,
+        "p95": 18.600000023841858,
+        "max": 33.09999996423721
+      },
+      "move": {
+        "n": 32,
+        "p50": 24.80000001192093,
+        "p95": 100,
+        "max": 182.0999999642372
+      },
+      "moveToSubmission": {
+        "n": 33,
+        "p50": 19.30000001192093,
+        "p95": 22.80000001192093,
+        "max": 23.19999998807907
+      },
+      "poseChanges": 33
+    },
+    {
+      "variant": "after",
+      "name": "kitchen",
+      "render": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M6, Unspecified Version)",
+        "canvas": [
+          2840,
+          1554
+        ],
+        "dpr": 2,
+        "calls": 1085,
+        "triangles": 224698,
+        "exposure": 10
+      },
+      "controls": {
+        "lamps-off": "3fa6bf8b002d360d2ebb7793de3c7bbf145e22a7c2f54dafb5cd61c68d49e634",
+        "day": "e4c1e7e785a6b3c59a18abe95905877706de1ecb3539621e37c14d0ab16befd2"
+      },
+      "rotate": {
+        "n": 71,
+        "p50": 16.69999998807907,
+        "p95": 17.80000001192093,
+        "max": 18.80000001192093
+      },
+      "pan": {
+        "n": 71,
+        "p50": 16.600000023841858,
+        "p95": 18.700000047683716,
+        "max": 18.900000035762787
+      }
+    },
+    {
+      "variant": "after",
+      "name": "living",
+      "render": {
+        "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M6, Unspecified Version)",
+        "canvas": [
+          2840,
+          1554
+        ],
+        "dpr": 2,
+        "calls": 2290,
+        "triangles": 1020994,
+        "exposure": 10
+      },
+      "rotate": {
+        "n": 71,
+        "p50": 16.69999998807907,
+        "p95": 17.399999976158142,
+        "max": 17.69999998807907
+      },
+      "pan": {
+        "n": 71,
+        "p50": 16.600000023841858,
+        "p95": 18.399999976158142,
+        "max": 48.30000001192093
+      },
+      "move": {
+        "n": 32,
+        "p50": 24.599999964237213,
+        "p95": 118.60000002384186,
+        "max": 181.39999997615814
+      },
+      "moveToSubmission": {
+        "n": 33,
+        "p50": 19.80000001192093,
+        "p95": 22.299999952316284,
+        "max": 23
+      },
+      "poseChanges": 33
+    }
+  ],
+  "portableSmoke": [
+    {
+      "mode": "http",
+      "passed": true,
+      "cacheReload": true,
+      "undoRedo": true,
+      "production3D": true
+    },
+    {
+      "mode": "file",
+      "passed": true,
+      "cacheReload": true,
+      "undoRedo": true,
+      "production3D": true
+    }
+  ],
+  "offline1601": {
+    "sourceHash": "d95eb950e95103007b745b490e6d6d3ddd1dad26131038d8cfc8074a4566b535",
+    "plan": "custom_mv37igji",
+    "transport": "file://",
+    "offline": true,
+    "count": 248,
+    "externalRequests": 0,
+    "sourceUnchanged": true,
+    "passed": true
+  }
+}

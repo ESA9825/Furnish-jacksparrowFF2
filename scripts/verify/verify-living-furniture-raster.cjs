@@ -38,6 +38,7 @@ if(kitchenRound)files.push('src/render/downlight-model.js','src/render/bath-heat
 const bedRound=revisionRound==='bed-bedding';
 if(bedRound)files.push('src/render/basic-furniture-model.js','src/core/product-rules.js');
 const finishRound=revisionRound==='finish-surfaces';
+const windowRound=revisionRound==='window-glass';
 const washTrial=revisionRound==='bedside-wash';
 if(washTrial)files.push('src/render/cove-light-model.js','src/render/downlight-model.js');
 const materialRound=revisionRound==='material-response';
@@ -487,7 +488,7 @@ async function run(){
      }
     }
     if(bedRound||finishRound||(['upper-return','upper-edge'].includes(revisionRound)&&['master','kitchen'].includes(name))||
-     (kitchenRound&&['kitchen','hall'].includes(name))){
+     (kitchenRound&&['kitchen','hall'].includes(name))||(windowRound&&name==='kitchen')){
      scene.controlImages={};
      const apply=patch=>page.evaluate(patch=>mutate(()=>{
       state.scene3d=FurnishDesign.patchSceneSettings(state.scene3d,patch);

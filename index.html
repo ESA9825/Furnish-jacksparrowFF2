@@ -905,6 +905,7 @@ function init(){
 
   buildEnvironment();
   glassMat = new THREE.MeshPhysicalMaterial({color:0xcfe6ef, roughness:.05, transparent:true, opacity:.28, depthWrite:false, side:THREE.DoubleSide});
+  interiorDaylight.prepareGlass(glassMat);
   themeMats();
 
   archFloor = new THREE.Group(); archUp = new THREE.Group(); furnG = new THREE.Group(); labelG = new THREE.Group();wallLabelG=new THREE.Group(); lampG = new THREE.Group();

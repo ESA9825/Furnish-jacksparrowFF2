@@ -80,6 +80,9 @@ function create(T,scene,{wx,wz,inside}){
   furnishPaintColor:{value:new T.Color('#f4f1eb')},furnishCeilingAmbient:{value:0},
   furnishNightMap:{value:null},furnishNightBounds:{value:new T.Vector4()},furnishNightActive:{value:0},
   furnishUpperReturn:{value:null},
+  furnishWindowRaster:{value:0},furnishWindowEmitter:{value:new T.Vector4(0,0,0,0)},
+  furnishWindowPanel:{value:new T.Vector4()},furnishWindowTint:{value:new T.Color()},
+  furnishWindowZone:{value:new T.Vector4()},
   furnishFinishLights:{value:[new T.Vector4(),new T.Vector4()]},
   furnishSofaPose:{value:new T.Vector4()},furnishSofaSize:{value:new T.Vector4()},
   furnishSofaVisible:{value:0}
@@ -94,6 +97,7 @@ function create(T,scene,{wx,wz,inside}){
  let patch,sky,field,finishField,finishTexture,wallsGroup,floors=[],bounds=null,lastPose='',daylight=0;
  let roomById=new Map(),sofa=null;
  let nightRooms=[],nightSources=[],nightField,upperField,nightKey='',nightEnabled=false;
+ let nightSky=false,windowSource;
 
  function dataTexture(width,height,fill){
   const bytes=new Uint8Array(width*height*4);
@@ -176,6 +180,7 @@ function create(T,scene,{wx,wz,inside}){
    sky.setMatrixAt(i,apertureTransform.matrix);
   }
   overlay.add(sky);
+  uniforms.furnishWindowRaster.value=windows.length?1:0;
  }
  function mapFinishes(archUp,rooms){
   if(!rooms.length)return;
@@ -687,6 +692,11 @@ function create(T,scene,{wx,wz,inside}){
    roof:heights.get(room.id)??(room.ceilingHeight||2700)/1000,
    poly:room.poly.map(([x,y])=>[wx(x),wz(y)])
   }));
+  const kitchen=nightRooms.find(room=>room.id===kitchenRoom);
+  if(kitchen){
+   const xs=kitchen.poly.map(point=>point[0]),zs=kitchen.poly.map(point=>point[1]);
+   uniforms.furnishWindowZone.value.set(Math.min(...xs)-.15,Math.min(...zs)-.15,Math.max(...xs)+.15,Math.max(...zs)+.15);
+  }
   const points=nightRooms.flatMap(room=>room.poly);
   nightSources=[];nightKey='';
   if(!points.length)return;
@@ -717,7 +727,9 @@ function create(T,scene,{wx,wz,inside}){
     const power=Math.min(1.7,rectangle.radiance*rectangle.width*rectangle.height*.58);
     const reach=Math.max(1.35,Math.min(2.15,position.y*.69));
     const axis=upward?new T.Vector3().fromArray(rectangle.u).transformDirection(o.matrixWorld):null;
-    nightSources.push({o,rectangle,position,room,tint,upperTint,power,reach,axis});
+    const u=room.id===kitchenRoom&&!upward&&rectangle.u&&rectangle.width>=.25&&rectangle.height>=.25?
+     new T.Vector3().fromArray(rectangle.u).transformDirection(o.matrixWorld):null;
+    nightSources.push({o,rectangle,position,room,tint,upperTint,power,reach,axis,u});
    }
   });
   // Reuse the ceiling wash that has already passed the cove occlusion test.
@@ -733,7 +745,7 @@ function create(T,scene,{wx,wz,inside}){
  }
  function updateNight(){
   const show=uniforms.furnishNightActive;
-  if(!nightEnabled||!nightSources.length){show.value=0;return;}
+  if(!nightEnabled||!nightSources.length){show.value=0;updateWindowEmitter();return;}
   const active=nightSources.filter(({o,rectangle,cove})=>{
    if(rectangle&&(rectangle.enabled===false||rectangle.material.emissiveIntensity<=0))return false;
    if(cove&&!cove())return false;
@@ -741,6 +753,7 @@ function create(T,scene,{wx,wz,inside}){
    return true;
   });
   show.value=active.length?1:0;
+  updateWindowEmitter(active.find(source=>source.u));
   if(!active.length)return;
   const key=active.map(({o,rectangle,room})=>o.id+':'+(rectangle?.material.id??'cove')+':'+(room.floor?.visible!==false)).join(',');
   if(nightKey===key)return;
@@ -963,6 +976,84 @@ function create(T,scene,{wx,wz,inside}){
   lastPose='';
   setLight(daylight);
  }
+ // Keep the production pane material identity for picking and export.
+ function prepareGlass(material){
+  const before=material.onBeforeCompile,key=material.customProgramCacheKey();
+  material.customProgramCacheKey=()=>key+'|interior-window-raster';
+  material.onBeforeCompile=function(shader,renderer){
+   before.call(this,shader,renderer);
+   for(const name of ['furnishWindowRaster','furnishWindowEmitter','furnishWindowPanel','furnishWindowTint','furnishWindowZone']){
+    shader.uniforms[name]=uniforms[name];
+   }
+   shader.vertexShader='varying vec3 furnishWindowPosition;\n'+shader.vertexShader.replace('#include <project_vertex>',`
+    #include <project_vertex>
+    furnishWindowPosition=(modelMatrix*vec4(transformed,1.0)).xyz;
+   `);
+   shader.fragmentShader=`
+    varying vec3 furnishWindowPosition;
+    uniform float furnishWindowRaster;
+    uniform vec4 furnishWindowEmitter;
+    uniform vec4 furnishWindowPanel;
+    uniform vec3 furnishWindowTint;
+    uniform vec4 furnishWindowZone;
+   `+shader.fragmentShader.replace('#include <roughnessmap_fragment>',`
+     #include <roughnessmap_fragment>
+     // Discrete spot samples approximate broad emitters in the viewport.
+     roughnessFactor=mix(roughnessFactor,max(roughnessFactor,0.20),furnishWindowRaster);
+    `).replace('#include <opaque_fragment>',`
+     if(furnishWindowRaster>0.0){
+      vec3 windowView=normalize(vViewPosition);
+      float glassFacing=abs(dot(windowView,normal));
+      float windowFresnel=pow(1.0-clamp(glassFacing,0.0,1.0),5.0);
+      diffuseColor.a=mix(diffuseColor.a,1.0,0.33*windowFresnel);
+      vec2 pane=furnishWindowPosition.xz;
+      if(gl_FrontFacing&&furnishWindowEmitter.w>0.0&&all(greaterThanEqual(pane,furnishWindowZone.xy))
+       &&all(lessThanEqual(pane,furnishWindowZone.zw))){
+       vec3 reflectedRay=(vec4(reflect(-windowView,normal),0.0)*viewMatrix).xyz;
+       if(reflectedRay.y>0.015){
+        vec3 delta=furnishWindowEmitter.xyz-furnishWindowPosition;
+        float travel=delta.y/reflectedRay.y;
+        vec2 offset=reflectedRay.xz*travel-delta.xz;
+        vec2 axis=furnishWindowPanel.zw;
+        vec2 at=vec2(dot(offset,axis),dot(offset,vec2(-axis.y,axis.x)));
+        vec2 extent=furnishWindowPanel.xy;
+        vec2 edge=1.0-smoothstep(extent*0.62,extent+0.045*max(0.0,travel),abs(at));
+        float reflectance=(0.04+0.96*windowFresnel)*step(0.0,travel)*edge.x*edge.y;
+        outgoingLight+=furnishWindowTint*reflectance*furnishWindowEmitter.w;
+       }
+      }
+     }
+     #include <opaque_fragment>
+    `);
+  };
+ }
+ function updateSky(){
+  if(!sky)return;
+  sky.visible=daylight>0||nightSky;
+  if(!sky.visible)return;
+  const sun=uniforms.furnishInteriorSun.value;
+  for(let i=0;i<sky.count;i++){
+   if(nightSky)skyColor.setRGB(.012,.019,.036);
+   else{
+    const opening=uniforms.furnishDaylightSources.value[i+1],shape=uniforms.furnishWindowShapes.value[i+1];
+    const facing=Math.max(0,-shape.z*sun.x-shape.w*sun.z);
+    const low=opening.w*sun.w,glow=low*facing;
+    skyColor.setRGB(1-.10*low,1-.16*low+.09*glow,1-.23*low+.08*glow);
+   }
+   sky.setColorAt(i,skyColor);
+  }
+  if(sky.instanceColor)sky.instanceColor.needsUpdate=true;
+ }
+ function updateWindowEmitter(source){
+  if(source===windowSource)return;
+  windowSource=source;
+  const emitter=uniforms.furnishWindowEmitter.value;
+  if(!source){emitter.w=0;return;}
+  const {position,rectangle,u}=source;
+  emitter.set(position.x,position.y,position.z,Math.min(.35,rectangle.radiance));
+  uniforms.furnishWindowTint.value.set(rectangle.color);
+  uniforms.furnishWindowPanel.value.set(rectangle.width/2,rectangle.height/2,u.x,u.z);
+ }
  function setLight(amount,solar){
   daylight=amount;
   uniforms.furnishDaylightStrength.value=daylight;
@@ -974,19 +1065,7 @@ function create(T,scene,{wx,wz,inside}){
    sun.value.set(center.x,center.y,center.z,low);
    tint.value.set(.80+.44*low,.91-.02*low,1-.42*low);
   }
-  if(sky){
-   sky.visible=daylight>0;
-   if(daylight>0){
-    for(let i=0;i<sky.count;i++){
-     const opening=uniforms.furnishDaylightSources.value[i+1],shape=uniforms.furnishWindowShapes.value[i+1];
-     const facing=Math.max(0,-shape.z*sun.value.x-shape.w*sun.value.z);
-     const low=opening.w*sun.value.w,glow=low*facing;
-     skyColor.setRGB(1-.10*low,1-.16*low+.09*glow,1-.23*low+.08*glow);
-     sky.setColorAt(i,skyColor);
-    }
-    sky.instanceColor.needsUpdate=true;
-   }
-  }
+  updateSky();
   if(patch)patch.material.opacity=daylight>0?.38:.13;
  }
  function reset(){
@@ -998,19 +1077,22 @@ function create(T,scene,{wx,wz,inside}){
   nightField?.dispose();nightField=null;nightKey='';nightSources=[];nightRooms=[];
   upperField?.dispose();upperField=null;uniforms.furnishUpperReturn.value=null;
   uniforms.furnishNightMap.value=null;uniforms.furnishNightActive.value=0;
+  uniforms.furnishWindowRaster.value=0;updateWindowEmitter();
   finishField?.dispose();finishTexture?.dispose();
   uniforms.furnishFinishField.value=uniforms.furnishFinishTexture.value=null;
   patch=sky=field=finishField=finishTexture=wallsGroup=bounds=null;roomById.clear();floors=[];sofa=null;uniforms.furnishSofaVisible.value=0;lastPose='';
  }
  function setNight(enabled,ambient=0){
   nightEnabled=enabled;
+  const nextSky=enabled||ambient>0;
+  if(nightSky!==nextSky){nightSky=nextSky;updateSky();}
   uniforms.furnishCeilingAmbient.value=ambient*.44;
  }
  function panelRoom(position){
   const room=nightRooms.find(room=>room.id===kitchenRoom);
   if(room&&inside(position.x,position.z,room.poly))return room.id;
  }
- return {begin,contacts,setLight,setNight,reset,overlay,panelRoom};
+ return {begin,contacts,setLight,setNight,reset,overlay,panelRoom,prepareGlass};
 }
 root.FurnishInteriorDaylight={create};
 })(globalThis);
