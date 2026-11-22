@@ -60,10 +60,14 @@ def publish(source, target, profile='se2', spec=None):
     names = set()
     hinges = {}
 
+    # PM20M2 keeps the old placement's -Z front with a proper rotation.
+    # The other countertop assets preserve their previously published OBJ axes.
+    microwave = profile == 'midea-microwave-pm20m2'
+    mirrored_axes = bool(countertop) and not microwave
+
     def xyz(v):
         # Remove float32 interchange noise at exact contact planes (0.0001 mm grid).
-        # These three layouts already used OBJ positions (x, height, plan-y).
-        result = [round(v.x, 7), round(v.z, 7), round(v.y if countertop else -v.y, 7)]
+        result = [round(-v.x if microwave else v.x, 7), round(v.z, 7), round(v.y if countertop else -v.y, 7)]
         if not all(math.isfinite(x) for x in result):
             raise ValueError('Non-finite geometry')
         return result
@@ -116,7 +120,7 @@ def publish(source, target, profile='se2', spec=None):
         normal_matrix = obj.matrix_world.to_3x3().inverted().transposed()
         positions, normals = [], []
         for tri in mesh.loop_triangles:
-            for loop in (tri.loops if (obj.matrix_world.determinant() > 0) != bool(countertop) else reversed(tri.loops)):
+            for loop in (tri.loops if (obj.matrix_world.determinant() > 0) != mirrored_axes else reversed(tri.loops)):
                 positions.extend(xyz(obj.matrix_world @ mesh.vertices[mesh.loops[loop].vertex_index].co))
                 normal = normal_matrix @ mesh.corner_normals[loop].vector
                 if normal.length_squared < 1e-14:

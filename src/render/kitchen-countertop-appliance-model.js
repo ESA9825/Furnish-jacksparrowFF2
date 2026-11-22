@@ -5,6 +5,7 @@ const assets=new Map([
  ['MJJYSH01YM','FurnishMijiaKettleAsset'],
  ['KL65-V573','FurnishJoyoungV573Asset'],
  ['LR-D3027S','FurnishLivenD3027SAsset'],
+ ['PM20M2','FurnishMideaPM20M2Asset'],
  ['F40H8093S','FurnishSuporF40H8093SAsset'],
  ['104.883.83','FurnishIkeaVardagenWokAsset'],
  ['404.842.51','FurnishIkea365SteamerPotAsset'],
