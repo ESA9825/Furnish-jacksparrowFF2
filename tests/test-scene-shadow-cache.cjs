@@ -18,4 +18,33 @@ sliding.cur=1;curtain.open=true;frame();assert(curtain.panels[0].node.scale.x<1)
 curtain.cur=1;vm.runInContext('invalidate(true)',ctx);frame();assert.equal(shadowPasses,5,'explicit geometry/light changes refresh once');
 for(let i=0;i<5;i++)frame();assert.equal(shadowPasses,5,'settled scene retains cached shadows');
 assert(html.includes('renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;'));
+{
+ let now=0,ratio=2,draws=0;
+ const listeners={};
+ const surface={addEventListener:(name,handler)=>{listeners[name]=handler;}};
+ const viewport=vm.createContext({window:surface,cv:surface,devicePixelRatio:2,anim:null,opt:{mode:'orbit'},
+  performance:{now:()=>now},PLAN:{id:'custom_mv37igji'},FurnishProgressiveView:{mode:()=>'smooth'},
+  gtaoEnabled:false,bloomEnabled:false,smaaEnabled:false,bloomNight:true,localStorage:{getItem:()=>null},
+  renderer:{getPixelRatio:()=>ratio,setPixelRatio:value=>{ratio=value;},domElement:{toDataURL:()=>String(ratio)}},
+  renderScene:()=>{draws++;},invalidate(){}});
+ const state=html.slice(html.indexOf('let viewportPointer='),html.indexOf('function updateEffectControls(){'));
+ const events=html.slice(html.indexOf("  cv.addEventListener('pointerdown',e=>{"),html.indexOf('  sceneMeasure=FurnishSceneMeasure.create'));
+ const capture=html.slice(html.indexOf('function captureViewportImage(){'),html.indexOf('function shot(){'));
+ vm.runInContext(state+events+capture,viewport);
+ const pointer={isPrimary:true,pointerId:1,button:0,clientX:0,clientY:0};
+ const touch=name=>listeners[name](pointer);
+ const move=()=>listeners.pointermove({...pointer,clientX:8});
+ touch('pointerdown');touch('pointerup');viewport.syncViewportPixelRatio();assert.equal(ratio,2);
+ touch('pointerdown');move();viewport.syncViewportPixelRatio();assert.equal(ratio,1.25);
+ now=30;touch('pointerup');viewport.syncViewportPixelRatio();assert.equal(ratio,1.25);
+ now=120;touch('pointerdown');move();viewport.syncViewportPixelRatio();assert.equal(ratio,1.25);
+ now=200;touch('pointerup');viewport.syncViewportPixelRatio();assert.equal(ratio,1.25);
+ now=379;viewport.syncViewportPixelRatio();assert.equal(ratio,1.25);
+ now=380;viewport.syncViewportPixelRatio();assert.equal(ratio,2);
+ touch('pointerdown');move();viewport.syncViewportPixelRatio();touch('pointerup');
+ assert.equal(viewport.captureViewportImage(),'2','A settled capture always uses the native buffer');
+ assert.equal(draws,1);
+ touch('pointerdown');move();viewport.syncViewportPixelRatio();touch('pointerup');
+ viewport.bloomNight=false;viewport.syncViewportPixelRatio();assert.equal(ratio,2);
+}
 console.log('PASS production scene loop: camera-only redraws reuse shadows; swing/sliding doors, curtains and explicit scene changes refresh; settled scene stops drawing');

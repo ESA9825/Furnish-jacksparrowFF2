@@ -29,7 +29,8 @@ const trialSMAA=process.env.FURNISH_RASTER_SMAA==='1';
 const revisionRound=process.env.FURNISH_RASTER_ROUND||'';
 const scenePreset=process.env.FURNISH_RASTER_SCENE||'';
 const traceRotation=process.env.FURNISH_RASTER_TRACE_ROTATION==='1';
-const diagnose=revisionRound==='bedroom-rotation';
+const kitchenRotation=revisionRound==='kitchen-rotation';
+const diagnose=revisionRound==='bedroom-rotation'||kitchenRotation;
 if(diagnose)files.push('src/ui/workflow-tools.js');
 if(revisionRound==='latex-paint')files.push('src/render/ceiling-model.js');
 const kitchenRound=revisionRound==='kitchen-light';
@@ -76,11 +77,14 @@ async function measure(page,cdp,start,offset,check,modifiers=0){
  });
  let last;
  const began=performance.now();
+ const dispatches=[];
  for(let i=1;i<=72;i++){
   await delay(Math.max(0,began+i*1000/60-performance.now()));
   const point=offset(i/72);
   last={x:start.x+point.x,y:start.y+point.y};
+  const sent=performance.now()-began;
   await cdp.send('Input.dispatchMouseEvent',{type:'mouseMoved',...last,button:'left',buttons:1,modifiers});
+  if(diagnose)dispatches.push({sent,acknowledged:performance.now()-began});
  }
  if(diagnose)await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
  const {frames,moves,inputs}=await page.evaluate(()=>window.furnitureBench.takeSamples());
@@ -103,7 +107,7 @@ async function measure(page,cdp,start,offset,check,modifiers=0){
   ...(moves.length?{snapMs:summary(moves.map(move=>move.cpu)),poseChanges:changes.length,
    poseInputToSubmissionMs:summary(responses),
    ...(diagnose?{poseEventToSubmissionMs:summary(nativeResponses)}:{})}:{}),
-  frames,moves,...(diagnose?{inputs}:{})};
+  frames,moves,...(diagnose?{inputs,dispatches}:{})};
 }
 
 async function traceGesture(cdp,file,run){
@@ -402,7 +406,7 @@ async function run(){
    const cdp=await page.context().newCDPSession(page);
    // Pair the variants with the same room order, with each room going first
    // in half of a four-round run.
-   const orderedRooms=diagnose&&variants.length>=4&&i>=variants.length/2?[...cases].reverse():cases;
+   const orderedRooms=diagnose&&!kitchenRotation&&variants.length>=4&&i>=variants.length/2?[...cases].reverse():cases;
    for(const {name,camera,targets=[],secondCamera,lampIds=[],stripId,motionCamera} of orderedRooms){
     const scene=await page.evaluate(async ({camera,targets,nightTrial,revisionRound,scenePreset})=>{
      if(FurnishElectricalUI.active())FurnishElectricalUI.setMode('furniture');
@@ -497,7 +501,7 @@ async function run(){
       assert.equal(scene.probes.restored,visual);
      }
     }
-    if(bedRound||finishRound||(['upper-return','upper-edge','ceiling-area'].includes(revisionRound)&&['master','kitchen'].includes(name))||
+    if(bedRound||finishRound||(['upper-return','upper-edge','ceiling-area','kitchen-rotation'].includes(revisionRound)&&['master','kitchen'].includes(name))||
      (kitchenRound&&['kitchen','hall'].includes(name))||(windowRound&&name==='kitchen')){
      scene.controlImages={};
      const apply=patch=>page.evaluate(patch=>mutate(()=>{
@@ -675,18 +679,33 @@ async function run(){
     const from={x:box.x+box.width*.45,y:box.y+box.height*.49};
     const rotation=()=>measure(page,cdp,from,t=>({x:34*Math.sin(t*4*Math.PI)+12*t,y:8*Math.sin(t*2*Math.PI)}),
      async()=>Math.abs((await page.evaluate(()=>View3D.automationCamera())).position.y-motion.position.y)>1);
-    const rotate=traceRotation?
-     await traceGesture(cdp,path.join(job.dir,`trace-${variant}-${i}-${name||'room'}.json`),rotation):await rotation();
-    let pan;
-    if(panCamera){
+    const translate=async()=>{
+     if(!panCamera)return;
      await page.evaluate(pose=>View3D.automationCamera(pose),motion);
      // Shift+left is OrbitControls' alternate pan gesture (CDP Shift=8).
-     pan=await measure(page,cdp,from,t=>({x:96*t,y:14*Math.sin(t*Math.PI)}),async()=>{
+     return measure(page,cdp,from,t=>({x:96*t,y:14*Math.sin(t*Math.PI)}),async()=>{
       const {target}=await page.evaluate(()=>View3D.automationCamera());
       return Math.hypot(target.x-motion.target.x,target.y-motion.target.y)>1;
      },8);
+    };
+    let rotate,pan;
+    const traceFile=path.join(job.dir,`trace-${variant}-${i}-${name||'room'}.json`);
+    if(kitchenRotation&&traceRotation){
+     await traceGesture(cdp,traceFile,async()=>{
+      await page.evaluate(()=>performance.mark('furnish-rotation'));
+      rotate=await rotation();
+      await page.evaluate(()=>performance.mark('furnish-pan'));
+      pan=await translate();
+     });
+    }else{
+     rotate=traceRotation?await traceGesture(cdp,traceFile,rotation):await rotation();
+     pan=await translate();
     }
     if(!movable){
+     if(kitchenRotation){
+      assert.equal(await page.locator('#progressive-frame').count(),0);
+      await page.waitForFunction(width=>furnitureBench.info().canvas[0]===width,render.canvas[0]);
+     }
      report.results.push({variant,name,scene,render,motionRender,rotate,pan});
      console.log(variant,name,'camera',JSON.stringify({rotate:rotate.frameIntervalMs,pan:pan?.frameIntervalMs}));
      continue;

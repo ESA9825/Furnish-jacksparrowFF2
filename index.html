@@ -782,12 +782,14 @@ let renderer, labelRenderer, scene, camera, orbit, walkCtl, hemi, sun, ground, g
 let interiorDaylight,viewportAO,continuousCove=false;
 const gtaoButton=$('#viewport-gtao'),bloomButton=$('#viewport-bloom'),smaaButton=$('#viewport-smaa');
 let gtaoEnabled=false,bloomEnabled=false,smaaEnabled=false,bloomNight=false,bloomRevision=0;
-let viewportPointer=null;
+let viewportPointer=null,viewportRestoreAt=0;
+const VIEWPORT_RESOLUTION_SETTLE_MS=180;
 try{gtaoEnabled=localStorage.getItem('furnish-viewport-gtao-v1')==='1';}catch{}
 try{bloomEnabled=localStorage.getItem('furnish-viewport-bloom-v1')==='1';}catch{}
 try{smaaEnabled=localStorage.getItem('furnish-viewport-smaa-v1')==='1';}catch{}
 const viewportEffectScope=()=>PLAN.id==='custom_mv37igji'&&globalThis.FurnishProgressiveView?.mode()==='smooth';
-const nightInteraction=()=>bloomNight&&viewportEffectScope()&&!anim&&opt.mode==='orbit'&&!!viewportPointer?.moving;
+const nightInteraction=()=>bloomNight&&viewportEffectScope()&&!anim&&opt.mode==='orbit'&&
+  (viewportPointer?.moving||performance.now()<viewportRestoreAt);
 function syncViewportPixelRatio(){
   const ratio=Math.min(devicePixelRatio,nightInteraction()?1.25:2);
   if(renderer.getPixelRatio()===ratio)return;
@@ -927,6 +929,9 @@ function init(){
   },true);
   const stopViewportDrag=e=>{
     if(!viewportPointer||(e.pointerId!==undefined&&viewportPointer.id!==e.pointerId))return;
+    // Consecutive orbit gestures can share the smaller drawing buffer.
+    // Resizing it twice can stall on macOS presentation backpressure.
+    if(viewportPointer.moving&&nightInteraction())viewportRestoreAt=performance.now()+VIEWPORT_RESOLUTION_SETTLE_MS;
     viewportPointer=null;
     invalidate();
   };
@@ -2064,7 +2069,6 @@ async function exit(){
   selectionTransform?.update(false);
   closeCameraPanel();
   viewportPointer=null;
-  syncViewportPixelRatio();
   capturedImage=image();capturedState=JSON.stringify(state);
   parkedPose=opt.mode==='orbit'?curPose():null;
   clearObservation();
@@ -2606,8 +2610,14 @@ async function automationCamera(options){
  const point=p=>({x:p.x*1000+OX,y:p.z*1000+OY,z:p.y*1000}),target=opt.mode==='orbit'?orbit.target:camera.position.clone().add(camera.getWorldDirection(new THREE.Vector3()));
  return {mode:opt.mode,position:point(camera.position),target:point(target),horizontalFov:2*Math.atan(Math.tan(camera.fov*Math.PI/360)*camera.aspect)*180/Math.PI,verticalFov:camera.fov,aspect:camera.aspect,unit:'mm',coordinateSystem:'x/y 为户型模型坐标，z 为绝对离地高度',cut:opt.cut,focusIds:observationTarget?[...observationTarget]:[],temporaryFocusClipping:!!observationTarget&&observationCutaway};
 }
-function shot(){ const a = document.createElement('a'); a.download = tr('户型装修方案', 'floor-plan-design') + '-3D.png'; a.href = renderer.domElement.toDataURL('image/png'); a.click(); }
-function image(){if(globalThis.FurnishCatalog?.active())return null;if(globalThis.FurnishWorkflowTools?.styleId()||!inited||anim||stage.classList.contains('animating'))return null;if(!active)return capturedState===JSON.stringify(state)?capturedImage:null;renderScene();return renderer.domElement.toDataURL('image/png');}
+function captureViewportImage(){
+ if(!viewportPointer)viewportRestoreAt=0;
+ syncViewportPixelRatio();
+ renderScene();
+ return renderer.domElement.toDataURL('image/png');
+}
+function shot(){ const a = document.createElement('a'); a.download = tr('户型装修方案', 'floor-plan-design') + '-3D.png'; a.href = captureViewportImage(); a.click(); }
+function image(){if(globalThis.FurnishCatalog?.active())return null;if(globalThis.FurnishWorkflowTools?.styleId()||!inited||anim||stage.classList.contains('animating'))return null;if(!active)return capturedState===JSON.stringify(state)?capturedImage:null;return captureViewportImage();}
 
 function relang(){ syncWalkTexts(); if (inited&&!graphicsParked){updateProjection();buildLabels();buildHeaterClearances();} }
 // 户型切换后：重算中心、清空缓存签名，进入时强制重建
