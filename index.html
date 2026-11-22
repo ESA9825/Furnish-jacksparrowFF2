@@ -379,6 +379,12 @@
       <button class="btn primary" id="walkExit" data-en="Exit walk">退出漫游</button>
       <div id="hint3d"></div>
     </div>
+    <div id="view3d-loading" role="status" hidden>
+      <div class="view3d-loading-card">
+        <span class="repository-loading-spinner" aria-hidden="true"></span>
+        <span data-en="Preparing the 3D scene…">正在准备 3D 场景…</span>
+      </div>
+    </div>
     <div class="scalebar" id="scalebar"><span id="sbText">1 m</span><div class="bar" id="sbBar"></div></div>
     <div class="modehint" id="modehint"></div>
     <div id="fab"></div>
@@ -692,10 +698,8 @@
 </script>
 <script type="module">
 /* ============================================================
- *  3D 场景（three.js）—— 与 2D 共用 state / ui，切换时带过渡动画：
- *  2D → 3D：3D 相机先以正俯视对齐当前 2D 视口（比例、位置一致），
- *           交叉淡入后镜头倾斜环绕、墙体从地面升起、家具随后立起；
- *  3D → 2D：反向——家具收起、墙体下沉、镜头回到正俯视并淡出到平面图。
+ *  3D 场景（three.js）—— 与 2D 共用 state / ui，首帧准备好后
+ *  淡入当前视角，短时返回 3D 时复用已有场景和鸟瞰机位。
  * ============================================================ */
 // three.js 与整个 3D 模块按需加载：2D 启动时只注册下面这个轻量门面，首次进入 3D（或鼠标移到切换按钮上）时才解析引擎
 let impl = null, loading = null;
@@ -712,7 +716,7 @@ function load(){
   }).catch(e => { loading = null; throw e; });
 }
 window.View3D = {
-  load, enter:() => load().then(() => impl.enter()), exit:() => impl?.exit(),
+  load, enter:showLoading => load().then(() => impl.enter(showLoading)), exit:() => impl?.exit(),
   sync:() => impl?.sync(), relang:() => impl?.relang(), replan:() => impl?.replan(), retheme:() => impl?.retheme(),
   shot:() => impl?.shot(), groundAt:(x, y) => impl?.groundAt(x, y) ?? null, flyToRoom:id => impl?.flyToRoom(id),
   image:() => globalThis.FurnishWorkflowTools?.styleId()?null:impl?.image()||null, focusSelection:options => impl?.focusSelection(options),
@@ -781,8 +785,8 @@ const wx = x => (x - OX) / 1000, wz = y => (y - OY) / 1000, M = v => v / 1000;
 const SW = () => stage.clientWidth, SH = () => stage.clientHeight;
 const opt = {...FurnishDesign.sceneSettings(), mode:'orbit'};
 
-let inited = false, active = false, raf = 0, anim = null, fly = null;
-let capturedImage=null,capturedState='';
+let inited = false, active = false, raf = 0, anim = false, fly = null;
+let capturedView=null;
 const GRAPHICS_IDLE_MS=20000;
 let graphicsIdleTimer=0,graphicsParked=false,graphicsExtension=null,parkedPose=null;
 let renderer, labelRenderer, scene, camera, orbit, walkCtl, hemi, sun, ground, glassMat, wallMat, capMat, frameMat;
@@ -1909,8 +1913,6 @@ function camTween(A, B, e){
   camera.position.copy(t).add(new THREE.Vector3().setFromSpherical(s)); camera.lookAt(t); orbit.target.copy(t);
 }
 function setPose(P){ orbitRange(P.p.distanceTo(P.t));camera.position.copy(P.p); orbit.target.copy(P.t); camera.lookAt(P.t); }
-function animate(dur, fn){ return new Promise(res => { anim = {t0:performance.now(), dur, fn, res}; }); }
-const wait = ms => new Promise(r => setTimeout(r, ms));
 function flyTo(B, dur = 900){ orbitRange(Math.max(camera.position.distanceTo(orbit.target),B.p.distanceTo(B.t)));fly = {t0:performance.now(), dur, A:curPose(), B}; }
 function flyToRoom(id){
   if(id==='__all'){clearObservation();flyTo(isoWhole());return;}
@@ -2029,7 +2031,7 @@ function parkGraphics(){
 }
 
 async function restoreGraphics(){
-  if(!graphicsParked)return null;
+  if(!graphicsParked)return;
   const canvas=renderer.domElement;
   if(renderer.getContext().isContextLost()){
     await new Promise((resolve,reject)=>{
@@ -2046,29 +2048,44 @@ async function restoreGraphics(){
   buildEnvironment();
   invalidate(true);
   graphicsParked=false;
-  const pose=parkedPose;
-  parkedPose=null;
-  return pose;
 }
-async function enter(){
+async function enter(showLoading){
   clearTimeout(graphicsIdleTimer);
-  init();
-  const restoredPose=await restoreGraphics();
-  active = true;
-  opt.mode = 'orbit';
-  renderer.setSize(SW(), SH()); labelRenderer.setSize(SW(), SH()); updateProjection();
-  sync();
-  opt.mode = 'orbit'; orbit.enabled = false; showLabels(false);
-  const A = planPose(), B = restoredPose || isoFrom(A);
-  setPose(A);
+  const cold=!inited||graphicsParked;
+  anim=true;
   stage.classList.add('animating');
-  startLoop(); renderScene();
-  stage.classList.add('is3d');                       // 交叉淡入：此刻 3D 画面与 2D 平面完全重合
-  // Camera-only transition retains rigid geometry and cached shadows.
-  await animate(220, t => camTween(A, B, ease(t)));
-  orbit.enabled = true; showLabels(opt.labels);
-  stage.classList.remove('animating');
-  globalThis.FurnishProgressiveView?.enter();
+  try{
+    // Present the loading indicator before constructing the scene on the main thread.
+    if(cold){
+      showLoading?.();
+      if(!document.hidden)await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));
+    }
+    init();
+    await restoreGraphics();
+    active=true;
+    opt.mode='orbit';
+    renderer.setSize(SW(),SH());labelRenderer.setSize(SW(),SH());updateProjection();
+    sync();
+    setPose(parkedPose||isoFrom(planPose()));
+    parkedPose=null;
+    if(cold&&renderer.extensions.has('KHR_parallel_shader_compile')){
+      prepareRasterScene();
+      await renderer.compileAsync(scene,camera);
+    }
+    anim=false;
+    orbit.enabled=true;showLabels(opt.labels);
+    renderScene();labelRenderer.render(scene,camera);
+    stage.classList.add('is3d');
+    startLoop();
+    globalThis.FurnishProgressiveView?.enter();
+  }catch(error){
+    active=false;cancelAnimationFrame(raf);raf=0;
+    stage.classList.remove('is3d');
+    throw error;
+  }finally{
+    anim=false;
+    stage.classList.remove('animating');
+  }
 }
 async function exit(){
   ui.sceneMove=false;
@@ -2078,19 +2095,15 @@ async function exit(){
   selectionTransform?.update(false);
   closeCameraPanel();
   viewportPointer=null;
-  capturedImage=image();capturedState=JSON.stringify(state);
+  rememberViewport();
   parkedPose=opt.mode==='orbit'?curPose():null;
   clearObservation();
   if (opt.mode === 'walk'){ walkCtl.unlock(); stopTouchWalk(); $('#hint3d').textContent = ''; $('#walkOverlay').style.display = 'none'; $('#cross').style.display = 'none';
     const dir = new THREE.Vector3(); camera.getWorldDirection(dir); orbit.target.copy(camera.position).addScaledVector(dir, 3).setY(0); opt.mode = 'orbit'; syncModeBtns(); }
-  fly = null; orbit.enabled = false; showLabels(false); stage.classList.add('animating');
-  const A = curPose(), B = planPose();
-  await animate(160, t => camTween(A, B, ease(t)));
-  stage.classList.remove('is3d');                    // 正俯视与 2D 重合后淡出，不缩放实体
-  await wait(160);
+  fly=null;orbit.enabled=false;showLabels(false);
+  stage.classList.remove('is3d');
   active = false; cancelAnimationFrame(raf); raf = 0;
   viewportAO?.release();
-  stage.classList.remove('animating');
   graphicsIdleTimer=setTimeout(parkGraphics,GRAPHICS_IDLE_MS);
 }
 
@@ -2483,10 +2496,13 @@ function bindUI(){
 }
 
 /* ======================= 主循环 ======================= */
-function renderScene(){
+function prepareRasterScene(){
   interiorDaylight?.contacts();
   const budget=FurnishDownlightModel.limitLights(scene,camera,renderer.capabilities,interiorDaylight?.panelRoom(camera.position));
   if(budget.coveShadowAdded||budget.panelShadowAdded)renderer.shadowMap.needsUpdate=true;
+}
+function renderScene(){
+  prepareRasterScene();
   const bloom=bloomEnabled&&bloomNight&&(!viewportAO||viewportAO.bloomAvailable());
   const smaa=smaaEnabled&&(!viewportAO||viewportAO.smaaAvailable());
   if((gtaoEnabled||bloom||smaa)&&!anim&&viewportEffectScope()){
@@ -2505,8 +2521,7 @@ function loop(){
   syncViewportPixelRatio();
   if(projectionPixelRatio!==devicePixelRatio){refreshCameraProjection(!!FurnishNavigation.cameraCalibration()?.orbitEnabled);invalidate();}
   const dt = Math.min(clock.getDelta(), .05), now = performance.now();
-  if (anim){ const t = clamp01((now - anim.t0)/anim.dur); anim.fn(t); dirty = true; if (t >= 1){ const r = anim.res; anim = null; r(); } }
-  else if (fly){ const t = clamp01((now - fly.t0)/fly.dur); camTween(fly.A, fly.B, ease(t)); dirty = true; if (t >= 1) fly = null; }
+  if (fly){ const t = clamp01((now - fly.t0)/fly.dur); camTween(fly.A, fly.B, ease(t)); dirty = true; if (t >= 1) fly = null; }
   else if (opt.mode === 'orbit') orbit.update();                 // 镜头有变化时会触发 change → invalidate
   else if (walkCtl.isLocked || touchWalk){ stepWalk(dt); dirty = true; }
   doors.forEach(d => {
@@ -2619,14 +2634,37 @@ async function automationCamera(options){
  const point=p=>({x:p.x*1000+OX,y:p.z*1000+OY,z:p.y*1000}),target=opt.mode==='orbit'?orbit.target:camera.position.clone().add(camera.getWorldDirection(new THREE.Vector3()));
  return {mode:opt.mode,position:point(camera.position),target:point(target),horizontalFov:2*Math.atan(Math.tan(camera.fov*Math.PI/360)*camera.aspect)*180/Math.PI,verticalFov:camera.fov,aspect:camera.aspect,unit:'mm',coordinateSystem:'x/y 为户型模型坐标，z 为绝对离地高度',cut:opt.cut,focusIds:observationTarget?[...observationTarget]:[],temporaryFocusClipping:!!observationTarget&&observationCutaway};
 }
-function captureViewportImage(){
+function viewportCaptureCanvas(){
  if(!viewportPointer)viewportRestoreAt=0;
  syncViewportPixelRatio();
  renderScene();
- return renderer.domElement.toDataURL('image/png');
+  return renderer.domElement;
+}
+function captureViewportImage(){return viewportCaptureCanvas().toDataURL('image/png');}
+function viewportCaptureAvailable(){
+  return !globalThis.FurnishCatalog?.active()&&!globalThis.FurnishWorkflowTools?.styleId()&&inited&&!anim&&!stage.classList.contains('animating');
+}
+function rememberViewport(){
+  capturedView=null;
+  if(!viewportCaptureAvailable())return;
+  const source=viewportCaptureCanvas(),canvas=document.createElement('canvas');
+  canvas.width=source.width;canvas.height=source.height;
+  const context=canvas.getContext('2d');
+  if(!context)return;
+  context.drawImage(source,0,0);
+  capturedView={canvas,state:JSON.stringify(state),png:null};
 }
 function shot(){ const a = document.createElement('a'); a.download = tr('户型装修方案', 'floor-plan-design') + '-3D.png'; a.href = captureViewportImage(); a.click(); }
-function image(){if(globalThis.FurnishCatalog?.active())return null;if(globalThis.FurnishWorkflowTools?.styleId()||!inited||anim||stage.classList.contains('animating'))return null;if(!active)return capturedState===JSON.stringify(state)?capturedImage:null;return captureViewportImage();}
+function image(){
+  if(!viewportCaptureAvailable())return null;
+  if(active)return captureViewportImage();
+  if(!capturedView||capturedView.state!==JSON.stringify(state))return null;
+  if(capturedView.canvas){
+    capturedView.png=capturedView.canvas.toDataURL('image/png');
+    capturedView.canvas=null;
+  }
+  return capturedView.png;
+}
 
 function relang(){ syncWalkTexts(); if (inited&&!graphicsParked){updateProjection();buildLabels();buildHeaterClearances();} }
 // 户型切换后：重算中心、清空缓存签名，进入时强制重建
@@ -2634,7 +2672,7 @@ function replan(){
   ui.sceneMove=false;
   clearObservation();
   clearSceneIssue();clearAnnotations(elevationG);selKey=null;
-  capturedImage=null;capturedState='';parkedPose=null;
+  capturedView=null;parkedPose=null;
   computeCenter();
   sigArch = sigFurn = sigLabels = ''; fly = null;
   if (active) sync(true);

@@ -949,11 +949,17 @@ async function setView(m){
   switching = true; document.body.classList.add('busy');
   try {
     if (m === '3d'){
-      // three.js 按需加载：首次进入 3D 时才解析引擎（约 0.7 MB），2D 启动不受影响
-      const slow = setTimeout(() => toast(tr('正在加载 3D 引擎…', 'Loading 3D engine…')), 200);
-      try { await window.View3D.load(); } finally { clearTimeout(slow); }
-      viewMode = m;
-      if (ui.tool !== 'select') setTool('select'); ui.mA = null; document.body.classList.add('m3d'); await window.View3D.enter();
+      const indicator=$('#view3d-loading');
+      const showLoading=()=>{indicator.hidden=false;};
+      const slow=setTimeout(showLoading,150);
+      try{
+        await window.View3D.load();
+        viewMode=m;
+        if(ui.tool!=='select')setTool('select');
+        ui.mA=null;
+        document.body.classList.add('m3d');
+        await window.View3D.enter(showLoading);
+      }finally{clearTimeout(slow);indicator.hidden=true;}
     } else { viewMode = m; document.body.classList.remove('m3d'); await window.View3D.exit(); applyView(); }
     $('#tip').textContent = TIPS()[m];
   } catch(e) {

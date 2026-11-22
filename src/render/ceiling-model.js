@@ -139,7 +139,11 @@ function applyWash(T,group,{reflectPaint=false}={}){
  const segments=[],blockers=[];
  group.traverse(o=>{if(o.userData.ceilingWash)segments.push(...o.userData.ceilingWash.map(s=>({a:new T.Vector3(...s[0]),b:new T.Vector3(...s[1]),sample:s[2]||0,id:o.userData.ceiling?.id,emitter:o})));if(o.isMesh&&o.userData.ceiling?.part!=='light'&&o.userData.ceiling?.part!=='diffuser'&&!o.material?.transparent)blockers.push(o);});
  if(!segments.length)return;
- const ray=new T.Raycaster(),up=new T.Vector3(0,1,0),smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
+ // Mesh.raycast can reject most receivers and blockers by their bounding
+ // boxes before visiting triangles. Only the existence of a hit matters.
+ for(const {geometry} of blockers)if(geometry.boundingBox===null)geometry.computeBoundingBox();
+ const ray=new T.Raycaster(),hits=[],up=new T.Vector3(0,1,0),smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
+ const intersects=o=>{hits.length=0;return ray.intersectObject(o,false,hits).length>0;};
  group.traverse(o=>{
   const roof=o.userData.layerObject?.startsWith('roomCeiling:'),part=o.userData.ceiling?.part;
   if(!o.isMesh||o.userData.ceilingWashApplied||!(roof||part==='flat')||Array.isArray(o.material))return;
@@ -148,12 +152,12 @@ function applyWash(T,group,{reflectPaint=false}={}){
   const width=Math.min(192,Math.max(16,Math.ceil(size.x/.04))),depth=Math.min(192,Math.max(16,Math.ceil(size.z/.04))),pixels=new Uint8Array(width*depth*4),point=new T.Vector3(),direction=new T.Vector3();let sum=0;
   const obstacles=blockers.filter(m=>m!==o);
   for(let y=0;y<depth;y++)for(let x=0;x<width;x++){
-   point.set(bounds.min.x+(x+.5)*size.x/width,height,bounds.min.z+(y+.5)*size.z/depth);ray.set(point.clone().addScaledVector(up,-.003),up);ray.near=0;ray.far=.006;if(!ray.intersectObject(o,false).length)continue;const values=[0,0,0,0,0];
+   point.set(bounds.min.x+(x+.5)*size.x/width,height,bounds.min.z+(y+.5)*size.z/depth);ray.set(point.clone().addScaledVector(up,-.003),up);ray.near=0;ray.far=.006;if(!intersects(o))continue;const values=[0,0,0,0,0];
    for(const {a,b,sample}of sources){
     const dx=b.x-a.x,dz=b.z-a.z,t=Math.max(0,Math.min(1,((point.x-a.x)*dx+(point.z-a.z)*dz)/Math.max(1e-9,dx*dx+dz*dz))),source=a.clone().lerp(b,t),rise=point.y-source.y,d=Math.hypot(point.x-source.x,point.z-source.z),value=Math.exp(-d/.16)*smooth(.002,.035,rise)*(1-smooth(.5,.8,rise));
     if(value<=Math.max(values[sample],.004))continue;
     direction.copy(point).sub(source);const distance=direction.length();direction.normalize();ray.set(source.addScaledVector(direction,.0005),direction);ray.near=0;ray.far=distance-.002;
-    if(!ray.intersectObjects(obstacles,false).length)values[sample]=value;
+    if(!obstacles.some(intersects))values[sample]=value;
    }
    const glow=values.reduce((a,b)=>a+b,0)/5,i=(y*width+x)*4,v=Math.round(glow*255);pixels[i]=pixels[i+1]=pixels[i+2]=v;pixels[i+3]=255;sum+=glow;
   }

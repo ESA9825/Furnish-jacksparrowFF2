@@ -29,7 +29,7 @@ assert(html.includes('renderer.shadowMap.autoUpdate=false;renderer.shadowMap.nee
   renderScene:()=>{draws++;},invalidate(){}});
  const state=html.slice(html.indexOf('let viewportPointer='),html.indexOf('function updateEffectControls(){'));
  const events=html.slice(html.indexOf("  cv.addEventListener('pointerdown',e=>{"),html.indexOf('  sceneMeasure=FurnishSceneMeasure.create'));
- const capture=html.slice(html.indexOf('function captureViewportImage(){'),html.indexOf('function shot(){'));
+ const capture=html.slice(html.indexOf('function viewportCaptureCanvas(){'),html.indexOf('function viewportCaptureAvailable(){'));
  vm.runInContext(state+events+capture,viewport);
  const pointer={isPrimary:true,pointerId:1,button:0,clientX:0,clientY:0};
  const touch=name=>listeners[name](pointer);
