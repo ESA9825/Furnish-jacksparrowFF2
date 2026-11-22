@@ -8,6 +8,12 @@ def physical_materials(doc, profile, spec):
     used = set(doc.get('extensionsUsed', []))
     coats = {'washer-tg10k60w': {'white', 'fascia'}, 'fridge': {'white', 'screen'}, 'hood': {'black', 'glass'}}
     allowed = {'KHR_materials_emissive_strength'} | (PHYSICAL if profile == 'washer-tg10k60w' else {'KHR_materials_clearcoat'} if profile in coats else set())
+    countertop = {
+        'joyoung-air-fryer-kl65-v573': ('Smoked inspection window lens', 'KHR_materials_transmission', 'transmissionFactor', 'transmission', .24),
+        'liven-griddle-lr-d3027s': ('Gloss black lower deck and touch control arc', 'KHR_materials_specular', 'specularFactor', 'specularIntensity', .48),
+    }.get(profile)
+    if countertop:
+        allowed.add(countertop[1])
     if used - allowed:
         raise ValueError('Unsupported glTF extension')
     reference = {p['name']: p for p in (spec or {}).get('parts', [])}
@@ -22,6 +28,8 @@ def physical_materials(doc, profile, spec):
         if 'mesh' not in node:
             continue
         name = node.get('name', '');identity = node.get('extras', {}).get('furnishStablePart')
+        if countertop:
+            identity = profile+'-v1:'+name
         props = {}
         for primitive in doc['meshes'][node['mesh']]['primitives']:
             material = doc.get('materials', [])[primitive['material']]
@@ -29,6 +37,15 @@ def physical_materials(doc, profile, spec):
             if set(extensions) - allowed:
                 raise ValueError('Unsupported material extension: '+name)
             for kind, values in extensions.items():
+                if countertop and kind == countertop[1]:
+                    target, _, source_field, field, expected = countertop
+                    if name != target or set(values) != {source_field} or material.get('alphaMode', 'OPAQUE') != 'OPAQUE':
+                        raise ValueError('Physical material on an unreviewed countertop part: '+name)
+                    value = number(values[source_field], 0, 1, name)
+                    if not math.isclose(value, expected, abs_tol=.000001):
+                        raise ValueError('Reviewed countertop material constant changed: '+name)
+                    props[field] = value
+                    continue
                 if kind not in PHYSICAL:
                     continue
                 if kind == 'KHR_materials_clearcoat':
@@ -65,4 +82,6 @@ def physical_materials(doc, profile, spec):
     glass = next((v for k, v in result.items() if k == 'washer-tg10k60w-v1:door-glass'), None)
     if glass and set(glass) != {'transmission', 'ior', 'thickness', 'attenuationDistance', 'attenuationColor'}:
         raise ValueError('Reviewed glass requires complete transmission, IOR and volume')
+    if countertop and countertop[3] not in result.get(profile+'-v1:'+countertop[0], {}):
+        raise ValueError('Missing reviewed countertop finish: '+countertop[0])
     return result

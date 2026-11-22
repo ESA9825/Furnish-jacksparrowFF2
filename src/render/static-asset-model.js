@@ -2,7 +2,7 @@
  * All runtime positions are metres; product inputs and asset reference sizes are mm. */
 (function(root){
 'use strict';
-function build(T,asset,f,base){
+function build(T,asset,f,base,createMaterial=(T,color,options)=>new T.MeshStandardMaterial({color,...options})){
  if(asset.format!==1)throw Error('Unsupported Furnish static asset');
  const fixed=asset.fixedBaseMm||0,baseHeight=Math.min(fixed,f.h),g=new T.Group();
  g.userData.furnishAsset=asset.id+'@'+asset.version;
@@ -26,7 +26,8 @@ function build(T,asset,f,base){
   if(geometry.setDeferredAttribute)geometry.setDeferredAttribute('normal',normalAttribute);
   else geometry.setAttribute('normal',normalAttribute());
   geometry.setIndex(Array.from({length:positions.length/3},(_,i)=>i));
-  const material=new T.MeshStandardMaterial({...part.material,...(part.recolor&&f.color?{color:f.color}:{})});
+  const {color,...finish}=part.material;
+  const material=createMaterial(T,part.recolor&&f.color?f.color:color,{...finish,...(part.doubleSided?{side:T.DoubleSide}:{})});
   const mesh=new T.Mesh(geometry,material);mesh.name=part.name;mesh.position.y=base/1000;
   mesh.userData.furnishPartSource=part.identity;mesh.userData.furnishStablePart=part.identity;mesh.userData.ceilingOwnMaterial=true;
   mesh.castShadow=mesh.receiveShadow=true;g.add(mesh);

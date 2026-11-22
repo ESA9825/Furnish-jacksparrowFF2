@@ -13,7 +13,10 @@ import sys
 
 
 def publish(source, target, profile='se2', spec=None):
+    countertop = json.loads((pathlib.Path(__file__).parent/'lib/kitchen-countertop-assets.json').read_text(encoding='utf-8')).get(profile)
     supply=json.loads((pathlib.Path(__file__).parent/'lib/storage-supply-specs.json').read_text(encoding='utf-8')).get(profile)
+    if countertop:
+        supply = countertop
     if profile in ('desk-lamp-mijia-pro','acwall-midea-mxc3p','downlight-labot-ip65','track-socket-bull-gb50k','drying-rack-hotata-y024','drying-rack-hotata-y024-2m','crank-hotata-y024-2m','curtain-mijia-3-pro-motor'):supply=json.loads((pathlib.Path(__file__).parent/('lib/'+profile+'-spec.json')).read_text(encoding='utf-8'))
     if not supply:
         supply=json.loads((pathlib.Path(__file__).parent/'lib/mijia-ceiling-light-specs.json').read_text()).get(profile)
@@ -34,6 +37,18 @@ def publish(source, target, profile='se2', spec=None):
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent/'lib'))
     from asset_pbr import physical_materials
     physical = physical_materials(doc, profile, spec)
+    if countertop:
+        nodes = doc.get('nodes', [])
+        node_names = [node.get('name') for node in nodes]
+        if sorted(node_names, key=str) != countertop['parts'] or any(
+            'mesh' not in node or node.get('children') or
+            len(doc['meshes'][node['mesh']]['primitives']) != 1 for node in nodes
+        ):
+            raise ValueError('Countertop asset requires the reviewed set of named, single-material parts')
+        double_sided = {
+            node['name']: doc['materials'][doc['meshes'][node['mesh']]['primitives'][0]['material']].get('doubleSided', False)
+            for node in nodes
+        }
     for mesh in doc.get('meshes', []):
         for primitive in mesh['primitives']:
             if primitive.get('mode', 4) != 4 or primitive.get('targets'):
@@ -47,7 +62,8 @@ def publish(source, target, profile='se2', spec=None):
 
     def xyz(v):
         # Remove float32 interchange noise at exact contact planes (0.0001 mm grid).
-        result = [round(v.x, 7), round(v.z, 7), round(-v.y, 7)]
+        # These three layouts already used OBJ positions (x, height, plan-y).
+        result = [round(v.x, 7), round(v.z, 7), round(v.y if countertop else -v.y, 7)]
         if not all(math.isfinite(x) for x in result):
             raise ValueError('Non-finite geometry')
         return result
@@ -74,7 +90,7 @@ def publish(source, target, profile='se2', spec=None):
             continue
         if obj.type != 'MESH':
             raise ValueError('Non-mesh object in static asset: ' + obj.name)
-        identity = obj.get('furnishStablePart')
+        identity = prefix + obj.name if countertop else obj.get('furnishStablePart')
         if identity != prefix + obj.name or identity in names:
             raise ValueError('Missing or duplicate stable part: ' + obj.name)
         names.add(identity)
@@ -100,7 +116,7 @@ def publish(source, target, profile='se2', spec=None):
         normal_matrix = obj.matrix_world.to_3x3().inverted().transposed()
         positions, normals = [], []
         for tri in mesh.loop_triangles:
-            for loop in (tri.loops if obj.matrix_world.determinant() > 0 else reversed(tri.loops)):
+            for loop in (tri.loops if (obj.matrix_world.determinant() > 0) != bool(countertop) else reversed(tri.loops)):
                 positions.extend(xyz(obj.matrix_world @ mesh.vertices[mesh.loops[loop].vertex_index].co))
                 normal = normal_matrix @ mesh.corner_normals[loop].vector
                 if normal.length_squared < 1e-14:
@@ -108,6 +124,10 @@ def publish(source, target, profile='se2', spec=None):
                 normals.extend(xyz(normal.normalized()))
         if not positions:
             raise ValueError('Empty mesh')
+        if countertop:
+            parts.append({'name':obj.name,'identity':identity,'positions':positions,'normals':normals,
+                          'material':mat,'doubleSided':double_sided[obj.name]})
+            continue
         if profile=='cat-tower':
             # Labelled board dimensions and real acrylic support apertures.
             boards={'base':([.4,.024,.4],[0,.012,0]),'lower-platform':([.35,.018,.35],[0,.5,0]),'upper-platform':([.6,.018,.3],[0,1.8,0]),'basket-platform':([.4,.018,.3],[.2,1.5,0]),'left-bowl-board':([.49,.018,.39],[-.155,1.2,-.04]),'right-bowl-board':([.47,.018,.4],[.165,.93,.035])}
@@ -239,6 +259,8 @@ def publish(source, target, profile='se2', spec=None):
         if max(abs(min(values)-limits[0]), abs(max(values)-limits[1])) > 1e-6:
             raise ValueError('Reference dimensions/origin changed; review product rules first')
     payload = {'format':1,'version':3 if profile=='sofa-bed' else (4 if physical else 2) if profile=='washer-tg10k60w' else (2 if physical else 1),'sourceSha256':hashlib.sha256(raw).hexdigest(),'parts':parts}
+    if countertop:
+        payload['product'] = countertop['product']
     payload.update({'id':profile,'sizeMm':supply['size']} if supply else {'id':'pet-bowl-petstar-180','sizeMm':[180,65,180]} if profile=='pet-bowl' else {'id':'cat-litter-yanxuan-25kg','sizeMm':[250,80,220]} if profile=='litter-bag' else {'id':'cat-tower-jd-10141711472484','sizeMm':[800,2400,470]} if profile=='cat-tower' else {'id':'fan-airmate-fa18-x231','sizeMm':[300,1100,300]} if profile=='fan-x231' else {'id':'chair-yeswood-s05118','sizeMm':[660,840,660]} if profile=='chair-s05118' else {'id':spec['assetId'],'sizeMm':spec['size'],'motions':list(hinges.values())} if profile=='sofa-bed' else {'id':spec['assetId'],'sizeMm':spec['size']} if profile=='corner-bookcase-580' else {'id':'corner-bookcase-y00y06','sizeMm':[450,1900,450]} if profile=='corner-bookcase' else {'id':'stool-citylong-370','sizeMm':[370,467,370]} if profile=='stack-stool' else {'id':'armchair-yeswood-berlin','sizeMm':[710,845,850]} if profile=='armchair-berlin' else {'id':'armchair-yeswood-y09hs','sizeMm':[725,905,900]} if profile=='armchair' else {'id':'bath-heater-aopu-se2','sizeMm':[300,112,600],'fixedBaseMm':2} if profile=='se2' else {'id':'bookcase-y52y09','sizeMm':[1115,750,230],'edgeRadiusMm':6} if profile=='y52y09' else {'id':'side-table-tmall-635382906309','sizeMm':spec['size'],'motions':list(hinges.values())} if profile=='side-table' else {'id':'fridge-french-drawer' if profile=='fridge' else 'rangehood-fotile-jcd10ta' if profile=='hood' else 'washer-littleswan-tg10k60w' if profile=='washer-tg10k60w' else 'washer-front-load' if profile=='washer' else 'dishwasher-mijia-countertop','sizeMm':spec['size'],'motions':list(hinges.values())})
     # Publish only after successful import and validation; a failed attempt preserves the old asset.
     body = json.dumps(payload, ensure_ascii=False, separators=(',', ':'), allow_nan=False)

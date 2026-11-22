@@ -5,7 +5,7 @@
 const syncIdentity=root.FurnishPartIdentity||(typeof require==='function'?require('../core/part-identity.js'):null);
 
 function createMaterial(THREE,color,options={}){
- const props={color,...options},Physical=props.clearcoat!==undefined||props.transmission!==undefined;
+ const props={color,...options},Physical=props.clearcoat!==undefined||props.transmission!==undefined||props.specularIntensity!==undefined;
  if(Array.isArray(props.attenuationColor)){const c=new THREE.Color();props.attenuationColor=c.setRGB?c.setRGB(...props.attenuationColor):c;}
  return new (Physical?THREE.MeshPhysicalMaterial:THREE.MeshStandardMaterial)(props);
 }
