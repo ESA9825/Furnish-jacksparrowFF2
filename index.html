@@ -784,6 +784,7 @@ const framingScale = () => Math.tan(Math.PI/8)/Math.tan(camera.fov*Math.PI/360);
 const wx = x => (x - OX) / 1000, wz = y => (y - OY) / 1000, M = v => v / 1000;
 const SW = () => stage.clientWidth, SH = () => stage.clientHeight;
 const opt = {...FurnishDesign.sceneSettings(), mode:'orbit'};
+const orbitMinDistance=1.5,panelFocusMinDistance=.36;
 
 let inited = false, active = false, raf = 0, anim = false, fly = null;
 let capturedView=null;
@@ -894,7 +895,7 @@ function init(){
   updateProjection();
   orbit = new OrbitControls(camera, renderer.domElement);
   FurnishNavigation.bindOrbit(renderer.domElement,()=>orbit);
-  orbit.enableDamping = false; orbit.maxPolarAngle = Math.PI*.995; orbit.minDistance = 1.5; orbit.maxDistance = 45;
+  orbit.enableDamping = false; orbit.maxPolarAngle = Math.PI*.995; orbit.minDistance = orbitMinDistance; orbit.maxDistance = 45;
   let orbitGesture = false;
   orbit.addEventListener('start', () => { orbitGesture = true; });
   orbit.addEventListener('end', () => { orbitGesture = false; });
@@ -1651,7 +1652,7 @@ function buildFurn(work=state){
     const error=furnitureError(f);if(error)throw Error(error);
     const base=FurnishProducts.floorBase(plan,f,validFurniture);
     const corner=FurnishProducts.slidingCorner(f,validFurniture,plan);
-    const sig = JSON.stringify([...(f.pose3D?[f.pose3D,f.cx,f.cy,f.rot,f.flip]:[]),corner,base.z,base.known,f.kitchen,f.counterLink,f.counterElevation,f.sinkInstall,f.sinkNotch,f.sinkStyle,f.sinkBowlHeight,f.type==='counter'&&typeof FurnishKitchen!=='undefined'?FurnishKitchen.deviceSignature(f,validFurniture):null,f.type, f.w, f.d, f.color, f.h, f.mountHeight,f.lightPreviewLevel,f.lightKelvin,f.deskLampVisible,f.bottomPhysical,...(FurnishProducts.definition(f)?.garden?.stepped?[FurnishProducts.gardenLayout(f)]:[]),f.downlightWatts,f.downlightKelvin, f.pipeBoxThickness,f.artGlassPattern,...(FurnishProducts.family(f,'wall-panel')?[FurnishProducts.value(f,'panelVariant')]:[]),f.windowSurroundSides,f.windowSurroundThickness,f.manifoldLoops,f.manifoldLengths,typeof FurnishProducts!=='undefined'?FurnishProducts.pipeBoxSignature(f):null, f.fridgeLeftAngle,f.fridgeRightAngle,f.fridgeUpperExtension,f.fridgeLowerExtension,f.hoodPanelOpen,f.sideTableUpperOpen,f.sideTableLowerOpen,f.washerDoorAngle,f.washerDoorSide,FurnishProducts.definition(f)?.washerGeometryVersion,FurnishProducts.definition(f)?.solidModel?.geometryVersion,f.dishwasherDoorOpen,f.teaBarUpperOpen,f.teaBarLowerOpen,f.foldingTablePose,f.paperArray,f.stoolCount,f.stoolPitch,f.foldingChairFolded,f.petTrayOpen,f.sofaBedOpen,f.tvImage,...(FurnishProducts.definition(f)?.sofaBedProfile?[3]:[]),...(f.cabinet===undefined&&!f.kitchen&&FurnishCabinet.supported?.(f)?[FurnishCabinet.defaultId(f)]:[]),f.hoodGeometry, f.showerMixerHeight, f.showerRise, f.showerHandAngle, f.slidingStackSide,f.slidingTrackOrder, f.floorTrack, f.curtainOpen,f.blindAngle,f.shadeMode, f.curtainStyle, f.cabinet, f.obj?.positions,typeof FurnishDesign!=='undefined'?FurnishDesign.laundryStack(f,validFurniture):null,FurnishCabinet.sideOpenings(f,validFurniture),FurnishCabinet.joinedSideFinishes(f,validFurniture),FurnishCabinet.sharedSides(f,validFurniture),typeof FurnishServices!=='undefined'&&typeof FurnishProducts!=='undefined'&&FurnishProducts.serviceCut(f)?[f.cx,f.cy,f.rot,f.flip,FurnishServices.pipes(FurnishProject.effectivePlan(PLAN,work))]:null]);
+    const sig = JSON.stringify([...(f.pose3D?[f.pose3D,f.cx,f.cy,f.rot,f.flip]:[]),corner,base.z,base.known,f.kitchen,f.counterLink,f.counterElevation,f.sinkInstall,f.sinkNotch,f.sinkStyle,f.sinkBowlHeight,f.type==='counter'&&typeof FurnishKitchen!=='undefined'?FurnishKitchen.deviceSignature(f,validFurniture):null,f.type, f.w, f.d, f.color, f.h, f.mountHeight,f.lightPreviewLevel,f.lightKelvin,f.deskLampVisible,f.bottomPhysical,...(FurnishProducts.definition(f)?.garden?.stepped?[FurnishProducts.gardenLayout(f)]:[]),f.downlightWatts,f.downlightKelvin, f.pipeBoxThickness,f.artGlassPattern,...(FurnishProducts.family(f,'wall-panel')?[FurnishProducts.value(f,'panelVariant'),FurnishProducts.panelSpatialKey(f)]:[]),f.windowSurroundSides,f.windowSurroundThickness,f.manifoldLoops,f.manifoldLengths,typeof FurnishProducts!=='undefined'?FurnishProducts.pipeBoxSignature(f):null, f.fridgeLeftAngle,f.fridgeRightAngle,f.fridgeUpperExtension,f.fridgeLowerExtension,f.hoodPanelOpen,f.sideTableUpperOpen,f.sideTableLowerOpen,f.washerDoorAngle,f.washerDoorSide,FurnishProducts.definition(f)?.washerGeometryVersion,FurnishProducts.definition(f)?.solidModel?.geometryVersion,f.dishwasherDoorOpen,f.teaBarUpperOpen,f.teaBarLowerOpen,f.foldingTablePose,f.paperArray,f.stoolCount,f.stoolPitch,f.foldingChairFolded,f.petTrayOpen,f.sofaBedOpen,f.tvImage,...(FurnishProducts.definition(f)?.sofaBedProfile?[3]:[]),...(f.cabinet===undefined&&!f.kitchen&&FurnishCabinet.supported?.(f)?[FurnishCabinet.defaultId(f)]:[]),f.hoodGeometry, f.showerMixerHeight, f.showerRise, f.showerHandAngle, f.slidingStackSide,f.slidingTrackOrder, f.floorTrack, f.curtainOpen,f.blindAngle,f.shadeMode, f.curtainStyle, f.cabinet, f.obj?.positions,typeof FurnishDesign!=='undefined'?FurnishDesign.laundryStack(f,validFurniture):null,FurnishCabinet.sideOpenings(f,validFurniture),FurnishCabinet.joinedSideFinishes(f,validFurniture),FurnishCabinet.sharedSides(f,validFurniture),typeof FurnishServices!=='undefined'&&typeof FurnishProducts!=='undefined'&&FurnishProducts.serviceCut(f)?[f.cx,f.cy,f.rot,f.flip,FurnishServices.pipes(FurnishProject.effectivePlan(PLAN,work))]:null]);
     const o = byId.get(f.id);
     if (o && o.userData.sig === sig){
       if(f.pose3D)continue;
@@ -1952,14 +1953,17 @@ function observationBounds(){
 function clearObservation(){
  ceilingDisplay.clear();
  observationTarget=null;observationSelection='';observationCutaway=true;if(observation.clear())invalidate(true);
+ if(orbit)orbit.minDistance=orbitMinDistance;
  $('#vRestoreWalls').hidden=true;syncHint3d();
 }
 function clearPanelPose(next,id){
- for(const group of [archUp,archFloor,furnG])group.updateWorldMatrix(true,true);
  const direction=next.t.clone().sub(next.p),distance=direction.length();
- const sightline=new THREE.Raycaster(next.p,direction.normalize(),camera.near,Math.max(camera.near,distance-.005));
  const objects=[archUp,archFloor,...furnG.children.filter(group=>group.userData.fid!==id)];
- return !sightline.intersectObjects(objects,true).some(hit=>hit.object.isMesh&&sceneObjectShown(hit.object)&&observation.material(hit.object)!==glassMat);
+ const blocked=(origin,dir,near,far)=>new THREE.Raycaster(origin,dir,near,far).intersectObjects(objects,true)
+  .some(hit=>hit.object.isMesh&&sceneObjectShown(hit.object)&&observation.material(hit.object)!==glassMat);
+ direction.normalize();
+ // Also test the way back to catch a close camera inside front-sided furniture.
+ return !blocked(next.p,direction,0,distance-.005)&&!blocked(next.t,direction.negate(),.005,distance);
 }
 function frameObservation(front=false){
  const bounds=observationBounds();if(bounds.isEmpty()){clearObservation();return;}
@@ -1971,19 +1975,22 @@ function frameObservation(front=false){
  const dir=primary?new THREE.Vector3(-Math.sin(angle),.22,Math.cos(angle)):camera.position.clone().sub(orbit.target).normalize();
  // A shallow view shows both base and upper units without looking down behind them.
  if(dir.lengthSq()<.01)dir.set(0,.2,1);dir.y=THREE.MathUtils.clamp(dir.y,.12,.45);dir.normalize();
- const frame=direction=>FurnishSceneObservation.fit(THREE,camera,bounds,direction,{width:SW(),height:SH(),marginX:Math.min(48,SW()*.1),marginY,minDistance:orbit.minDistance});
+ const frame=(direction,minDistance=orbitMinDistance)=>FurnishSceneObservation.fit(THREE,camera,bounds,direction,{width:SW(),height:SH(),marginX:Math.min(48,SW()*.1),marginY,minDistance});
  let next=frame(dir);
  const panel=observationTarget.length===1&&getF(observationTarget[0]);
- observationCutaway=true;
+ observationCutaway=true;orbit.minDistance=orbitMinDistance;
  if(globalThis.FurnishElectrical?.panel(panel)){
-  const angle=(panel.rot||0)*Math.PI/180,normal=new THREE.Vector3(-Math.sin(angle),.22,Math.cos(angle)).normalize();
+  for(const group of [archUp,archFloor,furnG])group.updateWorldMatrix(true,true);
+  const angle=(panel.rot||0)*Math.PI/180,normal=new THREE.Vector3(-Math.sin(angle),.10,Math.cos(angle)).normalize();
   const up=new THREE.Vector3(0,1,0);
-  for(const yaw of [0,20,-20,40,-40]){
-   const candidate=frame(normal.clone().applyAxisAngle(up,yaw*Math.PI/180));
-   if(!clearPanelPose(candidate,panel.id))continue;
-   next=candidate;observationCutaway=false;
-   if(observation.clear())invalidate(true);
-   break;
+  for(const minDistance of [panelFocusMinDistance,orbitMinDistance]){
+   const clear=[0,20,-20,40,-40].map(yaw=>frame(normal.clone().applyAxisAngle(up,yaw*Math.PI/180),minDistance))
+    .find(candidate=>clearPanelPose(candidate,panel.id));
+   if(clear){
+    next=clear;observationCutaway=false;orbit.minDistance=minDistance;
+    if(observation.clear())invalidate(true);
+    break;
+   }
   }
  }
  if(next){observationRevision=sigFurn;orbit.maxDistance=Math.max(45,next.p.distanceTo(next.t)*1.5);flyTo(next);}

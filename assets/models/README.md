@@ -58,7 +58,7 @@
 | [米家吸顶灯 D40](mijia-ceiling-d40/README.md) | 1 | [BLEND](mijia-ceiling-d40/v1/mijia-ceiling-d40-v1.blend) · [GLB](mijia-ceiling-d40/v1/mijia-ceiling-d40-v1.glb) | 1 |
 | [米家吸顶灯 L60](mijia-ceiling-l60/README.md) | 1 | [BLEND](mijia-ceiling-l60/v1/mijia-ceiling-l60-v1.blend) · [GLB](mijia-ceiling-l60/v1/mijia-ceiling-l60-v1.glb) | 1 |
 | [米家吸顶灯 L90](mijia-ceiling-l90/README.md) | 0 | [BLEND](mijia-ceiling-l90/v1/mijia-ceiling-l90-v1.blend) · [GLB](mijia-ceiling-l90/v1/mijia-ceiling-l90-v1.glb) | 1 |
-| [公牛G12 86开关插座面板](panel-bull-g12/README.md) | 42 | [BLEND](panel-bull-g12/v7/panel-bull-g12-v1.blend) · [GLB](panel-bull-g12/v7/panel-bull-g12-v1.glb) | 0 |
+| [公牛G12 86开关插座面板](panel-bull-g12/README.md) | 42 | [BLEND](panel-bull-g12/v8/panel-bull-g12-v1.blend) · [GLB](panel-bull-g12/v8/panel-bull-g12-v1.glb) | 0 |
 | [厨房平板灯-300×600-24W](panel-light/README.md) | 1 | 参数化 | 0 |
 | [小米智能开关2与2 Pro · 86面板](panel-xiaomi-switch2/README.md) | 69 | [BLEND](panel-xiaomi-switch2/v2/panel-xiaomi-switch2-v1.blend) · [GLB](panel-xiaomi-switch2/v2/panel-xiaomi-switch2-v1.glb) | 0 |
 | [PETSTAR猫水碗 · 图示180×65](pet-bowl/README.md) | 1 | [BLEND](pet-bowl/v1/pet-bowl-v1.blend) · [GLB](pet-bowl/v1/pet-bowl-v1.glb) | 0 |

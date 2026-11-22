@@ -1867,13 +1867,13 @@
       "runtimeVersion": 1,
       "runtime": {
         "path": "src/data/panel-bull-g12-blender-asset.js",
-        "sha256": "52c3069a1a2b60402141e14a6a9febebdefb1fc5bb85255e0bfb1f9ba3c4875f",
+        "sha256": "eaff272b8a37e6ef6029fe51bdb75041417dec2bcb47342328b16dc4db30e95f",
         "normalization": "utf8-lf"
       },
-      "sourceSha256": "13c0261f06d362bb5a5b2e92caa48fae45d81aa144b3b6cd22e5b45d8417aecf",
+      "sourceSha256": "a19cc0b2a282daf7891fa2e8b2017a6bb36f466aea6d05ae11aa1cfd1f3914ed",
       "current": {
-        "blend": "assets/models/panel-bull-g12/v7/panel-bull-g12-v1.blend",
-        "glb": "assets/models/panel-bull-g12/v7/panel-bull-g12-v1.glb"
+        "blend": "assets/models/panel-bull-g12/v8/panel-bull-g12-v1.blend",
+        "glb": "assets/models/panel-bull-g12/v8/panel-bull-g12-v1.glb"
       },
       "document": "docs/PANEL-BULL-G12.md",
       "constructor": "src/render/panel-bull-g12-model.js",
@@ -1935,13 +1935,13 @@
         },
         {
           "path": "assets/models/panel-bull-g12/v7/panel-bull-g12-v1.blend",
-          "role": "published-source",
+          "role": "retained-other",
           "sha256": "f482878376d721f20adbb1318cdc4020a49a46d7ccdfa3cc5464499641e75ede",
           "bytes": 524027
         },
         {
           "path": "assets/models/panel-bull-g12/v7/panel-bull-g12-v1.glb",
-          "role": "published-source",
+          "role": "retained-other",
           "sha256": "13c0261f06d362bb5a5b2e92caa48fae45d81aa144b3b6cd22e5b45d8417aecf",
           "bytes": 130400
         },
@@ -2109,6 +2109,240 @@
         },
         {
           "path": "assets/models/panel-bull-g12/v7/tv.glb",
+          "role": "retained-other",
+          "sha256": "57be600bb102596afa8a039d940941f8ccc378cd6d2cd7e9f152956d2c935deb",
+          "bytes": 51872
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/bell.glb",
+          "role": "retained-other",
+          "sha256": "88fa93a0f3f2ec0ef8c9b8c025390d6735efe94ef4e49f3af66ca9dd3d2ef0f5",
+          "bytes": 102224
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/blank.glb",
+          "role": "retained-other",
+          "sha256": "973c7121002a44a0827d38ecf200c484cf6dfd64c24c0d1b8b94fc4a1a5c4804",
+          "bytes": 33020
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/cable.glb",
+          "role": "retained-other",
+          "sha256": "65fec5c0ed9d8e3242080681e24d70e7d9482f618f7a861c794a0d0cc345cdd3",
+          "bytes": 106884
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/doorbell.glb",
+          "role": "retained-other",
+          "sha256": "10ac718583151528613a4b61f3e695a08ff6965e5d185b81e4d4376f200e9d3a",
+          "bytes": 96788
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/net5-double.glb",
+          "role": "retained-other",
+          "sha256": "f471c5e02be3589a77dab284b1ff937f05a09ff15ddf74df0c0e2130fbac1137",
+          "bytes": 123516
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/net5.glb",
+          "role": "retained-other",
+          "sha256": "82d814d6036694ecd8f4a93eb72d3930760b72ce8cace5839a61704e06dc33dc",
+          "bytes": 79552
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/net6-double.glb",
+          "role": "retained-other",
+          "sha256": "1448a1c4b664d094fa71d981efb2b96dd69dc56eba7eddf56eb9ee0da9ce3fb1",
+          "bytes": 123516
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/net6.glb",
+          "role": "retained-other",
+          "sha256": "79894817dee270bc65defa6d689c9b3278b99009e0ba3c06f5867735e8e0af63",
+          "bytes": 79552
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/nightlight.glb",
+          "role": "retained-other",
+          "sha256": "59bf8222b1bfe704124004a5cf68eab71ba26540c2b4ffd6f83d7bbf6c79ea94",
+          "bytes": 93344
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/panel-bull-g12-v1.blend",
+          "role": "published-source",
+          "sha256": "1f29ce973b9099e03bab28656ca5b066f9347be10bcd8d82bacd0f7eac083245",
+          "bytes": 517857
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/panel-bull-g12-v1.glb",
+          "role": "published-source",
+          "sha256": "a19cc0b2a282daf7891fa2e8b2017a6bb36f466aea6d05ae11aa1cfd1f3914ed",
+          "bytes": 130400
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/phone-net5.glb",
+          "role": "retained-other",
+          "sha256": "3e0108be14dee2d885c6192652b5b60fbc7becc67cbacd306170509b6fdd842a",
+          "bytes": 125756
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/phone-net6.glb",
+          "role": "retained-other",
+          "sha256": "fb2f5005a3628bfffb1d5f0bec34302beb8b1dcfaaef11419e883c397dbe8364",
+          "bytes": 125756
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/phone.glb",
+          "role": "retained-other",
+          "sha256": "2a5d02570df7b06aa91ed4ea2d68bff6cf093a5262b5900aafc71d029b075a88",
+          "bytes": 79628
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/socket16-switch.glb",
+          "role": "retained-other",
+          "sha256": "f04fe46ecc2f33a60c573c0af92f280af221e918c9534c4bd8581bce0da46308",
+          "bytes": 139440
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/socket16.glb",
+          "role": "retained-other",
+          "sha256": "87adc143a93ba057abaecc38def5b1d80a12f3f28abbbdb9374c06bf0fd977ba",
+          "bytes": 91720
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/socket4.glb",
+          "role": "retained-other",
+          "sha256": "552bc3f6210ce440fde46f1a68fd8a10250062a7e4742cb8b759a81714655cf1",
+          "bytes": 108584
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/socket5-3usb.glb",
+          "role": "retained-other",
+          "sha256": "4a5aa113538cff4cd0d32a40d3b40c68e1f90ecee91280c3019a8774fdf1a32c",
+          "bytes": 233292
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/socket5-ac.glb",
+          "role": "retained-other",
+          "sha256": "c91fddac1054d73db41eec22460a239b92fd5a4a2ebc9582e579ae2a4fc1aa0e",
+          "bytes": 202452
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/socket5-diagonal.glb",
+          "role": "retained-other",
+          "sha256": "a19cc0b2a282daf7891fa2e8b2017a6bb36f466aea6d05ae11aa1cfd1f3914ed",
+          "bytes": 130400
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/socket5-separated.glb",
+          "role": "retained-other",
+          "sha256": "0ba152090d309a27ba651c99919dccd7453dcee4236dbc8d1e70b91d2d7f1e72",
+          "bytes": 130200
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/socket5-switch.glb",
+          "role": "retained-other",
+          "sha256": "c9dd83ed43b944f65ba2a7391f3f147ddf524cbce947e29a79a067da983be2ab",
+          "bytes": 177756
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/socket5-wide.glb",
+          "role": "retained-other",
+          "sha256": "08aa3328ce2bb1b735770fd0db6fde1b4ceba439597847d6866426fb76eb03bf",
+          "bytes": 130092
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/socket5.glb",
+          "role": "retained-other",
+          "sha256": "3c60f71954218e9ed6cf072d2b88cf0ef220e26a687cc806145c108e41a6a73b",
+          "bytes": 129988
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/socket7.glb",
+          "role": "retained-other",
+          "sha256": "474cd296be78c7908a8a7c33d7f50ba086c68a2e29fc730e3030b1c5ec51ab7a",
+          "bytes": 167648
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/switch1-double.glb",
+          "role": "retained-other",
+          "sha256": "0f7829b8ac4f785f83eaded25c538e054ec8f5f9e2e11db81704ba88406eab04",
+          "bytes": 84592
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/switch1-intermediate.glb",
+          "role": "retained-other",
+          "sha256": "d6f684cece7987217b31748e3b813f761ac3dd6bb53dbff8318927d13b781145",
+          "bytes": 84680
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/switch1-single.glb",
+          "role": "retained-other",
+          "sha256": "b007032ea5fbce0ca00f41d2c3a405ca21b731346fad3b160368c97c7feec955",
+          "bytes": 84592
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/switch2-double.glb",
+          "role": "retained-other",
+          "sha256": "ae0e96e1b8a7397af4b6de2d5979ddccf3d511d297c9851210fbed4136adfec7",
+          "bytes": 99600
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/switch2-intermediate.glb",
+          "role": "retained-other",
+          "sha256": "9816448774741831b823f41d745b951a604bf0092f59c58a8f5a5b14a32d9de3",
+          "bytes": 99708
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/switch2-single.glb",
+          "role": "retained-other",
+          "sha256": "6bd77a11dd20a24c0427fcb65b1feedc7c55403f570ee8d642c25320790e0238",
+          "bytes": 99600
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/switch3-double.glb",
+          "role": "retained-other",
+          "sha256": "d0cbc938985e348eac734c2bfd6256d35f4f73b70d5ee75cb5ffb37b3f11b757",
+          "bytes": 114828
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/switch3-single.glb",
+          "role": "retained-other",
+          "sha256": "9f77b2be6553ad0e9ec2ff33ad7b3fcf11a778cdacc8cd8e6633036aad40b59a",
+          "bytes": 114828
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/switch4-double.glb",
+          "role": "retained-other",
+          "sha256": "8170f4155f0dc2191623f68950940fb32446563fe35b07ad17c99df490eecb32",
+          "bytes": 130092
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/switch4-single.glb",
+          "role": "retained-other",
+          "sha256": "1224958ba0d7a863c322387137e8fbdd712346dde819298fb63ae5d85927e061",
+          "bytes": 130092
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/tv-net5.glb",
+          "role": "retained-other",
+          "sha256": "d5621e052f6fe54ad09defb2ec13ccb87f6af6ce33c3c1999bcbfbe5cf60adca",
+          "bytes": 112096
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/tv-net6.glb",
+          "role": "retained-other",
+          "sha256": "2f777323e04ca1652606de7c868322dfe67cdb0b086681d8374c3389a10eb2f6",
+          "bytes": 112096
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/tv-push.glb",
+          "role": "retained-other",
+          "sha256": "9540ab06790439ccffac96fff68e772e8f72055ba9dbb18f854150e62c6c40a3",
+          "bytes": 51920
+        },
+        {
+          "path": "assets/models/panel-bull-g12/v8/tv.glb",
           "role": "retained-other",
           "sha256": "57be600bb102596afa8a039d940941f8ccc378cd6d2cd7e9f152956d2c935deb",
           "bytes": 51872

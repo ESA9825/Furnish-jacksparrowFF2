@@ -49,8 +49,8 @@ def cutcircle(target,x,y,r):
  bpy.ops.object.modifier_apply(modifier=m.name);bpy.data.objects.remove(tool,do_unlink=True)
 def slot(x,y,w=2.5,h=7,angle=0):
  cut(face,x,y,w,h,angle)
- # The safety shutter sits behind the actual hole, not on the face.
- o=box('shutter-%02d'%len(parts),x,y,-1.4,w+1,h+1,.5,dark,.2);o.rotation_euler.y=math.radians(angle)
+ # Keep the shutter ahead of the rear plate at Z=-0.4 and below the opening at Z=5.
+ o=box('shutter-%02d'%len(parts),x,y,2.3,w+1,h+1,.5,dark,.2);o.rotation_euler.y=math.radians(angle)
 def pair(x,y,h=7):
  for dx in (-6.5,6.5):slot(x+dx,y,2.5,h)
 def triple(x,y,scale=1):
@@ -68,7 +68,7 @@ def rocker(x=0,y=43,w=83,h=83,n=1,top=5):
 def usb(x,y,kind='a'):
  w,h=(4.8,11) if kind=='a' else (3.4,9)
  slot(x,y,w,h)
- box('usb-tongue-%02d'%len(parts),x+.5,y,-.8,1.1,h-2,.7,edge,.1)
+ box('usb-tongue-%02d'%len(parts),x+.5,y,2.9,1.1,h-2,.7,edge,.1)
 def ethernet(x=0,y=43,phone=False):
  # Detail photo shows a closed dust flap, not an exposed black RJ45 opening.
  w=13 if phone else 15

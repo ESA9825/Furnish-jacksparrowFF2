@@ -8,11 +8,11 @@
 
 | 内容 | 文件 |
 |---|---|
-| 可编辑源 | [BLEND](v7/panel-bull-g12-v1.blend) |
-| 交换模型 | [GLB](v7/panel-bull-g12-v1.glb) |
+| 可编辑源 | [BLEND](v8/panel-bull-g12-v1.blend) |
+| 交换模型 | [GLB](v8/panel-bull-g12-v1.glb) |
 | 离线运行资产 | [JS](../../../src/data/panel-bull-g12-blender-asset.js) |
 | 生产构造器 | [代码](../../../src/render/panel-bull-g12-model.js) |
-当前源GLB SHA256：13c0261f06d362bb5a5b2e92caa48fae45d81aa144b3b6cd22e5b45d8417aecf。历史版本及材质工程见[总索引](../index.json)，保留原版本目录。
+当前源GLB SHA256：a19cc0b2a282daf7891fa2e8b2017a6bb36f466aea6d05ae11aa1cfd1f3914ed。历史版本及材质工程见[总索引](../index.json)，保留原版本目录。
 
 ## 输入参考资料
 

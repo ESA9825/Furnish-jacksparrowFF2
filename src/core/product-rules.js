@@ -72,7 +72,11 @@ const xiaomiPanelVariants=Object.freeze(Object.fromEntries(['2','2pro'].flatMap(
 })))));
 const panelOptions=Object.freeze({...panelVariants,...xiaomiPanelVariants});
 function panelSpec(f){const key=value(f,'panelVariant');return panelOptions[key];}
-function panelSpatialKey(f){const key=value(f,'panelVariant');return panelSpec(f).series?key.replace(/-(white|grey)$/,''):key;}
+function panelSpatialKey(f){
+ const key=value(f,'panelVariant'),spec=panelSpec(f);
+ if(spec.series)return key.replace(/-(white|grey)$/,'');
+ return spec.group==='插座类'||key==='bell'?key+':recess-v2':key;
+}
 function editPanelVariant(f,key){
  key=validateField(f,'panelVariant',key);const old=panelSpec(f),spec=panelOptions[key],stock=old.depth||10;
  if(!old.series&&!spec.series)return {...f,panelVariant:key};

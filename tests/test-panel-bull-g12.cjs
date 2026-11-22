@@ -20,11 +20,21 @@ assert(require('../src/render/furniture-svg.js').render(base.type,86,10,'#fff',{
   for(const m of model.children.filter(m=>m.isMesh)){assert(m.geometry.attributes.normal.array.every(Number.isFinite));assert(m.material.roughness>=0&&m.material.roughness<=1);}
   const solids=G.bodyParts(f);assert.equal(solids.length,asset.parts.length,'all production parts are recorded after variant changes');
   const meshNames=solids.map(s=>s.partRole).sort();assert(meshNames.every(n=>n.includes(key+':')),'solid cache reads variant');
+  for(const shutter of model.children.filter(o=>o.name.startsWith('shutter-'))){
+   const center=new T.Box3().setFromObject(shutter).getCenter(new T.Vector3());
+   const ray=new T.Raycaster(new T.Vector3(center.x,center.y,.05),new T.Vector3(0,0,-1));
+   const [hit]=ray.intersectObject(model,true);
+   assert(hit&&hit.point.z>.002&&hit.point.z<.004,key+' has a visible recessed opening at '+shutter.name);
+   assert(hit.object===shutter||hit.object.name.startsWith('usb-tongue-'),key+' opening does not expose the rear plate');
+  }
   const resized=M.build(T,{...f,w:129,d:15,h:103.2,mountHeight:0}),rb=new T.Box3().setFromObject(resized);near(rb.min.y*1000,0);near(rb.max.y*1000,103.2);near((rb.max.x-rb.min.x)*1000,129);near((rb.max.z-rb.min.z)*1000,15);
   if(key.startsWith('switch'))assert.equal(model.children.filter(o=>/^rocker-\d/.test(o.name)).length,Number(key[6]));
  }
- // Real openings: a ray enters below the white face, rather than hitting a black decal.
- const socket=M.build(T,base);socket.updateMatrixWorld(true);const ray=new T.Raycaster(new T.Vector3(-.0195,1.262,.05),new T.Vector3(0,0,-1)),hits=ray.intersectObject(socket,true);assert(hits.length);assert(hits[0].point.z<.002,'open two-pin slot is recessed');
+ // The shutter also remains visible when viewed at a 25° angle into the hole.
+ const socket=M.build(T,base);socket.updateMatrixWorld(true);const direction=new T.Vector3(Math.tan(25*Math.PI/180),0,-1).normalize();
+ const ray=new T.Raycaster(new T.Vector3(-.0195,1.262,.004).addScaledVector(direction,-.045),direction);
+ assert.equal(ray.intersectObject(socket,true)[0]?.object.name,'shutter-02');
+ ray.set(new T.Vector3(-.0195,1.262,.05),new T.Vector3(0,0,-1));
  const blank=M.build(T,{...base,panelVariant:'blank'});blank.updateMatrixWorld(true);near(ray.intersectObject(blank,true)[0].point.z*1000,5);
  // All height/rotation/mirror paths use common production solids and directional measurement.
  for(const rot of [0,37,90])for(const flip of [false,true]){
@@ -41,6 +51,9 @@ assert(require('../src/render/furniture-svg.js').render(base.type,86,10,'#fff',{
  const copy=D.pasteFurniture({items:[base],cx:0,cy:0},{x:1000,y:1000},{x:0,y:0,w:5000,h:5000},()=> 'copy').items[0];assert.equal(copy.panelVariant,base.panelVariant);assert.equal(copy.mountHeight,base.mountHeight);
  assert.equal(D.replaceFurniture({...base,panelVariant:'socket4'},{...base,w:100}).panelVariant,'socket4');assert.equal(D.replaceFurniture(base,{type:'block',name:'占位',w:100,d:100,h:100,color:'#fff'}).panelVariant,undefined);
  const issue={kind:'overlap',id:base.id},fp=J.checkFingerprint(issue,{rooms:[],walls:[]},[base],800);assert.notEqual(J.checkFingerprint(issue,{rooms:[],walls:[]},[{...base,panelVariant:'blank'}],800),fp);assert.equal(J.checkFingerprint(issue,{rooms:[],walls:[]},[{...base,color:'#fff',price:20}],800),fp);
+ assert.equal(P.panelSpatialKey(base),'socket5-diagonal:recess-v2');
+ assert.equal(P.panelSpatialKey({...base,panelVariant:'bell'}),'bell:recess-v2');
+ assert.equal(P.panelSpatialKey({...base,panelVariant:'switch3-double'}),'switch3-double');
  const procurement=J.procurement({rooms:[]},{furniture:[base,{...base,id:'blank',panelVariant:'blank'}]});assert.equal(procurement.items.length,2);assert(procurement.items[1].model.includes('白板'));
  assert(J.pack({planId:plan.id,current:{furniture:[]},designs:[],catalog:[]}).version<84);
  console.log('PASS G12: 37 source hashes/production bounds/identities/materials, true holes, variant cache, elevation/scaling, directional clearance/contact/containment/unknown height, rotation/mirror, v84 project/workspace/cache, old missing field, repeat restore, copy/replace, procurement and spatial review');

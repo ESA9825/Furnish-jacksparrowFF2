@@ -53,7 +53,7 @@ MCP 连接正在运行的 Furnish 桌面主窗口。它读取的是当前画布�
 
 参数字段从当前产品规则派生，不能用此接口改 `id/type/obj` 或注入任意状态。普通柜 `cabinet`、厨房 `kitchen` 等嵌套对象**整体替换**，先读取完整配置再修改；板厚、分区和尺寸链仍须符合原核心规则。非法字段、越界数值或受锁定成员导致整批拒绝。`null` 删除可选覆盖，恢复原缺省读取语义，不把缺失值写成新默认；名称和颜色须显式填写。仅支持所选产品实际具备的参数，不把通用布局初值当作厂家安装要求。请求上限统一为 3 MiB，以容纳原有内嵌电视图片能力，不放宽产品本身的限制。
 
-相机 `position/target` 均为 `{x,y,z}`：x/y 与家具 cx/cy 同属户型模型坐标，z 为绝对离地毫米；内部只在三维边界换算米并减户型原点。`mode` 为 `orbit/walk`，`preset` 为 `whole/top`；或指定 `focusIds` 家具、`roomId` 房间，四种取景互斥，聚焦／预设采用鸟瞰。家具聚焦复用界面定位与临时遮挡裁切，读回 `focusIds/temporaryFocusClipping`，显式位姿或整屋预设恢复墙体。鸟瞰沿原控制器约束，距离至少 1500 mm，最终位姿以读回结果为准；漫游目标读回沿镜头方向的一米参考点，表示同一视线。设置 `horizontalFov:40–90` 沿原本机镜头偏好并关闭当前模式的物理校准；实际垂直上限仍沿原规则。相机回执为 `viewChanged:true/undoable:false`，不宣称项目保存。
+相机 `position/target` 均为 `{x,y,z}`：x/y 与家具 cx/cy 同属户型模型坐标，z 为绝对离地毫米；内部只在三维边界换算米并减户型原点。`mode` 为 `orbit/walk`，`preset` 为 `whole/top`；或指定 `focusIds` 家具、`roomId` 房间，四种取景互斥，聚焦／预设采用鸟瞰。家具聚焦复用界面定位与临时遮挡裁切，读回 `focusIds/temporaryFocusClipping`，显式位姿或整屋预设恢复墙体。显式鸟瞰位姿的距离至少 1500 mm。单件开关或插座可由 `focusIds` 取近景，实际距离受面板尺寸、视口与周围遮挡影响。最终位姿以读回结果为准。漫游目标读回沿镜头方向的一米参考点，表示同一视线。设置 `horizontalFov:40–90` 沿原本机镜头偏好并关闭当前模式的物理校准；实际垂直上限仍沿原规则。相机回执为 `viewChanged:true/undoable:false`，不宣称项目保存。
 
 ```json
 {"planId":"读取值","revision":"最新值","requestId":"camera-review-1","view":"3d","mode":"walk","position":{"x":4000,"y":5000,"z":1600},"target":{"x":4000,"y":7000,"z":1600},"horizontalFov":60}
