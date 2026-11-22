@@ -566,15 +566,24 @@
  }
  // Actual closed assembly envelope. The numeric production recorder also powers collision geometry.
  const assemblyBoundsCache=new Map();
+ function recordedAssemblyBounds(f,key){
+  const cached=assemblyBoundsCache.get(key);if(cached)return {...cached};
+  const M=root.FurnishCabinetMotion||(typeof require==='function'?require('./cabinet-motion.js'):null);if(!M)return null;
+  const records=M.boards(f,{includeStatic:true});if(!records.length)return null;
+  const xs=records.flatMap(b=>b.poly.map(p=>p[0])),zs=records.flatMap(b=>b.poly.map(p=>p[1])),left=Math.min(...xs),right=Math.max(...xs),back=Math.min(...zs),front=Math.max(...zs),bottom=Math.min(...records.map(b=>b.bottom)),top=Math.max(...records.map(b=>b.top));
+  const bounds={left,right,back,front,bottom,top,w:right-left,d:front-back,h:top-bottom};
+  if(assemblyBoundsCache.size>=128)assemblyBoundsCache.delete(assemblyBoundsCache.keys().next().value);
+  assemblyBoundsCache.set(key,bounds);return {...bounds};
+ }
  function assemblyBounds(f){if(cornerCabinet(f))return corner().dimensions(f);
-  if(componentCabinet(f)&&f.type!=='vanity'&&f.cabinet.boxes.some(b=>b.carcass===false||b.components.some(p=>p.kind==='board'))){const records=(root.FurnishCabinetMotion||require('./cabinet-motion.js')).boards(f,{includeStatic:true});if(records.length){const xs=records.flatMap(b=>b.poly.map(p=>p[0])),zs=records.flatMap(b=>b.poly.map(p=>p[1])),left=Math.min(...xs),right=Math.max(...xs),back=Math.min(...zs),front=Math.max(...zs),bottom=Math.min(...records.map(b=>b.bottom)),top=Math.max(...records.map(b=>b.top));return {left,right,back,front,bottom,top,w:right-left,d:front-back,h:top-bottom};}}
+  if(componentCabinet(f)&&f.type!=='vanity'&&f.cabinet.boxes.some(b=>b.carcass===false||b.components.some(p=>p.kind==='board'))){
+   // The standalone board recorder reads the cabinet's own configuration.
+   // Include saved values so in-place edits invalidate this local outline.
+   const bounds=recordedAssemblyBounds(f,JSON.stringify(f));if(bounds)return bounds;
+  }
   if(f?.kitchen&&(f.kitchen.laundry?.worktop||f.kitchen.modules?.some(m=>m.cabinetPlacement?.independent)||Object.keys((root.FurnishKitchen||require('./kitchen-core.js')).assemblyConfig(f)).some(k=>/^cabinet[0-9]+$/.test(k))))return (root.FurnishCabinetAssembly||require('./cabinet-assembly-core.js')).bounds(f);
   if(f?.obj||f?.cabinet?.template!=='entry-pegboard'||!f.cabinet.pegboardParts||!Object.values(f.cabinet.pegboardParts).some(v=>v===false))return null;
-  const key=JSON.stringify([f.type,f.w,f.d,f.h,f.cabinet]),cached=assemblyBoundsCache.get(key);if(cached)return {...cached};
-  const M=root.FurnishCabinetMotion||(typeof require==='function'?require('./cabinet-motion.js'):null);if(!M)return null;
-  const boards=M.boards({...f,rot:0,flip:false},{includeStatic:true});if(!boards.length)return null;
-  const xs=boards.flatMap(b=>b.poly.map(p=>p[0])),zs=boards.flatMap(b=>b.poly.map(p=>p[1])),left=Math.min(...xs),right=Math.max(...xs),back=Math.min(...zs),front=Math.max(...zs),bottom=Math.min(...boards.map(b=>b.bottom)),top=Math.max(...boards.map(b=>b.top));
-  const bounds={left,right,back,front,bottom,top,w:right-left,d:front-back,h:top-bottom};if(assemblyBoundsCache.size>128)assemblyBoundsCache.clear();assemblyBoundsCache.set(key,bounds);return {...bounds};
+  return recordedAssemblyBounds({...f,rot:0,flip:false},JSON.stringify([f.type,f.w,f.d,f.h,f.cabinet]));
  }
  function resizeAssembly(f,values){
   const b=assemblyBounds(f);if(!b)return resize(f,{...f,...values});

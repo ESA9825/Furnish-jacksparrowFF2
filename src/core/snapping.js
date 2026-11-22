@@ -577,20 +577,32 @@
   }
   // A target is an ordinary component-cabinet bay, never a type-based void.
   // Shell dimensions suggest an alignment; production solids decide validity.
-  function cabinetTargets(f,{furniture=[],plan}={}){
-    const B=root.FurnishCabinetBuilder||require('./cabinet-builder-core.js'),K=root.FurnishKitchen||require('./kitchen-core.js'),P=root.FurnishProducts||require('./product-rules.js'),out=[];
+  function cabinetTargets(f,{furniture=[],plan}={},reachable){
+    const B=root.FurnishCabinetBuilder||require('./cabinet-builder-core.js'),K=root.FurnishKitchen||require('./kitchen-core.js'),P=root.FurnishProducts||require('./product-rules.js'),D=root.FurnishDesign||require('./design-core.js'),out=[];
     for(const host of furniture){
       if(host.id===f.id||host.obj||!B.is(host)&&!host.kitchen||P.modelError(host))continue;
       const rows=B.is(host)?[{id:'body',furniture:host}]:host.kitchen?(root.FurnishCabinetAssembly||require('./cabinet-assembly-core.js')).modules(host).filter(r=>B.is(r.furniture)):[];
+      const bays=[];
       for(const row of rows)for(const placed of B.layout(row.furniture))for(const bay of B.bays(placed.box)){
         const b=placed.box,part=row.furniture,angle=(part.rot||0)*Math.PI/180,flip=part.flip?-1:1;
         const world=(x,z)=>[part.cx+flip*x*Math.cos(angle)-z*Math.sin(angle),part.cy+flip*x*Math.sin(angle)+z*Math.cos(angle)];
         const front=placed.z-b.d/2+B.frontDepth(b),rear=placed.z-b.d/2+b.backThickness;
         if(f.w>bay.width+1e-6||f.d>front-rear+1e-6)continue;
-        const [cx,cy]=world(placed.x+bay.center,front-f.d/2),candidate={...f,cx,cy,rot:part.rot||0,flip:!!part.flip};
-        const D=root.FurnishDesign||require('./design-core.js'),range=D.furnitureVerticalBounds(candidate,plan,furniture),floor=P.floorBase(plan,host,furniture),base=floor.z+P.value(part,'mountHeight')+(row.module?K.baseElevation(host):0),bottom=base+placed.y,top=bottom+B.bodyHeight(b);
+        const [cx,cy]=world(placed.x+bay.center,front-f.d/2);
+        const target={hostId:host.id,moduleId:row.id,boxId:b.id,bay:bay.id,width:bay.width,depth:front-rear,cx,cy,rot:part.rot||0,flip:!!part.flip};
+        bays.push({target,row,placed});
+      }
+      // A drag can reject an entire host by its bay coordinates before it
+      // builds solids. Validate all bays of a reachable host in their original
+      // order so the displayed number of each valid bay stays the same.
+      if(!bays.length||reachable&&!bays.some(({target})=>reachable(target)))continue;
+      const floor=P.floorBase(plan,host,furniture);
+      for(const {target,row,placed} of bays){
+        const {cx,cy,rot,flip}=target,candidate={...f,cx,cy,rot,flip};
+        const range=D.furnitureVerticalBounds(candidate,plan,furniture),base=floor.z+P.value(row.furniture,'mountHeight')+(row.module?K.baseElevation(host):0),bottom=base+placed.y,top=bottom+B.bodyHeight(placed.box);
         if(!floor.known||!range||range.bottom<bottom-1e-6||range.top>top+1e-6||geometry.volumeOverlap(candidate,host,plan,furniture))continue;
-        out.push({hostId:host.id,moduleId:row.id,boxId:b.id,bay:bay.id,name:(host.name||'柜体')+' · 柜箱 '+(out.filter(t=>t.hostId===host.id).length+1),width:bay.width,depth:front-rear,cx,cy,rot:candidate.rot,flip:candidate.flip});
+        const {hostId,moduleId,boxId,bay,...dimensions}=target;
+        out.push({hostId,moduleId,boxId,bay,name:(host.name||'柜体')+' · 柜箱 '+(out.filter(t=>t.hostId===host.id).length+1),...dimensions});
       }
     }
     return out;
@@ -604,15 +616,20 @@
   function cabinetMove(f,{furniture=[],scale=1,axis,plan}={}){
     const P=root.FurnishProducts||require('./product-rules.js');if(f.obj||f.kitchen||f.cabinet||P.definition(f)?.measureSurfaceBoundary)return null;
     const capture=12/scale;let best=null;
-    for(const t of cabinetTargets(f,{furniture,plan})){
-      if(Math.abs(((f.rot||0)-t.rot+540)%360-180)>1e-6||!!f.flip!==t.flip)continue;
+    const landing=t=>{
+      if(Math.abs(((f.rot||0)-t.rot+540)%360-180)>1e-6||!!f.flip!==t.flip)return null;
       const a=t.rot*Math.PI/180,dx=f.cx-t.cx,dy=f.cy-t.cy,x=dx*Math.cos(a)+dy*Math.sin(a),z=-dx*Math.sin(a)+dy*Math.cos(a);
-      if(Math.abs(x)>(t.width-f.w)/2+capture||z>capture||z<-(t.depth-f.d)-capture)continue;
-      const center=Math.abs(x)<=capture,front=Math.abs(z)<=capture;if(!center&&!front)continue;
+      if(Math.abs(x)>(t.width-f.w)/2+capture||z>capture||z<-(t.depth-f.d)-capture)return null;
+      const center=Math.abs(x)<=capture,front=Math.abs(z)<=capture;if(!center&&!front)return null;
       const sx=center?x:0,sz=front?z:0,cx=f.cx-sx*Math.cos(a)+sz*Math.sin(a),cy=f.cy-sx*Math.sin(a)-sz*Math.cos(a);
-      if(axis==='x'&&Math.abs(cy-f.cy)>1e-6||axis==='y'&&Math.abs(cx-f.cx)>1e-6)continue;
+      if(axis==='x'&&Math.abs(cy-f.cy)>1e-6||axis==='y'&&Math.abs(cx-f.cx)>1e-6)return null;
+      return [cx,cy];
+    };
+    for(const t of cabinetTargets(f,{furniture,plan},landing)){
+      const position=landing(t);if(!position)continue;
+      const [cx,cy]=position,a=t.rot*Math.PI/180;
       const candidate={...f,cx,cy},host=furniture.find(o=>o.id===t.hostId);if(geometry.volumeOverlap(candidate,host,plan,furniture))continue;
-      const distance=Math.hypot(cx-f.cx,cy-f.cy);if(!best||distance<best.distance)best={position:[cx,cy],guides:[{line:[{x:t.cx-Math.cos(a)*t.width/2,y:t.cy-Math.sin(a)*t.width/2},{x:t.cx+Math.cos(a)*t.width/2,y:t.cy+Math.sin(a)*t.width/2}]}],cabinetTarget:t,distance};
+      const distance=Math.hypot(cx-f.cx,cy-f.cy);if(!best||distance<best.distance)best={position,guides:[{line:[{x:t.cx-Math.cos(a)*t.width/2,y:t.cy-Math.sin(a)*t.width/2},{x:t.cx+Math.cos(a)*t.width/2,y:t.cy+Math.sin(a)*t.width/2}]}],cabinetTarget:t,distance};
     }
     return best;
   }

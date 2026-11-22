@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict');
-const B=require('../src/core/cabinet-builder-core.js'),M=require('../src/core/cabinet-motion.js'),G=require('../src/core/layout-geometry.js'),P=require('../src/core/project-core.js'),D=require('../src/core/design-core.js');
+const B=require('../src/core/cabinet-builder-core.js'),C=require('../src/core/cabinet-core.js'),M=require('../src/core/cabinet-motion.js'),G=require('../src/core/layout-geometry.js'),P=require('../src/core/project-core.js'),D=require('../src/core/design-core.js');
 const source=P.unpack(require('./fixtures/beam-body-project.json')).current.furniture.find(f=>f.id==='body-cabinet'),upgraded=B.upgrade(source),before=JSON.stringify(upgraded);
 const near=(a,b)=>assert(Math.abs(a-b)<1e-6,`${a} != ${b}`);
 for(const height of [2399,2401,1800])for(const width of [1999,2000,2200])for(const depth of [599,600,750])for(const rot of [0,37,90])for(const flip of [false,true]){
@@ -23,6 +23,13 @@ assert.equal(fingerprint({...anchored,price:123,color:'#111111',purchaseStatus:'
 const box=upgraded.cabinet.boxes[0],top=box.components.find(p=>p.kind==='board'&&p.profile?.parts.some(part=>part.metadata.cabinetTop)),moved=B.update(upgraded,{boxId:box.id,componentId:top.id},{y:top.y+20}),resized=B.resize(moved,{h:2399});
 near(Math.max(...M.boards(moved,{includeStatic:true}).map(p=>p.top)),2420);
 near(Math.max(...M.boards(resized,{includeStatic:true}).map(p=>p.top)),(top.y+20)*resized.h/source.h+top.h/2);
+const draft=structuredClone(upgraded);
+const bounds=C.assemblyBounds(draft);
+near(bounds.top,source.h);
+bounds.top=0;
+near(C.assemblyBounds(draft).top,source.h);
+draft.cabinet=moved.cabinet;
+near(C.assemblyBounds(draft).top,2420);
 for(const rot of [0,37,90])for(const flip of [false,true]){
  const f={...B.resize(upgraded,{h:2399}),rot,flip,mountHeight:123},beam={id:'beam',name:'contact',poly:P.polygon(f),bottomHeight:2522,topHeight:2700},plan={id:'contact',walls:[],rooms:[{id:'room',poly:[[0,0],[10000,0],[10000,10000],[0,10000]]}],beams:[beam],ceilingHeight:4000};
  const issues=plan=>P.spaceCheck(plan,[f],{scanPassages:false}).filter(v=>v.kind==='beam');

@@ -71,13 +71,22 @@ function relativeBodyParts(f,furniture,plan){
   }
   return footprints(f).map(p=>({p,vertical:D?.furnitureVerticalBounds(f)}));
 }
+const solidBoundsCache=new WeakMap();
+function boundedBodies(f,plan,furniture){
+  const parts=bodyParts(f,plan,furniture);
+  let bounded=solidBoundsCache.get(parts);
+  if(!bounded){
+    const M=root.FurnishCabinetMotion||require('./cabinet-motion.js');
+    bounded=parts.map(part=>({part,box:bbox(part.p||M.section(part,null))}));
+    solidBoundsCache.set(parts,bounded);
+  }
+  return bounded;
+}
 function volumeOverlap(a,b,plan,furniture){
   const M=root.FurnishCabinetMotion||require('./cabinet-motion.js');
-  // Resolve production/dependency records once per object pair, not once for
-  // every board in the other object. Bounds cover the full uncut projection;
-  // height clipping can only shrink it, so disjoint boards need no sections.
-  const bounds=part=>({part,box:bbox(part.p||M.section(part,null))});
-  const left=bodyParts(a,plan,furniture).map(bounds),right=bodyParts(b,plan,furniture).map(bounds);
+  // Resolve live dependencies before reusing bounds of an immutable parts
+  // array. Height clipping can only shrink the full projection.
+  const left=boundedBodies(a,plan,furniture),right=boundedBodies(b,plan,furniture);
   return left.some(({part:A,box:X})=>right.some(({part:B,box:Y})=>
     X[2]>Y[0]&&Y[2]>X[0]&&X[3]>Y[1]&&Y[3]>X[1]&&verticalOverlap(a,b,[A.vertical,B.vertical])&&
     polygonOverlap(M.section(A,B.vertical),M.section(B,A.vertical),A.actualBoard||B.actualBoard?1e-6:5)));

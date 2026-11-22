@@ -9,11 +9,19 @@ for(const rot of [0,37,90,270])for(const side of ['left','right']){
  const targets=S.cabinetTargets(device,{furniture:[host,device]}),target=targets.find(t=>t.moduleId==='base:1');assert(target);near(target.width,640-2*18);const placed=S.alignCabinet(device,target,{furniture:[host,device]});assert.equal(placed.mountHeight,device.mountHeight);assert(!G.volumeOverlap(placed,host));
  const gaps=S.directional(placed,{rotation:-placed.rot,furniture:[host]});near(gaps.l.distance,2);near(gaps.r.distance,2);const interior=S.cabinetInterior(placed,{furniture:[host]});near(interior.top.distance,32);assert(!interior.collisions.length);
  const angle=rot*Math.PI/180,drag={...placed,cx:placed.cx+Math.cos(angle)*1,cy:placed.cy+Math.sin(angle)*1},snapped=S.cabinetMove(drag,{furniture:[host],scale:1});assert(snapped);near(snapped.position[0],placed.cx);near(snapped.position[1],placed.cy);
+ const distant={...host,id:'distant',cx:host.cx+9000};
+ const overlap=G.volumeOverlap,visited=new Set();
+ try{
+  G.volumeOverlap=(a,b,...args)=>{visited.add(b.id);return overlap(a,b,...args);};
+  assert.deepEqual(S.cabinetMove(drag,{furniture:[distant,host]}),snapped,'a distant cabinet cannot change the target, guide or position');
+  assert.deepEqual([...visited],[host.id],'only reachable cabinets need board intersection tests during a drag');
+ }finally{G.volumeOverlap=overlap;}
  const ordinary=S.move(drag,drag.cx,drag.cy,{grid:10,scale:1,guides:true,wallSnap:false,rects:[],furniture:[host]});assert(ordinary.cabinetTarget,'real shared drag entry consumes cabinet alignment');
  for(const h of [882,882.01])assert.equal(S.cabinetTargets({...device,h},{furniture:[host]}).some(t=>t.moduleId==='base:1'),h===882,'exact top contact is legal; penetration is rejected');
  assert(!S.cabinetTargets({...device,w:604.01},{furniture:[host]}).some(t=>t.moduleId==='base:1'));
  const raised={...host,mountHeight:100};assert(!S.cabinetTargets(device,{furniture:[raised]}).some(t=>t.moduleId==='base:1'),'no implicit elevation into raised cabinet');assert(S.cabinetTargets({...device,mountHeight:100},{furniture:[raised]}).some(t=>t.moduleId==='base:1'));
  const blocked=structuredClone(host),shelf=B.add(row.furniture,'shelf',{boxId:'box1'}).furniture;blocked.kitchen.modules[1].structure={w:shelf.w,d:shelf.d,h:shelf.h,cabinet:shelf.cabinet};assert(!S.cabinetTargets(device,{furniture:[blocked]}).some(t=>t.moduleId==='base:1'),'real shelf rejects a washer passing through it');assert.throws(()=>S.alignCabinet(device,target,{furniture:[blocked]}));
+ assert.equal(S.cabinetMove(drag,{furniture:[blocked]}),null,'a reachable cabinet still checks newly added boards');
  const adjacent=A.drop(host,{kind:'box'},{x:row.module.x+row.width,y:300});assert(adjacent.furniture.kitchen.laundry.assembly[adjacent.id]);assert.deepEqual(adjacent.furniture.kitchen.modules,host.kitchen.modules,'adjacent independent box leaves both existing sides intact');
  const list=K.normalize([host,{...placed,laundryHostId:host.id}]);assert(!list[1].laundryHostId);assert.deepEqual({...list[1],laundryHostId:host.id},{...placed,laundryHostId:host.id},'detaching obsolete link never moves a saved washer');
  const packed=J.pack({planId:'demo',current:{furniture:list},designs:[{name:'carcass',work:{furniture:list}}],catalog:[]}),round=J.unpack(packed);assert.deepEqual(round.current.furniture,list);let recovered=list;for(let i=0;i<3;i++)recovered=D.restoreFurniture(recovered,{makeId:()=> 'new',colorFor:()=> '#fff'});assert.deepEqual(recovered,list);cases++;
