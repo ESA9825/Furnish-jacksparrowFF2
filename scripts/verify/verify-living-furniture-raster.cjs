@@ -394,7 +394,14 @@ async function run(){
      return hash(buffer);
     };
     const visual=await capture('');
-    if(revisionRound==='upper-return'&&['master','kitchen'].includes(name)){
+    if(revisionRound==='upper-edge'&&!report.results.some(result=>result.variant===variant)){
+     scene.activeFixtures=await page.evaluate(()=>{
+      const faces=furnitureBench.lampState(state.furniture.map(f=>f.id));
+      return state.furniture.filter(f=>faces[f.id]?.some(face=>face.emission>0))
+       .map(({id,name})=>({id,name,faces:faces[id]}));
+     });
+    }
+    if(['upper-return','upper-edge'].includes(revisionRound)&&['master','kitchen'].includes(name)){
      scene.controlImages={};
      const apply=patch=>page.evaluate(patch=>mutate(()=>{
       state.scene3d=FurnishDesign.patchSceneSettings(state.scene3d,patch);
@@ -406,6 +413,18 @@ async function run(){
      }
      await apply(scene.settings);
      await page.evaluate(pose=>View3D.automationCamera(pose),camera);
+     if(revisionRound==='upper-edge'&&variant==='after'&&name==='master'){
+      const original=await page.evaluate(()=>state.objectLayers);
+      await page.evaluate(()=>mutate(()=>{
+       const room='floor:area_fmv3p1fkz7',id='test-floor-return';
+       const layers=FurnishLayers.assign(FurnishLayers.create(state,id,'回光测试地板'),[room],id);
+       state.objectLayers=FurnishLayers.update(layers,id,{visible:false}).objectLayers;
+      }));
+      await page.evaluate(()=>View3D.automationReady());
+      scene.controlImages.floorHidden=await capture('-floor-hidden');
+      await page.evaluate(layers=>mutate(()=>{state.objectLayers=layers.objectLayers;}),{objectLayers:original});
+      await page.evaluate(pose=>View3D.automationCamera(pose),camera);
+     }
     }
     if(washTrial){
      assert.ok(stripId&&scene.lamps[stripId]?.length);

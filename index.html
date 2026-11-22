@@ -1113,6 +1113,7 @@ function floorMat(kind,color,{refined=false}={}){
   t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1/s.sx, 1/s.sy);
   t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy();
   const m=new THREE.MeshStandardMaterial({map:t,roughness:refined?.38:s.rough});
+  m.userData.floorReflectance=s.base;
   if(refined)m.userData.satinTile=true;
   if(s.grout)m.userData.tileFinish={legacy:true,color:s.base,groutPixels:3};if(color){m.userData.styleSurfaceOwned=true;return m;}return floorMats[cacheKey]=m;
 }
