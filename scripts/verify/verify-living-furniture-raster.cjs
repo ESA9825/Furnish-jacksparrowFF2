@@ -394,6 +394,19 @@ async function run(){
      return hash(buffer);
     };
     const visual=await capture('');
+    if(revisionRound==='upper-return'&&['master','kitchen'].includes(name)){
+     scene.controlImages={};
+     const apply=patch=>page.evaluate(patch=>mutate(()=>{
+      state.scene3d=FurnishDesign.patchSceneSettings(state.scene3d,patch);
+     },{sceneFirst:true}),patch);
+     for(const [label,patch] of [['lamps-off',{lamps:false}],['day',{lamps:false,night:false,hour:11}]]){
+      await apply(patch);
+      await page.evaluate(()=>View3D.automationReady());
+      scene.controlImages[label]=await capture('-'+label);
+     }
+     await apply(scene.settings);
+     await page.evaluate(pose=>View3D.automationCamera(pose),camera);
+    }
     if(washTrial){
      assert.ok(stripId&&scene.lamps[stripId]?.length);
      scene.strip=await page.evaluate(id=>{

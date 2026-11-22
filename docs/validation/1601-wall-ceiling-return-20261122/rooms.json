@@ -1,0 +1,172 @@
+[
+  {
+    "name": "master",
+    "camera": {
+      "mode": "orbit",
+      "position": {
+        "x": 3410,
+        "y": 4240,
+        "z": 1660
+      },
+      "target": {
+        "x": 945,
+        "y": 3400,
+        "z": 1865
+      },
+      "horizontalFov": 84
+    },
+    "motionCamera": {
+      "mode": "orbit",
+      "position": {
+        "x": 3110,
+        "y": 6230,
+        "z": 1660
+      },
+      "target": {
+        "x": 2200,
+        "y": 3370,
+        "z": 1690
+      },
+      "horizontalFov": 77
+    },
+    "targets": [
+      "fmv3w361v2"
+    ]
+  },
+  {
+    "name": "second",
+    "camera": {
+      "mode": "orbit",
+      "position": {
+        "x": 6225,
+        "y": 3690,
+        "z": 1660
+      },
+      "target": {
+        "x": 3990,
+        "y": 3050,
+        "z": 1845
+      },
+      "horizontalFov": 84
+    }
+  },
+  {
+    "name": "living",
+    "camera": {
+      "mode": "orbit",
+      "position": {
+        "x": 9650,
+        "y": 5530,
+        "z": 1660
+      },
+      "target": {
+        "x": 7230,
+        "y": 3190,
+        "z": 1680
+      },
+      "horizontalFov": 84
+    }
+  },
+  {
+    "name": "dining",
+    "camera": {
+      "mode": "orbit",
+      "position": {
+        "x": 9320,
+        "y": 6180,
+        "z": 1660
+      },
+      "target": {
+        "x": 8060,
+        "y": 7530,
+        "z": 1890
+      },
+      "horizontalFov": 82
+    }
+  },
+  {
+    "name": "kitchen",
+    "camera": {
+      "mode": "orbit",
+      "position": {
+        "x": 8100,
+        "y": 8650,
+        "z": 1660
+      },
+      "target": {
+        "x": 6590,
+        "y": 9470,
+        "z": 1610
+      },
+      "horizontalFov": 86
+    }
+  },
+  {
+    "name": "bathroom",
+    "camera": {
+      "mode": "orbit",
+      "position": {
+        "x": 6240,
+        "y": 6870,
+        "z": 1660
+      },
+      "target": {
+        "x": 4720,
+        "y": 7790,
+        "z": 1580
+      },
+      "horizontalFov": 86
+    }
+  },
+  {
+    "name": "hall",
+    "camera": {
+      "mode": "orbit",
+      "position": {
+        "x": 4190,
+        "y": 5940,
+        "z": 1660
+      },
+      "target": {
+        "x": 6470,
+        "y": 5920,
+        "z": 1860
+      },
+      "horizontalFov": 84
+    }
+  },
+  {
+    "name": "balcony",
+    "camera": {
+      "mode": "orbit",
+      "position": {
+        "x": 9600,
+        "y": 1660,
+        "z": 1660
+      },
+      "target": {
+        "x": 7370,
+        "y": 1020,
+        "z": 1830
+      },
+      "horizontalFov": 84
+    }
+  },
+  {
+    "name": "entry",
+    "camera": {
+      "mode": "orbit",
+      "position": {
+        "x": 9770,
+        "y": 9910,
+        "z": 1660
+      },
+      "target": {
+        "x": 8825,
+        "y": 7500,
+        "z": 1750
+      },
+      "horizontalFov": 84
+    }
+  }
+]

@@ -5,6 +5,7 @@ const planId='custom_mv37igji';
 const livingRooms=['area_fmv3qb1oi4','area_fmv3p2ig914','area_fmv3qajd93'];
 const finishRooms=new Set([livingRooms[0],livingRooms[2]]);
 const bedrooms=['area_fmv3p1fkz7','area_fmv3oztg03'];
+const nightFinishRooms=new Set([...finishRooms,...bedrooms]);
 const paintRooms=new Set([...finishRooms,...bedrooms,'bay_cad_window_11_5','bay_cad_window_10_4']);
 const adjoiningIds=new Set(['area_fmv3qb1oi5','area_fmv3qcck717']);
 const apertures=[
@@ -70,6 +71,7 @@ function create(T,scene,{wx,wz,inside}){
   furnishFinishTexture:{value:null},furnishWallContact:{value:1},
   furnishPaintColor:{value:new T.Color('#f4f1eb')},furnishCeilingAmbient:{value:0},
   furnishNightMap:{value:null},furnishNightBounds:{value:new T.Vector4()},furnishNightActive:{value:0},
+  furnishUpperReturn:{value:null},
   furnishFinishLights:{value:[new T.Vector4(),new T.Vector4()]},
   furnishSofaPose:{value:new T.Vector4()},furnishSofaSize:{value:new T.Vector4()},
   furnishSofaVisible:{value:0}
@@ -83,7 +85,7 @@ function create(T,scene,{wx,wz,inside}){
  scene.add(overlay);
  let patch,sky,field,finishField,finishTexture,wallsGroup,floors=[],bounds=null,lastPose='',daylight=0;
  let roomById=new Map(),sofa=null;
- let nightRooms=[],nightSources=[],nightField,nightKey='',nightEnabled=false;
+ let nightRooms=[],nightSources=[],nightField,upperField,nightKey='',nightEnabled=false;
 
  function dataTexture(width,height,fill){
   const bytes=new Uint8Array(width*height*4);
@@ -255,12 +257,12 @@ function create(T,scene,{wx,wz,inside}){
   const rect=new T.Vector4(min.x,min.y,1/Math.max(.001,max.x-min.x),1/Math.max(.001,max.y-min.y));
   return new Map(backboards.map(mesh=>[mesh,{rect,transform:transforms.get(mesh),key:mesh.id}]));
  }
- function appearance(source,profile,niche,seam){
+ function appearance(source,profile,niche,seam,upperReceiver){
   if(!source?.isMeshStandardMaterial||source.transparent)return source;
   if(!finishField||source.flatShading||(profile==='wall'&&(source.map||source.roughness<.8)))profile='';
   const pool=variants.get(source)||new Map();
   const fineEdge=profile==='cabinet'&&!!seam;
-  const variantKey=profile==='niche'?profile+':'+niche.key:fineEdge?profile+':'+seam.toArray().join(','):profile;
+  const variantKey=(profile==='niche'?profile+':'+niche.key:fineEdge?profile+':'+seam.toArray().join(','):profile)+'|'+upperReceiver;
   if(pool.has(variantKey))return pool.get(variantKey);
   const material=source.clone();
   const satinTile=source.userData.satinTile===true||profile==='floor'&&!!source.userData.tileFinish?.layout;
@@ -278,7 +280,7 @@ function create(T,scene,{wx,wz,inside}){
   // Keep source PBR values and pre-existing shaders. Export strips these
   // raster hooks and keeps the source values.
   const cacheKey=source.customProgramCacheKey();
-  material.customProgramCacheKey=()=>cacheKey+'|room-daylight-v8|'+smoothReflection+'|'+satinTile+'|'+profile+'|'+fineEdge+'|'+replacePaintColor;
+  material.customProgramCacheKey=()=>cacheKey+'|room-daylight-v9|'+smoothReflection+'|'+satinTile+'|'+profile+'|'+fineEdge+'|'+replacePaintColor+'|'+upperReceiver;
   material.onBeforeCompile=function(shader,renderer){
    source.onBeforeCompile.call(this,shader,renderer);
    Object.assign(shader.uniforms,uniforms);
@@ -312,11 +314,12 @@ function create(T,scene,{wx,wz,inside}){
     uniform vec4 furnishInteriorSun;
     ${replacePaintColor?'uniform vec3 furnishPaintColor;':''}
     ${ceiling?'uniform float furnishCeilingAmbient;':''}
-    ${nightReceiver||finishResponse?`
+    ${nightReceiver||finishResponse||upperReceiver?`
      uniform sampler2D furnishNightMap;
      uniform vec4 furnishNightBounds;
      uniform float furnishNightActive;
     `:''}
+    ${upperReceiver?'uniform sampler2D furnishUpperReturn;':''}
     ${finishResponse?'uniform vec4 furnishFinishLights[2];':''}
     ${profile?`
      uniform sampler2D furnishFinishField;
@@ -473,7 +476,7 @@ function create(T,scene,{wx,wz,inside}){
       -sign(paintArea)*(paintGradient.x*paintU+paintGradient.y*paintV));
     `:''}
    `).replace('#include <aomap_fragment>',`
-    ${ceiling?'':`
+    ${upperReceiver==='ceiling'||ceiling?'':`
     if(furnishDaylightStrength>0.0){
      vec2 uv=(furnishInteriorPosition.xz-furnishDaylightBounds.xy)*furnishDaylightBounds.zw;
      vec2 energy=texture2D(furnishDaylightMap,uv).rg*furnishDaylightStrength;
@@ -495,6 +498,24 @@ function create(T,scene,{wx,wz,inside}){
      }
     }
     `}
+    ${upperReceiver?`
+     if(furnishNightActive>0.0){
+      vec3 upperNormal=normalize((vec4(geometryNormal,0.0)*viewMatrix).xyz);
+      vec2 sampleAt=furnishInteriorPosition.xz${upperReceiver==='wall'?'+0.12*upperNormal.xz':''};
+      vec2 returnUV=(sampleAt-furnishNightBounds.xy)*furnishNightBounds.zw;
+      if(all(greaterThan(returnUV,vec2(0.0)))&&all(lessThan(returnUV,vec2(1.0)))){
+       vec4 roomReturn=texture2D(furnishUpperReturn,returnUV);
+       ${upperReceiver==='wall'?`
+        float belowRoof=roomReturn.a*6.0-furnishInteriorPosition.y;
+        float upperGain=0.031*(1.0-abs(upperNormal.y))*
+         (1.0-smoothstep(0.10,0.77,belowRoof))*smoothstep(-0.17,0.11,belowRoof);
+       `:`
+        float upperGain=${ceiling?'0.011':'0.021'}*max(0.0,-upperNormal.y);
+       `}
+       reflectedLight.indirectDiffuse+=diffuseColor.rgb*roomReturn.rgb*upperGain*(1.0-metalnessFactor);
+      }
+     }
+    `:''}
     #include <aomap_fragment>
     ${ceiling?`
      vec2 openingUV=(furnishInteriorPosition.xz-furnishDaylightBounds.xy)*furnishDaylightBounds.zw;
@@ -583,9 +604,9 @@ function create(T,scene,{wx,wz,inside}){
   pool.set(variantKey,material);variants.set(source,pool);
   return material;
  }
- function paint(mesh,profile='',niche,seam){
+ function paint(mesh,profile='',niche,seam,upperReceiver=''){
   if(!bounds||!mesh.isMesh||decorated.has(mesh)||!box.setFromObject(mesh).intersectsBox(bounds))return;
-  const source=mesh.material,next=Array.isArray(source)?source.map(m=>appearance(m,profile,niche,seam)):appearance(source,profile,niche,seam);
+  const source=mesh.material,next=Array.isArray(source)?source.map(m=>appearance(m,profile,niche,seam,upperReceiver)):appearance(source,profile,niche,seam,upperReceiver);
   if(Array.isArray(source)?source.every((m,i)=>m===next[i]):source===next)return;
   decorated.set(mesh,{source,next});
   mesh.material=next;
@@ -611,11 +632,25 @@ function create(T,scene,{wx,wz,inside}){
   });
   return parts.slice(0,8);
  }
- function configureNight(furnG,archUp){
-  nightRooms=[...finishRooms,...bedrooms].flatMap(id=>{
-   const room=roomById.get(id);
-   return room?[{id,poly:room.poly.map(([x,y])=>[wx(x),wz(y)])}]:[];
+ function configureNight(plan,furnG,archUp){
+  const heights=new Map();
+  archUp.traverse(o=>{
+   const key=o.userData.layerObject;
+   if(key?.startsWith('roomCeiling:'))heights.set(key.slice(12),o.position.y);
   });
+  // Use the broad finished underside near the junction. Thin curtain-box
+  // shields and standalone beams still read as local occluders.
+  const flatCeilings=(plan.ceilings?.items||[]).filter(c=>c.kind==='flat').flatMap(c=>{
+   const poly=c.polygon.map(([x,z])=>[wx(x),wz(z)]);
+   const loX=Math.min(...poly.map(p=>p[0])),hiX=Math.max(...poly.map(p=>p[0]));
+   const loZ=Math.min(...poly.map(p=>p[1])),hiZ=Math.max(...poly.map(p=>p[1]));
+   if(Math.min(hiX-loX,hiZ-loZ)<.18)return [];
+   return [{poly,y:c.height/1000,loX,hiX,loZ,hiZ}];
+  });
+  nightRooms=[...roomById.values()].map(room=>({id:room.id,flatCeilings,
+   roof:heights.get(room.id)??(room.ceilingHeight||2700)/1000,
+   poly:room.poly.map(([x,y])=>[wx(x),wz(y)])
+  }));
   const points=nightRooms.flatMap(room=>room.poly);
   nightSources=[];nightKey='';
   if(!points.length)return;
@@ -627,16 +662,20 @@ function create(T,scene,{wx,wz,inside}){
   const floorTint=new Map(floors.map(mesh=>[mesh.userData.room,mesh.material.color]));
   furnG.traverse(o=>{
    for(const rectangle of o.userData.lightingRects||[]){
-    if(rectangle.normal[1]>-.8||!rectangle.material)continue;
+    if(!rectangle.material)continue;
+    const normal=new T.Vector3().fromArray(rectangle.normal).transformDirection(o.matrixWorld);
+    if(Math.abs(normal.y)<.8)continue;
     const position=new T.Vector3().fromArray(rectangle.position).applyMatrix4(o.matrixWorld);
     const room=nightRooms.find(r=>inside(position.x,position.z,r.poly));
     if(!room)continue;
     const floor=floorTint.get(room.id);
     const tint=new T.Color(rectangle.color);
-    if(floor)tint.multiply(new T.Color(.60+.40*floor.r,.60+.40*floor.g,.60+.40*floor.b));
+    const upward=normal.y>0;
+    if(floor&&!upward)tint.multiply(new T.Color(.60+.40*floor.r,.60+.40*floor.g,.60+.40*floor.b));
     const power=Math.min(1.7,rectangle.radiance*rectangle.width*rectangle.height*.58);
     const reach=Math.max(1.35,Math.min(2.15,position.y*.69));
-    nightSources.push({o,rectangle,position,room,tint,power,reach});
+    const axis=upward?new T.Vector3().fromArray(rectangle.u).transformDirection(o.matrixWorld):null;
+    nightSources.push({o,rectangle,position,room,tint,power,reach,axis});
    }
   });
   // Reuse the ceiling wash that has already passed the cove occlusion test.
@@ -647,7 +686,7 @@ function create(T,scene,{wx,wz,inside}){
    if(!wash?.active)return;
    const position=box.setFromObject(o).getCenter(new T.Vector3());
    const room=nightRooms.find(r=>inside(position.x,position.z,r.poly));
-   if(room)nightSources.push({o,position,room,power:Math.min(.65,1.35*energy),reach:2.45,cove:wash.active});
+   if(room)nightSources.push({o,position,room,tint:new T.Color('#ffde9e'),power:Math.min(.65,1.35*energy),reach:2.45,cove:wash.active});
   });
  }
  function updateNight(){
@@ -666,7 +705,7 @@ function create(T,scene,{wx,wz,inside}){
   nightKey=key;
   for(const [i,id] of [...finishRooms].entries()){
    const slot=uniforms.furnishFinishLights.value[i];
-   const main=active.filter(source=>!source.cove&&source.room.id===id).sort((a,b)=>b.power-a.power)[0];
+   const main=active.filter(source=>!source.cove&&!source.axis&&source.room.id===id).sort((a,b)=>b.power-a.power)[0];
    if(main)slot.set(main.position.x,main.position.y,main.position.z,main.power);
    else slot.set(0,0,0,0);
   }
@@ -674,23 +713,48 @@ function create(T,scene,{wx,wz,inside}){
   const width=Math.min(192,Math.max(80,Math.ceil(1/(sx*.0625))));
   const height=Math.min(192,Math.max(80,Math.ceil(1/(sz*.0625))));
   nightField?.dispose();
+  upperField?.dispose();
+  const upper=new Uint8Array(width*height*4);
   nightField=dataTexture(width,height,(i,j)=>{
    const x=xmin+(i+.5)/(width*sx),z=zmin+(j+.5)/(height*sz);
    const room=nightRooms.find(r=>inside(x,z,r.poly));
    if(!room)return [0,0,0,0];
-   let r=0,g=0,b=0,cove=0;
+   let r=0,g=0,b=0,cove=0,upperR=0,upperG=0,upperB=0;
    for(const source of active){
     if(source.room!==room)continue;
-    const radius=Math.hypot(x-source.position.x,z-source.position.z)/source.reach;
+    let dx=x-source.position.x,dz=z-source.position.z;
+    if(source.axis){
+     const half=source.rectangle.width/2;
+     const along=Math.max(-half,Math.min(half,dx*source.axis.x+dz*source.axis.z));
+     dx-=along*source.axis.x;dz-=along*source.axis.z;
+    }
+    const radius=Math.hypot(dx,dz)/source.reach;
     const weight=source.power/(1+radius**4);
-    if(source.cove)cove+=weight;
-    else{r+=source.tint.r*weight;g+=source.tint.g*weight;b+=source.tint.b*weight;}
+    const returned=weight*(source.axis?1.7:source.position.y<room.roof-.80?.45:1);
+    upperR+=source.tint.r*returned;upperG+=source.tint.g*returned;upperB+=source.tint.b*returned;
+    if(nightFinishRooms.has(room.id)&&!source.axis){
+     if(source.cove)cove+=weight;
+     else{r+=source.tint.r*weight;g+=source.tint.g*weight;b+=source.tint.b*weight;}
+    }
    }
-   const distance=Math.min(1,edgeDistance(x,z,room.poly)/.52);
+   const edge=edgeDistance(x,z,room.poly);
+   const at=4*(i+j*width);
+   const shoulder=.62+.38/(1+(edge/.42)**2);
+   const encode=value=>Math.round(255*Math.min(1,shoulder*value/(1+.85*value)));
+   let roof=room.roof;
+   for(const c of room.flatCeilings){
+    if(c.y>=roof||x<c.loX-.065||x>c.hiX+.065||z<c.loZ-.065||z>c.hiZ+.065)continue;
+    if(inside(x,z,c.poly)||edgeDistance(x,z,c.poly)<.065)roof=c.y;
+   }
+   upper.set([encode(upperR),encode(upperG),encode(upperB),Math.round(255*Math.min(1,roof/6))],at);
+   const distance=Math.min(1,edge/.52);
    const fade=distance*distance*(3-2*distance);
    return [r,g,b,cove].map(value=>Math.round(255*fade*Math.min(1,value/(1+.60*value))));
   });
   uniforms.furnishNightMap.value=nightField;
+  upperField=new T.DataTexture(upper,width,height);
+  upperField.minFilter=upperField.magFilter=T.LinearFilter;upperField.needsUpdate=true;
+  uniforms.furnishUpperReturn.value=upperField;
  }
  function contacts(){
   updateNight();
@@ -771,7 +835,7 @@ function create(T,scene,{wx,wz,inside}){
   archUp.updateWorldMatrix(true,true);
   const paintBounds=paintedAreas.map(({poly})=>new T.Box3().setFromPoints(poly.map(([x,z])=>new T.Vector3(x,0,z))));
   archUp.traverse(mesh=>{
-   const roomCeiling=mesh.userData.layerObject?.startsWith('roomCeiling:')&&paintRooms.has(mesh.userData.layerObject.slice(12));
+   const roomCeiling=mesh.userData.layerObject?.startsWith('roomCeiling:');
    let paintedGypsum=false;
    if(mesh.isMesh&&mesh.userData.ceilingPaint){
     if(!mesh.geometry.boundingBox)mesh.geometry.computeBoundingBox();
@@ -782,16 +846,21 @@ function create(T,scene,{wx,wz,inside}){
      Math.min(box.max.x,room.max.x)-Math.max(box.min.x,room.min.x)>.012&&
      Math.min(box.max.z,room.max.z)-Math.max(box.min.z,room.min.z)>.012);
    }
-   if(roomCeiling||paintedGypsum){
-    accepted.add(mesh);paint(mesh,'ceiling');
+   const part=mesh.userData.ceiling?.part;
+   const paintedRoof=roomCeiling&&paintRooms.has(mesh.userData.layerObject.slice(12));
+   if(roomCeiling||paintedGypsum||part==='flat'||part==='panel'||part==='panel-trim'){
+    accepted.add(mesh);paint(mesh,paintedRoof||paintedGypsum?'ceiling':'',undefined,undefined,
+     roomCeiling||part==='flat'||part==='panel'||part==='panel-trim'?'ceiling':'');
    }
    if(mesh.userData.recessWall||mesh.userData.wallFinish||mesh.userData.wallTiling||mesh.userData.room?.startsWith('bay_')){
-    accepted.add(mesh);paint(mesh,(mesh.userData.recessWall||mesh.userData.wallFinish)&&!mesh.userData.walkOnly?'wall':'');
+    const wall=mesh.userData.recessWall||mesh.userData.wallFinish;
+    accepted.add(mesh);paint(mesh,wall&&!mesh.userData.walkOnly?'wall':'',undefined,undefined,
+     wall||mesh.userData.wallTiling?'wall':'');
    }
   });
   const byId=new Map(furniture.map(f=>[f.id,f]));
   furnG.updateWorldMatrix(true,true);
-  configureNight(furnG,archUp);
+  configureNight(plan,furnG,archUp);
   supports.clear();sofa=null;
   for(const model of furnG.children){
    const f=byId.get(model.userData.fid);
@@ -873,6 +942,7 @@ function create(T,scene,{wx,wz,inside}){
   for(const mesh of [sky,patch])if(mesh){mesh.geometry.dispose();mesh.material.map?.dispose();mesh.material.alphaMap?.dispose();mesh.material.dispose();mesh.dispose?.();overlay.remove(mesh);}
   field?.dispose();uniforms.furnishDaylightMap.value=null;
   nightField?.dispose();nightField=null;nightKey='';nightSources=[];nightRooms=[];
+  upperField?.dispose();upperField=null;uniforms.furnishUpperReturn.value=null;
   uniforms.furnishNightMap.value=null;uniforms.furnishNightActive.value=0;
   finishField?.dispose();finishTexture?.dispose();
   uniforms.furnishFinishField.value=uniforms.furnishFinishTexture.value=null;
