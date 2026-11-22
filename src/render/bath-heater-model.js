@@ -3,12 +3,156 @@
 'use strict';
 const products=()=>root.FurnishProducts||require('../core/product-rules.js');
 const lighting=()=>root.FurnishLighting||require('../core/lighting-core.js');
+const rasterInstalled=new WeakSet();
 function area(g,{position,width,height,candela,color,material}){
  const radiance=lighting().panel(candela,width,height);
  if(material){material.emissiveIntensity=radiance;material.userData.emissionOn=radiance;}
  (g.userData.lightingRects||=[]).push({position,width,height,u:[1,0,0],v:[0,0,-1],normal:[0,-1,0],radiance,color,material});
 }
-function direct(lamp){lamp.userData.radiometricLight=true;lamp.userData.areaSurrogate=true;lamp.castShadow=true;lamp.shadow.mapSize.set(512,512);lamp.shadow.camera.near=.02;lamp.shadow.bias=-.0001;lamp.shadow.normalBias=.01;}
+// The renderer's spot slots carry a view-space position, orientation and
+// an optional shadow map. The material shader integrates the emitting area.
+// Keep every direct-light shape parameter paired with its sorted shadow slot.
+const extentOffset=8,rectangleCode=16,ellipseCode=32;
+function areaSample(T,g,{position,width,height,candela,color,round=false,up=false,role,name}){
+ const shape=round?ellipseCode:rectangleCode;
+ const surface=width*height*(round?Math.PI/4:1);
+ const lamp=new T.SpotLight(color,lighting().radiometric(candela)/surface,
+  extentOffset+width/2,Math.PI/2,1,shape+height/2);
+ const target=new T.Object3D();
+ lamp.position.fromArray(position);
+ target.position.copy(lamp.position);target.position.y+=up?1:-1;
+ lamp.target=target;lamp.name=name;
+ Object.assign(lamp.userData,{radiometricLight:true,areaSurrogate:true,ceilingPanelLight:true,ceilingArea:true});
+ if(role==='bounce')lamp.userData.ceilingPanelBounce=true;
+ else if(role){
+  lamp.userData.panelSample=role;
+  lamp.visible=role!=='tile';
+ }
+ lamp.castShadow=true;lamp.shadow.mapSize.set(512,512);lamp.shadow.camera.near=.02;
+ lamp.shadow.bias=-.0001;lamp.shadow.normalBias=up?.015:.01;lamp.shadow.focus=.85;
+ g.add(lamp,target);
+}
+const axes=new WeakMap();
+function orientArea(lamp){
+ const matrix=lamp.matrixWorld;
+ let frame=axes.get(lamp);
+ if(!frame){
+  frame=[lamp.up.clone(),lamp.up.clone(),lamp.up.clone(),lamp.up.clone()];axes.set(lamp,frame);
+ }
+ const [across,normal,tangent,bitangent]=frame;
+ across.setFromMatrixColumn(matrix,0).normalize();
+ normal.setFromMatrixColumn(matrix,1).normalize();
+ if(lamp.target.position.y<lamp.position.y)normal.negate();
+ tangent.set(Math.abs(normal.y)<.9?0:1,Math.abs(normal.y)<.9?1:0,0);
+ tangent.addScaledVector(normal,-tangent.dot(normal)).normalize();
+ bitangent.crossVectors(normal,tangent);
+ const angle=Math.atan2(across.dot(bitangent),across.dot(tangent));
+ lamp.penumbra=1-((angle+Math.PI)%Math.PI)/Math.PI;
+}
+function installRaster(T){
+ const chunks=T.ShaderChunk,call='getSpotLightInfo( spotLight, geometryPosition, directLight );';
+ if(!chunks)return false;
+ if(rasterInstalled.has(chunks))return true;
+ const spotShadow='directLight.color *= ( directLight.visible && receiveShadow ) ? getShadow( spotShadowMap[ i ], spotLightShadow.shadowMapSize, spotLightShadow.shadowBias, spotLightShadow.shadowRadius, vSpotLightCoord[ i ] ) : 1.0;';
+ const begin=chunks.lights_fragment_begin,start=begin.indexOf(call);
+ if(start<0||!begin.slice(start).includes(spotShadow))return false;
+ chunks.lights_pars_begin+=`
+ #if NUM_SPOT_LIGHTS > 0
+  // Vector form factor along a projected emitter edge. Polynomial used by
+  // Three.js r160 LTC_EdgeVectorFormFactor (MIT, vendor/three-r160/LICENSE).
+  vec3 furnishAreaEdge(vec3 a,vec3 b){
+   float x=clamp(dot(a,b),-1.0,1.0),y=abs(x);
+   float v=(0.8543985+(0.4965155+0.0145206*y)*y)/(3.4175940+(4.1616724+y)*y);
+   return cross(a,b)*(x>0.0?v:0.5*inversesqrt(max(1.0-x*x,1e-7))-v);
+  }
+  void furnishCeilingArea(SpotLight slot,vec3 position,vec3 normal,out IncidentLight light){
+   light.visible=false;
+   light.color=vec3(0.0);
+   light.direction=normal;
+   vec3 center=slot.position-position;
+   float rise=dot(center,slot.direction);
+   float distance2=dot(center,center);
+   if(rise<=0.0||distance2>slot.distance*slot.distance)return;
+   bool ellipse=slot.decay>=${ellipseCode}.0;
+   float halfWidth=slot.distance-${extentOffset}.0;
+   float halfHeight=slot.decay-(ellipse?${ellipseCode}.0:${rectangleCode}.0);
+   float extent=max(halfWidth,halfHeight);
+   // At small subtended angles the projected-area limit converges to
+   // the edge integral. Nearby surfaces retain the full emitter outline.
+   if(distance2>196.0*extent*extent){
+    vec3 direction=center*inversesqrt(distance2);
+    if(dot(normal,direction)<=0.0)return;
+    float surface=halfWidth*halfHeight*(ellipse?PI:4.0);
+    light.direction=direction;
+    light.color=slot.color*(surface*dot(direction,slot.direction)/distance2);
+    light.visible=true;
+    return;
+   }
+   vec3 emitter=-slot.direction;
+   vec3 seed=abs((vec4(emitter,0.0)*viewMatrix).y)<0.9?viewMatrix[1].xyz:viewMatrix[0].xyz;
+   vec3 tangent=normalize(seed-emitter*dot(seed,emitter));
+   vec3 bitangent=cross(emitter,tangent);
+   float angle=2.0*acos(clamp(slot.penumbraCos,-1.0,1.0));
+   float c=cos(angle),s=sin(angle);
+   vec3 u=halfWidth*(tangent*c+bitangent*s),v=halfHeight*(bitangent*c-tangent*s);
+   if(dot(center,normal)+abs(dot(u,normal))+abs(dot(v,normal))<=0.0)return;
+   vec3 form;
+   if(ellipse){
+    // Equal-area octagon for a circular or oval diffuser.
+    vec3 x=u*1.0539074,y=v*1.0539074;
+    vec3 a=normalize(center+x),b=normalize(center+(x+y)*0.70710678);
+    vec3 c=normalize(center+y),d=normalize(center+(-x+y)*0.70710678);
+    vec3 e=normalize(center-x),f=normalize(center-(x+y)*0.70710678);
+    vec3 g=normalize(center-y),h=normalize(center+(x-y)*0.70710678);
+    form=-(furnishAreaEdge(a,b)+furnishAreaEdge(b,c)+furnishAreaEdge(c,d)+furnishAreaEdge(d,e)
+          +furnishAreaEdge(e,f)+furnishAreaEdge(f,g)+furnishAreaEdge(g,h)+furnishAreaEdge(h,a));
+   }else{
+    vec3 a=normalize(center-u-v),b=normalize(center+u-v);
+    vec3 c=normalize(center+u+v),d=normalize(center-u+v);
+    form=-(furnishAreaEdge(a,b)+furnishAreaEdge(b,c)+furnishAreaEdge(c,d)+furnishAreaEdge(d,a));
+   }
+   float weight=length(form);
+   // Match the projected solid angle, including a smooth receiver horizon.
+   // The existing BRDF uses an equivalent incident direction for highlights.
+   float projected=max((weight*weight+dot(normal,form))/(1.0+weight),0.0);
+   if(projected<=0.0)return;
+   vec3 direction=form/max(weight,1e-6);
+   direction=normalize(direction+normal*max(0.0,0.08-dot(normal,direction)));
+   light.direction=direction;
+   light.color=slot.color*(PI*projected/max(dot(normal,direction),0.001));
+   light.visible=true;
+  }
+ #endif
+ `;
+ const spot=begin.slice(start).replace(call,`
+  if(spotLight.decay>${rectangleCode}.0){
+   furnishCeilingArea(spotLight,geometryPosition,geometryNormal,directLight);
+  }else{
+   ${call}
+  }`).replace(spotShadow,`
+  {
+  vec4 furnishShadowAt=vSpotLightCoord[ i ];
+  if(spotLight.decay>${rectangleCode}.0){
+   // Retain edge visibility for grazing rays beyond the finite shadow
+   // frustum. The padding keeps the existing PCF taps on valid texels.
+   vec2 border=2.0/spotLightShadow.shadowMapSize;
+   float w=max(furnishShadowAt.w,0.0001);
+   furnishShadowAt.xy=clamp(furnishShadowAt.xy/w,border,1.0-border)*w;
+  }
+  directLight.color *= ( directLight.visible && receiveShadow ) ? getShadow( spotShadowMap[ i ], spotLightShadow.shadowMapSize, spotLightShadow.shadowBias, spotLightShadow.shadowRadius, furnishShadowAt ) : 1.0;
+  }`);
+ chunks.lights_fragment_begin=begin.slice(0,start)+spot;
+ rasterInstalled.add(chunks);
+ return true;
+}
+function assetArea(T,group,mesh,{candela,color,round=false}){
+ const box=new T.Box3().setFromObject(mesh),center=box.getCenter(new T.Vector3());
+ const size=box.getSize(new T.Vector3());
+ const position=[center.x,box.min.y-.001,center.z],width=size.x,height=size.z;
+ const extent=round?Math.sqrt(Math.PI)/2:1;
+ area(group,{position,width:width*extent,height:height*extent,candela,color,material:mesh.material});
+ if(installRaster(T))areaSample(T,group,{position,width,height,candela,color,round,name:'Ceiling diffuser area'});
+}
 const supported=f=>!!(products().definition(f)?.ceilingPanel||products().definition(f)?.panelLight)&&!f.obj;
 function buildCeilingLight(T,f,light){
  const P=products(),base=P.value(f,'mountHeight');
@@ -16,21 +160,21 @@ function buildCeilingLight(T,f,light){
  const loader=root.FurnishStaticAssetModel||require('./static-asset-model.js');
  const group=loader.build(T,asset,{...f,h:P.height(f)},base);
  if(!T.SpotLight||!T.Object3D)return group;
- const diffuser=group.children.find(mesh=>mesh.name==='diffuser').material;
+ const diffuser=group.children.find(mesh=>mesh.name==='diffuser');
  const candela=light.previewCandela*P.value(f,'lightPreviewLevel')/100;
- const position=[0,base/1000-.001,0],extent=light.round?.70:.96;
- diffuser.emissive.set(light.color);
- diffuser.userData.ceilingPanelEmitter=true;
- area(group,{position,width:f.w*extent/1000,height:f.d*extent/1000,candela,color:light.color,material:diffuser});
- const lamp=new T.SpotLight(light.color,lighting().radiometric(candela),0,Math.PI/2,1,2),target=new T.Object3D();
- lamp.position.set(...position);target.position.set(0,position[1]-1,0);lamp.target=target;
- lamp.userData.ceilingPanelLight=true;direct(lamp);group.add(lamp,target);
+ diffuser.material.emissive.set(light.color);
+ diffuser.material.userData.ceilingPanelEmitter=true;
+ assetArea(T,group,diffuser,{candela,color:light.color,round:light.round});
  return group;
 }
 function heaterLight(T,g,f){
- const P=products(),light=P.definition(f)?.heaterLight;if(!light)return g;
- g.traverse(o=>{if(o.name===light.part&&o.material?.emissive){o.material.emissive.set(light.color);(o.material.userData||={}).ceilingPanelEmitter=true;area(g,{position:[f.w*.1375/1000,P.value(f,'mountHeight')/1000-.002,0],width:f.w*.675/1000,height:f.d*.95/1000,candela:light.previewCandela,color:light.color,material:o.material});}});
- if(T.SpotLight&&T.Object3D)for(const z of [-.25,0,.25]){const lamp=new T.SpotLight(light.color,lighting().radiometric(light.previewCandela/3),0,Math.PI/2,1,2),target=new T.Object3D(),y=P.value(f,'mountHeight')/1000;lamp.position.set(f.w*.1375/1000,y-.002,f.d*z/1000);target.position.copy(lamp.position);target.position.y-=1;lamp.target=target;lamp.userData.ceilingPanelLight=true;direct(lamp);g.add(lamp,target);}
+ const light=products().definition(f)?.heaterLight;
+ if(!light||!T.SpotLight)return g;
+ const diffuser=g.getObjectByName(light.part);
+ if(!diffuser?.material.emissive)return g;
+ diffuser.material.emissive.set(light.color);
+ diffuser.material.userData.ceilingPanelEmitter=true;
+ assetArea(T,g,diffuser,{candela:light.previewCandela,color:light.color});
  return g;
 }
 function build(T,f){
@@ -57,31 +201,20 @@ function build(T,f){
   }
   box('light-diffuser',w-2*edge,rim,d-2*edge,0,rim/2,0,glow);
   if(h>rim)box('light-housing',w,h-rim,d,0,rim+(h-rim)/2,0,white);
-  // The numeric solid recorder intentionally omits non-geometric lights.
-  if(T.SpotLight&&T.Object3D)for(let row=0;row<light.rows;row++)for(let col=0;col<light.columns;col++){
-   // Integrate samples over the diffuser. A fully feathered downward hemisphere
-   // avoids the cone edge of a spotlight on nearby walls; no finite range cutoff.
-   const lamp=new T.SpotLight(light.color,lighting().radiometric(light.previewCandela*energy/(light.rows*light.columns)),0,Math.PI/2,1,2),target=new T.Object3D();
-   const x=((col+.5)/light.columns-.5)*(w-2*edge),z=((row+.5)/light.rows-.5)*(d-2*edge);
-   lamp.position.set(x,base-.001,z);target.position.set(x,base-1,z);lamp.target=target;
-   lamp.name='Panel diffuser '+row+':'+col;lamp.userData.ceilingPanelLight=true;direct(lamp);g.add(lamp,target);
-   // Keep the hemispherical photometric lobe. A perspective shadow camera
-   // needs a finite angle to resolve the geometry underneath the diffuser.
-   lamp.shadow.focus=.85;
-   if(f.type==='panel_light_300x600'){
-    lamp.userData.panelSample={power:lamp.intensity,total:light.rows*light.columns,
-     outer:row===0||row===light.rows-1,center:row===1&&col===0};
+  if(T.SpotLight&&installRaster(T)){
+   const width=w-2*edge,height=d-2*edge,position=[0,base-.001,0],candela=light.previewCandela*energy;
+   const multi=f.type==='panel_light_300x600';
+   areaSample(T,g,{position,width,height,candela,color:light.color,role:multi?'full':undefined,name:'Panel diffuser area'});
+   // Each tile integrates a quarter of the same diffuser. A separate map
+   // per tile can resolve partial obstruction by cabinets near the light.
+   if(multi)for(const x of [-1,1])for(const z of [-1,1]){
+    areaSample(T,g,{position:[x*width/4,position[1],z*height/4],width:width/2,height:height/2,
+     candela:candela/4,color:light.color,role:'tile',name:'Panel diffuser area tile'});
    }
-  }
-  // Raster-only returned light from lower room surfaces; shadowed to stay local.
-  if(T.SpotLight&&T.Object3D)for(const side of [-1,1]){
-   const lamp=new T.SpotLight(light.color,lighting().radiometric(light.bounceCandela*energy/2),light.bounceReach/1000,Math.PI*.45,1,2),target=new T.Object3D();
-   lamp.userData.radiometricLight=true;
-   const y=base-light.bounceDrop/1000,z=side*d/4;
-   lamp.position.set(0,y,z);target.position.set(0,y+1,z);lamp.target=target;
-   lamp.name='Panel reflected light '+side;lamp.userData.ceilingPanelLight=true;lamp.userData.ceilingPanelBounce=true;
-   lamp.castShadow=true;lamp.shadow.mapSize.set(512,512);lamp.shadow.camera.near=.02;lamp.shadow.bias=-.0001;lamp.shadow.normalBias=.015;
-   g.add(lamp,target);
+   for(const side of [-1,1]){
+    areaSample(T,g,{position:[0,base-light.bounceDrop/1000,side*d/4],width,height:height/2,
+     candela:light.bounceCandela*energy/2,color:light.color,up:true,role:'bounce',name:'Panel reflected area'});
+   }
   }
   return g;
  }
@@ -114,5 +247,5 @@ function buildSE2(T,f){
  if(h>r)box('body',w*.86,h-r,d*.9,0,r+(h-r)/2,0,metal);
  return g;
 }
-const api={supported,build,buildLegacySE2:buildSE2};if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishBathHeaterModel=api;
+const api={supported,build,buildLegacySE2:buildSE2,installRaster,orientArea};if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishBathHeaterModel=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

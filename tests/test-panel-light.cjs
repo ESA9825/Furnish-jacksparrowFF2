@@ -25,7 +25,65 @@ const replacement=P.replacement({...installed,downlightWatts:5},{type:'custom',w
  const THREE=await import(JSON.parse(fs.readFileSync(require.resolve('../index.html'),'utf8').match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports.three),M=require('../src/render/ceiling-model.js'),H=require('../src/render/bath-heater-model.js');
  const model=M.build(THREE,C.resolve(work.ceilings),{bodies:bodies([installed])});model.updateMatrixWorld(true);assert(!model.children.some(m=>m.userData.furnishStablePart==='aluminum:'+slot.id));const ray=(o,x,y)=>new THREE.Raycaster(new THREE.Vector3(x/1000,2,y/1000),new THREE.Vector3(0,1,0)).intersectObject(o,true);assert.equal(ray(model,170,320).length,0,'full opening through backing');assert.equal(ray(model,20.1,20.1).length,0,'entire nominal cell including seam removed');assert(ray(model,500,320).length,'neighbor retained');assert(ray(model,10,320).length,'trim retained');
  const restored=M.build(THREE,C.resolve(work.ceilings),{bodies:[]});restored.updateMatrixWorld(true);assert(ray(restored,170,320).length,'removal restores panel');
- for(const f of [installed,{...installed,rot:90,flip:true,h:240}]){const group=H.build(THREE,f);group.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(group),size=box.getSize(new THREE.Vector3());assert(Math.abs(size.x-.3)<1e-6);assert(Math.abs(size.z-.6)<1e-6);assert(Math.abs(size.y-f.h/1000)<1e-6);assert(Math.abs(box.min.y-2.498)<1e-6);group.traverse(m=>{if(m.isMesh){assert(m.geometry.attributes.position.array.every(Number.isFinite));assert(m.geometry.attributes.normal.array.every(Number.isFinite));}});const lights=[];group.traverse(o=>{if(o.isSpotLight&&!o.userData.ceilingPanelBounce)lights.push(o);});assert.equal(lights.length,6);assert(lights.every(l=>l.angle===Math.PI/2&&l.penumbra===1&&l.distance===0));assert.equal(new Set(lights.map(l=>l.position.x)).size,2);assert.equal(new Set(lights.map(l=>l.position.z)).size,3);assert(Math.abs(lights.reduce((sum,l)=>sum+l.intensity,0)*683-60)<1e-8);assert(lights.every(l=>l.target.position.y<l.position.y));const bounce=[];group.traverse(o=>{if(o.userData.ceilingPanelBounce)bounce.push(o);});assert.equal(bounce.length,2);assert(bounce.every(l=>l.target.position.y>l.position.y&&l.castShadow&&l.shadow.camera.near===.02));assert(bounce.every(l=>Math.abs(l.position.y-(P.value(f,'mountHeight')-900)/1000)<1e-8));const toggle=require('../src/render/downlight-model.js');toggle.setLights(group,false);assert(lights.concat(bounce).every(l=>!l.visible));toggle.setLights(group,true);assert(lights.concat(bounce).every(l=>l.visible));const parts=Solids.parts(f,{plan,furniture:[f]});assert(parts.length>=5);group.position.set(f.cx/1000,0,f.cy/1000);group.rotation.y=-f.rot*Math.PI/180;group.scale.x=f.flip?-1:1;group.updateMatrixWorld(true);group.userData.fid=f.id;const snapshot=require('../src/io/blender-export.js').snapshot(THREE,{groups:[group],camera:new THREE.PerspectiveCamera()});snapshot.scene.updateMatrixWorld(true);const exported=snapshot.scene.children.filter(o=>o.isSpotLight);assert.equal(exported.length,0);assert(exported.every(l=>l.angle===Math.PI/2&&l.penumbra===1&&l.distance===0));assert(exported.every(l=>l.target.getWorldPosition(new THREE.Vector3()).y<l.getWorldPosition(new THREE.Vector3()).y));snapshot.dispose();const actual=new THREE.Box3().setFromObject(group),points=parts.flatMap(p=>p.vertices);for(const [axis,index]of [['x',0],['y',1],['z',2]]){assert(Math.abs(actual.min[axis]*1000-Math.min(...points.map(p=>p[index])))<.001);assert(Math.abs(actual.max[axis]*1000-Math.max(...points.map(p=>p[index])))<.001);}}
+ const emittedPower=light=>light.intensity*683*4*(light.distance-8)*(light.decay-16);
+ for(const f of [installed,{...installed,rot:90,flip:true,h:240}]){
+  const group=H.build(THREE,f);
+  group.updateMatrixWorld(true);
+  const box=new THREE.Box3().setFromObject(group),size=box.getSize(new THREE.Vector3());
+  assert(Math.abs(size.x-.3)<1e-6);
+  assert(Math.abs(size.z-.6)<1e-6);
+  assert(Math.abs(size.y-f.h/1000)<1e-6);
+  assert(Math.abs(box.min.y-2.498)<1e-6);
+  group.traverse(m=>{
+   if(!m.isMesh)return;
+   assert(m.geometry.attributes.position.array.every(Number.isFinite));
+   assert(m.geometry.attributes.normal.array.every(Number.isFinite));
+  });
+  const whole=group.children.find(o=>o.userData.panelSample==='full');
+  const tiles=group.children.filter(o=>o.userData.panelSample==='tile');
+  const lights=[whole,...tiles];
+  assert.equal(tiles.length,4);
+  assert(lights.every(o=>o.userData.ceilingArea&&o.userData.areaSurrogate&&o.target.position.y<o.position.y));
+  assert(whole.visible&&tiles.every(o=>!o.visible),'standalone preview lights the full emitting face once');
+  assert(Math.abs(emittedPower(whole)-60)<1e-8);
+  assert(tiles.every(o=>Math.abs(emittedPower(o)-15)<1e-8));
+  for(const o of tiles){
+   assert(Math.abs(Math.abs(o.position.x)*2-(whole.distance-8))<1e-9);
+   assert(Math.abs(Math.abs(o.position.z)*2-(whole.decay-16))<1e-9);
+   assert(Math.abs(o.distance-8-(whole.distance-8)/2)<1e-9);
+   assert(Math.abs(o.decay-16-(whole.decay-16)/2)<1e-9);
+  }
+  const bounce=group.children.filter(o=>o.userData.ceilingPanelBounce);
+  assert.equal(bounce.length,2);
+  assert(bounce.every(o=>o.userData.ceilingArea&&o.target.position.y>o.position.y&&o.castShadow));
+  assert(bounce.every(o=>Math.abs(o.position.y-(P.value(f,'mountHeight')-900)/1000)<1e-8));
+  const toggle=require('../src/render/downlight-model.js');
+  toggle.setLights(group,false);
+  assert(lights.concat(bounce).every(l=>!l.visible));
+  toggle.setLights(group,true);
+  assert([whole,...bounce].every(l=>l.visible)&&tiles.every(o=>!o.visible));
+  const parts=Solids.parts(f,{plan,furniture:[f]});
+  assert(parts.length>=5);
+  group.position.set(f.cx/1000,0,f.cy/1000);
+  group.rotation.y=-f.rot*Math.PI/180;
+  group.scale.x=f.flip?-1:1;
+  group.updateMatrixWorld(true);
+  H.orientArea(whole);
+  assert(Math.abs((1-whole.penumbra)*Math.PI-(f.rot?Math.PI/2:0))<1e-8);
+  group.userData.fid=f.id;
+  const {collect}=require('../src/core/lighting-core.js'),{rects,spots}=collect(THREE,[group]);
+  assert.equal(spots.length,0);
+  assert.equal(rects.length,1);
+  assert(Math.abs(rects[0].width-.294)<1e-8&&Math.abs(rects[0].height-.594)<1e-8);
+  const snapshot=require('../src/io/blender-export.js').snapshot(THREE,{groups:[group],camera:new THREE.PerspectiveCamera()});
+  assert.equal(snapshot.scene.children.filter(o=>o.isSpotLight).length,0);
+  snapshot.dispose();
+  const actual=new THREE.Box3().setFromObject(group),points=parts.flatMap(p=>p.vertices);
+  for(const [axis,index]of [['x',0],['y',1],['z',2]]){
+   assert(Math.abs(actual.min[axis]*1000-Math.min(...points.map(p=>p[index])))<.001);
+   assert(Math.abs(actual.max[axis]*1000-Math.max(...points.map(p=>p[index])))<.001);
+  }
+ }
  const D=require('../src/render/downlight-model.js'),scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera();
  const fitted=H.build(THREE,installed),task=H.build(THREE,{type:'surface_light',w:600,d:40,mountHeight:1600});
  const resolveRoom='kitchen';
@@ -35,7 +93,7 @@ const replacement=P.replacement({...installed,downlightWatts:5},{type:'custom',w
  }
  const direct=fitted.children.filter(o=>o.userData.panelSample);
  const lit=()=>direct.filter(o=>o.visible);
- const power=()=>lit().reduce((sum,o)=>sum+o.intensity,0)*683;
+ const power=()=>lit().reduce((sum,o)=>sum+emittedPower(o),0);
  const scoped=()=>D.limitLights(scene,camera,{},resolveRoom);
  D.limitLights(scene,camera,{shadows:0});
  assert.equal(scoped().panelShadowAdded,true);
@@ -45,11 +103,12 @@ const replacement=P.replacement({...installed,downlightWatts:5},{type:'custom',w
  assert.ok(Math.abs(power()-60)<1e-8);
  assert.ok(task.children.some(o=>o.isSpotLight&&!o.userData.ceilingPanelBounce&&o.castShadow));
  D.limitLights(scene,camera,{shadows:3},resolveRoom);
- assert.equal(lit().length,1,'small budgets keep an occluded center sample');
+ assert.equal(lit().length,1,'small budgets shade the full face using one map');
  assert.ok(lit()[0].castShadow&&Math.abs(power()-60)<1e-8);
  D.limitLights(scene,camera,{},'hall');
- assert.equal(lit().length,6,'outside the receiver room the ordinary global budget applies');
- assert.ok(direct.every(o=>Math.abs(o.intensity*683-10)<1e-8));
+ assert.equal(lit().length,1,'outside the local room use the full emitting face once');
+ assert.equal(lit()[0].userData.panelSample,'full');
+ assert.ok(Math.abs(power()-60)<1e-8);
  fitted.visible=false;
  scoped();
  assert.equal(lit().length,0);

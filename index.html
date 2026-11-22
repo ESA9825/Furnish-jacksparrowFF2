@@ -861,6 +861,7 @@ function init(){
   updateEffectControls();
   renderer.setSize(SW(), SH());
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  FurnishBathHeaterModel.installRaster(THREE);
   continuousCove=FurnishCoveLightModel.installRaster(THREE);
   renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;
   renderer.localClippingEnabled=true;

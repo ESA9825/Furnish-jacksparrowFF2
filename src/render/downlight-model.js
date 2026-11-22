@@ -3,6 +3,7 @@
 'use strict';
 const products=()=>root.FurnishProducts||require('../core/product-rules.js');
 const lighting=()=>root.FurnishLighting||require('../core/lighting-core.js');
+const ceilingAreas=()=>root.FurnishBathHeaterModel||require('./bath-heater-model.js');
 const supported=f=>!!products().definition(f)?.downlight&&!f.obj;
 function build(T,f){
  if(products().definition(f).downlight.asset)return buildAsset(T,f);
@@ -46,7 +47,10 @@ function setLights(group,on,{night=false,nightLights=on}={}){
  const pathOn=nightLights&&night;
  group?.traverse(o=>{
   const flags=o.userData,material=o.material,emission=material?.userData;
-  if(flags.downlightLight||flags.ceilingPanelLight)o.visible=flags.previewLightEnabled=on;
+  if(flags.downlightLight||flags.ceilingPanelLight){
+   flags.previewLightEnabled=on;
+   o.visible=on&&flags.panelSample!=='tile';
+  }
   if(flags.pathLight)o.visible=flags.previewLightEnabled=pathOn;
   if(emission?.downlightEmitter||emission?.ceilingPanelEmitter)material.emissiveIntensity=on?(emission.emissionOn??1.5):0;
   if(emission?.pathLightEmitter)material.emissiveIntensity=pathOn?.8:0;
@@ -60,26 +64,23 @@ function limitLights(scene,camera,{lights=24,shadows=6,maxFragmentUniforms=1024,
  scene.traverse(o=>{if(!o.isLight||!(o.userData.downlightLight||o.userData.ceilingPanelLight||o.userData.pathLight||o.userData.ceilingStripLight))return;
   o.userData.previewShadowRequested??=o.castShadow;let visible=o.userData.previewLightEnabled!==false,owner=o.parent;
   for(let p=o.parent;p;p=p.parent){if(!p.visible)visible=false;if(p.userData.fid||p.userData.ceiling)owner=p;}
-  if(o.userData.panelSample)o.intensity=o.userData.panelSample.power;
   if(visible&&o.intensity>0)candidates.push({o,owner,hadShadow:o.castShadow,distance:o.getWorldPosition(eye.clone()).distanceToSquared(eye)});
   o.visible=false;o.castShadow=false;
  });
  const ordered=lighting().prioritize(candidates);
  const local=panelRoom?ordered.filter(({owner})=>owner.userData.floorBase?.roomId===panelRoom):[];
- const panelOwner=local.find(({o})=>o.userData.panelSample)?.owner;
+ const fullPanel=local.find(({o})=>o.userData.panelSample==='full');
  const capacity=Math.min(lights,shadows);
- const panel=panelOwner&&capacity?local.filter(({o,owner})=>{
-  const sample=o.userData.panelSample;
-  return owner===panelOwner&&sample&&(capacity>=4?sample.outer:sample.center);
- }):[];
- for(const {o} of panel)o.intensity*=o.userData.panelSample.total/panel.length;
- // Budget the rectangular emitter as one fixture. Mixing shadowed and
- // unshadowed quadrature samples would light through the same cabinet edge.
+ const panel=fullPanel&&capacity?(capacity>=4?local.filter(({o,owner})=>
+  owner===fullPanel.owner&&o.userData.panelSample==='tile'):[fullPanel]):[];
+ // Select either a full-face shadow or four locally occluded portions of
+ // that face. The light emitted is the same in both cases.
  const task=panel.length&&capacity>panel.length?local.find(({o})=>
   o.userData.ceilingPanelLight&&o.userData.areaSurrogate&&!o.userData.panelSample):null;
  const reserved=task?[...panel,task]:panel;
  const spans=ordered.filter(({o})=>o.userData.coveSpan).slice(0,capacity-reserved.length);
- const remaining=ordered.filter(c=>!c.o.userData.coveSpan&&c!==task&&!(panel.length&&c.owner===panelOwner&&c.o.userData.panelSample));
+ const remaining=ordered.filter(c=>!c.o.userData.coveSpan&&c!==task&&
+  c.o.userData.panelSample!=='tile'&&!(panel.length&&c===fullPanel));
  const active=reserved.concat(spans,remaining.slice(0,lights-reserved.length-spans.length));
  let shadowCount=0,coveShadowAdded=false,panelShadowAdded=false;
  for(const {o,hadShadow} of active){
@@ -87,12 +88,13 @@ function limitLights(scene,camera,{lights=24,shadows=6,maxFragmentUniforms=1024,
   o.castShadow=!!o.userData.previewShadowRequested&&shadowCount<shadows;
   if(o.castShadow){
    shadowCount++;
-   panelShadowAdded||=!hadShadow&&(o.userData.panelSample!==undefined||reserved.some(c=>c.o===o));
+   panelShadowAdded||=!hadShadow&&(o.userData.ceilingArea||reserved.some(c=>c.o===o));
   }
   if(o.userData.coveSpan){
    root.FurnishCoveLightModel.orientSpan(o);
    coveShadowAdded||=o.castShadow&&!hadShadow;
   }
+  if(o.userData.ceilingArea)ceilingAreas().orientArea(o);
  }
  return {candidates:candidates.length,lights:active.length,shadows:shadowCount,coveShadowAdded,panelShadowAdded};
 }

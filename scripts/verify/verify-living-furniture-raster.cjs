@@ -33,8 +33,9 @@ const diagnose=revisionRound==='bedroom-rotation';
 if(diagnose)files.push('src/ui/workflow-tools.js');
 if(revisionRound==='latex-paint')files.push('src/render/ceiling-model.js');
 const kitchenRound=revisionRound==='kitchen-light';
+const ceilingAreaRound=revisionRound==='ceiling-area';
 const kitchenProbes=kitchenRound&&process.env.FURNISH_RASTER_KITCHEN_PROBES==='1';
-if(kitchenRound)files.push('src/render/downlight-model.js','src/render/bath-heater-model.js');
+if(kitchenRound||ceilingAreaRound)files.push('src/render/downlight-model.js','src/render/bath-heater-model.js');
 const bedRound=revisionRound==='bed-bedding';
 if(bedRound)files.push('src/render/basic-furniture-model.js','src/core/product-rules.js');
 const finishRound=revisionRound==='finish-surfaces';
@@ -187,7 +188,7 @@ async function run(){
       drawBenchmarkScene();
       if(${traceRotation}&&window.furnitureBench.samples)performance.mark('furnish-draw-end');
       const metrics=window.furnitureBench;
-      if(${kitchenRound}&&!metrics.kitchenState)metrics.kitchenState=()=>{
+      if(${kitchenRound||ceilingAreaRound}&&!metrics.kitchenState)metrics.kitchenState=()=>{
        const positions=[];
        const faces=metrics.lampState(state.furniture.map(f=>f.id));
        furnG.traverse(o=>{
@@ -196,7 +197,8 @@ async function run(){
         while(parent&&!parent.userData.fid)parent=parent.parent;
         if(!parent)return;
         positions.push({id:parent.userData.fid,name:o.name,active:o.visible&&FurnishLighting.requested(o),
-         shadow:o.castShadow,map:!!o.shadow.map,fov:o.shadow.camera.fov,intensity:o.intensity,color:o.color.getHexString()});
+         shadow:o.castShadow,map:!!o.shadow.map,fov:o.shadow.camera.fov,intensity:o.intensity,color:o.color.getHexString(),
+         area:!!o.userData.ceilingArea,part:o.userData.panelSample});
        });
        return {positions,faces,capabilities:{textures:renderer.capabilities.maxTextures,uniforms:renderer.capabilities.maxFragmentUniforms}};
       };
@@ -462,6 +464,14 @@ async function run(){
      return hash(buffer);
     };
     const visual=await capture('');
+    if(ceilingAreaRound){
+     scene.lighting=await page.evaluate(()=>furnitureBench.kitchenState());
+     if(name==='kitchen'&&variant==='after'){
+      const lighting=scene.lighting.positions.filter(o=>o.id==='fmvqr5qlt1'&&o.active&&o.part);
+      assert.equal(lighting.length,4);
+      assert.ok(lighting.every(o=>o.area&&o.part==='tile'&&o.shadow&&o.map));
+     }
+    }
     if(revisionRound==='upper-edge'&&!report.results.some(result=>result.variant===variant)){
      scene.activeFixtures=await page.evaluate(()=>{
       const faces=furnitureBench.lampState(state.furniture.map(f=>f.id));
@@ -487,7 +497,7 @@ async function run(){
       assert.equal(scene.probes.restored,visual);
      }
     }
-    if(bedRound||finishRound||(['upper-return','upper-edge'].includes(revisionRound)&&['master','kitchen'].includes(name))||
+    if(bedRound||finishRound||(['upper-return','upper-edge','ceiling-area'].includes(revisionRound)&&['master','kitchen'].includes(name))||
      (kitchenRound&&['kitchen','hall'].includes(name))||(windowRound&&name==='kitchen')){
      scene.controlImages={};
      const apply=patch=>page.evaluate(patch=>mutate(()=>{

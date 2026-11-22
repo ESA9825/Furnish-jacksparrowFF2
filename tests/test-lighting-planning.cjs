@@ -6,7 +6,7 @@ const lamp={id:'soft',type:'surface_light',name:'通用规划占位',cx:1000,cy:
 (async()=>{
  const T=await import(JSON.parse(require('node:fs').readFileSync(require.resolve('../index.html'),'utf8').match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports.three);
  assert(require('../src/data/catalog.js').library.flatMap(c=>c.items).some(i=>i[0]===lamp.type));P.validate(lamp);assert.equal(P.initial(lamp).mountHeight,2500);assert(!P.definition(lamp).ceilingPanel,'surface light never opens an aluminum panel');
- const small=B.build(T,{...lamp,w:240,d:160}),smallLight=small.children.find(o=>o.isLight&&!o.userData.ceilingPanelBounce);near(smallLight.intensity*683,16);
+ const small=B.build(T,{...lamp,w:240,d:160}),smallLight=small.children.find(o=>o.isLight&&!o.userData.ceilingPanelBounce);near(smallLight.intensity*.23*.15*683,16);assert(smallLight.userData.ceilingArea);
  const before=copy(lamp),g=B.build(T,lamp),box=new T.Box3().setFromObject(g);near(box.min.y*1000,2500);near(box.max.y*1000,2550);near((box.max.x-box.min.x)*1000,800);assert.deepEqual(lamp,before);
  const floor={rooms:[{id:'r',poly:[[0,0],[3000,0],[3000,3000],[0,3000]],ceilingHeight:2700}],floorFinish:{areas:{r:{finishedZ:60}}},furnitureDatum:'finished-floor'},f={...lamp,mountHeight:2590},vertical=D.furnitureVerticalBounds(f,floor,[f]);near(vertical.bottom,2650);near(vertical.top,2700);
  for(const rot of [0,90,31])for(const flip of [false,true]){const item={...lamp,rot,flip},parts=G.bodyParts(item);assert(parts.length);near(Math.min(...parts.map(p=>p.vertical.bottom)),2500);near(Math.max(...parts.map(p=>p.vertical.top)),2550);}
@@ -52,7 +52,20 @@ const lamp={id:'soft',type:'surface_light',name:'通用规划占位',cx:1000,cy:
  const cache=require('../src/io/workspace-cache.js');
  assert.equal(cache.candidates({read:key=>key==='huxing-design-v101'?JSON.stringify(workspace):null})[0].v,101);
  const socket=N.build(T,{...night,panelVariant:'socket5-diagonal'});let wrong=0;socket.traverse(o=>{if(o.userData.pathLight||o.material?.userData?.pathLightEmitter)wrong++;});assert.equal(wrong,0,'other faceplates never become lamps');
- const heater={...lamp,type:'bath_heater_aopu_se2',w:300,d:600,h:112,mountHeight:2343},hg=B.build(T,heater),heaterLights=[];hg.traverse(o=>{if(o.userData.ceilingPanelLight)heaterLights.push(o);});assert.equal(heaterLights.length,3);assert(hg.children.find(o=>o.name==='diffuser').material.userData.ceilingPanelEmitter);L.setLights(hg,false,{night:true});assert(heaterLights.every(o=>!o.visible));L.setLights(hg,true);assert(heaterLights.every(o=>o.visible));
+ const heater={...lamp,type:'bath_heater_aopu_se2',w:300,d:600,h:112,mountHeight:2343},hg=B.build(T,heater),heaterLights=[];hg.traverse(o=>{if(o.userData.ceilingPanelLight)heaterLights.push(o);});assert.equal(heaterLights.length,1);assert(heaterLights[0].userData.ceilingArea);assert(hg.children.find(o=>o.name==='diffuser').material.userData.ceilingPanelEmitter);L.setLights(hg,false,{night:true});assert(heaterLights.every(o=>!o.visible));L.setLights(hg,true);assert(heaterLights.every(o=>o.visible));
+ for(const model of ['l90','l60','d40','d30','d20']){
+  const fixture=B.build(T,{...lamp,type:'ceiling_light_mijia_'+model});
+  const area=fixture.children.find(o=>o.userData.ceilingArea);
+  assert(area,'Every installed ceiling fixture uses the emitting surface');
+  const round=model.startsWith('d');
+  assert.equal(area.decay>=32,round);
+  const [face]=lighting.collect(T,[fixture]).rects;
+  assert.equal(lighting.collect(T,[fixture]).spots.length,0);
+  assert(Math.abs(face.width*face.height*face.radiance-area.intensity*
+   (area.distance-8)*4*(area.decay-(round?32:16))*(round?Math.PI/4:1))<1e-8);
+ }
+ const beam=L.build(T,{...lamp,type:'downlight_philips_dl269',w:85,d:85,h:45});
+ assert.equal(lighting.collect(T,[beam]).spots.length,1,'Downlights retain cone illumination');
  let meshCount=0;hg.traverse(o=>{if(o.isMesh)meshCount++;});assert.equal(meshCount,29,'SE2 physical geometry unchanged');
  // A crowded forward-lit scene must stay within shader/sampler budgets and
  // restore the requested lights after camera movement or top-light toggles.
