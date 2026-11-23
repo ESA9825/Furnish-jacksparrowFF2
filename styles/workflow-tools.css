@@ -266,8 +266,9 @@ main.drawer-panel #fab-editor{visibility:hidden}
 #lib.catalog-compact .catalog-card-tools{grid-column:1/-1;margin:0}
 #lib.catalog-compact .catalog-item-thumb{grid-column:1;grid-row:2/4;width:48px;height:48px;margin:0;padding:4px}
 #lib.catalog-compact .catalog-item-name{grid-column:2/4;grid-row:2;min-height:0;-webkit-line-clamp:2;font-size:12px}
-#lib.catalog-compact .catalog-item-spec{grid-column:2/4;grid-row:3;display:flex;flex-wrap:wrap;gap:4px;margin:0}
-#lib.catalog-compact .catalog-item-price,#lib.catalog-compact .catalog-item-model{display:none}
+#lib.catalog-compact .item>.furniture-identification{grid-column:2/4;grid-row:3;margin:0}
+#lib.catalog-compact .catalog-item-spec{grid-column:2/4;display:flex;flex-wrap:wrap;gap:4px;margin:0}
+#lib.catalog-compact .catalog-item-price{display:none}
 #lib.catalog-compact .catalog-details{grid-column:2/4;min-height:28px}
 .rail-tool-menu>summary{list-style:none;cursor:pointer}
 .rail-tool-pop{display:flex;flex-wrap:wrap;gap:5px;position:fixed;width:min(300px,calc(100vw - 24px));overflow:auto;padding:10px;background:var(--s-panel);color:var(--s-ink);border:1px solid var(--s-line);border-radius:12px;box-shadow:var(--shadow-md);z-index:25}

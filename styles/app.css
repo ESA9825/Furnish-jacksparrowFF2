@@ -276,6 +276,10 @@ body.m3d .only2d,body:not(.m3d) .only3d{display:none!important}
 .current-locate{border:0;padding:0;background:none;color:var(--ink);text-align:left;cursor:pointer;font:inherit;min-width:0}
 .current-locate b,.current-locate small{display:block;overflow-wrap:anywhere}
 .current-locate small{font-size:10.5px;color:var(--muted);line-height:1.6;margin-top:3px}
+.furniture-identification{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:2px 6px;width:100%;margin-top:4px;text-align:left;font-size:11px;line-height:1.45}
+.identification-field{display:contents}
+.identification-field>span:first-child{color:var(--muted)}
+.identification-field>span:last-child{color:var(--ink);overflow-wrap:anywhere}
 .current-meta{grid-column:2;display:flex;flex-wrap:wrap;gap:4px;font-size:10.5px;color:var(--muted)}
 .current-meta span{border:1px solid var(--line);padding:1px 4px;border-radius:5px;background:var(--card);overflow-wrap:anywhere;max-width:100%}
 .current-management .current-room-group h4{padding:12px 0 3px;letter-spacing:0;font-size:11px}
@@ -993,10 +997,9 @@ button.replacement-product:focus-visible{outline:2px solid var(--accent);outline
 #lib .lib-grid{grid-template-columns:repeat(auto-fill,minmax(min(104px,100%),1fr));gap:9px;padding:0 12px 4px;align-items:stretch}
 #lib .item{gap:0;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:none;min-width:0;transform:none;overflow:hidden}
 #lib .item.custom{border-style:dashed}
-#lib .catalog-card-tools{width:100%;display:flex;align-items:center;gap:4px;margin-bottom:8px;min-width:0}
+#lib .catalog-card-tools{width:100%;display:flex;align-items:center;justify-content:space-between;gap:4px;margin-bottom:8px;min-width:0}
 #lib .item .catalog-favorite{position:static;flex:none;width:24px;height:24px;background:var(--card);border-color:var(--line);box-shadow:none}
 #lib .item .catalog-favorite .i{width:12px;height:12px;filter:none;margin:0}
-#lib .catalog-kind{font-size:9px;color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
 #lib .item .del{position:static;display:grid;place-items:center;opacity:1;width:22px;height:22px;min-width:22px;padding:3px;background:var(--soft);border:0;color:var(--muted);border-radius:50%}
 #lib .item .del .i{width:12px;height:12px;margin:0;filter:none}
 #lib .catalog-item-thumb{height:72px;width:100%;display:grid;place-items:center;background:var(--soft);border-radius:8px;margin-bottom:10px;padding:8px}
@@ -1005,7 +1008,6 @@ button.replacement-product:focus-visible{outline:2px solid var(--accent);outline
 #lib .catalog-item-spec{width:100%;display:grid;gap:2px;margin:6px 0 8px}
 #lib .catalog-item-spec small{text-align:left;color:var(--muted);font-size:10px;line-height:1.4;font-variant-numeric:tabular-nums}
 #lib .catalog-item-spec small span{font-size:9px}
-#lib .item .catalog-item-model{width:100%;text-align:left;font-size:9px;margin:0 0 8px;overflow-wrap:anywhere}
 #lib .catalog-item-price{display:flex;align-items:baseline;justify-content:space-between;gap:4px;width:100%;margin-top:auto;padding:8px 0;border-top:1px solid var(--line-soft)}
 #lib .catalog-item-price>span{font-size:9px;color:var(--muted)}
 #lib .catalog-item-price>strong{font-size:11px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
@@ -1052,7 +1054,6 @@ button.replacement-product:focus-visible{outline:2px solid var(--accent);outline
 @media(max-width:1100px){.app aside.lib #libTools{top:48px}#lib .catalog-item-thumb{height:76px}#panel>section:not(.hero){margin:10px;padding:13px}}
 @media(prefers-reduced-motion:reduce){#lib .item{transition:none}}
 
-#lib .catalog-kind-prefix{position:absolute;width:1px;height:1px;margin:-1px;padding:0;border:0;clip-path:inset(50%);overflow:hidden;white-space:nowrap}
 #lib .item .catalog-item-name{font-size:12px}
 #lib .catalog-item-price>strong{font-size:12px}
 #panel .form label{font-size:11px}

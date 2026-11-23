@@ -40,7 +40,7 @@
   const row=r=>{const f=r.furniture;let height=null;try{const h=FurnishDesign.furnitureVerticalBounds(f);if(h&&Number.isFinite(h.top-h.bottom))height=Number((h.top-h.bottom).toFixed(1));}catch{/* Keep damaged models manageable through the existing recovery flow. */}
    return `<article class="current-item ${selection.has(f.id)?'located':''}" data-current-row="${esc(f.id)}">
     <label class="current-check"><input type="checkbox" data-current-check="${esc(f.id)}" aria-label="${esc(tr('勾选 ','Check ')+nm(f.name))}" ${checked.has(f.id)?'checked':''}></label>
-    <button class="current-locate" data-current-locate="${esc(f.id)}" title="${esc(tr('点击定位','Click to locate'))}"><b>${esc(nm(f.name))}</b><small>${f.w}×${f.d} mm · ${tr('包络高','Bounds height')} ${height===null?tr('未知','unknown'):height+' mm'}</small>${f.brand||f.model?`<small>${esc([f.brand,f.model].filter(Boolean).join(' · '))}</small>`:''}</button>
+    <button class="current-locate" data-current-locate="${esc(f.id)}" title="${esc(tr('点击定位','Click to locate'))}"><b>${esc(nm(f.name))}</b>${furnitureIdentification(f)}<small>${f.w}×${f.d} mm · ${tr('包络高','Bounds height')} ${height===null?tr('未知','unknown'):height+' mm'}</small></button>
     <div class="current-meta"><span>${esc(statusName(r.status))}</span><span>${tr('图层','Layer')} ${esc(r.layer.name)}</span>${r.locked?`<span>${tr(r.layer.locked?'图层锁定':'单件锁定',r.layer.locked?'Layer locked':'Item locked')}</span>`:''}${!r.layer.visible?`<span>${tr('图层隐藏','Hidden layer')}</span>`:''}</div>
    </article>`;};
   host.innerHTML=`<section class="current-management">
