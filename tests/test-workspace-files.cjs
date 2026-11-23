@@ -16,6 +16,15 @@ const originalStat=fs.statSync(source),wrong=original.replace('furnish-workspace
 const second=api.write(b,first.revision),entries=api.backups();assert.equal(entries.length,1);assert.equal(api.getBackup(entries[0].id).raw,original);
 assert.deepEqual(api.write(b,second.revision),second);assert.equal(api.backups().length,1);
 assert.throws(()=>api.write(a,first.revision),e=>e.status===409);assert.equal(api.backups().length,1);
+const historyPath=path.join(api.info().backupDirectory,entries[0].id),estimate=api.compactBackups();
+assert.equal(estimate.count,1);assert(estimate.bytesBefore>estimate.bytesAfter);
+assert(fs.existsSync(historyPath));assert(!fs.existsSync(historyPath+'.gz'));
+fs.writeFileSync(historyPath+'.gz',require('node:zlib').gzipSync('other bytes'));
+assert.throws(()=>api.compactBackups({apply:true}),/回读不符/);assert.equal(api.getBackup(entries[0].id).raw,original);
+fs.unlinkSync(historyPath+'.gz');
+assert.deepEqual(api.compactBackups({apply:true}),{...estimate,apply:true});
+assert(!fs.existsSync(historyPath));assert.equal(api.backups()[0].id,entries[0].id);assert.equal(api.backups()[0].compressed,true);
+assert.equal(api.getBackup(entries[0].id).raw,original);assert.equal(api.compactBackups({apply:true}).count,0);
 api.recover(a);const destination=path.join(run,'用户 项目 # 1601');api.setLocation(destination,second.revision);
 assert.equal(fs.readFileSync(source,'utf8'),C.text(b));assert.equal(api.read().revision,second.revision);assert.equal(api.recoveries().length,1);assert.equal(api.backups().length,2);
 assert.equal(Files.create(repo).info().directory,destination);assert.equal(Files.create(repo).read().revision,second.revision);
