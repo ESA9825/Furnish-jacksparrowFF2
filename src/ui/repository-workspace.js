@@ -14,7 +14,7 @@
   return request('/workspace','PUT',body);
  }
  async function fingerprint(value){const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(C.text(value)));return Array.from(new Uint8Array(bytes),v=>v.toString(16).padStart(2,'0')).join('');}
- async function cache(value){if(value.v>=3)STORE='huxing-design-v'+value.v;const json=JSON.stringify(value);let cached=false;try{localStorage.setItem(STORE,json);cached=true;}catch{/* IndexedDB remains available. */}try{await window.FurnishStorage.writeSerialized(json);return true;}catch{return cached;}}
+ async function cache(value){if(value.v>=3)STORE='huxing-design-v'+value.v;const json=JSON.stringify(value);let cached=false;try{cached=window.FurnishStorage.writeQuick(STORE,json,{skipLarge:true});}catch{/* IndexedDB remains available. */}try{await window.FurnishStorage.writeSerialized(json);return true;}catch{return cached;}}
  let backendCheck=null,backendRoot=null;
  function ensureBackend(progress=()=>{}){
   if(backendCheck)return backendCheck;

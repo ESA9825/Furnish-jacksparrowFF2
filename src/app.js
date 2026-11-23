@@ -149,12 +149,12 @@ const undoStack = [], redoStack = [];
 // 自动保存：存储空间不足时先清掉历史快照再试；仍失败则明确提示（以前静默失败，刷新后布置会「消失」）
 let saveErr = false, savedAt = store.updatedAt||0, storageWiping = false, savePending=false;
 const autosave = FurnishAutosave.create({
-  writeCache: json => localStorage.setItem(STORE, json),
+  writeCache: json => window.FurnishStorage.writeQuick(STORE,json,{skipLarge:!!repositoryClient?.flush}),
   dropHistoryCache: () => localStorage.removeItem('huxing-history'),
-  writeStore: (value,json) => {repositoryClient?.schedule(value,json);return window.FurnishStorage.writeSerialized(json);},
+  writeStore: (value,json) => {repositoryClient?.schedule(value,json);return window.FurnishStorage.writeSerialized(json,{coalesce:true});},
   isCurrent: (value, version) => !storageWiping && store === value && store.updatedAt === version,
   onChange: status => { saveErr=status.error; savePending=status.pending; savedAt=status.savedAt; syncSaved(); },
-  onFailure: () => toast(tr('自动保存失败，请立即导出项目文件备份。','Autosave failed; export a project file now.')),
+  onFailure: () => {if(!repositoryClient)toast(tr('自动保存失败，请立即导出项目文件备份。','Autosave failed; export a project file now.'));},
 });
 function save({defer=false}={}){
   if(storageWiping)return;
@@ -192,13 +192,14 @@ function saveNow(){
   manualSaveTask=(async()=>{
     try{
       const draftNotice=!$('#dlg').hidden?'；编辑窗口中的草稿需先应用':'';
-      const cached=await autosave.save(store);
+      const cacheWrite=autosave.save(store);
       if(repositoryClient){
         if(!repositoryClient.flush)throw Error(repositoryClient.status.message);
         if(repositoryClient.status.mode==='error'&&repositoryClient.retry)await repositoryClient.retry();else await repositoryClient.flush();
         if(repositoryClient.blocked||repositoryClient.pending)throw Error(repositoryClient.status.message);
         syncSaved();toast('已保存到本地文件 '+new Date(repositoryClient.status.lastSavedAt||Date.now()).toLocaleTimeString()+draftNotice);
       }else{
+        const cached=await cacheWrite;
         if(!cached.cached&&!cached.durable)throw Error('本机恢复缓存保存失败，请导出项目备份');
         syncSaved();toast('已保存到本浏览器；直接打开 HTML 请通过导出项目保留文件备份。');
       }

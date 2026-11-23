@@ -37,7 +37,7 @@ function setup(options={}){
 
   const b=setup({cacheFails:true});const pending=b.saver.save(b.active);
   assert.equal(b.cacheWrites,2);assert.equal(b.drops,1);
-  assert.deepEqual(b.statuses[0],{error:true,pending:true,savedAt:42});
+  assert.deepEqual(b.statuses[0],{error:false,pending:true,savedAt:42});
   b.tasks[0].resolve();await pending;assert.equal(b.statuses.at(-1).error,false);
 
   const c=setup({cacheFails:true,dropFails:true,syncFailure:true});
@@ -65,6 +65,9 @@ function setup(options={}){
   let writes=0,drops=0;const statuses=[];
   const retry=create({writeCache:()=>{if(++writes===1)throw Error('quota');},dropHistoryCache:()=>drops++,writeStore:()=>Promise.reject(Error('offline')),isCurrent:()=>true,onChange:s=>statuses.push(s),onFailure:()=>assert.fail('cached save should not warn'),now:()=>7});
   await retry.save({updatedAt:1});assert.equal(writes,2);assert.equal(drops,1);assert.equal(statuses.at(-1).error,false);
+  // Skipping an oversized quick write must never evict an existing history.
+  const skip=create({writeCache:()=>false,dropHistoryCache:()=>assert.fail('quick write was skipped'),writeStore:async()=>{},isCurrent:()=>true,onChange(){},onFailure:()=>assert.fail('IndexedDB saved the project')});
+  assert.deepEqual(await skip.save({updatedAt:1}),{cached:false,durable:true});
   // Motion edits coalesce before serialization; closing/manual save flushes synchronously.
   const q=setup(),queued=q.saver.save(q.active,{defer:true});
   assert.equal(q.cacheWrites,0);assert.equal(q.statuses.at(-1).pending,true);

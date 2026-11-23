@@ -42,9 +42,9 @@
    // JSON is already an immutable snapshot. Materialize the object only for
    // fallback transports, recovery or explicit consumers of the save result.
    pending={json,get value(){const workspace=JSON.parse(json);workspace._repository={revision:savedRevision};return workspace;}};
-   if(blocked){publish(retryable?'error':'conflict',lastFailure||'文件保存已暂停；编辑保留在浏览器缓存');return;}
+   if(blocked){publish(retryable?'error':'conflict',lastFailure||'文件保存已暂停；请保留当前窗口');return;}
    const updating=running&&status.mode==='updating';
-   publish(updating?'updating':running?'pending':'dirty',updating?'后台更新中；新增修改已保留':running?'正在保存本地文件；新增修改已排队':'有未保存修改；按 Ctrl+S 立即保存，自动保存等待中（恢复缓存已保留）');
+   publish(updating?'updating':running?'pending':'dirty',updating?'后台更新中；新增修改已保留':running?'正在保存本地文件；新增修改已排队':'有未保存修改；按 Ctrl+S 立即保存，自动保存等待中');
    if(timer!==null&&!debounce)return;
    clearTimeout(timer);timer=setTimeout(()=>{timer=null;flush().catch(()=>{});},delay);
   }
@@ -71,8 +71,15 @@
     const receipt={get value(){return value.value;},revision};
     if(stopped)return receipt;
     // Newer cached edits retain this acknowledged version as their base.
-    lastSavedAt=Date.now();onAcknowledge(receipt);publish(pending?'pending':'saved',pending?'已缓存到浏览器，正在保存后续编辑…':'设计已保存到本地正式文件'+(result.warning?'；'+result.warning:''));return receipt;
-   }catch(e){if(stopped)throw e;pending=pending||value;blocked=true;retryable=e.status!==409;lastFailure=(e.status===409?'文件保存存在冲突，已停止覆盖：':e.code==='BACKEND_CACHE_UNAVAILABLE'?'尚未保存，当前编辑保留在窗口中：':'本地文件保存失败，编辑仍在浏览器缓存：')+e.message;if(e.code!=='BACKEND_CACHE_UNAVAILABLE')try{await archive(pending.value);}catch{/* Browser caches still retain the pending edit. */}publish(e.status===409?'conflict':'error',lastFailure);queueRetry(e);throw e;}
+    lastSavedAt=Date.now();onAcknowledge(receipt);publish(pending?'pending':'saved',pending?'正在保存后续编辑…':'设计已保存到本地正式文件'+(result.warning?'；'+result.warning:''));return receipt;
+   }catch(e){
+    if(stopped)throw e;
+    pending=pending||value;blocked=true;retryable=e.status!==409;
+    lastFailure=(e.status===409?'文件保存存在冲突，已停止覆盖：':'本地文件保存失败：')+e.message+'\n请保留当前窗口，直至正式文件保存成功。';
+    if(e.code!=='BACKEND_CACHE_UNAVAILABLE')try{await archive(pending.value);}catch{/* The edit remains queued even if archiving also fails. */}
+    if(!stopped)publish(e.status===409?'conflict':'error',lastFailure);
+    queueRetry(e);throw e;
+   }
    finally{running=null;}})();
    const result=await running;if(pending&&!blocked)await flush();return result;
   }

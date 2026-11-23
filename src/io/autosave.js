@@ -23,16 +23,16 @@
       const token = ++generation, version = value.updatedAt;
       const json = JSON.stringify(value), savedAt = now();
       let cached = false;
-      try { writeCache(json); cached = true; }
+      try { cached = writeCache(json)!==false; }
       catch(e){
-        try { dropHistoryCache(); writeCache(json); cached = true; }
+        try { dropHistoryCache(); cached = writeCache(json)!==false; }
         catch(retryError) { /* The durable store can still save this version. */ }
       }
       const current = () => token === generation && isCurrent(value, version);
       const publish = (error, pending) => {
         if(current()) onChange({error, pending, savedAt});
       };
-      publish(!cached, !cached);
+      publish(false, !cached);
       // Share the same immutable snapshot with both durable destinations.
       let task;
       try { task = writeStore(value,json); }
