@@ -226,9 +226,19 @@ main.drawer-panel #fab-editor{visibility:hidden}
 }
 
 .design-record{padding:12px;margin:10px 0;border:1px solid var(--line);border-radius:10px;overflow-wrap:anywhere}
-.design-history-check{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
-.design-history-check input{width:16px;height:16px;flex:none;margin:0;accent-color:var(--accent)}
-.design-history-removals{overflow-wrap:anywhere}
+#dlgBody:has(>.design-manager){display:flex;overflow:hidden}
+.design-manager{display:flex;flex-direction:column;width:100%;min-width:0}
+.design-manager-tabs,.design-manager-tools{flex:none;align-items:center}
+.design-manager-tabs{margin-top:0;padding-bottom:10px;border-bottom:1px solid var(--line)}
+.design-manager-panel{display:flex;flex-direction:column;min-height:0}
+.design-manager-panel[hidden]{display:none}
+.design-manager-tools{gap:10px;margin:10px 0}
+.design-manager-tools label{margin-inline-start:auto}
+.design-manager-list{overflow:auto;min-height:0}
+.design-manager-list .design-record:first-child{margin-top:0}
+.design-manager-check{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.design-manager-check input{width:16px;height:16px;flex:none;margin:0;accent-color:var(--accent)}
+.design-manager-removals{overflow-wrap:anywhere}
 @media print{.design-bar{display:none!important}}
 
 .layer-tree{display:grid;gap:5px}

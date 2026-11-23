@@ -30,64 +30,108 @@
   const labels={create:editable?['新建设计方案','New design']:['保存历史记录','Save history record'],rename:['编辑名称与备注','Edit name & notes'],update:['用当前布置更新方案','Update with current work'],duplicate:['复制为设计方案','Copy as design'],delete:['删除命名方案','Delete design']};
   openDialog({title:tr(...labels[action]),body:action==='delete'?`<p>${tr('删除','Delete')}「${esc(d.name)}」？${tr('当前画布布置会保留，备份文件中的方案不受影响。','The current canvas and exported backups are retained.')}</p>`:`${action==='update'?`<p class="project-note">${tr('将覆盖此方案的墙体、家具、材料、预算和三维展示设置。当前画布不会改变。','Replace this saved design with the current walls, furniture, materials, costs and 3D settings.')}</p>`:''}<div class="project-grid"><label>${tr('方案名称','Name')}<input id="design-name" maxlength="80" value="${esc(name)}"></label><label>${tr('备注','Notes')}<textarea id="design-note" maxlength="500" rows="3">${esc((action==='create'||action==='update'?state:d.work).designNote||'')}</textarea></label></div><p id="design-error" class="project-error" role="alert"></p>`,actions:[{label:tr('取消','Cancel')},{label:action==='delete'?tr('确认删除','Delete'):tr('保存','Save'),cls:action==='delete'?'danger':'primary',fn:()=>{try{saveDesignAction(action,{id,editable,name:$('#design-name')?.value,work:editable?fixWork(clone(action==='duplicate'?d.work:state),PLAN):clone(state),note:$('#design-note')?.value});return true;}catch(e){const target=$('#design-error');if(target)target.textContent=e.message;else toast(e.message);return false;}}}]});
  }
- function confirmHistoryDeletion(planId,records){
+ const designTabs=['designs','history'];
+ let designManagerTab='designs';
+ function confirmDesignDeletion(planId,tab,records,scrollTop){
+  const editable=tab==='designs';
   const count=records.length;
-  openDialog({title:tr('批量删除历史记录','Delete history records'),body:`
-   <p>${tr(`将删除以下 ${count} 条历史记录。删除后无法通过撤销恢复。`,`Delete the ${count} selected history records? This action cannot be undone.`)}</p>
-   <ul class="design-history-removals">${records.map(d=>`<li>${esc(d.name)}</li>`).join('')}</ul>
-   <p id="design-history-error" class="project-error" role="alert"></p>`,actions:[
-   {label:tr('取消','Cancel'),fn:()=>{designs({selection:records});$('#dlgActions .danger')?.focus();return false;}},
+  const scope=editable?tr(`${count} 个设计方案`,`${count} designs`):tr(`${count} 条历史记录`,`${count} history records`);
+  openDialog({title:editable?tr('批量删除设计方案','Delete designs'):tr('批量删除历史记录','Delete history records'),body:`
+   <p>${tr(`将删除以下 ${scope}。删除后无法通过撤销恢复。`,`Delete the following ${scope}? This action cannot be undone.`)}</p>
+   ${records.includes(D.activeDesign(store,planId))?`<p>${tr('所选包含当前方案。确认后，当前画布将作为「当前布置」保留。','The selection includes the active design. The canvas will be kept as the current layout.')}</p>`:''}
+   <ul class="design-manager-removals">${records.map(d=>`<li>${esc(d.name)}</li>`).join('')}</ul>
+   <p id="design-manager-error" class="project-error" role="alert"></p>`,actions:[
+   {label:tr('取消','Cancel'),fn:()=>{
+    designs({tab,selection:records,scrollTop});
+    $('#design-manager-panel-'+tab+' [data-delete-selected]')?.focus();
+    return false;
+   }},
    {label:tr('确认删除','Confirm deletion'),cls:'danger',fn:()=>{
     try{
      if(PLAN.id!==planId||repositoryBooting||storageWiping)throw Error(tr('方案列表已变化，请重新打开方案管理。','The design list changed. Reopen designs and history.'));
-     store.designs=D.deleteDesignHistory(store.designs,planId,records);
-    }catch(e){$('#design-history-error').textContent=e.message;return false;}
-    save();renderDesigns();designs();
-    toast(tr(`已删除 ${count} 条历史记录`,`Deleted ${count} history records`));
+     Object.assign(store,D.deleteDesignRecords(store,planId,records,editable));
+    }catch(e){$('#design-manager-error').textContent=e.message;return false;}
+    save();renderDesigns();designs({tab,scrollTop});
+    toast(tr(`已删除 ${scope}`,`Deleted ${scope}`));
     return false;
    }}]});
   $('#dlgBody').scrollTop=0;
  }
 
- function designs({selection=[]}={}){
+ function designs({tab=designManagerTab,selection=[],scrollTop=0}={}){
   const planId=PLAN.id,rows=store.designs.filter(d=>d.planId===planId);
-  const editableRows=rows.filter(d=>d.editable===true),historyRows=rows.filter(d=>d.editable!==true);
-  const group=(entries,editable)=>entries.map((d,index)=>{
-   const title=editable?`<b>${esc(d.name)}</b>`:`<label class="design-history-check"><input type="checkbox" data-history-index="${index}" ${selection.includes(d)?'checked':''}><b>${esc(d.name)}</b></label>`;
+  const entries={designs:rows.filter(d=>d.editable===true),history:rows.filter(d=>d.editable!==true)};
+  const names={designs:tr('设计方案','Designs'),history:tr('历史记录','History')};
+  const group=(key)=>entries[key].map((d,index)=>{
+   const editable=key==='designs';
+   const title=`<label class="design-manager-check"><input type="checkbox" data-design-select-index="${index}" ${selection.includes(d)?'checked':''}><b>${esc(d.name)}</b></label>`;
    const actions=editable?[['load','切换','Switch'],['rename','名称／备注','Name / notes'],['duplicate','复制为新方案','Copy as design'],['delete','删除','Delete']]:[['load','恢复到当前方案','Restore into current'],['duplicate','复制为设计方案','Copy as design'],['rename','名称／备注','Name / notes'],['delete','删除','Delete']];
    return `<article class="design-record">${title}<p>${d.work.furniture.length} ${tr('件家具','items')} · ${esc(new Date(d.ts).toLocaleString())}<br>${esc(d.work.designNote||'')}</p><div class="actions">${actions.map(([action,zh,en])=>`<button class="btn" data-design-action="${action}" data-design-id="${esc(d.id)}">${tr(zh,en)}</button>`).join('')}</div></article>`;
   }).join('')||`<p>${tr('暂无记录','No records')}</p>`;
-  const selectedRecords=()=>[...document.querySelectorAll('#dlgBody [data-history-index]:checked')].map(input=>historyRows[Number(input.dataset.historyIndex)]);
-  const deleteLabel=tr('删除所选历史','Delete selected history');
-  const actions=[{label:tr('关闭','Close')}];
-  if(historyRows.length)actions.push({label:deleteLabel,cls:'danger',fn:()=>{
-   const records=selectedRecords();
-   if(records.length)confirmHistoryDeletion(planId,records);
-   return false;
-  }});
-  openDialog({title:tr('方案与历史管理','Designs and history'),wide:true,body:`
-   <p>${tr('设计方案独立自动保存。历史记录保留旧版本，恢复会替换当前方案内容并可撤销。','Designs save independently. Restoring history replaces the current design and can be undone.')}</p>
-   <button class="btn primary" id="design-create">${tr('新建设计方案','New design')}</button>
-   <button class="btn" id="design-history">${tr('保留当前历史记录','Save history record')}</button>
-   <h3>${tr('设计方案','Designs')}</h3>${group(editableRows,true)}
-   <h3>${tr('历史记录','History')}</h3>
-   ${historyRows.length?`<label class="design-history-check"><input type="checkbox" id="design-history-all">${tr('全选历史记录','Select all history records')}</label>`:''}
-   ${group(historyRows,false)}`,actions,onOpen:()=>{
+  const deleteLabels={designs:tr('删除所选方案','Delete selected designs'),history:tr('删除所选历史','Delete selected history')};
+  const tabMarkup=key=>`<button class="btn ${key===tab?'on':''}" id="design-manager-tab-${key}" role="tab" aria-selected="${key===tab}" aria-controls="design-manager-panel-${key}" tabindex="${key===tab?0:-1}">${names[key]}</button>`;
+  const panelMarkup=key=>{
+   const editable=key==='designs';
+   const create=editable?`<button class="btn primary" id="design-create">${tr('新建设计方案','New design')}</button>`:`<button class="btn" id="design-history">${tr('保留当前历史记录','Save history record')}</button>`;
+   return `<section class="design-manager-panel" id="design-manager-panel-${key}" role="tabpanel" aria-labelledby="design-manager-tab-${key}" ${key!==tab?'hidden':''}>
+    <div class="actions design-manager-tools">${create}${entries[key].length?`
+     <label class="design-manager-check"><input type="checkbox" data-select-all>${editable?tr('全选设计方案','Select all designs'):tr('全选历史记录','Select all history records')}</label>
+     <button class="btn danger" data-delete-selected disabled>${deleteLabels[key]}</button>`:''}</div>
+    <div class="design-manager-list">${group(key)}</div>
+   </section>`;
+  };
+  openDialog({title:tr('方案与历史管理','Designs and history'),wide:true,body:`<div class="design-manager">
+   <div class="actions design-manager-tabs" role="tablist" aria-label="${tr('方案与历史','Designs and history')}">${designTabs.map(tabMarkup).join('')}</div>
+   ${designTabs.map(panelMarkup).join('')}
+  </div>`,actions:[{label:tr('关闭','Close')}],onOpen:()=>{
    $('#design-create').onclick=()=>editDesign('create',undefined,true);$('#design-history').onclick=()=>editDesign('create');
    document.querySelectorAll('#dlgBody [data-design-action]').forEach(b=>b.onclick=()=>{const id=b.dataset.designId,d=rows.find(d=>d.id===id);if(b.dataset.designAction==='load'){closeDialog();if(d?.editable===true)switchDesign(id);else restoreDesignHistory(id);}else editDesign(b.dataset.designAction,id);});
-   if(!historyRows.length)return;
-   const all=$('#design-history-all'),checks=[...document.querySelectorAll('#dlgBody [data-history-index]')],remove=$('#dlgActions .danger');
-   const updateSelection=()=>{
-    const count=checks.filter(input=>input.checked).length;
-    all.checked=count===checks.length;
-    all.indeterminate=count>0&&!all.checked;
-    remove.disabled=count===0;
-    remove.textContent=count?`${deleteLabel} (${count})`:deleteLabel;
+   const tabs=designTabs.map(key=>$('#design-manager-tab-'+key));
+   const panels=designTabs.map(key=>$('#design-manager-panel-'+key));
+   const activate=index=>{
+    designManagerTab=designTabs[index];
+    tabs.forEach((button,i)=>{
+     const selected=i===index;
+     button.tabIndex=selected?0:-1;
+     button.setAttribute('aria-selected',String(selected));
+     button.classList.toggle('on',selected);
+     panels[i].hidden=!selected;
+    });
+    tabs[index].focus({preventScroll:true});
    };
-   all.onchange=()=>{checks.forEach(input=>input.checked=all.checked);updateSelection();};
-   checks.forEach(input=>input.onchange=updateSelection);
-   updateSelection();
+   tabs.forEach((button,index)=>{
+    button.onclick=()=>activate(index);
+    button.onkeydown=e=>{
+     if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
+     e.preventDefault();e.stopPropagation();
+     activate(e.key==='Home'?0:e.key==='End'?tabs.length-1:1-index);
+    };
+   });
+   panels.forEach((panel,i)=>{
+    const key=designTabs[i],all=panel.querySelector('[data-select-all]');
+    if(!all)return;
+    const list=panel.querySelector('.design-manager-list'),remove=panel.querySelector('[data-delete-selected]');
+    const checks=[...list.querySelectorAll('[data-design-select-index]')];
+    const selected=()=>checks.filter(input=>input.checked);
+    const updateSelection=()=>{
+     const count=selected().length;
+     all.checked=count===checks.length;
+     all.indeterminate=count>0&&!all.checked;
+     remove.disabled=count===0;
+     remove.textContent=count?`${deleteLabels[key]} (${count})`:deleteLabels[key];
+    };
+    all.onchange=()=>{checks.forEach(input=>input.checked=all.checked);updateSelection();};
+    checks.forEach(input=>input.onchange=updateSelection);
+    remove.onclick=()=>{
+     const records=selected().map(input=>entries[key][Number(input.dataset.designSelectIndex)]);
+     if(records.length)confirmDesignDeletion(planId,key,records,list.scrollTop);
+    };
+    updateSelection();
+   });
   }});
+  designManagerTab=tab;
+  $('#design-manager-tab-'+tab).focus({preventScroll:true});
+  $('#design-manager-panel-'+tab+' .design-manager-list').scrollTop=scrollTop;
  }
 
  function placementPanel(f,{shownIssues=[]}={}){const plan=P.effectivePlan(PLAN,state),gaps=D.wallGaps(plan,f),issues=P.spaceCheck(plan,state.furniture,{focusId:f.id,scanPassages:false}).filter(v=>!shownIssues.some(shown=>shown.id===v.id&&shown.kind===v.kind&&shown.message===v.message));

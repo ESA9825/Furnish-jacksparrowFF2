@@ -457,13 +457,16 @@
   else Object.assign(current,{name:title,ts:now,work:next,...(editable===true?{editable:true}:{})});
   return copy;
  }
- function deleteDesignHistory(list,planId,records){
-  if(!records.length)throw Error('请选择要删除的历史记录');
+ function deleteDesignRecords(workspace,planId,records,editable){
+  if(!records.length)throw Error('请选择要删除的记录');
   // Use the listed records themselves so legacy entries with missing or shared IDs stay individually selectable.
   const remaining=new Set(records);
-  const next=list.filter(d=>d.planId!==planId||d.editable===true||!remaining.delete(d));
-  if(remaining.size)throw Error('历史记录已变化，请重新打开方案管理');
-  return next;
+  const designs=workspace.designs.filter(d=>d.planId!==planId||(d.editable===true)!==editable||!remaining.delete(d));
+  if(remaining.size)throw Error('方案列表已变化，请重新打开方案管理');
+  if(!editable||!records.includes(activeDesign(workspace,planId)))return {designs};
+  const activeDesigns={...workspace.activeDesigns};
+  delete activeDesigns[planId];
+  return {designs,activeDesigns};
  }
  // Active selection is workspace metadata; work records and project snapshots stay independent.
  function activeDesign(workspace,planId){return workspace.designs.find(d=>d.editable===true&&d.planId===planId&&d.id===workspace.activeDesigns?.[planId]);}
@@ -478,6 +481,6 @@
   (workspace.activeDesigns||={})[planId]=workspace.designs.at(-1).id;
  }
  root.FurnishDesign={applyInventoryArray,inventoryMembers,attachInventoryArray,editInventoryArray,validateInventoryArrays,normalizeInventoryArrays,transformFurniture,products,showerInstallation,laundryStack,normalizeLaundryStacks,uses,inferUse,styleFloor,bounds,resizeAnchors,resizeAnchorPosition,cabinetResizeAnchors,resizeAnchorChoices,resizeFurniture,replaceFurniture,expandGroups,groupFurniture,ungroupFurniture,pasteFurniture,catalogSnapshot,catalogSource,restoreNotes,restoreFurniture,deliveryBounds,measurementGeometry,wallGaps,furnitureVerticalBounds,furnitureHeightMeasurements,planFurnitureOrder,waterheaterClearances,placeAtGap,placeAtDirectionalGap,placeSelectionAtDirectionalGap,sceneSettings,patchSceneSettings,validateSceneSettings,manageDesign,activeDesign,saveActiveDesign,preserveCurrentDesign};
- Object.assign(root.FurnishDesign,{applyCabinetTemplate,deleteDesignHistory});
+ Object.assign(root.FurnishDesign,{applyCabinetTemplate,deleteDesignRecords});
  if(typeof module!=='undefined')module.exports=root.FurnishDesign;
 })(typeof window==='undefined'?globalThis:window);

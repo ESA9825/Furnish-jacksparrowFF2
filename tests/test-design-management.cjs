@@ -19,20 +19,27 @@ designs=D.manageDesign(designs,'p1','delete',{id:designs[0].id});assert.equal(de
 const history=designs[0];
 const legacy={name:'Legacy history',planId:'p1',work};
 const keep={...history,name:'Unselected history'};
-const active={...history,name:'Editable design',editable:true};
+const active={...history,id:'active',name:'Active design',editable:true};
+const spare={...history,id:'spare',name:'Another editable design',editable:true};
 const other={...history,name:'Other plan history',planId:'p2'};
-const mixed=[history,legacy,keep,active,other];
-const beforeDeletion=JSON.stringify(mixed);
-const afterDeletion=D.deleteDesignHistory(mixed,'p1',[legacy,history,history]);
-assert.deepEqual(afterDeletion,[keep,active,other]);
-assert.equal(JSON.stringify(mixed),beforeDeletion);
-assert.deepEqual(D.deleteDesignHistory(afterDeletion,'p1',[keep]),[active,other]);
-assert.throws(()=>D.deleteDesignHistory(mixed,'p1',[]),/请选择/);
+const workspace={designs:[history,legacy,keep,active,spare,other],activeDesigns:{p1:active.id,p2:'unrelated'}};
+const beforeDeletion=JSON.stringify(workspace);
+const afterDeletion=D.deleteDesignRecords(workspace,'p1',[legacy,history,history],false);
+assert.deepEqual(afterDeletion,{designs:[keep,active,spare,other]});
+assert.equal(JSON.stringify(workspace),beforeDeletion);
+assert.deepEqual(D.deleteDesignRecords(afterDeletion,'p1',[keep],false),{designs:[active,spare,other]});
+assert.throws(()=>D.deleteDesignRecords(workspace,'p1',[],false),/请选择/);
 for(const invalid of [active,other,{...history}]){
- assert.throws(()=>D.deleteDesignHistory(mixed,'p1',[legacy,invalid]),/已变化/);
- assert.equal(JSON.stringify(mixed),beforeDeletion);
+ assert.throws(()=>D.deleteDesignRecords(workspace,'p1',[legacy,invalid],false),/已变化/);
+ assert.equal(JSON.stringify(workspace),beforeDeletion);
 }
-assert.throws(()=>D.deleteDesignHistory(afterDeletion,'p1',[legacy]),/已变化/);
+assert.throws(()=>D.deleteDesignRecords(afterDeletion,'p1',[legacy],false),/已变化/);
+assert.throws(()=>D.deleteDesignRecords(workspace,'p1',[spare,history],true),/已变化/);
+assert.deepEqual(D.deleteDesignRecords(workspace,'p1',[spare],true),{designs:[history,legacy,keep,active,other]});
+assert.deepEqual(D.deleteDesignRecords(workspace,'p1',[active,spare],true),{
+ designs:[history,legacy,keep,other],activeDesigns:{p2:'unrelated'},
+});
+assert.equal(JSON.stringify(workspace),beforeDeletion);
 
 // A distance edit cannot move furniture to another room through a solid divider.
 const plan={walls:[[-100,0,0,3000],[1900,0,2100,3000],[4000,0,4100,3000]],rooms:[{poly:[[0,0],[1900,0],[1900,3000],[0,3000]]},{poly:[[2100,0],[4000,0],[4000,3000],[2100,3000]]}],wins:[]};

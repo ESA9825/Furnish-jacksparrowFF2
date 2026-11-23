@@ -31,7 +31,7 @@ async (page,verification)=>{
    await p.locator('#design-select').selectOption(a);
    if(await p.evaluate(()=>state.designNote)!=='A second')throw Error('A persistence');
    if(await p.evaluate(()=>JSON.stringify(store.designs.filter(d=>!d.editable)))!==history)throw Error('History mutated');
-   await p.locator('#bar-manage-designs').click();await p.locator('#dlg').getByRole('heading',{name:'历史记录',exact:true}).waitFor();await p.locator('#dlgActions').getByRole('button',{name:'关闭',exact:true}).click();
+   await p.locator('#bar-manage-designs').click();await p.locator('#dlg').getByRole('tab',{name:'历史记录',exact:true}).click();await p.locator('#dlg').getByRole('tabpanel',{name:'历史记录',exact:true}).waitFor();await p.locator('#dlgActions').getByRole('button',{name:'关闭',exact:true}).click();
    // History is immutable while restoring it updates only the current design.
    await p.evaluate(()=>FurnishDesignUI.editDesign('create'));
    await p.locator('#design-name').fill('验收历史');await p.locator('#dlgActions').getByRole('button',{name:'保存',exact:true}).click();
