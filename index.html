@@ -622,6 +622,7 @@
 <script src="src/core/board-motion-collision.js"></script>
 <script src="src/render/solid-cut.js"></script>
 <script src="src/render/scene-observation.js"></script>
+<script src="src/render/raster-shadows.js"></script>
 <script src="src/render/selection-transform.js"></script>
 <script src="src/render/scene-measure.js"></script>
 <script src="src/core/product-pose.js"></script>
@@ -888,6 +889,7 @@ function init(){
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   FurnishBathHeaterModel.installRaster(THREE);
   continuousCove=FurnishCoveLightModel.installRaster(THREE);
+  FurnishRasterShadows.install(THREE);
   renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;
   renderer.localClippingEnabled=true;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
