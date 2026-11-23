@@ -28,7 +28,7 @@ const path=require('node:path'),tempBase=path.resolve(__dirname,'../output/playw
   const atlas=[],patterns=[];
   global.document={createElement:()=>{
    const canvas={getContext:()=>({
-    fillRect(){},createImageData(w,h){return {data:new Uint8ClampedArray(w*h*4)};},
+    fillRect(...rect){(canvas.fills??=[]).push([this.fillStyle,...rect]);},createImageData(w,h){return {data:new Uint8ClampedArray(w*h*4)};},
     putImageData(image){canvas.pixels=image.data;},drawImage(face,x,y,w,h){
      atlas.push([x,y,w,h]);patterns.push(Array.from({length:16},(_,i)=>face.pixels[i*7919*4%face.pixels.length]));
     }
@@ -46,6 +46,13 @@ const path=require('node:path'),tempBase=path.resolve(__dirname,'../output/playw
   assert.deepEqual(tileShader.uniforms.furnishJoint.value.toArray(),[2/802,2/402]);assert.match(tileShader.fragmentShader,/tileUV=vMapUv\*2\.0/);
   assert.match(tileShader.fragmentShader,/material.clearcoat\*=1\.0-tileJoint/);
   preview.clear();assert.equal(tiledMesh.material,porcelain);porcelain.map.dispose();porcelain.dispose();
+  for(const floorKind of ['tile800','tile600']){
+   const draws=atlas.length,color='#dfd4c2',gloss=M.material(T,layout,{floorKind,sheen:'gloss',color,groutColor:'#000000'});
+   assert.equal(atlas.length,draws,'Gloss uses uniform fills without generated grain');
+   assert.deepEqual(gloss.map.image.fills,[['#000000',0,0,512,512],...[0,256].flatMap(y=>[0,256].map(x=>[color,x,y,256*800/802,256*400/402]))]);
+   assert.notEqual(gloss.customProgramCacheKey(),porcelain.customProgramCacheKey());
+   gloss.map.dispose();gloss.dispose();
+  }
   const coats=['gloss','satin','matte'].map(sheen=>M.material(T,layout,{floorKind:'tile800',sheen}));
   assert(coats[0].roughness<coats[1].roughness&&coats[1].roughness<coats[2].roughness);
   assert(coats[0].clearcoat>coats[1].clearcoat&&coats[1].clearcoat>coats[2].clearcoat);
@@ -60,11 +67,14 @@ const path=require('node:path'),tempBase=path.resolve(__dirname,'../output/playw
   M.copyTileReflection(T,coats[0],decorated,{alreadyWrapped:true});tiledMesh.material=decorated;
   preview.update({floorGroup,roomId:b,kind:'floor',color:'#654321'});
   assert.equal(tiledMesh.material.roughness,coats[0].roughness);
-  const glazedShader={uniforms:{},vertexShader:'#include <project_vertex>',fragmentShader:'#include <map_fragment>\n#include <lights_fragment_end>'};
+  const glazedShader={uniforms:{},vertexShader:'#include <project_vertex>',fragmentShader:'#include <map_fragment>\n#include <roughnessmap_fragment>\n#include <lights_physical_fragment>\n#include <lights_fragment_end>'};
   tiledMesh.material.onBeforeCompile(glazedShader);
   assert.equal(glazedShader.uniforms.furnishTileSky,sky);
   assert.deepEqual(glazedShader.uniforms.furnishTileWindowCenters.value[0].toArray(),[...windows[0].center,windows[0].divisions]);
   assert.match(glazedShader.fragmentShader,/sheen\*\(0.11\+0.34\*edge\*edge\)\*\(1.0-tileJoint\)/);
+  assert.match(glazedShader.fragmentShader,/roughnessFactor=mix\(roughnessFactor,0\.82,tileJoint\)/);
+  assert.doesNotMatch(glazedShader.fragmentShader,/float tone=|diffuseColor\.rgb\*=/);
+  assert.equal(tiledMesh.material.map.image.fills[0][0],'#654321');
   preview.clear();decorated.dispose();for(const coat of coats){coat.map.dispose();coat.dispose();}
   shared.map.dispose();shared.dispose();geo.dispose();
  }finally{if(prior===undefined)delete global.document;else global.document=prior;}

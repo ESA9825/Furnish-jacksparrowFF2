@@ -1185,7 +1185,7 @@ function floorMat(kind,color,{refined=false,sheen}={}){
       });
       g.fillStyle = rgbK(s.base, .62); g.fillRect(0, r*rowH, W, 2.5);
     }
-  } else if (refined){
+  } else if (refined&&sheen!=='gloss'){
     // Satin, warm-neutral ceramic at the existing tile pitch. Work in
     // normalized tile coordinates and leave the grout pixels to their owner.
     const underlying=g.getImageData(0,0,W,Hh);
@@ -1202,7 +1202,7 @@ function floorMat(kind,color,{refined=false,sheen}={}){
   } else if (kind === 'terrazzo'){
     const cs = ['#b9a58c','#8fa3a0','#c9b7a2','#a88f76','#7e8a86'];
     for (let k = 0; k < 160; k++){ g.fillStyle = cs[k%5]; g.beginPath(); g.arc(R()*W, R()*Hh, 2 + R()*7, 0, 7); g.fill(); }
-  } else {
+  } else if(sheen!=='gloss'){
     for (let k = 0; k < 1500; k++){ g.fillStyle = `rgba(0,0,0,${R()*.04})`; g.fillRect(R()*W, R()*Hh, 2, 2); }
   }
   if (s.grout){ g.fillStyle = FurnishTileGrout.autoColor(s.base); g.fillRect(0, 0, W, 3); g.fillRect(0, 0, 3, Hh); }
