@@ -29,6 +29,26 @@ async function checkComposition(){
  assert.match(html,/FurnishCoveLightModel.installRaster\(THREE\);\s*FurnishRasterShadows.install\(THREE\);/);
 }
 
+function checkSolarPass(){
+ const sun={},spot={},envelope={visible:false},passes=[];
+ const shadows={needsUpdate:true,render(lights){
+  passes.push({lights,envelope:envelope.visible,dirty:this.needsUpdate});
+  this.needsUpdate=false;
+ }};
+ const move=Shadows.solarPass(shadows,sun,envelope);
+ const draw=(lights=[spot,sun])=>{passes.length=0;shadows.render(lights);assert.equal(envelope.visible,false);return [...passes];};
+ assert.deepEqual(draw(),[
+  {lights:[sun],envelope:true,dirty:true},{lights:[spot],envelope:false,dirty:true}
+ ]);
+ assert.deepEqual(draw(),[]);
+ move();
+ assert.deepEqual(draw([spot]),[],'A hidden sun keeps its pending refresh');
+ assert.deepEqual(draw(),[{lights:[sun],envelope:true,dirty:true}]);
+ shadows.needsUpdate=true;
+ assert.deepEqual(draw([sun]),[{lights:[sun],envelope:true,dirty:true}]);
+ assert.equal(shadows.needsUpdate,false,'A sun-only scene returns to idle');
+}
+
 async function checkWebGL(){
  const V=require('../scripts/lib/browser-verification.cjs');
  const launch=V.configuration().launchOptions;
@@ -150,9 +170,39 @@ async function checkWebGL(){
    };
    const edges={sparse:sampleEdge(sparse,-2.9,'sparse'),standard:sampleEdge(fixed,1,'standard'),
     wide:sampleEdge(fixed,-2.9,'wide')};
+   const room=new T.Scene(),overhead=new T.OrthographicCamera(-2,2,2,-2,.01,10);
+   overhead.position.set(0,5,0);overhead.up.set(0,0,-1);overhead.lookAt(0,0,0);
+   const floor=new T.Mesh(new T.PlaneGeometry(4,4),new T.MeshStandardMaterial({color:0xaaaaaa}));
+   floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;
+   const roof=new T.Mesh(new T.BoxGeometry(4,.04,4),new T.MeshBasicMaterial());
+   roof.position.y=2;roof.castShadow=true;
+   const jambs=new T.Group();
+   for(const [width,height,x,y] of [[1.5,2,-1.25,1],[1.5,2,1.25,1],[1,.6,0,.3],[1,.4,0,1.8]]){
+    const wall=new T.Mesh(new T.BoxGeometry(width,height,.08),roof.material);
+    wall.position.set(x,y,-2);wall.castShadow=true;jambs.add(wall);
+   }
+   const glass=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshPhysicalMaterial({transparent:true,opacity:.18,depthWrite:false,side:T.DoubleSide}));
+   glass.position.set(0,1.1,-2);
+   const envelope=new T.Group();envelope.add(roof,jambs);envelope.visible=false;
+   const daylight=new T.DirectionalLight(0xffffff,3);daylight.castShadow=true;
+   daylight.shadow.mapSize.setScalar(1024);
+   Object.assign(daylight.shadow.camera,{left:-4,right:4,bottom:-4,top:4,near:.1,far:25});
+   daylight.position.set(0,5,-10);
+   room.add(floor,glass,envelope,daylight,daylight.target,new T.AmbientLight(0xffffff,.25));
+   renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;
+   const updateSun=FurnishRasterShadows.solarPass(renderer.shadowMap,daylight,envelope);
+   function sampleFloor(){
+    renderer.setRenderTarget(target);renderer.render(room,overhead);
+    renderer.readRenderTargetPixels(target,0,0,size,size,pixels);
+    return [[128,128],[64,128],[128,35]].map(([x,y])=>pixels[(y*size+x)*4]);
+   }
+   const low=sampleFloor();
+   daylight.position.set(0,10,0);updateSun();
+   const overheadOnly=sampleFloor();
+   const daylightSamples={low,overheadOnly};
    renderer.dispose();
    target.dispose();
-   return {results,edges};
+   return {results,edges,daylightSamples};
   });
   assert.deepEqual(errors,[]);
   for(const sample of results.results){
@@ -164,12 +214,16 @@ async function checkWebGL(){
   assert(sparse.reverse>100,'The stretched taps must reproduce edge shimmer: '+JSON.stringify(results.edges));
   assert.equal(wide.reverse,0,'The wide penumbra darkens smoothly across texel boundaries');
   assert(wide.transition>standard.transition*1.2,'The corrected wide filter still softens the edge');
-  console.log('PASS WebGL shadow bands, independent occluder and wide penumbra',results);
+  const {low,overheadOnly}=results.daylightSamples;
+  assert(low[0]>low[1]+25&&low[0]>low[2]+25,'A low sun lights the floor through the glazing only');
+  assert(overheadOnly.every(value=>Math.abs(value-low[1])<=2),'Overhead sun is blocked while the roof stays out of the color pass');
+  console.log('PASS WebGL shadow bands, independent occluder, wide penumbra and window daylight',results);
  }finally{await browser.close();}
 }
 
 (async()=>{
  await checkComposition();
- console.log('PASS raster shadow shader composition and idempotence');
+ checkSolarPass();
+ console.log('PASS raster shadow shader composition, idempotence and independent solar cache');
  if(process.argv.includes('--webgl'))await checkWebGL();
 })().catch(error=>{console.error(error);process.exitCode=1;});

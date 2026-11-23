@@ -6,7 +6,7 @@
     "three-mesh-bvh": "0.9.17",
     "oidn-webgpu": "0.6.0"
   },
-  "patchSet": 1,
+  "patchSet": 2,
   "policy": "Pinned local ESM graph; local imports and reproducible guarded Furnish kernel adaptations. No runtime CDN.",
   "weightsSource": "https://raw.githubusercontent.com/pissang/oidn-webgpu/main/weights/rt_hdr_alb_nrm_small.tza",
   "files": [
@@ -152,7 +152,7 @@
     },
     {
       "path": "three-gpu-pathtracer/src/webgpu/nodes/PathtracerBVHComputeData.js",
-      "sha256": "bb024ff8320542fee895fe4de6dd8e5136b542a9b17833b63dcf9bc9e7c52dc8",
+      "sha256": "f232d5cd748c4de1fae01152b04428e2a96b834cc1b4ee9e5cc97e4c4691b399",
       "sourceSha256": "eacabb5282cced97f4316178e419e2c3a9a1dd66f53c555f7954e2cf93f8bea7"
     },
     {

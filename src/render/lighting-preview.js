@@ -59,6 +59,14 @@ async function run(data){
   if(stopped)return;status('正在读取生产模型…');
   const gltf=await new GLTFLoader().parseAsync(data.buffer,'');if(stopped)return;
   scene=new T.Scene();scene.add(gltf.scene);scene.background=new T.Color(data.environment.background);scene.environment=new T.Color().fromArray(data.environment.world);scene.environmentIntensity=1;
+  if(data.solarEnvelope instanceof Float32Array&&data.solarEnvelope.length){
+   const geometry=new T.BufferGeometry();
+   geometry.setAttribute('position',new T.BufferAttribute(data.solarEnvelope,3));
+   geometry.computeVertexNormals();
+   const blocker=new T.Mesh(geometry,new T.MeshStandardMaterial());
+   blocker.visibleToSurfaceRays=false;
+   scene.add(blocker);
+  }
   const camera=gltf.cameras[0];if(!camera)throw Error('场景缺少相机');camera.aspect=data.aspect;camera.updateProjectionMatrix();if(live){camera.removeFromParent();scene.add(camera);liveCamera=camera;liveProjection=globalThis.FurnishProgressivePolicy.projectionMatrix(data.camera?.projectionMatrix);camera.updateProjectionMatrix=updateLiveProjection;updateLiveProjection();}scene.updateMatrixWorld(true);
   // Workers transfer position/index buffers and reorder indices. Isolate only
   // those inputs per unique geometry; normals/UVs/colors remain read-only.

@@ -9,7 +9,7 @@ in `manifest.json`. Package licenses and the weights' Apache 2.0 license are
 included. Imports, including the BVH worker, use local relative paths; the Windows
 reserved basename `aux.wgsl.js` is published as `furnish-aux.wgsl.js`.
 
-Patch set 1 adds guarded Furnish kernel adaptations in five WebGPU modules.
+Patch set 2 adds guarded Furnish kernel adaptations in six WebGPU modules.
 `scripts/lib/lighting-preview-patches.cjs` verifies the pinned rewritten source
 hashes before applying them, and the existing vendor script reproduces the output.
 The manifest retains original package hashes and records the adapted file hashes.
@@ -21,6 +21,9 @@ avoids a full-image copy per iteration only when the WGSL feature is available;
 other devices retain the two-texture path. The pixel pool owns at most one active
 path per pixel. Sampling, glass attenuation, clearcoat, physical parameters and
 OIDN are unchanged. See the [validation](../../docs/validation/progressive-kernel-20261117/README.md).
+The BVH transformation record also flags the structural occluders used by
+cutaway daylight. They take part in shadow ray queries and are skipped by
+surface ray queries. Normal production meshes retain both query paths.
 
 To reproduce, use a separate directory with the exact package versions in the
 manifest, and run `node scripts/vendor-lighting-preview.cjs <node_modules>

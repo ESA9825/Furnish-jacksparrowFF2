@@ -15,7 +15,7 @@ const transformStruct = new StructTypeNode( {
 	visible: 'uint',
 	materialIndex: 'uint',
 	visibleToShadowRays: 'uint',
-	_alignment0: 'uint',
+	visibleToSurfaceRays: 'uint',
 	color: 'vec4f',
 }, 'TransformStruct' );
 
@@ -199,6 +199,7 @@ export class PathtracerBVHComputeData extends BVHComputeData {
 		// surfaces, and stop at the first opaque hit
 		const isShadowRay = bool( false ).toVar( 'bvh_isShadowRay' );
 		const skipShadowObject = bool( false ).toVar( 'bvh_skipShadowObject' );
+		const skipSurfaceObject = bool( false ).toVar( 'bvh_skipSurfaceObject' );
 
 		const raycastOptions = {
 			shapeStruct: rayStruct,
@@ -258,6 +259,8 @@ export class PathtracerBVHComputeData extends BVHComputeData {
 			`,
 			intersectRangeFn: wgslTagFn/* wgsl */`
 				fn intersectRange( ray: ${ rayStruct }, offset: u32, count: u32, result: ptr<function, ${ intersectionResultStruct }> ) -> bool {
+
+					if ( ${ skipSurfaceObject } ) { return false; }
 
 					var didHit = false;
 					for ( var ti = offset; ti < offset + count; ti = ti + 1u ) {
@@ -409,6 +412,7 @@ export class PathtracerBVHComputeData extends BVHComputeData {
 					}
 
 					${ skipShadowObject } = ${ isShadowRay } && object.visibleToShadowRays == 0u;
+					${ skipSurfaceObject } = ! ${ isShadowRay } && object.visibleToSurfaceRays == 0u;
 
 				}
 			`,
@@ -1030,6 +1034,7 @@ export class PathtracerBVHComputeData extends BVHComputeData {
 		// whether shadow rays see the object, in the slot after the material index
 		const transformBufferU32 = new Uint32Array( targetBuffer );
 		transformBufferU32[ writeOffset * this.structs.transform.getLength() + 34 ] = info.object.visibleToShadowRays === false ? 0 : 1;
+		transformBufferU32[ writeOffset * this.structs.transform.getLength() + 35 ] = info.object.visibleToSurfaceRays === false ? 0 : 1;
 
 	}
 

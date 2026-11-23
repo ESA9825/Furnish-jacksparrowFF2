@@ -807,6 +807,9 @@ const GRAPHICS_IDLE_MS=20000;
 let graphicsIdleTimer=0,graphicsParked=false,graphicsExtension=null,parkedPose=null;
 let renderer, labelRenderer, scene, camera, orbit, walkCtl, hemi, sun, ground, glassMat, wallMat, capMat, frameMat;
 let interiorDaylight,viewportAO,continuousCove=false;
+let solarEnvelope,solarEnvelopeMaterial,requestSunShadow,nativeSunMapSize,spareSunMap=null,sunMapPreview=false;
+const solarVertices=[];
+const sunPreviewDetails=[];
 const gtaoButton=$('#viewport-gtao'),bloomButton=$('#viewport-bloom'),smaaButton=$('#viewport-smaa');
 let gtaoEnabled=false,bloomEnabled=false,smaaEnabled=false,bloomNight=false,bloomRevision=0;
 let viewportPointer=null,viewportRestoreAt=0;
@@ -826,7 +829,7 @@ const viewportEffectScope=()=>PLAN.id==='custom_mv37igji'&&globalThis.FurnishPro
 const nightInteraction=()=>bloomNight&&viewportEffectScope()&&!anim&&opt.mode==='orbit'&&
   (viewportPointer?.moving||performance.now()<viewportRestoreAt);
 function syncViewportPixelRatio(){
-  const ratio=Math.min(devicePixelRatio,nightInteraction()?1.25:2);
+  const ratio=Math.min(devicePixelRatio,opt.sunPreview ? .75 : nightInteraction() ? 1.25 : 2);
   if(renderer.getPixelRatio()===ratio)return;
   renderer.setPixelRatio(ratio);
   invalidate();
@@ -938,13 +941,16 @@ function init(){
   hemi = new THREE.HemisphereLight(0xfff8ee, 0xb9a88f, 1.1);
   sun = new THREE.DirectionalLight(0xfff1dd, 2.6);
   sun.castShadow = true; sun.shadow.mapSize.setScalar(COARSE ? 2048 : 4096);   // 平板 GPU 用小一点的阴影贴图
+  nativeSunMapSize=sun.shadow.mapSize.x;
+  solarEnvelope=new THREE.Group();solarEnvelope.visible=false;
+  solarEnvelopeMaterial=new THREE.MeshBasicMaterial({side:THREE.DoubleSide});
   Object.assign(sun.shadow.camera, {left:-11, right:11, top:11, bottom:-11, near:1, far:60});
   // Keep contact shadows attached: a 20 mm normal offset exposed bright strips
   // at beam/wall and bay/wall junctions. Depth bias is in shadow-camera units.
   sun.shadow.bias = -0.00001; sun.shadow.normalBias = 0.001;
   ground = new THREE.Mesh(new THREE.PlaneGeometry(160, 160), new THREE.MeshStandardMaterial({color:0xf2eee7, roughness:1}));
   ground.rotation.x = -Math.PI/2; ground.position.y = -0.015; ground.receiveShadow = true;
-  scene.add(hemi, sun, sun.target, ground);
+  scene.add(hemi, sun, sun.target, ground, solarEnvelope);
 
   buildEnvironment();
   glassMat = new THREE.MeshPhysicalMaterial({color:0xcfe6ef, roughness:.05, transparent:true, opacity:.28, depthWrite:false, side:THREE.DoubleSide});
@@ -952,6 +958,14 @@ function init(){
   themeMats();
 
   archFloor = new THREE.Group(); archUp = new THREE.Group(); furnG = new THREE.Group(); labelG = new THREE.Group();wallLabelG=new THREE.Group(); lampG = new THREE.Group();
+  const installSunPass=()=>{
+    requestSunShadow=FurnishRasterShadows.solarPass(renderer.shadowMap,sun,solarEnvelope,{
+      preview:()=>sunMapPreview,detail:furnG
+    });
+    invalidate(true);
+  };
+  installSunPass();
+  renderer.domElement.addEventListener('webglcontextrestored',installSunPass);
   clearanceG = new THREE.Group();
   scene.add(archFloor, archUp, furnG, clearanceG, labelG, wallLabelG, lampG);
   elevationG=new THREE.Group();issueG=new THREE.Group();scene.add(elevationG,issueG);
@@ -1541,13 +1555,24 @@ const syncIdentity=FurnishPartIdentity;
 
 /* ======================= 建筑 ======================= */
 function clearGroup(g){ g.traverse(o => { for(const m of (Array.isArray(o.material)?o.material:[o.material]))if(m?.userData.styleSurfaceOwned){m.map?.dispose();m.dispose();} if(o.isLight)o.shadow?.dispose(); if(o.isCSS2DObject)o.element.remove(); if (o.geometry) o.geometry.dispose(); if(o.userData.artGlassOwnMaterial){for(const m of new Set(Array.isArray(o.material)?o.material:[o.material])){m.normalMap?.dispose();m.roughnessMap?.dispose();m.dispose();}} if(o.userData.tvScreenOwnMaterial)o.material.dispose(); if(o.userData.wallTilingOwnMaterial||o.userData.floorFinishOwnMaterial){o.material.map?.dispose();o.material.dispose();} if(o.userData.wallFinishOwnMaterial||o.userData.cabinetOwnMaterial||o.userData.ceilingOwnMaterial||o.userData.beamDimension)o.material.dispose(); }); g.clear(); }
-function wallBox([x0, y0, x1, y1], yb, yt, m){
+function addSolarOccluder(geometry,x,y,z){
+  const {index,attributes:{position}}=geometry;
+  for(let i=0;i<(index?.count??position.count);i++){
+    const at=index?index.getX(i):i;
+    solarVertices.push(position.getX(at)+x,position.getY(at)+y,position.getZ(at)+z);
+  }
+  geometry.dispose();
+}
+function wallBox([x0, y0, x1, y1], yb, yt, viewTop){
 // Stable authoring-site labels: keep existing labels when moving code; allocate new labels for new sites.
 const syncIdentity=FurnishPartIdentity;
 
+  const x=wx((x0+x1)/2),z=wz((y0+y1)/2),w=M(x1-x0),d=M(y1-y0);
+  if(yt-yb>.001)addSolarOccluder(new THREE.BoxGeometry(w,yt-yb,d),x,(yb+yt)/2,z);
+  yt=Math.min(yt,viewTop);
   if (yt - yb <= .001) return;
-  const o = syncIdentity.produce("index:site-221",()=>new THREE.Mesh(new THREE.BoxGeometry(M(x1-x0), yt-yb, M(y1-y0)), m || [wallMat, wallMat, capMat, wallMat, wallMat, wallMat]));
-  o.position.set(wx((x0+x1)/2), (yb+yt)/2, wz((y0+y1)/2)); o.castShadow = o.receiveShadow = true; o.userData.recessWall=true;archUp.add(o);
+  const o = syncIdentity.produce("index:site-221",()=>new THREE.Mesh(new THREE.BoxGeometry(w, yt-yb, d), [wallMat, wallMat, capMat, wallMat, wallMat, wallMat]));
+  o.position.set(x, (yb+yt)/2, z); o.castShadow = o.receiveShadow = true; o.userData.recessWall=true;archUp.add(o);
   // 只保留踢脚线；墙体分块用于切洞，其内部拼接边不作为可见装饰线。
   if (yb <= .001){
     const p = o.geometry.parameters, sh = Math.min(.12, yt), sk = syncIdentity.produce("index:site-222",()=>new THREE.Mesh(new THREE.BoxGeometry(p.width + .02, sh, p.depth + .02), skirtMat));
@@ -1564,10 +1589,19 @@ const syncIdentity=FurnishPartIdentity;
 
   ceilingDisplay.clear();observation.clear();
   interiorDaylight?.reset();
-  clearGroup(archFloor); clearGroup(archUp); lampG.clear(); doors.length = 0; slidingDoors.length = 0; colliders = [];
+  clearGroup(archFloor); clearGroup(archUp); clearGroup(solarEnvelope); lampG.clear(); doors.length = 0; slidingDoors.length = 0; colliders = [];
+  solarVertices.length=0;
   const top = opt.cut===2.8?H:Math.min(opt.cut,H);
   const appearanceWork=globalThis.FurnishWorkflowTools?.styleWork(state)||state;
   const finishPlan=FurnishProject.effectivePlan(PLAN,state);floorScenePlan=finishPlan;
+  // Use the structural footprint so finish thickness cannot open a light seam
+  // between the roof and the wall. The visible ceiling still uses its finish.
+  for(const room of finishPlan.rooms){
+    if(room.poly.length<3)continue;
+    const roof=new THREE.ShapeGeometry((room.polys||[room.poly]).map(p=>shapeOf(p,true)));
+    roof.rotateX(Math.PI/2);
+    addSolarOccluder(roof,0,FurnishProject.roomCeilingHeight(state,room)/1000,0);
+  }
   ground.position.y=Math.min(-.015,...Object.values(finishPlan.floorFinish?.areas||{}).flatMap(a=>[a.rawZ,a.finishedZ].filter(Number.isFinite).map(v=>v/1000-.015)));
   const satinFloor=['area_fmv3qb1oi4','area_fmv3qajd93','area_fmv3p2ig914'];
   const floorAppearance=roomId=>({refined:finishPlan.id==='custom_mv37igji'&&satinFloor.includes(roomId)&&state.rooms[roomId]?.mat==='tile800'});
@@ -1621,21 +1655,26 @@ const syncIdentity=FurnishPartIdentity;
   }
   syncIdentity.each("index.html:generator-45",WALLS,(w, i) => {
     if (state.demolished.includes('w'+i)) return;
-    syncIdentity.produce("index.html:generator-call-14",()=>wallBox(w, 0, w[4] === 'low' ? Math.min(1, top) : top));
+    syncIdentity.produce("index.html:generator-call-14",()=>wallBox(w, 0, w[4] === 'low' ? 1 : H, top));
     colliders.push([wx(w[0]), wz(w[1]), wx(w[2]), wz(w[3])]);
   },(item,slot)=>item.id||"plan-slot:"+slot);
-  if(typeof FurnishBayWindowModel!=='undefined')archUp.add(FurnishBayWindowModel.buildHeaders(THREE,finishPlan,{wx,wz,top:opt.cut===2.8?Infinity:top*1000,material:[wallMat,wallMat,capMat,wallMat,wallMat,wallMat]}));
+  if(typeof FurnishBayWindowModel!=='undefined'){
+    archUp.add(FurnishBayWindowModel.buildHeaders(THREE,finishPlan,{wx,wz,top:opt.cut===2.8?Infinity:top*1000,material:[wallMat,wallMat,capMat,wallMat,wallMat,wallMat]}));
+    for(const mesh of FurnishBayWindowModel.buildHeaders(THREE,finishPlan,{wx,wz,material:solarEnvelopeMaterial}).children){
+      addSolarOccluder(mesh.geometry,mesh.position.x,mesh.position.y,mesh.position.z);
+    }
+  }
   archUp.add(FurnishWallFinishModel.build(THREE,finishPlan,{wx,wz,top:top*1000}));
   if(finishPlan.wallTiling)archUp.add(FurnishWallTilingModel.build(THREE,finishPlan,{wx,wz,top:top*1000}));
   if(finishPlan.ceilings)archUp.add(FurnishCeilingModel.build(THREE,finishPlan.ceilings,{wx,wz,top:opt.cut===2.8?Infinity:top*1000,lamps:opt.lamps,wash:false,bodies:state.furniture.filter(f=>!furnitureError(f)).map(f=>({f,vertical:FurnishDesign.furnitureVerticalBounds(f,finishPlan,state.furniture)}))}));
   for(const s of finishPlan.wallFinish?.solids||[])if(s.bottom===0)colliders.push([wx(s.rect[0]),wz(s.rect[1]),wx(s.rect[2]),wz(s.rect[3])]);
   // 门洞、窗洞上方过梁（门窗矩形即洞口，head 默认 2.4m）
-  syncIdentity.each("index.html:generator-46",[...DOORS.map(d => [d.rect, SWING_DOOR_HEIGHT]), ...SLIDES.map(s => [s.rect, s.v ? 2.4 : 2.1])],([r, h]) => { if (top > h) syncIdentity.produce("index.html:generator-call-15",()=>wallBox(r, h, top)); });
+  syncIdentity.each("index.html:generator-46",[...DOORS.map(d => [d.rect, SWING_DOOR_HEIGHT]), ...SLIDES.map(s => [s.rect, s.v ? 2.4 : 2.1])],([r, h]) => { if (H > h) syncIdentity.produce("index.html:generator-call-15",()=>wallBox(r, h, H, top)); });
   const bayPosts=new Set();
   syncIdentity.each("index.html:generator-47",WINS,({rect, sill, head = 2.4, frameLine, bayId, bayType, paintRect,panels,stackSide},windowIndex) => {
     const frameColor=FurnishStyles.surfaceColor(appearanceWork,'frame',FurnishStyles.frameKey(PLAN,windowIndex)),windowFrameMat=frameColor?mat(frameColor,{roughness:.5,metalness:.4}):frameMat;
-    if(bayId&&paintRect&&bayType!=='recessed'){syncIdentity.produce("index.html:generator-call-16",()=>wallBox(paintRect,0,Math.min(sill,top)));if(top>head)syncIdentity.produce("index.html:generator-call-17",()=>wallBox(paintRect,head,top));}
-    syncIdentity.produce("index.html:generator-call-18",()=>wallBox(rect, 0, Math.min(sill, top))); if (top > head) syncIdentity.produce("index.html:generator-call-19",()=>wallBox(rect, head, top));
+    if(bayId&&paintRect&&bayType!=='recessed'){syncIdentity.produce("index.html:generator-call-16",()=>wallBox(paintRect,0,Math.min(sill,H),top));if(H>head)syncIdentity.produce("index.html:generator-call-17",()=>wallBox(paintRect,head,H,top));}
+    syncIdentity.produce("index.html:generator-call-18",()=>wallBox(rect, 0, Math.min(sill,H),top)); if (H > head) syncIdentity.produce("index.html:generator-call-19",()=>wallBox(rect, head, H,top));
     colliders.push([wx(rect[0]), wz(rect[1]), wx(rect[2]), wz(rect[3])]);
     const gTop = Math.min(head, top); if (gTop <= sill) return;
     const [x0, y0, x1, y1] = frameLine?[Math.min(frameLine[0][0],frameLine[1][0]),Math.min(frameLine[0][1],frameLine[1][1]),Math.max(frameLine[0][0],frameLine[1][0]),Math.max(frameLine[0][1],frameLine[1][1])]:rect, hz = (x1-x0) >= (y1-y0), L = M(hz ? x1-x0 : y1-y0), gh = gTop - sill, cx = wx((x0+x1)/2), cz = wz((y0+y1)/2);
@@ -1671,6 +1710,13 @@ const syncIdentity=FurnishPartIdentity;
     model.position.set(wx((x0+x1)/2),0,wz((y0+y1)/2));model.rotation.y=v?-Math.PI/2:0;
     archUp.add(model);slidingDoors.push(model.userData.slidingDoor);
   },(item,slot)=>item.id||"plan-slot:"+slot);
+  if(solarVertices.length){
+    const geometry=new THREE.BufferGeometry();
+    geometry.setAttribute('position',new THREE.Float32BufferAttribute(solarVertices,3));
+    const mesh=new THREE.Mesh(geometry,solarEnvelopeMaterial);
+    mesh.castShadow=true;solarEnvelope.add(mesh);
+    solarVertices.length=0;
+  }
   FurnishCeilingModel.applyWash(THREE,archUp,{reflectPaint:PLAN.id==='custom_mv37igji'});
   archUp.scale.setScalar(1);cutElectricalBoxWalls();
   applyLight(); applyGrow();
@@ -1820,7 +1866,7 @@ function sync(force){
   H=FurnishProject.ceilingHeight(state)/1000;
   const settings=FurnishDesign.sceneSettings(state.scene3d);
   const preview=opt.sunPreview;
-  if(preview?.work===state&&preview.scene===state.scene3d)settings.hour=preview.hour;
+  if(preview?.work===state&&preview.scene===state.scene3d){settings.hour=preview.hour;preview.pending=false;}
   else opt.sunPreview=undefined;
   const changed=opt.nightLights!==settings.nightLights||Object.keys(settings).some(k=>k!=='solar'&&opt[k]!==settings[k])||opt.solar?.latitude!==settings.solar?.latitude||opt.solar?.date!==settings.solar?.date;
   Object.assign(opt,{solar:undefined,nightLights:undefined},settings);
@@ -1863,6 +1909,7 @@ function showLabels(v){ labelG.visible = v; labelG.children.forEach(o => o.visib
 function applyGrow(){
   if (!inited) return;
   archUp.scale.y = Math.max(grow, .001);
+  solarEnvelope.scale.y = archUp.scale.y;
   furnG.scale.y = Math.max(furnGrow, .001);
   clearanceG.scale.y = Math.max(furnGrow, .001);
   lampG.visible = grow > .99;
@@ -1881,6 +1928,7 @@ function sceneSun(){
   const [x,z]=FurnishDrawing.sun([Math.cos(az)*18,-Math.sin(az)*10+8],state.drawing);
   return {position:[x,Math.sin(el)*20+3,z],night:opt.night,environment:FurnishLighting.environment(opt.night,opt.hour),warm};
 }
+let lightSwitches;
 function applyLight(){
   const {position,altitude,night,environment:lighting,warm}=sceneSun();
   if(bloomNight!==night){
@@ -1892,9 +1940,15 @@ function applyLight(){
     updateEffectControls();
   }
   sun.userData.radiometricLight=true;
-  FurnishLighting.cabinetContours(furnG,lighting);
-  FurnishDownlightModel.setLights(furnG,opt.lamps,{night,nightLights:opt.nightLights});
-  sun.position.set(...position); sun.target.position.set(0, 0, 0);
+  if(hemi.intensity!==lighting.ambient)FurnishLighting.cabinetContours(furnG,lighting);
+  const switches=[night,opt.lamps,opt.nightLights].join(',');
+  if(lightSwitches!==switches){
+    FurnishDownlightModel.setLights(furnG,opt.lamps,{night,nightLights:opt.nightLights});
+    lightSwitches=switches;
+    invalidate(true);
+  }
+  if(sun.position.x!==position[0]||sun.position.y!==position[1]||sun.position.z!==position[2]||!sun.visible)requestSunShadow();
+  sun.position.set(...position);
   sun.color.setHSL(.09, .5 + warm*.4, .92 - warm*.12);
   sun.intensity = lighting.sun;
   sun.visible = sun.intensity>0;
@@ -1902,7 +1956,9 @@ function applyLight(){
   scene.background = new THREE.Color(night ? 0x1c2130 : DK() ? 0x121110 : 0xf5f2ea);
   ground.material.color.set(night ? 0x2a2e38 : DK() ? 0x26231e : 0xf2eee7);
   renderer.toneMappingExposure = lighting.exposure;
-  envK = lighting.reflection; matCache.forEach(m => { if (m.envMap) m.envMapIntensity = m.userData.env*envK; });
+  if(envK!==lighting.reflection){
+    envK = lighting.reflection; matCache.forEach(m => { if (m.envMap) m.envMapIntensity = m.userData.env*envK; });
+  }
   interiorDaylight?.setLight(night?0:Math.min(1.25,lighting.sun*.41),{position,warm});
   interiorDaylight?.setNight(night&&opt.lamps,night?lighting.ambient:0);
   const range=$('#sun'),mode=$('#sunMode'),readout=$('#sunAltitude');
@@ -1919,7 +1975,7 @@ function applyLight(){
   }
   const minutes=Math.round(opt.hour*60),h=Math.floor(minutes/60),m=minutes%60;
   $('#sunT').textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-  invalidate(true);
+  invalidate();
 }
 
 /* ======================= 相机位姿 / 动画 ======================= */
@@ -2060,7 +2116,7 @@ function parkGraphics(){
     replacementFootprint=null;
     replacementFootprintKey='';
   }
-  for(const group of [furnG,archFloor,archUp,clearanceG,labelG,wallLabelG,lampG])clearGroup(group);
+  for(const group of [furnG,archFloor,archUp,solarEnvelope,clearanceG,labelG,wallLabelG,lampG])clearGroup(group);
   doors.length=0;
   slidingDoors.length=0;
   colliders=[];
@@ -2071,6 +2127,9 @@ function parkGraphics(){
   sun.shadow.dispose();
   sun.shadow.map=null;
   sun.shadow.mapPass=null;
+  sun.shadow.mapSize.setScalar(nativeSunMapSize);
+  spareSunMap?.dispose();spareSunMap=null;sunMapPreview=false;
+  sunPreviewDetails.length=0;
   envTarget?.dispose();
   envTarget=null;
   graphicsParked=true;
@@ -2137,6 +2196,7 @@ async function enter(showLoading){
 async function exit(){
   ui.sceneMove=false;
   cancelOrbitMouseDrag();
+  cancelSunPreview();
   globalThis.FurnishProgressiveView?.exit();
   sceneMeasure?.set(false);
   cancelElevationGesture();
@@ -2536,33 +2596,77 @@ function bindUI(){
     if (k === 'labels') showLabels(opt.labels && opt.mode === 'orbit' && !anim);
     if (k === 'night') applyLight();
   });
-  $('#sun').oninput = e => { opt.hour = +e.target.value;opt.sunPreview={work:state,scene:state.scene3d,hour:opt.hour};applyLight(); };
+  $('#sun').oninput = e => {
+    opt.sunPreview={work:state,scene:state.scene3d,hour:+e.target.value,pending:true};
+  };
   $('#sun').onchange = e => {
     const hour=+e.target.value;
     opt.sunPreview=undefined;
-    mutate(()=>{state.scene3d=FurnishDesign.sceneSettings({...state.scene3d,hour});});
+    if(hour===FurnishDesign.sceneSettings(state.scene3d).hour){sync();return;}
+    mutate(()=>{state.scene3d=FurnishDesign.sceneSettings({...state.scene3d,hour});},{sceneFirst:true});
   };
-  $('#sun').onpointercancel = () => {opt.sunPreview=undefined;sync();};
+  $('#sun').onpointercancel = cancelSunPreview;
+  window.addEventListener('blur',cancelSunPreview);
+}
+function cancelSunPreview(){
+  if(!opt.sunPreview)return;
+  opt.sunPreview=undefined;sync();
+  $('#sun').value=opt.hour;
 }
 
 /* ======================= 主循环 ======================= */
+function applyPendingSun(){
+  const preview=opt.sunPreview;
+  if(preview.work!==state||preview.scene!==state.scene3d){cancelSunPreview();return;}
+  preview.pending=false;
+  opt.hour=preview.hour;
+  applyLight();
+}
 function prepareRasterScene(){
   interiorDaylight?.contacts();
   const budget=FurnishDownlightModel.limitLights(scene,camera,renderer.capabilities,interiorDaylight?.panelRoom(camera.position));
   if(budget.coveShadowAdded||budget.panelShadowAdded)renderer.shadowMap.needsUpdate=true;
 }
-function renderScene(){
-  prepareRasterScene();
+function collectSunPreviewDetails(){
+  sunPreviewDetails.length=0;
+  const center=new THREE.Vector3();
+  camera.updateWorldMatrix(true,false);
+  const pixelsPerRadian=renderer.domElement.height*camera.projectionMatrix.elements[5]/2;
+  // A distant close-up detail can cost a draw call even when it covers only
+  // a handful of pixels. Leave room and window meshes at their original level.
+  furnG.traverseVisible(mesh=>{
+    if(!mesh.isMesh||mesh.isInstancedMesh||mesh.children.length)return;
+    const sphere=mesh.geometry.boundingSphere;
+    if(!sphere)return;
+    center.copy(sphere.center).applyMatrix4(mesh.matrixWorld).applyMatrix4(camera.matrixWorldInverse);
+    const radius=sphere.radius*mesh.matrixWorld.getMaxScaleOnAxis();
+    if(-center.z>radius&&radius*pixelsPerRadian/(-center.z-radius)<2)sunPreviewDetails.push(mesh);
+  });
+}
+function renderScene(onlySun=false){
+  if(!onlySun)prepareRasterScene();
+  const sunScrubbing=!!opt.sunPreview;
+  const qualityChanged=sunMapPreview!==sunScrubbing;
+  if(qualityChanged){
+    sunMapPreview=sunScrubbing;
+    [sun.shadow.map,spareSunMap]=[spareSunMap,sun.shadow.map];
+    sun.shadow.mapSize.setScalar(sunScrubbing?1024:nativeSunMapSize);
+    requestSunShadow();
+    sunPreviewDetails.length=0;
+  }
   const bloom=bloomEnabled&&bloomNight&&(!viewportAO||viewportAO.bloomAvailable());
   const smaa=smaaEnabled&&(!viewportAO||viewportAO.smaaAvailable());
-  if((gtaoEnabled||bloom||smaa)&&!anim&&viewportEffectScope()){
+  if(!sunScrubbing&&(gtaoEnabled||bloom||smaa)&&!anim&&viewportEffectScope()){
     viewportAO??=FurnishViewportGTAO.create(THREE,renderer,{onSmaaChange:()=>invalidate()});
     const drawn=viewportAO.draw(scene,camera,{aoEnabled:gtaoEnabled,bloomRevision:bloom?bloomRevision:undefined,smaaEnabled:smaa});
     if(!drawn||(bloom&&!viewportAO.bloomAvailable())||(smaa&&!viewportAO.smaaAvailable()))updateEffectControls();
     if(drawn)return;
     viewportAO.release();
   }
-  renderer.render(scene,camera);
+  if(sunScrubbing&&(qualityChanged||!onlySun))collectSunPreviewDetails();
+  for(const mesh of sunPreviewDetails)mesh.visible=false;
+  try{renderer.render(scene,camera);}
+  finally{for(const mesh of sunPreviewDetails)mesh.visible=true;}
 }
 const clock = new THREE.Clock();
 function startLoop(){ invalidate(); if (!raf){ clock.getDelta(); raf = requestAnimationFrame(loop); } }
@@ -2587,7 +2691,14 @@ function loop(){
   }
   animateCurtains(dt);
   updateSel();
+  const onlySun=opt.sunPreview?.pending&&!dirty&&!renderer.shadowMap.needsUpdate;
+  if(opt.sunPreview?.pending)applyPendingSun();
   if (!dirty) return;
+  if(onlySun&&!renderer.shadowMap.needsUpdate){
+    dirty=false;
+    renderScene(true);
+    return;
+  }
   updateObservation();
   dirty = false;
   selHelper?.children.forEach(h => {if(h.userData.layerMeshes){h.box.makeEmpty();for(const o of h.userData.layerMeshes)if(sceneObjectShown(o))h.box.union(new THREE.Box3().setFromObject(o));}else h.update?.();});
@@ -2628,6 +2739,7 @@ function blenderScene(options={}, {observationCeilings=false,includeLighting=fal
 function blenderSyncSignature(){if(globalThis.FurnishCatalog?.active())return null;if(!inited||!active||anim||fly||selectionTransform?.dragging())return null;sync();return JSON.stringify([PLAN.id,sigArch,sigFurn,state.objectLayers?.assignments,state.objectLayers?.layers?.map(l=>[l.id,l.visible]),opt.furn,opt.lamps,sceneSun().night&&(opt.nightLights??opt.lamps)]);}
 let highQualityState='',highQualityRevision=0;
 function highQualitySignature(){
+ if(opt.sunPreview)return null;
  const signature=blenderSyncSignature();if(!signature)return null;
  if(signature!==highQualityState){highQualityState=signature;highQualityRevision++;}
  camera.updateWorldMatrix(true,false);
@@ -2645,7 +2757,7 @@ async function highQualityScene({cameraIndependent=false}={}){
  const {environment}=sceneSun();
  const data=await blenderScene({includeCeilings:true,expandInstances:true,meta:{plan:PLAN.name,planId:PLAN.id,lighting:environment}},{observationCeilings:cameraIndependent,includeLighting:true});
  if(cameraIndependent?progressiveState()?.sceneKey!==initial?.sceneKey:highQualitySignature()!==signature)throw Error('场景已改变，请重新预览。');
- return {...data,environment,signature};
+ return {...data,environment,signature,solarEnvelope:solarEnvelope.children[0]?.geometry.attributes.position.array.slice()};
 }
 async function automationReady(){
  const until=performance.now()+15000;

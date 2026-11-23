@@ -35,7 +35,7 @@ function open(){
    if(s.closed||s.token!==token)return;
    if(data.signature!==s.signature||root.View3D.highQualitySignature()!==s.signature){stale();return;}
    const frame=document.createElement('iframe');s.frame=frame;frame.title='渐进光追画面';frame.src='src/render/lighting-preview.html';frame.setAttribute('allow','webgpu');
-   s.ready=()=>{if(s.token!==token)return;frame.contentWindow.postMessage({channel:'furnish-lighting-preview',type:'scene',token,buffer:data.buffer,lighting:data.lighting,environment:data.environment,aspect:data.aspect,quality},location.origin,[data.buffer]);};
+   s.ready=()=>{if(s.token!==token)return;frame.contentWindow.postMessage({channel:'furnish-lighting-preview',type:'scene',token,buffer:data.buffer,lighting:data.lighting,environment:data.environment,solarEnvelope:data.solarEnvelope,aspect:data.aspect,quality},location.origin,[data.buffer]);};
    q('#lighting-image').append(frame);status('正在初始化高清预览…');
    s.loadingTimer=setTimeout(()=>{if(s.token===token)stop('预览组件未能加载，请刷新 Furnish 后重试。');},30000);
   }catch(error){if(!s.closed&&s.token===token)stop(error.message);}

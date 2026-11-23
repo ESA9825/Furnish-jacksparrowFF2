@@ -97,7 +97,35 @@ function withPlaneSlope(shader,light,coord,edgeCoord=coord){
   ${prefix}${sample}, furnishReceiverSlope ) : 1.0;
  }`);
 }
-const api={install};
+// r160 projects visible objects for the color pass before invoking shadowMap.render.
+// Reveal the structural envelope only to the sun's depth pass. Geometry updates
+// still refresh all lights, while solar motion reuses the existing lamp maps.
+function solarPass(shadows,sun,envelope,{preview,detail}={}){
+ const render=shadows.render.bind(shadows);
+ let sunDirty=true;
+ shadows.render=(lights,scene,camera)=>{
+  const all=shadows.needsUpdate;
+  const hasSun=lights.includes(sun);
+  if(hasSun&&(all||sunDirty)){
+   const detailVisible=detail?.visible;
+   if(detail&&preview?.())detail.visible=false;
+   envelope.visible=true;
+   shadows.needsUpdate=true;
+   try{render([sun],scene,camera);sunDirty=false;}
+   finally{
+    if(detail)detail.visible=detailVisible;
+    envelope.visible=false;shadows.needsUpdate=all;
+   }
+  }
+  if(all){
+   const lamps=hasSun?lights.filter(light=>light!==sun):lights;
+   if(lamps.length)render(lamps,scene,camera);
+   else shadows.needsUpdate=false;
+  }
+ };
+ return ()=>{sunDirty=true;};
+}
+const api={install,solarPass};
 if(typeof module==='object'&&module.exports)module.exports=api;
 else root.FurnishRasterShadows=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
