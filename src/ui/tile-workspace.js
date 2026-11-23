@@ -1,13 +1,21 @@
 /* One surface selection, one draft, one explicit commit for wall and floor tiles. */
 (function(){
 'use strict';
+const Styles=FurnishStyles,FloorModel=FurnishFloorFinishModel;
 const C=FurnishTileEditor,T=FurnishWallTiling,F=FurnishFloorFinish,P=FurnishProject,G=FurnishTileGrout,copy=v=>JSON.parse(JSON.stringify(v));
 let session=null;
+const floorSwatches=[
+ ['暖砂米','#dfd4c2'],
+ ['浅米灰','#d5d1c8'],
+ ['柔白','#e9e6de'],
+ ['烟灰','#b9b8b2']
+];
+const floorOverride=(work,id)=>work.styleAppearance?.floorOverrides?.[id];
 const S=FurnishTileParameters,I=FurnishTileInteraction,labels=Object.fromEntries(Object.entries(S.definitions).map(([k,v])=>[k,v.label])),groupNames=S.groupLabels;
 const q=s=>session?.host.querySelector(s),plan=()=>P.effectivePlan(PLAN,session.work),chosen=()=>session.targets.filter(t=>session.selected.has(t.key)),dirty=()=>session&&C.signature(session.work)!==C.signature(session.base);
 const floorGroup=list=>list.length>1&&list.every(t=>t.kind==='floor'),canPick=list=>list.length===1||floorGroup(list);
 const name=id=>nm(session.work.rooms[id]?.name||id),options=(rows,value)=>rows.map(([id,label])=>`<option value="${esc(String(id))}" ${String(id)===String(value)?'selected':''}>${esc(label)}</option>`).join('');
-function dispose(s){s.disposed=true;window.removeEventListener('blur',s.blur);s.preview?.dispose();if(session===s)session=null;}
+function dispose(s){if(s.disposed)return;s.disposed=true;window.removeEventListener('blur',s.blur);s.preview?.dispose();if(session===s)session=null;}
 function current(){if(!session||session.owner!==PLAN.id||snap()!==session.source)throw Error('项目已变化，请关闭铺砖并重新打开；草稿尚未应用');}
 function error(message=''){message=message||[...session.invalid.values()][0]||'';q('[data-tiling-error]').textContent=message;session.error=message;document.querySelector('#dlgActions .primary').disabled=!!message||!dirty();}
 function beforeClose(){
@@ -17,12 +25,13 @@ function beforeClose(){
 }
 function close(){if(!session)return;session.discard=true;closeDialog();}
 function open(scope={}){
+ if(session?.host&&!session.host.isConnected)dispose(session);
  if(session&&!session.disposed){if(scope.face){if(dirty())return toast('请先应用或取消当前铺砖草稿');close();}else return;}
  FurnishTilePresetUI.close();closeFabEditor(false);closeDialog();
  const s={base:copy(state),work:copy(state),source:snap(),owner:PLAN.id,selected:new Set(),invalid:new Map(),roomId:scope.roomId||scope.face?.roomId||(ui.sel?.kind==='room'?ui.sel.id:null),mode:scope.view||'drawing',policy:'local',bandId:'',preview:null,loading:false,disposed:false,error:'',picking:false};session=s;
  s.targets=C.groups(s.work,P.effectivePlan(PLAN,s.work));const rooms=plan().rooms.filter(r=>r.counted!==false);if(!rooms.length){session=null;return toast('当前没有可铺砖的房间');}if(!rooms.some(r=>r.id===s.roomId))s.roomId=(scope.kind==='wall'?rooms.find(r=>T.eligible(r,s.work.rooms[r.id])):null)?.id||rooms[0].id;
  const initial=s.targets.filter(t=>(scope.all?(!scope.roomIds||scope.roomIds.includes(t.roomId)):t.roomId===s.roomId)&&(scope.face?t.kind==='wall'&&C.contains(t,scope.face):scope.kinds?scope.kinds.includes(t.kind):scope.kind==='wall'?t.kind==='wall':t.kind==='floor'));initial.forEach(t=>s.selected.add(t.key));s.focus=initial[0]?.key;
- openDialog({title:'铺砖',wide:true,beforeClose,body:`<section data-tiling-workspace><p class="muted tiling-intro">选择表面后修改参数；平面、立面和3D共用草稿。点击应用后一次保存，可一次撤销。</p><div class="tiling-columns"><section class="tiling-targets"><h3>选择表面</h3><label>房间<select data-tiling-room>${options(rooms.map(r=>[r.id,name(r.id)]),s.roomId)}</select></label><div class="actions"><button class="btn" data-tiling-select="floor">选地面</button><button class="btn" data-tiling-select="all-floors">选全部瓷砖地面</button><button class="btn" data-tiling-select="walls">选全部墙面</button><button class="btn" data-tiling-select="none">清空选择</button></div><div data-tiling-targets></div><p class="muted" data-tiling-selected></p></section><section class="tiling-preview"><div class="actions"><button class="btn" data-tiling-view="plan">图上选面</button><button class="btn on" data-tiling-view="drawing">平面／立面</button><button class="btn" data-tiling-view="3d">3D预览</button></div><p class="tiling-selection-scope" data-tiling-selection-scope role="status"></p><label>当前查看表面<select data-tiling-focus></select></label><div class="tiling-selection-legend" data-tiling-selection-legend hidden><span><i class="tiling-swatch selected"></i>其它已选表面</span><span><i class="tiling-swatch focused"></i>当前查看（已选）</span></div><label data-tiling-band-choice hidden>当前分带<select data-tiling-band-focus></select></label><p class="muted" data-tiling-band-readout hidden></p><button class="btn" data-tiling-edit-band hidden>编辑当前分带参数</button><div class="actions"><button class="btn" data-tiling-adjust>调整砖缝基准</button><button class="btn" data-tiling-export>导出预览SVG</button></div><div data-tiling-drawing></div><div data-tiling-3d hidden></div><p data-tiling-preview-note class="muted" role="status"></p></section><section class="tiling-settings" data-tiling-fields></section></div><p class="project-error" role="alert" data-tiling-error></p><div class="tiling-close-note" data-tiling-close-note hidden><b>有未应用的铺砖草稿。</b><button class="btn" data-tiling-continue>继续编辑</button><button class="btn danger" data-tiling-discard>放弃草稿并关闭</button></div><details data-tiling-review><summary>完成面与起铺核对</summary><div data-tiling-review-content></div></details><p data-tiling-summary role="status"></p></section>`,actions:[{label:'取消',fn:()=>{close();return false;}},{label:'应用铺砖',cls:'primary',fn:()=>{apply();return false;}}],onClose:()=>dispose(s)});
+ openDialog({title:'铺砖',wide:true,beforeClose,body:`<section data-tiling-workspace><p class="muted tiling-intro">选择表面后修改参数；平面、立面和3D共用草稿。点击应用后一次保存，可一次撤销。</p><div class="tiling-columns"><section class="tiling-targets"><h3>选择表面</h3><label>房间<select data-tiling-room>${options(rooms.map(r=>[r.id,name(r.id)]),s.roomId)}</select></label><div class="actions"><button class="btn" data-tiling-select="floor">选地面</button><button class="btn" data-tiling-select="all-floors">选全部瓷砖地面</button><button class="btn" data-tiling-select="walls">选全部墙面</button><button class="btn" data-tiling-select="none">清空选择</button></div><div data-tiling-targets></div><p class="muted" data-tiling-selected></p></section><section class="tiling-preview"><div class="actions"><button class="btn" data-tiling-view="plan">图上选面</button><button class="btn on" data-tiling-view="drawing">平面／立面</button><button class="btn" data-tiling-view="3d">3D预览</button></div><p class="tiling-selection-scope" data-tiling-selection-scope role="status"></p><label>当前查看表面<select data-tiling-focus></select></label><div class="tiling-selection-legend" data-tiling-selection-legend hidden><span><i class="tiling-swatch selected"></i>其它已选表面</span><span><i class="tiling-swatch focused"></i>当前查看（已选）</span></div><label data-tiling-band-choice hidden>当前分带<select data-tiling-band-focus></select></label><p class="muted" data-tiling-band-readout hidden></p><button class="btn" data-tiling-edit-band hidden>编辑当前分带参数</button><div class="actions"><button class="btn" data-tiling-adjust>调整砖缝基准</button><button class="btn" data-tiling-export>导出预览SVG</button></div><div data-tiling-drawing></div><div data-tiling-3d hidden></div><section class="tiling-floor-swatches" data-floor-swatches hidden aria-label="地砖面色样片"><strong>地砖面色</strong><div data-floor-swatch-options></div></section><p data-tiling-preview-note class="muted" role="status"></p></section><section class="tiling-settings" data-tiling-fields></section></div><p class="project-error" role="alert" data-tiling-error></p><div class="tiling-close-note" data-tiling-close-note hidden><b>有未应用的铺砖草稿。</b><button class="btn" data-tiling-continue>继续编辑</button><button class="btn danger" data-tiling-discard>放弃草稿并关闭</button></div><details data-tiling-review><summary>完成面与起铺核对</summary><div data-tiling-review-content></div></details><p data-tiling-summary role="status"></p></section>`,actions:[{label:'取消',fn:()=>{close();return false;}},{label:'应用铺砖',cls:'primary',fn:()=>{apply();return false;}}],onClose:()=>dispose(s)});
  s.host=document.querySelector('[data-tiling-workspace]');
  s.blur=()=>{if(session===s)cancelGesture();};window.addEventListener('blur',s.blur);
  q('[data-tiling-room]').onchange=e=>{if(s.error){e.target.value=s.roomId;return;}s.roomId=e.target.value;renderTargets();};
@@ -107,18 +116,46 @@ function bindBasis(host,target,p){
  host.onpointermove=e=>{const d=s.drag2d;if(!d||d.id!==e.pointerId)return;if(Math.hypot(e.clientX-d.x,e.clientY-d.y)<3&&!d.moved)return;const point=new DOMPoint(e.clientX,e.clientY).matrixTransform(d.inverse),local=[point.x,d.c.kind==='wall'?d.c.e.height-point.y:point.y],desired=d.anchor.map((v,i)=>v+local[i]-d.start[i]),snap=I.snap(d.c,desired,d.project,12);if(!snap)return;e.preventDefault();d.moved=true;s.handle={key:target.key,bandId:s.bandId,point:snap.point};try{change(I.patch(d.c,snap.point.map((v,i)=>v-d.anchor[i]),true),'gesture');refreshBasisFields();}catch(err){error(err.message);}};
  host.onpointerup=e=>{const d=s.drag2d;if(!d||d.id!==e.pointerId)return;if(!d.moved&&!d.handle){const point=new DOMPoint(e.clientX,e.clientY).matrixTransform(d.inverse),snap=I.snap(d.c,[point.x,d.c.kind==='wall'?d.c.e.height-point.y:point.y],d.project,12);if(snap){try{change(I.patch(d.c,snap.point),'gesture');refreshBasisFields();}catch(err){error(err.message);}}}s.drag2d=null;if(host.hasPointerCapture(d.id))host.releasePointerCapture(d.id);gesture('end');};host.onpointercancel=()=>cancelGesture();host.onlostpointercapture=()=>{if(s.drag2d)cancelGesture();};
 }
+function renderFloorSwatches(list,p,target){
+ const panel=q('[data-floor-swatches]'),kind=session.work.rooms[target?.roomId]?.mat;
+ panel.hidden=session.mode!=='3d'||session.picking||!list.length||!list.every(t=>t.kind==='floor'&&p.floorFinish?.areas[t.roomId]?.layout&&FloorModel.ceramic(session.work.rooms[t.roomId]?.mat));
+ if(panel.hidden)return;
+ const tray=q('[data-floor-swatch-options]');
+ if(tray.dataset.kind!==kind){
+  tray.dataset.kind=kind;
+  tray.innerHTML=floorSwatches.map(([label,color])=>`<button class="btn" data-floor-swatch="${color}" type="button"><canvas aria-hidden="true"></canvas><span>${label}</span></button>`).join('')+
+   '<button class="btn" data-floor-swatch="" type="button">跟随方案</button>';
+  for(const button of tray.querySelectorAll('[data-floor-swatch]')){
+   const value=button.dataset.floorSwatch||undefined,canvas=button.querySelector('canvas');
+   if(canvas)FloorModel.tileFace(canvas,value,kind);
+   button.onclick=()=>{
+    try{
+     current();if(session.error)return;
+     for(const t of chosen())Styles.editSurface(session.work,'floor',t.roomId,value);
+     error();preview();
+    }catch(e){error(e.message);}
+   };
+  }
+ }
+ for(const button of tray.querySelectorAll('[data-floor-swatch]')){
+  const value=button.dataset.floorSwatch;
+  const active=list.every(t=>value?Styles.surfaceColor(session.work,'floor',t.roomId)===value:!floorOverride(session.work,t.roomId));
+  button.setAttribute('aria-pressed',active);
+ }
+}
 function preview(){
  const s=session;if(!s||s.disposed)return;const list=chosen(),target=list.find(t=>t.key===s.focus)||list[0];
- const before=P.effectivePlan(PLAN,s.base),currentPlan=plan(),changed=s.targets.filter(t=>JSON.stringify(C.groupValues(s.base,before,t))!==JSON.stringify(C.groupValues(s.work,currentPlan,t)));
+ const before=P.effectivePlan(PLAN,s.base),currentPlan=plan(),changed=s.targets.filter(t=>JSON.stringify(C.groupValues(s.base,before,t))!==JSON.stringify(C.groupValues(s.work,currentPlan,t))||t.kind==='floor'&&floorOverride(s.base,t.roomId)!==floorOverride(s.work,t.roomId));
  q('[data-tiling-summary]').textContent=dirty()?`草稿尚未保存 · ${changed.length} 处表面参数修改${JSON.stringify(s.base.tilePresets)!==JSON.stringify(s.work.tilePresets)?'，含预设关联修改':''} · 应用后可一次撤销。`:'当前为已保存参数；选择表面与查看预览不会修改项目。';
  if(!s.error)document.querySelector('#dlgActions .primary').disabled=!dirty();
  q('[data-tiling-selection-scope]').textContent=list.length>1?`已选 ${list.length} 个表面 · ${new Set(list.map(t=>t.roomId)).size} 个房间，参数修改作用于全部已选表面`:`已选 ${list.length} 个表面`;q('[data-tiling-selection-legend]').hidden=s.mode!=='3d';q('[data-tiling-adjust]').disabled=!canPick(list);const drawing=q('[data-tiling-drawing]'),three=q('[data-tiling-3d]');drawing.hidden=s.mode==='3d';three.hidden=s.mode!=='3d';s.host.querySelectorAll('[data-tiling-view]').forEach(b=>b.classList.toggle('on',b.dataset.tilingView===s.mode));
+ renderFloorSwatches(list,currentPlan,target);
  if(s.mode==='plan'){for(const key of ['band-choice','band-readout','edit-band'])q('[data-tiling-'+key+']').hidden=true;q('[data-tiling-adjust]').classList.remove('on');q('[data-tiling-adjust]').textContent=floorGroup(list)?'统一起铺点':'调整砖缝基准';drawing.innerHTML=FurnishTileDrawing.plan(currentPlan,s.work,[...s.selected],s.focus);bindPlan(drawing);q('[data-tiling-preview-note]').textContent='点击地面或墙面编号选面，Shift／Ctrl点击可多选；选择不会修改铺贴。';review(currentPlan);return;}
  if(!target){drawing.innerHTML='';s.preview?.dispose();s.preview=null;three.innerHTML='';q('[data-tiling-preview-note]').textContent='选择表面后显示实际排版。';return;}
  try{
   const p=currentPlan,v=C.read(s.work,p,target),room=FurnishWallFinish.spatial(p).rooms.find(r=>r.id===target.roomId),notes=[];let elevation;
   if(target.kind==='wall'){const face=T.faces(p,s.work).find(f=>T.same(f,target.face));elevation=C.elevation(s.work,p,target);const color=G.color(s.work,target.roomId,'wall',face)||G.autoColor();drawing.innerHTML=FurnishTileDrawing.wall(elevation).replaceAll('#777167',color);notes.push(...elevation.pending,...T.patterns(elevation).map(e=>e.alignmentNote).filter(Boolean));}
-  else{drawing.innerHTML=FurnishTileDrawing.floor(room,v,MATS[s.work.rooms[target.roomId].mat]?.sw||'#e8e2d8',G.color(s.work,target.roomId,'floor')||G.autoColor(MATS[s.work.rooms[target.roomId].mat]?.sw),F.tiled(s.work.rooms[target.roomId].mat));const a=p.floorFinish?.areas[target.roomId];notes.push(`完成标高 ${a?.finishedZ??'待确定'} mm`);if(a?.pending)notes.push(a.pending);}
+  else{const kind=s.work.rooms[target.roomId].mat,{color,groutColor}=FloorModel.floorOptions(s.work,target.roomId,kind);drawing.innerHTML=FurnishTileDrawing.floor(room,v,color||'#e8e2d8',groutColor||G.autoColor(color),F.tiled(kind));const a=p.floorFinish?.areas[target.roomId];notes.push(`完成标高 ${a?.finishedZ??'待确定'} mm`);if(a?.pending)notes.push(a.pending);}
   if(!v.enabled)notes.push('排版未启用：二维仅展示参数示意，3D保持实际关闭状态');
   const bands=v.bands?.rows||[];q('[data-tiling-band-choice]').hidden=!bands.length;q('[data-tiling-band-readout]').hidden=!bands.length;q('[data-tiling-edit-band]').hidden=!bands.length;if(bands.length){if(!bands.some(r=>r.id===s.bandId))s.bandId=bands[0].id;q('[data-tiling-band-focus]').innerHTML=options(bands.map(r=>[r.id,r.name]),s.bandId);const b=T.patterns(elevation).find(p=>p.band?.id===s.bandId);q('[data-tiling-band-readout]').textContent=`${b.band.name}实际参数：${b.layout.width}×${b.layout.height} mm，缝${b.layout.gap} mm，沿墙${b.layout.offset} mm，竖向${b.layout.startHeight} mm（${b.layout.reference==='floor'?'完成地面以上':'毛坯绝对标高'}）${b.followFloor?'，跟随地砖对缝':''}`;}
   if(floorGroup(list))notes.unshift(`统一起铺点作用于全部 ${list.length} 个已选地面；在当前查看地面点选或拖动，砖规格、方向和缝宽保持各自设置。`);
@@ -128,7 +165,7 @@ function preview(){
   review(p);
   q('[data-tiling-preview-note]').textContent=notes.filter(Boolean).join('；');
   if(s.mode==='3d'){
-   if(s.preview)s.preview.update(p,s.work,target,{picking:s.picking,bandId:s.bandId,selectedKeys:[...s.selected],colors:Object.fromEntries(Object.entries(s.work.rooms).map(([id,r])=>[id,MATS[r.mat]?.sw]))});
+   if(s.preview)s.preview.update(p,s.work,target,{picking:s.picking,bandId:s.bandId,selectedKeys:[...s.selected],showFloorFinish:!q('[data-floor-swatches]').hidden});
    else if(!s.loading){s.loading=true;three.textContent='正在加载3D预览…';View3D.tileLayoutPreview(three,{onSelect:pickSurface,onBasis:patch=>{try{change(patch,'gesture');refreshBasisFields();}catch(e){error(e.message);}},onGesture:gesture,onError:error}).then(instance=>{s.loading=false;if(s.disposed){instance.dispose();return;}s.preview=instance;preview();}).catch(e=>{s.loading=false;if(!s.disposed)three.textContent='3D预览未加载：'+e.message;});}
   }
   if(s.mode==='drawing')bindBasis(drawing,target,p);
@@ -143,7 +180,7 @@ function afterRender(){
  if(!session||session.disposed||session.applying)return;if(session.owner!==PLAN.id){session.discard=true;closeDialog();return;}
  if(snap()!==session.source){if(dirty()){error('项目已变化，当前草稿不能应用；请取消后重新打开铺砖');return;}session.base=copy(state);session.work=copy(state);session.source=snap();session.targets=C.groups(state,plan());selection();renderTargets();}
 }
-document.addEventListener('click',e=>{const b=e.target.closest('[data-tiling-open]');if(b)open({roomId:b.dataset.tilingRoom,kind:b.dataset.tilingKind});});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-tiling-open]');if(b)open({roomId:b.dataset.tilingRoom,kind:b.dataset.tilingKind,view:is3D()?'3d':undefined});});
 window.addEventListener('load',()=>{const rail=document.querySelector('.rail-tool-pop .rail-finishes');if(!rail)return;const b=document.createElement('button');b.className='btn';b.id='tiling-open';b.dataset.tilingOpen='';b.innerHTML=ico('floor-tile')+'<span>铺砖</span>';b.title='选择墙面与地面，统一设置铺砖';rail.prepend(b);});
 window.FurnishTileWorkspace={open,close,afterRender};
 })();

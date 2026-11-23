@@ -261,8 +261,9 @@ function create(T,scene,{wx,wz,inside}){
   const variantKey=(fineEdge?profile+':'+seam.toArray().join(','):profile)+'|'+upperReceiver+'|'+kitchenReceiver+'|'+sunReceiver;
   if(pool.has(variantKey))return pool.get(variantKey);
   const material=source.clone();
-  const satinTile=source.userData.satinTile===true||profile==='floor'&&!!source.userData.tileFinish?.layout;
-  const tileDetail=profile==='floor'&&satinTile;
+  const floorKind=source.userData.tileFinish?.floorKind;
+  const satinTile=source.userData.satinTile===true||profile==='floor'&&!!source.userData.tileFinish?.layout&&floorKind!=='antislip';
+  const tileDetail=profile==='floor'&&satinTile&&!floorKind;
   const layout=source.userData.tileFinish?.layout;
   const groutHalfWidth=layout?layout.gap/(2*(Math.min(layout.width,layout.height)+layout.gap)):.006;
   const paintDetail=profile==='wall',cabinetDetail=profile==='cabinet';
@@ -282,7 +283,7 @@ function create(T,scene,{wx,wz,inside}){
   // Keep source PBR values and pre-existing shaders. Export strips these
   // raster hooks and keeps the source values.
   const cacheKey=source.customProgramCacheKey();
-  material.customProgramCacheKey=()=>cacheKey+'|room-daylight-v13|'+smoothReflection+'|'+satinTile+'|'+profile+'|'+fineEdge+'|'+replacePaintColor+'|'+upperReceiver+'|'+kitchenReceiver+'|'+finishKind+'|'+sunReceiver;
+  material.customProgramCacheKey=()=>cacheKey+'|room-daylight-v14|'+smoothReflection+'|'+satinTile+'|'+profile+'|'+fineEdge+'|'+replacePaintColor+'|'+upperReceiver+'|'+kitchenReceiver+'|'+finishKind+'|'+sunReceiver;
   material.onBeforeCompile=function(shader,renderer){
    source.onBeforeCompile.call(this,shader,renderer);
    Object.assign(shader.uniforms,uniforms);

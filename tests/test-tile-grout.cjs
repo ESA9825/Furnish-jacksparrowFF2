@@ -25,6 +25,25 @@ const path=require('node:path'),tempBase=path.resolve(__dirname,'../output/playw
   assert.throws(()=>preview.update({...args,roomId:'missing'}));assert.equal(m1.material,shared);
   const obs=O.create(T),camera=new T.PerspectiveCamera();camera.position.set(0,2,4);camera.lookAt(0,1,0);camera.updateMatrixWorld();obs.update(camera,new T.Box3(new T.Vector3(-1,0,-1),new T.Vector3(1,2,1)),group);assert.equal(m1.material.onBeforeCompile,shared.onBeforeCompile,'observation cutaways retain the grout shader');preview.update(args);preview.clear();obs.clear();assert.equal(m1.material,shared);
   const oldMap=new T.CanvasTexture({width:512,height:512});oldMap.repeat.set(1.25,1.25);const oldMaterial=new T.MeshStandardMaterial({map:oldMap,roughness:.3});oldMaterial.userData.tileFinish={legacy:true,color:'#ebe6dd',groutPixels:3};const oldMesh=new T.Mesh(geo,oldMaterial);oldMesh.userData={floor:true,room:a};floorGroup.add(oldMesh);const oldUV=geo.attributes.uv.array.slice();preview.update({floorGroup,roomId:a,kind:'floor',color:'#000000'});assert.equal(oldMesh.material.userData.tileFinish.groutColor,'#000000');assert.deepEqual(oldMesh.material.map.repeat.toArray(),[1.25,1.25]);assert.equal(oldMesh.material.roughness,.3);assert.deepEqual(geo.attributes.uv.array,oldUV);preview.clear();assert.equal(oldMesh.material,oldMaterial);oldMap.dispose();oldMaterial.dispose();
+  const atlas=[],patterns=[];
+  global.document={createElement:()=>{
+   const canvas={getContext:()=>({
+    fillRect(){},createImageData(w,h){return {data:new Uint8ClampedArray(w*h*4)};},
+    putImageData(image){canvas.pixels=image.data;},drawImage(face,x,y,w,h){
+     atlas.push([x,y,w,h]);patterns.push(Array.from({length:16},(_,i)=>face.pixels[i*7919*4%face.pixels.length]));
+    }
+   })};return canvas;
+  }};
+  const layout={width:800,height:400,gap:2},porcelain=M.material(T,layout,{floorKind:'tile800',groutColor:'#000000'});
+  assert.deepEqual(porcelain.map.repeat.toArray(),[.5,.5]);
+  assert.deepEqual(atlas,[[0,0],[256,0],[0,256],[256,256]].map(([x,y])=>[x,y,256*800/802,256*400/402]));
+  assert.equal(new Set(patterns.map(p=>p.join(','))).size,4);assert(patterns.every(p=>new Set(p).size>1));
+  const tiledMesh=new T.Mesh(geo,porcelain);tiledMesh.userData={floor:true,room:b};floorGroup.add(tiledMesh);
+  preview.update({floorGroup,roomId:b,kind:'floor',color:'#123456'});
+  assert.equal(tiledMesh.material.userData.tileFinish.floorKind,'tile800');assert.equal(tiledMesh.material.roughness,porcelain.roughness);
+  const tileShader={uniforms:{},fragmentShader:'#include <map_fragment>'};tiledMesh.material.onBeforeCompile(tileShader);
+  assert.deepEqual(tileShader.uniforms.furnishJoint.value.toArray(),[2/802,2/402]);assert.match(tileShader.fragmentShader,/tileUV=vMapUv\*2\.0/);
+  preview.clear();assert.equal(tiledMesh.material,porcelain);porcelain.map.dispose();porcelain.dispose();
   shared.map.dispose();shared.dispose();geo.dispose();
  }finally{if(prior===undefined)delete global.document;else global.document=prior;}
  console.log('PASS room wall/floor grout, auto/custom/black, invalid input, independent scopes, v11 recovery, unchanged spatial confirmations and production preview isolation/cleanup');

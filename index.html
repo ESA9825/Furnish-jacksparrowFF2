@@ -1608,7 +1608,7 @@ const syncIdentity=FurnishPartIdentity;
   syncIdentity.each("index.html:generator-40",FurnishWallFinish.spatial(finishPlan).rooms.filter(r=>r.poly.length),r => {
     const floor=finishPlan.floorFinish?.areas[r.id];
     const surfaceColor=FurnishStyles.surfaceColor(appearanceWork,r.counted===false?'bay':'floor',r.id);
-    const groutColor=FurnishTileGrout.color(state,r.id,'floor');let m = floor?.layout?FurnishFloorFinishModel.material(THREE,floor.layout,{wx,wz,color:surfaceColor||MATS[state.rooms[r.id].mat]?.sw,groutColor}):floorMat(state.rooms[r.id].mat,surfaceColor,floorAppearance(r.id));if(!floor?.layout&&m.userData.tileFinish?.legacy&&groutColor){const original=m;m=FurnishFloorFinishModel.legacyMaterial(THREE,m,{groutColor});if(surfaceColor){original.map.dispose();original.dispose();m.userData.styleSurfaceOwned=true;}}const bay = r.counted === false, roomH=FurnishProject.roomCeilingHeight(state,r)/1000;
+    const floorKind=state.rooms[r.id].mat,groutColor=FurnishTileGrout.color(state,r.id,'floor');let m = floor?.layout?FurnishFloorFinishModel.material(THREE,floor.layout,FurnishFloorFinishModel.floorOptions(appearanceWork,r.id,floorKind)):floorMat(floorKind,surfaceColor,floorAppearance(r.id));if(!floor?.layout&&m.userData.tileFinish?.legacy&&groutColor){const original=m;m=FurnishFloorFinishModel.legacyMaterial(THREE,m,{groutColor});if(surfaceColor){original.map.dispose();original.dispose();m.userData.styleSurfaceOwned=true;}}const bay = r.counted === false, roomH=FurnishProject.roomCeilingHeight(state,r)/1000;
     const geo = bay ? new THREE.ExtrudeGeometry((r.polys||[r.poly]).map(p=>shapeOf(p)), {depth:r.height??.45, bevelEnabled:false}) : null;
     if(geo)geo.rotateX(-Math.PI/2);
     const fl=bay?syncIdentity.produce("index:site-223",()=>new THREE.Mesh(geo,[m,mat(surfaceColor||'#e9e4da')])):FurnishFloorFinishModel.surface(THREE,r,floor||{},{wx,wz,material:m});
@@ -1623,7 +1623,8 @@ const syncIdentity=FurnishPartIdentity;
   // its own grid and finished height. Legacy projects keep schematic sills.
   for(const a of finishPlan.floorFinish?.doorways||[]){
     const surfaceColor=FurnishStyles.surfaceColor(appearanceWork,'floor',a.roomId);
-    const m=a.layout?FurnishFloorFinishModel.material(THREE,a.layout,{color:surfaceColor||MATS[state.rooms[a.roomId].mat]?.sw,groutColor:FurnishTileGrout.color(state,a.roomId,'floor')}):floorMat(state.rooms[a.roomId].mat,surfaceColor,floorAppearance(a.roomId));
+    const floorKind=state.rooms[a.roomId].mat;
+    const m=a.layout?FurnishFloorFinishModel.material(THREE,a.layout,FurnishFloorFinishModel.floorOptions(appearanceWork,a.roomId,floorKind)):floorMat(floorKind,surfaceColor,floorAppearance(a.roomId));
     const mesh=FurnishFloorFinishModel.surface(THREE,a.room,a,{wx,wz,material:m});mesh.userData.doorway=a.id;mesh.userData.layerObject="floor:"+a.roomId;archFloor.add(mesh);
     const layers=FurnishFloorFinishModel.layers(THREE,a.room,a,{wx,wz});if(layers)archFloor.add(layers);
   }

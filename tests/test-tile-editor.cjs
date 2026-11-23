@@ -16,4 +16,14 @@ const low=E.edit(work,effective(work),allFloors,{baseThickness:0});assert(allFlo
 let restored=next;for(let i=0;i<3;i++){restored=P.unpack(P.pack({planId:plan.id,current:restored,designs:[{name:'铺砖',work:restored}],catalog:[]})).current;assert.deepEqual(restored,next);}
 const fresh=structuredClone(base);delete fresh.floorFinishes;delete fresh.wallTiling;const enabled=E.edit(fresh,effective(fresh),[floor],{enabled:true});assert.equal(enabled.floorFinishes.areas[floor.roomId].tileThickness,undefined);assert.equal(enabled.floorFinishes.areas[floor.roomId].rawZ,undefined);assert.equal(enabled.floorFinishes.areas[floor.roomId].enabled,true);
 const install=structuredClone(work);E.install(install,next);assert.deepEqual(install,next);E.install(install,work);assert.deepEqual(install,work);
+const Styles=require('../src/core/style-core.js'),swatch=structuredClone(work);
+Styles.editSurface(swatch,'floor',floor.roomId,'#d5d1c8');
+assert.notEqual(E.signature(swatch),E.signature(work));assert(E.onlyChange(work,swatch));
+E.install(install,swatch);assert.deepEqual(install,swatch);
+const recovered=P.unpack(P.pack({planId:plan.id,current:install,designs:[],catalog:[]})).current;
+assert.equal(Styles.surfaceColor(recovered,'floor',floor.roomId),'#d5d1c8');
+assert.deepEqual(recovered.floorFinishes,work.floorFinishes);assert.deepEqual(recovered.tilePresets,work.tilePresets);
+Styles.editSurface(install,'bay','example','#f2f0ea');E.install(install,work);
+assert.equal(Styles.surfaceColor(install,'floor',floor.roomId),undefined);
+assert.equal(Styles.surfaceColor(install,'bay','example'),'#f2f0ea');assert(!E.onlyChange(work,install));
 console.log('PASS shared tiling draft, mixed-surface patches, retained bands/links/unknowns, isolated targets, validation, atomic edits and repeated project round trips');

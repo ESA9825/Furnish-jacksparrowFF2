@@ -4,14 +4,59 @@
 // Stable authoring-site labels: keep existing labels when moving code; allocate new labels for new sites.
 const syncIdentity=root.FurnishPartIdentity||(typeof require==='function'?require('../core/part-identity.js'):null);
 
-function material(THREE,layout,{color='#e8e2d8',groutColor:custom}={}){
+const ceramics=Object.freeze({tile800:.49,tile600:.53,antislip:.78});
+const ceramic=kind=>Object.hasOwn(ceramics,kind);
+const faceSize=256;
+const grain=new Map();
+function noise(x,y,scale,seed){
+ const px=x*scale/faceSize,py=y*scale/faceSize,ix=Math.floor(px),iy=Math.floor(py);
+ const smooth=t=>t*t*(3-2*t),u=smooth(px-ix),v=smooth(py-iy);
+ const at=(a,b)=>{
+  const n=Math.imul(a%scale+seed,1597334677)^Math.imul(b%scale,3812015801);
+  return (Math.imul(n^(n>>>16),2246822519)>>>0)/4294967296-.5;
+ };
+ const top=at(ix,iy)*(1-u)+at(ix+1,iy)*u,bottom=at(ix,iy+1)*(1-u)+at(ix+1,iy+1)*u;
+ return top*(1-v)+bottom*v;
+}
+function tileFace(canvas,color,kind,variation=0){
+ if(!grain.has(variation)){
+  const detail=new Float32Array(faceSize*faceSize),seed=variation*71;
+  for(let y=0;y<faceSize;y++)for(let x=0;x<faceSize;x++){
+   const cloud=noise(x,y,5,13+seed)+.4*noise(x,y,13,37+seed);
+   detail[y*faceSize+x]=cloud*.055+noise(x,y,43,23+seed)*.045+noise(x,y,137,41+seed)*.05;
+  }
+  grain.set(variation,detail);
+ }
+ canvas.width=canvas.height=faceSize;
+ const ctx=canvas.getContext('2d'),pixels=ctx.createImageData(faceSize,faceSize);
+ const hex=color.length===4?color.slice(1).split('').map(c=>c+c).join(''):color.slice(1);
+ const rgb=[0,2,4].map(i=>parseInt(hex.slice(i,i+2),16)),strength=kind==='antislip'?1.35:1,detail=grain.get(variation);
+ for(let i=0;i<detail.length;i++){
+  const tone=1+strength*detail[i],p=i*4;
+  pixels.data[p]=rgb[0]*tone;pixels.data[p+1]=rgb[1]*tone;pixels.data[p+2]=rgb[2]*tone;pixels.data[p+3]=255;
+ }
+ ctx.putImageData(pixels,0,0);
+ return canvas;
+}
+function floorOptions(work,roomId,kind){
+ const styles=root.FurnishStyles||require('../core/style-core.js'),catalog=root.FurnishCatalogData||require('../data/catalog.js'),grout=root.FurnishTileGrout||require('../core/tile-grout-core.js');
+ return {floorKind:kind,color:styles.surfaceColor(work,'floor',roomId)||catalog.materials[kind]?.sw,groutColor:grout.color(work,roomId,'floor')};
+}
+function material(THREE,layout,{color='#e8e2d8',groutColor:custom,floorKind}={}){
  const tileColor=/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(color)?color:'#e8e2d8',groutColor=custom?new THREE.Color(custom):new THREE.Color(tileColor).multiplyScalar(.9);
- const canvas=document.createElement('canvas');canvas.width=canvas.height=1024;const c=canvas.getContext('2d');
- c.fillStyle='#'+groutColor.getHexString();c.fillRect(0,0,1024,1024);c.fillStyle=tileColor;
- c.fillRect(0,0,1024*layout.width/(layout.width+layout.gap),1024*layout.height/(layout.height+layout.gap));
+ const detailed=ceramic(floorKind),size=detailed?512:1024,pitch=detailed?size/2:size;
+ const canvas=document.createElement('canvas');canvas.width=canvas.height=size;const c=canvas.getContext('2d');
+ const width=pitch*layout.width/(layout.width+layout.gap),height=pitch*layout.height/(layout.height+layout.gap);
+ c.fillStyle='#'+groutColor.getHexString();c.fillRect(0,0,size,size);
+ if(detailed){
+  const face=document.createElement('canvas');
+  for(let i=0;i<4;i++)c.drawImage(tileFace(face,tileColor,floorKind,i),(i%2)*pitch,Math.floor(i/2)*pitch,width,height);
+ }
+ else{c.fillStyle=tileColor;c.fillRect(0,0,width,height);}
  const map=new THREE.CanvasTexture(canvas);map.wrapS=map.wrapT=THREE.RepeatWrapping;map.colorSpace=THREE.SRGBColorSpace;map.flipY=false;
- const material=new THREE.MeshStandardMaterial({map,roughness:.72});
- material.userData.tileFinish={color:tileColor,layout:{width:layout.width,height:layout.height,gap:layout.gap},...(custom?{groutColor:custom}:{})};
+ if(detailed){map.repeat.set(.5,.5);map.anisotropy=4;}
+ const material=new THREE.MeshStandardMaterial({map,roughness:detailed?ceramics[floorKind]:.72});
+ material.userData.tileFinish={color:tileColor,layout:{width:layout.width,height:layout.height,gap:layout.gap},...(custom?{groutColor:custom}:{}),...(detailed?{floorKind}:{})};
  // Preserve the true grid pitch. A subpixel joint gets a modest screen-space
  // coverage floor instead of disappearing into texture mipmaps at room scale.
  material.onBeforeCompile=shader=>{
@@ -19,18 +64,18 @@ function material(THREE,layout,{color='#e8e2d8',groutColor:custom}={}){
   shader.uniforms.furnishGroutColor={value:groutColor};
   shader.fragmentShader='uniform vec2 furnishJoint;\nuniform vec3 furnishGroutColor;\n'+shader.fragmentShader;
   shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
-   vec2 tileUV=vMapUv;
+   vec2 tileUV=${detailed?'vMapUv*2.0':'vMapUv'};
    vec2 pixel=max(fwidth(tileUV),vec2(0.000001));
-   vec2 halfJoint=max(furnishJoint*0.5,pixel*0.32);
+   vec2 halfJoint=max(furnishJoint*0.5,pixel*${detailed?'0.21':'0.32'});
    vec2 distanceToJoint=abs(fract(tileUV+furnishJoint*0.5+0.5)-0.5);
    vec2 joint=vec2(1.0)-smoothstep(max(vec2(0.0),halfJoint-pixel*0.4),halfJoint+pixel*0.4,distanceToJoint);
    joint*=step(vec2(0.0000001),furnishJoint);
    float tone=fract(sin(dot(floor(tileUV),vec2(12.9898,78.233)))*43758.5453);
-   diffuseColor.rgb*=0.965+0.045*tone;
-   diffuseColor.rgb=mix(diffuseColor.rgb,furnishGroutColor,max(joint.x,joint.y)*0.9);
+   diffuseColor.rgb*=${detailed?'0.988+0.024*tone':'0.965+0.045*tone'};
+   diffuseColor.rgb=mix(diffuseColor.rgb,furnishGroutColor,max(joint.x,joint.y)*${detailed?'0.55':'0.9'});
   `);
  };
- material.customProgramCacheKey=()=> 'furnish-tile-grid-v3';return material;
+ material.customProgramCacheKey=()=> detailed?'furnish-ceramic-grid-v1':'furnish-tile-grid-v3';return material;
 }
 // Old room textures have illustrative pixel joints and metre UVs, without a
 // saved layout or known layer heights. Recolour only those existing pixels.
@@ -76,5 +121,5 @@ function stepEdges(THREE,steps,{wx=v=>v/1000,wz=v=>v/1000}={}){
   const mesh=syncIdentity.produce("floor-finish-model:site-3",()=>new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:'#827564',roughness:1,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1})));mesh.userData.floorStep=step;mesh.userData.floorFinishOwnMaterial=true;group.add(mesh);
  }return group;
 }
-const api={material,legacyMaterial,groutMaterial,uv,surface,layers,stepEdges};if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishFloorFinishModel=api;
+const api={material,legacyMaterial,groutMaterial,uv,surface,layers,stepEdges,ceramic,tileFace,floorOptions};if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishFloorFinishModel=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

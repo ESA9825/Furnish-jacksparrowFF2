@@ -96,8 +96,8 @@ function edit(work,plan,selected,patch){
  }
  W().validate(next.wallFinishes);T().validate(next.wallTiling);F().validate(next.floorFinishes);G().validate(next.tileGrout);return next;
 }
-function signature(work){return JSON.stringify([keys.map(k=>work[k]),Object.entries(work.rooms||{}).map(([id,r])=>[id,r.mat])]);}
-function onlyChange(a,b){const strip=w=>{const c=copy(w);for(const k of keys)delete c[k];for(const r of Object.values(c.rooms||{}))delete r.mat;return JSON.stringify(c);};return strip(a)===strip(b);}
+function signature(work){return JSON.stringify([keys.map(k=>work[k]),Object.entries(work.rooms||{}).map(([id,r])=>[id,r.mat]),work.styleAppearance?.floorOverrides]);}
+function onlyChange(a,b){const strip=w=>{const c=copy(w);for(const k of keys)delete c[k];for(const r of Object.values(c.rooms||{}))delete r.mat;if(c.styleAppearance?.floorOverrides){delete c.styleAppearance.floorOverrides;if(Object.keys(c.styleAppearance).length===1)delete c.styleAppearance;}return JSON.stringify(c);};return strip(a)===strip(b);}
 const binding=(work,t)=>(work.tilePresets?.bindings||[]).find(b=>b.roomId===t.roomId&&(t.kind==='wall'?b.face&&T().same(b.face,t.face):!b.face));
 function changeGroups(work,t,patch,plan){
  const previous=plan?read(work,plan,t):null,groups=parameters.patchGroups(Object.fromEntries(Object.entries(patch).filter(([k,v])=>k!=='bands'&&(!previous||JSON.stringify(previous[k]??null)!==JSON.stringify(v??null)))),t.kind);if(!Object.hasOwn(patch,'bands'))return groups;
@@ -127,6 +127,15 @@ function editLinked(work,plan,selected,patch,policy='local'){
  }
  for(const p of changed.values())next=presets().save(next,p,plan);return next;
 }
-function install(work,next){for(const k of keys){if(next[k]===undefined)delete work[k];else work[k]=copy(next[k]);}for(const [id,r]of Object.entries(next.rooms||{}))work.rooms[id].mat=r.mat;}
+function install(work,next){
+ for(const k of keys){if(next[k]===undefined)delete work[k];else work[k]=copy(next[k]);}
+ for(const [id,r]of Object.entries(next.rooms||{}))work.rooms[id].mat=r.mat;
+ const floorOverrides=next.styleAppearance?.floorOverrides;
+ if(floorOverrides)(work.styleAppearance??={version:1}).floorOverrides=copy(floorOverrides);
+ else if(work.styleAppearance?.floorOverrides){
+  delete work.styleAppearance.floorOverrides;
+  if(Object.keys(work.styleAppearance).length===1)delete work.styleAppearance;
+ }
+}
 const api={groups,members,contains,elevation,groupValues,targets,resolve,read,edit,editLinked,changeGroups,binding,key,signature,install,fields,onlyChange};if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishTileEditor=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
