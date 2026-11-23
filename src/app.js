@@ -244,11 +244,13 @@ function renderableFurniture(){return state.furniture.filter(f=>{
   if(FurnishProducts.modelError(f))return false;
   try{FurnishGeometry.bodyParts(f);renderableFurnitureCache.set(f,key);return true;}catch(e){furnitureRenderErrors.set(f.id,e.message||String(e));return false;}
 });}
-function collisions(){
+function collisions(focusId){
  const furniture=renderableFurniture(),plan=canvasEffectivePlan(),cached=canvasPlanScope?.collisions;
  // Only share within one synchronous read-only draw. Imports, undo, saves and
  // in-place edits outside that draw always compute against the current state.
- if(cached&&cached.furniture.length===furniture.length&&furniture.every((f,i)=>f===cached.furniture[i]))return cached.pairs;
+ if(cached&&cached.furniture.length===furniture.length&&furniture.every((f,i)=>f===cached.furniture[i]))
+   return focusId===undefined?cached.pairs:cached.pairs.filter(pair=>pair.includes(focusId));
+ if(focusId!==undefined)return FurnishGeometry.collisions(furniture,plan,focusId);
  const pairs=FurnishGeometry.collisions(furniture,plan);
  if(canvasPlanScope)canvasPlanScope.collisions={furniture,pairs};return pairs;
 }
@@ -301,6 +303,7 @@ function drawer(which, open){
     }
   }
   app.classList.toggle('hide-lib', !!panes.hideLib); app.classList.toggle('hide-panel', !!panes.hidePanel);
+  flushSelectionPanel();
   syncPaneBtns();
   if(n&&panelWasOpen!==els.panel.classList.contains('open')){
     const target=els.panel.classList.contains('open')?$('#panel [data-panel-scope][aria-pressed="true"]'):$('#property-peek:not([hidden]) [data-peek-scope]')||$('#tgPanel');
@@ -876,6 +879,7 @@ let printTheme = null;
 addEventListener('beforeprint', () => {
   printTheme = curTheme();
   if (printTheme === 'dark') setTheme('light');           // 打印输出固定用浅色
+  if(is3D())applyView();
   const b = PLAN.bounds;
   svg.setAttribute('viewBox', `${b.x} ${b.y} ${b.w} ${b.h}`);
   // 打印抬头：方案名 + 面积表
@@ -960,7 +964,7 @@ async function setView(m){
         document.body.classList.add('m3d');
         await window.View3D.enter(showLoading);
       }finally{clearTimeout(slow);indicator.hidden=true;}
-    } else { viewMode = m; document.body.classList.remove('m3d'); await window.View3D.exit(); applyView(); }
+    } else { viewMode = m; document.body.classList.remove('m3d'); await window.View3D.exit(); applyView(); flushSelectionPanel(); }
     $('#tip').textContent = TIPS()[m];
   } catch(e) {
     console.error(e);
@@ -1051,7 +1055,10 @@ document.querySelectorAll('details.menu').forEach(m => m.addEventListener('toggl
 }));
 // 触屏上点菜单以外的地方收起下拉菜单
 document.addEventListener('pointerdown', e => { document.querySelectorAll('details.menu').forEach(m => { if (m.open && !m.contains(e.target)) m.open = false; }); });
-matchMedia('(max-width:1100px)').addEventListener('change', () => drawer(null));
+matchMedia('(max-width:1100px)').addEventListener('change', () => {
+  drawer(null);
+  renderPropertyPeek();
+});
 drawer(null);                                  // 恢复上次的面板收起状态
 $('#exportPng').onclick = exportPNG;
 $('#exportJson').onclick = () => download(tr('户型装修方案', 'floor-plan-design') + '-' + PLAN.id + '.json',
@@ -1089,7 +1096,13 @@ new ResizeObserver(() => {
   const w = svg.clientWidth, h = svg.clientHeight; if (!w) return;
   if (repositoryBooting){lastW=w;lastH=h;return;}
   if (!lastW) fitView();
-  else { view.x0 -= (w - lastW)/2/view.s; view.y0 -= (h - lastH)/2/view.s; applyView(); }
+  else {
+    view.x0 -= (w - lastW)/2/view.s; view.y0 -= (h - lastH)/2/view.s;
+    if(is3D()){
+      applyCanvasViewport();
+      window.FurnishCatalog?.afterView();
+    }else applyView();
+  }
   lastW = w; lastH = h;
 }).observe(svg);
 

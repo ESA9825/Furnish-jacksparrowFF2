@@ -386,10 +386,11 @@ function furnitureDirectionsSVG(){
   return `<g data-product-direction="${v.key}"><path d="M${v.edge.join(' ')}L${x} ${y}" stroke="${color}" stroke-width="1" vector-effect="non-scaling-stroke"/><g transform="translate(${x} ${y}) rotate(${-rotation})"><rect x="${-width/2}" y="${-9*k}" width="${width}" height="${18*k}" rx="${5*k}" fill="${PAL.halo}" stroke="${color}" stroke-width="1" vector-effect="non-scaling-stroke"/><text text-anchor="middle" dominant-baseline="central" font-size="${11*k}" font-weight="${v.key==='front'?700:500}" fill="${color}">${names[v.key]}</text></g></g>`;
  }).join('')}</g>`).join('');
 }
-function renderSel(){
-  window.FurnishCeilingUI?.selectionChanged();
+function renderSel({drawPlan=true}={}){
+  if(drawPlan)window.FurnishCeilingUI?.selectionChanged();
   if(globalThis.FurnishElectricalUI?.active()){$('#gSel').innerHTML=FurnishElectricalUI.pairedOverlay();FurnishElectricalUI.draw();return;}
   if(globalThis.FurnishObservationLayers&&selIds().some(id=>!FurnishObservationLayers.visible(getF(id))))ui.sel=null;
+  if(!drawPlan)return;
   const preview=window.FurnishWorkspace?.openingPreviewPlan?.();if(!preview)return renderSelectedGeometry();
   const actual=[WALLS,WINS,DOORS,SLIDES,ROOMS];try{({walls:WALLS,wins:WINS,doors:DOORS,slides:SLIDES,rooms:ROOMS}=preview);renderSelectedGeometry();}finally{[WALLS,WINS,DOORS,SLIDES,ROOMS]=actual;}
 }

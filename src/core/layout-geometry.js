@@ -107,19 +107,32 @@ function verticalOverlap(a,b,ranges){
   return !(A&&B&&Math.min(A.top,B.top)-Math.max(A.bottom,B.bottom)<=1e-6);
 }
 const solidForCollision=f=>!NOCOLLIDE.has(f.type)&&!(root.FurnishProducts||(typeof require==='function'?require('./product-rules.js'):null))?.softCoveringOnly(f)&&!(root.FurnishProducts||(typeof require==='function'?require('./product-rules.js'):null))?.definition(f)?.embedded;
-function collisions(furniture,plan){
+function collisions(furniture,plan,focusId){
   const L = furniture.filter(solidForCollision), out = [];
-  const box = L.map(f=>{if(!(root.FurnishProducts||require('./product-rules.js')).definition(f)?.telescopic)return aabb(f);const [x0,y0,x1,y1]=bbox(footprints(f,{plan,furniture}).flat());return {hw:Math.max(f.cx-x0,x1-f.cx),hh:Math.max(f.cy-y0,y1-f.cy)};});
-  const D=root.FurnishDesign||(typeof require==='function'?require('./design-core.js'):null),vertical=L.map(f=>D?.furnitureVerticalBounds(f,plan,furniture)),bases=plan?L.map(f=>(root.FurnishProducts||require('./product-rules.js')).floorBase(plan,f,furniture)):null;
-  for (let i = 0; i < L.length; i++) for (let j = i+1; j < L.length; j++){
-    const a = L[i], b = L[j];
-    if (Math.abs(a.cx-b.cx) >= box[i].hw+box[j].hw || Math.abs(a.cy-b.cy) >= box[i].hh+box[j].hh) continue;   // 外包盒快速排除
-    if (tuckedSeatPair(a,b)) continue;
-    if(!verticalOverlap(a,b,[vertical[i],vertical[j]]))continue;
-    const C=root.FurnishCabinet||(typeof require==='function'?require('./cabinet-core.js'):null);
-    if(C&&![a,b].some(f=>(root.FurnishProducts||require('./product-rules.js')).definition(f)?.hoodMotion&&(root.FurnishProducts||require('./product-rules.js')).value(f,'hoodPanelOpen'))&&((!(root.FurnishProducts||require('./product-rules.js')).definition(a)?.fridgeMotion&&!(root.FurnishProducts||require('./product-rules.js')).definition(b)?.fridgeMotion&&(C.fridgeFitsBay(a,b)||C.fridgeFitsBay(b,a)))||C.hoodBayFit(a,b)?.fits||C.hoodBayFit(b,a)?.fits)&&(!bases||bases[i].known&&bases[j].known&&Math.abs(bases[i].z-bases[j].z)<1e-6))continue;
-    const M=root.FurnishCabinetMotion||require('./cabinet-motion.js');
-    if (M.supportsSolids(a)||M.supportsSolids(b)||(root.FurnishProducts||require('./product-rules.js')).family(a,'pipe-box')||(root.FurnishProducts||require('./product-rules.js')).family(b,'pipe-box')?volumeOverlap(a,b,plan,furniture):obbOverlap(a,b)) out.push([a.id, b.id]);
+  const focus=focusId===undefined?-1:L.findIndex(f=>f.id===focusId);
+  if(focusId!==undefined&&focus<0)return out;
+  const P=root.FurnishProducts||require('./product-rules.js');
+  const D=root.FurnishDesign||(typeof require==='function'?require('./design-core.js'):null);
+  const C=root.FurnishCabinet||(typeof require==='function'?require('./cabinet-core.js'):null);
+  const M=root.FurnishCabinetMotion||require('./cabinet-motion.js');
+  const box = L.map(f=>{if(!P.definition(f)?.telescopic)return aabb(f);const [x0,y0,x1,y1]=bbox(footprints(f,{plan,furniture}).flat());return {hw:Math.max(f.cx-x0,x1-f.cx),hh:Math.max(f.cy-y0,y1-f.cy)};});
+  const vertical=[],bases=[];
+  const range=i=>Object.hasOwn(vertical,i)?vertical[i]:(vertical[i]=D?.furnitureVerticalBounds(L[i],plan,furniture));
+  const base=i=>bases[i]??=P.floorBase(plan,L[i],furniture);
+  const openHood=f=>P.definition(f)?.hoodMotion&&P.value(f,'hoodPanelOpen');
+  const fitsBay=(a,b)=>(!P.definition(a)?.fridgeMotion&&!P.definition(b)?.fridgeMotion&&(C.fridgeFitsBay(a,b)||C.fridgeFitsBay(b,a)))||C.hoodBayFit(a,b)?.fits||C.hoodBayFit(b,a)?.fits;
+  // Keep the original pair orientation and ordering for focused results.
+  const count=focus<0?L.length:focus+1;
+  for (let i = 0; i < count; i++){
+    const first=i<focus?focus:i+1,end=i<focus?focus+1:L.length;
+    for (let j = first; j < end; j++){
+      const a = L[i], b = L[j];
+      if (Math.abs(a.cx-b.cx) >= box[i].hw+box[j].hw || Math.abs(a.cy-b.cy) >= box[i].hh+box[j].hh) continue;   // 外包盒快速排除
+      if (tuckedSeatPair(a,b)) continue;
+      if(!verticalOverlap(a,b,[range(i),range(j)]))continue;
+      if(C&&!openHood(a)&&!openHood(b)&&fitsBay(a,b)&&(!plan||base(i).known&&base(j).known&&Math.abs(base(i).z-base(j).z)<1e-6))continue;
+      if (M.supportsSolids(a)||M.supportsSolids(b)||P.family(a,'pipe-box')||P.family(b,'pipe-box')?volumeOverlap(a,b,plan,furniture):obbOverlap(a,b)) out.push([a.id, b.id]);
+    }
   }
   return out;
 }

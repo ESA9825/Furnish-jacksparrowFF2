@@ -78,6 +78,16 @@ console.log('PASS metric units, concave rooms, rotated bounds, 5 mm tolerance an
  }
  assert.throws(()=>C.centerFridgeInBay(cabinet,{...fridge,locked:true}),/锁定/);
  assert.equal(G.collisions([cabinet,fridge,{...fridge,id:'second-fridge'}]).length,1,'two fridges still collide with each other');
+ const focusedItems=[
+  {...fridge,id:'side-contact',w:810},
+  cabinet,
+  {...fridge,id:'top-contact',h:1951},
+  {...fridge,id:'floor-rug',type:'rug'},
+ ];
+ const allPairs=G.collisions(focusedItems,plan);
+ assert.deepEqual(allPairs.filter(pair=>pair.includes(cabinet.id)),[['side-contact',cabinet.id],[cabinet.id,'top-contact']]);
+ for(const id of [...focusedItems.map(f=>f.id),'missing'])
+  assert.deepEqual(G.collisions(focusedItems,plan,id),allPairs.filter(pair=>pair.includes(id)),'focused check preserves pair order, board collisions and exemptions');
  const plain={...cabinet,...C.preset('sideboard-wall')};assert(!C.fridgeFitsBay(plain,fridge));
  const exported=P.unpack(P.pack({planId:'test',current:{furniture:[cabinet,fridge]},designs:[],catalog:[]}));assert.deepEqual(G.collisions(exported.current.furniture),[]);
  console.log('PASS embedded fridge collision exemption with rotation, mirroring, height, exact boundaries, panel intersections and project round trip');

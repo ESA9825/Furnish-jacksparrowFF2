@@ -1,15 +1,53 @@
 /* Property panels and note editing. Classic script declarations only;
  * read the current application state when called, including after undo/load. */
-function renderPanel(){
-  const object=!!ui.sel&&ui.panelScope!=='design';
+let selectionPanelFrame=0,selectionPanelTimer=0,selectionPanelPending=false;
+function propertyPanelVisible(){
+  return narrow()?$('aside.right').classList.contains('open'):!$('.app').classList.contains('hide-panel');
+}
+function flushSelectionPanel(){
+  if(!selectionPanelPending||!propertyPanelVisible())return;
+  selectionPanelPending=false;
+  $('#panel').inert=false;
+  withCanvasPlan(renderPanelDetails);
+}
+function renderPanel({sceneFirst=false}={}){
+  cancelAnimationFrame(selectionPanelFrame);
+  clearTimeout(selectionPanelTimer);
+  const p=$('#panel');
+  selectionPanelPending=sceneFirst;
+  p.inert=sceneFirst;
+  globalThis.FurnishRoomMeasure?.afterRender();
+  if(ui.sel?.kind!=='wall')window.FurnishWorkflowTools?.clearDistances();
+  window.FurnishWorkspace?.clearOpeningPreview();
+  renderFab();
+  if(sceneFirst){
+    renderPropertyPeek();
+    window.FurnishElectricalUI?.selectionChanged();
+    // Let the live scene submit the new outline before building the properties.
+    selectionPanelFrame=requestAnimationFrame(()=>{
+      selectionPanelTimer=setTimeout(()=>{
+        flushSelectionPanel();
+        if(selectionPanelPending)window.FurnishObservationLayers?.afterRender();
+      },0);
+    });
+    return;
+  }
+  withCanvasPlan(renderPanelDetails);
+}
+function renderPanelDetails(){
+  const p=$('#panel'),object=!!ui.sel&&ui.panelScope!=='design';
   renderPanelContent(object);
-  const p=$('#panel'),f=selIds().length===1&&getF(ui.sel?.id),name=panelSelectionName();
+  const name=panelSelectionName();
   p.insertAdjacentHTML('afterbegin',`<nav class="property-nav" aria-label="${tr('属性与方案范围','Properties scope')}"><div><button class="btn ${object?'on':''}" data-panel-scope="object" aria-pressed="${object}" ${ui.sel?'':'disabled'}>${tr('当前对象','Current object')}</button><button class="btn ${object?'':'on'}" data-panel-scope="design" aria-pressed="${!object}">${tr('整案','Whole design')}</button></div><small>${object?esc(name):esc(nm(PLAN.name))}${!object&&ui.sel?` · ${tr('保留选中','Selection retained')} ${esc(name)}`:''}</small></nav>`);
-  let peek=$('#property-peek');if(!peek){peek=document.createElement('div');peek.id='property-peek';$('#stage').append(peek);peek.onclick=e=>{const b=e.target.closest('[data-peek-scope]');if(!b)return;ui.panelScope=b.dataset.peekScope;renderPanel();drawer('panel',true);};}
-  peek.hidden=!ui.sel;peek.dataset.kind=ui.sel?.kind||'';
-  peek.innerHTML=`<div><b>${esc(name)}</b>${f?furnitureDimensionSummary(f):''}</div><button class="btn" data-peek-scope="object" aria-expanded="${$('aside.right').classList.contains('open')}" aria-controls="panel">${tr('展开属性','Expand properties')}</button>`;
+  renderPropertyPeek();
   window.FurnishObservationLayers?.afterRender();
   window.FurnishElectricalUI?.selectionChanged();
+}
+function renderPropertyPeek(){
+  const f=narrow()&&selIds().length===1&&getF(ui.sel?.id);
+  let peek=$('#property-peek');if(!peek){peek=document.createElement('div');peek.id='property-peek';$('#stage').append(peek);peek.onclick=e=>{const b=e.target.closest('[data-peek-scope]');if(!b)return;ui.panelScope=b.dataset.peekScope;renderPanel();drawer('panel',true);};}
+  peek.hidden=!ui.sel;peek.dataset.kind=ui.sel?.kind||'';
+  peek.innerHTML=`<div><b>${esc(panelSelectionName())}</b>${f?furnitureDimensionSummary(f):''}</div><button class="btn" data-peek-scope="object" aria-expanded="${$('aside.right').classList.contains('open')}" aria-controls="panel">${tr('展开属性','Expand properties')}</button>`;
 }
 function panelSelectionName(){
  const sel=ui.sel;if(!sel)return tr('未选择对象','No selection');
@@ -23,10 +61,6 @@ function panelSelectionName(){
 }
 function renderPanelContent(object=true){
   const wallDistanceOpen=$('#panel .wall-distance-panel[open]')?.dataset.wallDistanceOwner;
-  globalThis.FurnishRoomMeasure?.afterRender();
-  if(ui.sel?.kind!=='wall')window.FurnishWorkflowTools?.clearDistances();
-  window.FurnishWorkspace?.clearOpeningPreview();
-  renderFab();
   if(object&&ui.sel?.kind==='ceiling'){
     const c=state.ceilings?.items.find(c=>c.id===ui.sel.id),r=state.ceilings?.regions?.find(r=>r.id===c?.regionId);
     if(c){const plan=canvasEffectivePlan(),items=(plan.ceilings?.items||[]).filter(v=>c.regionId?v.regionId===c.regionId:v.id===c.id),poly=r?.polygon||(c.kind==='flat'?c.polygon:FurnishCeiling.footprint(c)),m=FurnishCeiling.heightMeasurements(plan,poly,items.map(v=>v.kind==='flat'?v.height:v.height-Math.max(...FurnishCeiling.sectionPoints(v.section).map(p=>p.d)))),fmt=v=>v?Number(v.min.toFixed(1))+(v.max-v.min>.1?'～'+Number(v.max.toFixed(1)):'')+' mm':tr('待核对','Unknown'),p=$('#panel');p.innerHTML=`<section><h3>${esc(r?.name||c.name)}</h3><dl class="ceiling-height-summary"><div><dt>${tr('底部距地砖完成面','Above finished floor')}</dt><dd>${fmt(m.aboveFloor)}</dd></div><div><dt>${tr('底部距房顶','Underside to roof')}</dt><dd>${fmt(m.roofGap)}</dd></div></dl><p>${r?tr('独立吊顶区域','Independent ceiling area')+' · '+Math.abs(FurnishCeiling.area(r.polygon)/1e6).toFixed(2)+' m²':tr('旧吊顶构件','Existing ceiling element')}</p><p class="muted">${tr('点击浮动栏「编辑吊顶」，进入吊顶设计页面。','Use Edit ceiling in the floating toolbar to open the ceiling workspace.')}</p></section>`;return;}
@@ -284,13 +318,13 @@ function furnPanel(f){
   const fixedPanelColor=FurnishProducts.family(f,'wall-panel')&&FurnishProducts.panelSpec(f).series;
   const pocketSpec=FurnishProducts.definition(f)?.pocket,telescopicSpec=FurnishProducts.definition(f)?.telescopic,movingTracks=telescopicSpec?FurnishProducts.slidingLayout(f).floorTracks.length:0;
   const cabinetDesign=furnitureUsesDetailedDesign(f);
-  const installation=FurnishProject.dishwasherChecks(FurnishProject.effectivePlan(PLAN,state),f,{furniture:state.furniture});
+  const installation=FurnishProducts.dishwasherInstallation(f)?FurnishProject.dishwasherChecks(canvasEffectivePlan(),f,{furniture:state.furniture}):null;
   const fridge=['fridge','fridge_french_drawer'].includes(f.type);
   const fridgeCabinets=fridge?state.furniture.filter(g=>!furnitureError(g)&&FurnishCabinet.supported(g)&&FurnishCabinet.fridgeBay(g)).sort((a,b)=>Math.hypot(a.cx-f.cx,a.cy-f.cy)-Math.hypot(b.cx-f.cx,b.cy-f.cy)):[];
   const laundry=FurnishDesign.products().family(f,'laundry');
   const robotSpec=typeof FurnishRobotVacuumModel!=='undefined'?FurnishRobotVacuumModel.specs[f.type]:null;
   const r = isOutside(f) ? null : roomAt(f.cx, f.cy), custom = f.type === 'custom' || f.type === 'customround', lk = furnitureLocked(f) ? 'disabled' : '';
-  const clashWith = collisions().filter(p => p.includes(f.id)).map(p => getF(p[0] === f.id ? p[1] : p[0])).filter(Boolean);
+  const clashWith = collisions(f.id).map(p => getF(p[0] === f.id ? p[1] : p[0])).filter(Boolean);
   const fridgeConflictDetails=clashWith.flatMap(g=>{const fit=FurnishCabinet.fridgeBayFit(f,g)||FurnishCabinet.fridgeBayFit(g,f)||FurnishCabinet.hoodBayFit(f,g)||FurnishCabinet.hoodBayFit(g,f);return fit&&!fit.fits?fit.reasons:[];});
   const btn = (act, icon, label, on) => `<button class="btn ${on ? 'on' : ''}" data-act="${act}" title="${label}" aria-label="${label}">${ico(icon)}</button>`;
   const pad = Math.max(f.w, f.d)*.1;
