@@ -206,16 +206,17 @@ const syncIdentity=root.FurnishPartIdentity||(typeof require==='function'?requir
    const s=c.sideboard,bays=C.layout(f),base=s.baseHeight/1000,ct=s.counterThickness/1000,niche=base+ct,display=niche+s.nicheHeight/1000,upper=display+s.displayHeight/1000,ld=s.lowerDepth/1000,ud=s.upperDepth/1000,back=-d/2;
    const rearOf=section=>c.sideboard.placements?(root.FurnishCabinetAssembly||require('../core/cabinet-assembly-core.js')).sideboardPart(f,section,c).rear/1000:back;
    const storage=bays.filter((_,i)=>!c.columns[i].fridgeBay),left=storage[0].left/1000-t,right=(storage.at(-1).left+storage.at(-1).width)/1000+t,W=right-left,X=(left+right)/2;
+   const backLeft=left+(c.columns[0].fridgeBay?t:0),backRight=right-(c.columns.at(-1).fridgeBay?t:0);
    // Continuous counter and open working space: no vertical partitions in the niche.
    for(const [y,H,D,section] of syncIdentity.items("cabinet-model.js:generator-1",[["item-a",[p,t,ld,'bottom']],["item-b",[base-t,t,ld,'baseTop']],["item-c",[base,ct,ld,'counter']],["item-d",[display,t,ud,'displayBottom']],["item-e",[upper,t,ud,'displayTop']],["item-f",[h-t,t,ud,'top']]])){
     // Structural boards stop at the same front plane as the sides. Only the
     // worktop spans the full nominal depth; doors occupy the front panel band.
     const boardDepth=section==='counter'?D:D-t;
-    const board=syncIdentity.produce("cabinet-model:site-2",()=>add(g,W,H,boardDepth,X,y,rearOf(['displayBottom','displayTop','top'].includes(section)?'upper':'lower')+boardDepth/2));board.userData.cabinetSection=section;
+    // The shared refrigerator-side panel already occupies the end of the upper top.
+    const top=section==='top',board=syncIdentity.produce("cabinet-model:site-2",()=>add(g,top?backRight-backLeft:W,H,boardDepth,top?(backLeft+backRight)/2:X,y,rearOf(['displayBottom','displayTop','top'].includes(section)?'upper':'lower')+boardDepth/2));board.userData.cabinetSection=section;
     const control=C.structuralBoards(f).find(b=>b.section===section);if(control)board.userData.cabinetInspect={kind:'structure',column:control.column,section};
    }
    if(p)syncIdentity.produce("cabinet-model:site-3",()=>add(g,W,p,ld-.025,X,0,rearOf('lower')+(ld-.025)/2));
-   const backLeft=left+(c.columns[0].fridgeBay?t:0),backRight=right-(c.columns.at(-1).fridgeBay?t:0);
    rearPanel(g,backRight-backLeft,s.nicheHeight/1000,(backLeft+backRight)/2,niche,'cabinet-model:site-4',{cabinetSection:'operationBack'},bodyColor,'solid',rearOf('lower')*1000);
    for(const [y,D] of syncIdentity.items("cabinet-model.js:generator-2",[["item-a",[display,ud]],["item-b",[upper,ud]]])){
     const led=syncIdentity.produce("cabinet-model:site-5",()=>add(g,W-2*t,.004,.012,X,y+.008,rearOf('upper')+D-t-.014,'#ffe4ab'));led.material=led.material.clone();led.material.emissive=new THREE.Color('#ffe4ab');led.material.emissiveIntensity=.7;led.userData.cabinetOwnMaterial=true;led.userData.cabinetSection='led';

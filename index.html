@@ -177,6 +177,7 @@
             <button class="btn chip on" id="wall-tile-numbers" data-t="wallNumbers" title="显示或隐藏墙面编号，点击编号可编辑铺贴" data-en-title="Show wall face numbers; click a number to edit tiling" data-en="Wall numbers">墙面编号</button>
             <button class="btn chip on" data-t="clearances" title="显示或隐藏家电安装预留框、检查结果及无数据提示" data-en-title="Show appliance installation clearances, checks and missing data" data-en="Clearance checks">预留检查</button>
             <button class="btn chip on" data-t="labels" data-en="Labels">房间名</button>
+            <button type="button" class="btn chip" data-layer="floorSteps" aria-pressed="false" title="显示门口两侧完成地面之间的高差" data-en-title="Show finished floor height differences at doorways" data-en="Floor step labels">地面高差</button>
             <button class="btn chip on" data-t="lamps" aria-pressed="true" title="控制主灯、台灯和灯带等常规照明" data-en-title="Toggle main lights, desk lamps and light strips" data-en="Main lights">主灯</button>
             <button class="btn chip on" data-t="nightLights" aria-pressed="true" title="夜景下独立开启低位夜灯" data-en-title="Toggle low-level nightlights in night mode" data-en="Nightlights">夜灯</button>
             <button class="btn chip" data-t="night" data-en="Night">夜景</button>
@@ -733,7 +734,7 @@ window.View3D = {
   image:() => globalThis.FurnishWorkflowTools?.styleId()?null:impl?.image()||null, focusSelection:options => impl?.focusSelection(options),
   furnitureScreenPoint:f => impl?.furnitureScreenPoint(f)??null,
   highlightIssue:(item,volumes) => impl?.highlightIssue(item,volumes),
-  tileRoomAt:(x,y) => impl?.tileRoomAt(x,y)??null, refreshTileInspection:()=>impl?.refreshTileInspection(), refreshObservationLayers:()=>impl?.refreshObservationLayers(),
+  tileRoomAt:(x,y) => impl?.tileRoomAt(x,y)??null, refreshTileInspection:()=>impl?.refreshTileInspection(), refreshFloorStepLabels:()=>impl?.refreshFloorStepLabels(), refreshObservationLayers:()=>impl?.refreshObservationLayers(),
   ceilingPreview:(host,data,options) => load().then(() => impl.ceilingPreview(host,data,options)),
   tileLayoutPreview:(host,options) => load().then(() => impl.tileLayoutPreview(host,options)),
   cabinetPreview:(host,f,onToggle) => load().then(() => impl.cabinetPreview(host,f,onToggle)),
@@ -1574,7 +1575,7 @@ const syncIdentity=FurnishPartIdentity;
   for(const step of floorSteps){
     const [[x,z],[X,Z]]=step.seam,adjoining=finishPlan.floorFinish.doorways.filter(a=>a.id.startsWith(step.id+'-')),ids=[...new Set(adjoining.map(a=>a.roomId))],names=[...new Set(adjoining.map(a=>state.rooms[a.roomId]?.name||a.room.name).filter(Boolean))];
     const el=document.createElement('div');el.className='scene-floor-step';el.dataset.floorStep=step.id;el.dataset.floorRooms=JSON.stringify(ids);el.textContent=`${names.length?names.join(' / ')+' · ':''}${tr('地面高差','Floor step')} ${Number(step.drop.toFixed(2))} mm`;
-    const label=new CSS2DObject(el);label.position.set(wx((x+X)/2),step.high/1000+.035,wz((z+Z)/2));archFloor.add(label);
+    const label=new CSS2DObject(el);label.position.set(wx((x+X)/2),step.high/1000+.035,wz((z+Z)/2));label.userData.floorStepLabel=true;label.visible=ui.layers.floorSteps;archFloor.add(label);
   }
   for(const [kind,list] of syncIdentity.items("index.html:generator-41",[["item-a",['door',DOORS]],["item-b",['slide',SLIDES]]]))syncIdentity.each("index.html:generator-42",list,(d,index)=>{if(finishPlan.floorFinish?.doorways.some(a=>a.kind===kind&&a.index===index))return;const [x0,y0,x1,y1]=d.rect,s=syncIdentity.produce("index:site-226",()=>box(M(x1-x0),.012,M(y1-y0),mat('#d8d0c0',{roughness:.3}),wx((x0+x1)/2),0,wz((y0+y1)/2)));s.castShadow=false;archFloor.add(s);},(item,slot)=>item.id||"plan-slot:"+slot);
   // Schematic risers: user default diameter 100 mm, floor to room ceiling.
@@ -2178,6 +2179,7 @@ function applyObservationLayers(){ceilingDisplay.restore();FurnishObservationLay
 function refreshObservationLayers(){if(!inited)return;selKey=null;clearSceneIssue();applyObservationLayers();invalidate(true);}
 function sceneObjectShown(o){for(let p=o;p;p=p.parent)if(!p.visible)return false;return true;}
 function refreshTileInspection(){if(!inited)return;const visible=opt.furn&&!globalThis.FurnishTilePresetUI?.inspecting();furnG.visible=visible;clearanceG.visible=visible&&opt.clearances;for(const group of [elevationG,issueG]){group.visible=visible&&opt.mode==='orbit'&&!anim;group.traverse(o=>{if(o.isCSS2DObject)o.visible=group.visible;});}clearanceG.traverse(o=>{if(o.isCSS2DObject)o.visible=visible&&opt.clearances&&!anim;});selKey=null;invalidate(true);}
+function refreshFloorStepLabels(){for(const o of archFloor?.children??[])if(o.userData.floorStepLabel)o.visible=ui.layers.floorSteps;invalidate();}
 function tileRoomAt(x,y){if(!active||anim)return null;const r=renderer.domElement.getBoundingClientRect();ptr.set((x-r.left)/r.width*2-1,-(y-r.top)/r.height*2+1);ray.setFromCamera(ptr,camera);const hit=ray.intersectObjects(archFloor.children,true).find(h=>h.object.userData.floor&&sceneObjectShown(h.object)&&!FurnishLayers.locked(state,'floor:'+h.object.userData.room)&&!observation.clipped(h));return hit?.object.userData.room??null;}
 function groundAt(x, y){
   if (!active || anim) return null;
@@ -2714,7 +2716,7 @@ function cabinetPreview(host,f,actions){
 
 function ceilingPreview(host,data,options){return FurnishCeilingModel.preview({THREE,OrbitControls,host,data,...options});}
 function tileLayoutPreview(host,options){return FurnishTileLayoutPreview.create({THREE,OrbitControls,host,...options});}
-return {automationCamera,resetPreviewObservation:clearObservation,automationReady,furnitureScreenPoint,blenderScene,blenderSyncSignature,highQualityScene,highQualitySignature,progressiveState,progressiveScene,refreshObservationLayers,tileLayoutPreview,tileRoomAt,refreshTileInspection,ceilingPreview,cabinetPreview, enter, exit, relang, sync:() => sync(), shot, image, focusSelection, highlightIssue, groundAt, flyToRoom:id => active && !anim && flyToRoom(id), walking:() => active && opt.mode === 'walk', interacting:() => active && !!(viewportPointer || anim || fly), replan, retheme};
+return {automationCamera,resetPreviewObservation:clearObservation,automationReady,furnitureScreenPoint,blenderScene,blenderSyncSignature,highQualityScene,highQualitySignature,progressiveState,progressiveScene,refreshObservationLayers,tileLayoutPreview,tileRoomAt,refreshTileInspection,refreshFloorStepLabels,ceilingPreview,cabinetPreview, enter, exit, relang, sync:() => sync(), shot, image, focusSelection, highlightIssue, groundAt, flyToRoom:id => active && !anim && flyToRoom(id), walking:() => active && opt.mode === 'walk', interacting:() => active && !!(viewportPointer || anim || fly), replan, retheme};
 }
 </script>
 </body>

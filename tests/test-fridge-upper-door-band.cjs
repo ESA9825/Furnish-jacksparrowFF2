@@ -14,7 +14,7 @@ for(const overlay of [undefined,'full','inset'])for(const closure of [false,true
  assert(fixed.some(b=>b.bottom===0&&Math.abs(Math.max(...b.poly.map(p=>p[1]))-front)<.001),'lower refrigerator surround remains full depth');
  assert.equal(JSON.stringify(f),before,'production derivation must not modify saved data');
  const work={furniture:[f]},round=P.unpack(P.pack({planId:'test',current:work,designs:[],catalog:[]}));assert.deepEqual(round.current.furniture[0].cabinet,f.cabinet);
- assert.equal(C.spatialConfig(f).fridgeUpperFrameRule,'reserved-door-band-v1');
+ assert.equal(C.spatialConfig(f).fridgeUpperFrameRule,'reserved-door-band-and-top-joint-v2');
  assert.deepEqual(C.spatialConfig({...f,color:'#123456'}),C.spatialConfig(f));
 }
 const ordinary={...C.preset('storage'),type:'cabinet'};assert.equal(C.spatialConfig(ordinary).fridgeUpperFrameRule,undefined);

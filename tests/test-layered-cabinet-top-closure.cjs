@@ -7,6 +7,21 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),C=require('../s
   if(f.cabinet.sideboard?.fridgeDepth!==undefined)f=C.setSideboardFridgeDepth(f,630);
   const before=JSON.stringify(f),next=C.setTopClosure(f,{height:50,doorGap:10});assert.equal(JSON.stringify(f),before);assert.deepEqual(next.cabinet.columns,f.cabinet.columns);assert.deepEqual(next.cabinet.entry,f.cabinet.entry);assert.deepEqual(next.cabinet.sideboard,f.cabinet.sideboard);assert.equal(next.h,f.h);near(C.bodyHeight(next),C.height(f)-50);
   const model=Model.build(THREE,next,box),parts=[];model.updateMatrixWorld(true);model.traverse(o=>{if(o.isMesh)parts.push(o);});const caps=parts.filter(o=>o.userData.cabinetTopClosure),upper=parts.filter(o=>o.userData.cabinetDoorSize&&['upper','fridgeUpper'].includes(o.userData.cabinetDoorSize.section));assert(upper.length);assert(caps.length);
+  if(next.cabinet.columns.some(col=>col.fridgeBay)){
+   const bounds=o=>new THREE.Box3().setFromObject(o);
+   const overlaps=(a,b)=>bounds(a).intersect(bounds(b)).getSize(new THREE.Vector3()).toArray().every(v=>v>1e-6);
+   const top=parts.find(o=>o.userData.cabinetSection==='top'),sides=parts.filter(o=>o.userData.furnishPartSource==='cabinet-fridge-upper:side');
+   assert.equal(sides.length,2);
+   for(const panel of sides)assert(!overlaps(top,panel),'storage top clears both refrigerator sides');
+   for(const door of upper){
+    for(const fraction of [0,.25,.5,.75,1]){
+     const pivot=door.parent; pivot.rotation.y=pivot.userData.motion.angle*fraction;
+     for(const cap of caps)assert(!overlaps(door,cap),'upper door clears top closure through its 90° swing');
+    }
+    door.parent.rotation.y=0;
+   }
+   model.updateMatrixWorld(true);
+  }
   for(const m of caps){const b=new THREE.Box3().setFromObject(m);near(b.min.y*1000,f.h-50);near(b.max.y*1000,f.h);}for(const m of upper)near(new THREE.Box3().setFromObject(m).max.y*1000,f.h-10);
   const baseline=Model.build(THREE,f,box),oldParts=[];baseline.updateMatrixWorld(true);baseline.traverse(o=>{if(o.isMesh)oldParts.push(o);});
   for(const m of parts.filter(o=>o.userData.cabinetDoorSize?.section==='lower'||o.userData.cabinetDrawerBoard==='front')){const part=m.userData.cabinetPart,prior=oldParts.find(o=>o.userData.cabinetDrawerBoard===m.userData.cabinetDrawerBoard&&JSON.stringify(o.userData.cabinetPart)===JSON.stringify(part));assert(prior);const a=new THREE.Box3().setFromObject(m),b=new THREE.Box3().setFromObject(prior);near(a.min.y,b.min.y);near(a.max.y,b.max.y);near(a.min.x,b.min.x);near(a.max.x,b.max.x);}

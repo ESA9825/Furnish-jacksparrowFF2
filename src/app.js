@@ -130,7 +130,7 @@ applyPlanData();
 let state = store.work[PLAN.id] || (store.work[PLAN.id] = freshWork(PLAN));
 state.open = state.open || {};   // 旧版本存档补默认字段
 const ui = {tool:'select', sel:null, mA:null, mCur:null, guides:null, marq:null, ptr:null, tab:'overview',
-  layers:{dims:true, labels:true, furn:true, notes:true, grid:false, bearing:false, wallSnap:true, guides:true, sceneDragSnap:true, sceneDragCollision:true, clear:true, collide:true, directions:true}, grid:10};
+  layers:{dims:true, labels:true, furn:true, notes:true, grid:false, bearing:false, wallSnap:true, guides:true, sceneDragSnap:true, sceneDragCollision:true, floorSteps:false, clear:true, collide:true, directions:true}, grid:10};
 // 图层与编辑辅助设置跨会话记住
 const UI_KEY = 'huxing-ui';
 ui.planMode='furniture';
@@ -1034,6 +1034,7 @@ function setLayer(k, v){
   ui.layers[k] = v; saveUI(); syncLayerBtns();
   if (k === 'dims') $('#gDims').setAttribute('display', ui.layers.dims ? 'inline' : 'none');
   else if (k === 'clear' || k === 'directions') renderSel();
+  else if (k === 'floorSteps') window.View3D?.refreshFloorStepLabels();
   else if (!['wallSnap','guides','sceneDragSnap','sceneDragCollision'].includes(k)) renderAll();
 }
 function syncLayerBtns(){
