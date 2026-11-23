@@ -239,17 +239,10 @@ function create(T,scene,{wx,wz,inside}){
  // Widen the existing directional shadow filter on the selected
  // receivers. Negative radius is a local flag; spot shadows stay unchanged.
  function softenSun(shader){
-  if(!T.ShaderChunk)return;
-  const shadow=T.ShaderChunk.shadowmap_pars_fragment;
-  const soft=shadow.indexOf('#elif defined( SHADOWMAP_TYPE_PCF_SOFT )');
-  const vsm=shadow.indexOf('#elif defined( SHADOWMAP_TYPE_VSM )',soft);
-  if(soft<0||vsm<0)return;
-  const lighting=T.ShaderChunk.lights_fragment_begin;
-  if(!lighting.includes('directionalLightShadow.shadowRadius, vDirectionalShadowCoord'))return;
-  const branch=shadow.slice(soft,vsm).replace('float dx = texelSize.x;','vec2 filterStep = texelSize * max( 1.0, -shadowRadius );\nfloat dx = filterStep.x;')
-   .replace('float dy = texelSize.y;','float dy = filterStep.y;').replace('uv + texelSize,','uv + filterStep,');
-  shader.fragmentShader=shader.fragmentShader.replace('#include <shadowmap_pars_fragment>',shadow.slice(0,soft)+branch+shadow.slice(vsm))
-   .replace('#include <lights_fragment_begin>',lighting.replace('directionalLightShadow.shadowRadius, vDirectionalShadowCoord',
+  const lighting=T.ShaderChunk?.lights_fragment_begin;
+  if(!lighting?.includes('directionalLightShadow.shadowRadius, vDirectionalShadowCoord'))return;
+  shader.fragmentShader=shader.fragmentShader.replace('#include <lights_fragment_begin>',
+   lighting.replace('directionalLightShadow.shadowRadius, vDirectionalShadowCoord',
     '\n#ifdef SHADOWMAP_TYPE_PCF_SOFT\n-furnishReceiverSpread,\n#else\ndirectionalLightShadow.shadowRadius,\n#endif\nvDirectionalShadowCoord'));
  }
  function nichePanelling(model){

@@ -19,7 +19,12 @@ function install(T){
     !withSpot)return false;
  const soft=source.slice(start,end)
   .replace(/texture2DCompare\( shadowMap, (.*?), shadowCoord.z \)/g,
-   'furnishPlaneCompare( shadowMap, $1, shadowMapSize, shadowCoord.xyz, receiverSlope )');
+   'furnishPlaneCompare( shadowMap, $1, shadowMapSize, shadowCoord.xyz, receiverSlope )')
+  .replace('vec2 texelSize = vec2( 1.0 ) / shadowMapSize;',`
+   if(shadowRadius < -1.0){
+    return furnishWideShadow(shadowMap,shadowMapSize,shadowCoord.xyz,receiverSlope,-shadowRadius);
+   }
+   vec2 texelSize = vec2( 1.0 ) / shadowMapSize;`);
  chunks.shadowmap_pars_fragment=(source.slice(0,start)+soft+source.slice(end))
   .replace('float getShadow(',`
  #ifdef SHADOWMAP_TYPE_PCF_SOFT
@@ -34,10 +39,33 @@ function install(T){
    if(abs(determinant)<=max(1e-20,1e-5*length(dx.xy)*length(dy.xy)))return vec2(0.0);
    return vec2(dy.y*dx.z-dx.y*dy.z,dx.x*dy.z-dy.x*dx.z)/determinant;
   }
-  float furnishPlaneCompare(sampler2D depths,vec2 uv,vec2 size,vec3 receiver,vec2 slope){
-   vec2 texel=clamp(floor(uv*size),vec2(0.0),size-1.0);
+  float furnishTexelCompare(sampler2D depths,vec2 texel,vec2 size,vec3 receiver,vec2 slope){
+   texel=clamp(texel,vec2(0.0),size-1.0);
    vec2 center=(texel+0.5)/size;
    return texture2DCompare(depths,center,receiver.z+dot(slope,center-receiver.xy));
+  }
+  float furnishPlaneCompare(sampler2D depths,vec2 uv,vec2 size,vec3 receiver,vec2 slope){
+   return furnishTexelCompare(depths,floor(uv*size),size,receiver,slope);
+  }
+  float furnishWideShadow(sampler2D depths,vec2 size,vec3 receiver,vec2 slope,float spread){
+   // Standard soft PCF covers a three-texel box. Grow that box and blend
+   // each overlapping texel by coverage so a shift across the grid is continuous.
+   float width=2.0+min(spread,3.0);
+   vec2 low=receiver.xy*size-0.5*width;
+   vec2 first=floor(low),offset=fract(low);
+   vec2 end=offset+width;
+   float visible=0.0;
+   // A box at most five texels wide overlaps at most six cells per axis.
+   for(int y=0;y<6;y++){
+    float row=float(y);
+    float wy=max(0.0,min(row+1.0,end.y)-max(row,offset.y));
+    for(int x=0;x<6;x++){
+     float column=float(x);
+     float wx=max(0.0,min(column+1.0,end.x)-max(column,offset.x));
+     visible+=wx*wy*furnishTexelCompare(depths,first+vec2(column,row),size,receiver,slope);
+    }
+   }
+   return visible/(width*width);
   }
  #endif
  float getShadow(`)

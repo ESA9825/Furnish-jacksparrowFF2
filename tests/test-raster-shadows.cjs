@@ -21,7 +21,8 @@ async function checkComposition(){
  assert.match(lights,/getPointShadow\(/);
  assert.match(lights,/furnishCeilingArea\(/);
  assert.match(lights,/furnishCoveLight\(/);
- assert.match(source,/float dx = texelSize.x;/,'Indoor daylight can still widen the same filter');
+ assert.match(source,/return furnishWideShadow\(shadowMap,shadowMapSize,shadowCoord.xyz,receiverSlope,-shadowRadius\)/);
+ assert.match(source,/float dx = texelSize.x;/,'Standard soft shadows retain the original taps');
  assert.equal(Shadows.install(T),true);
  assert.equal(T.ShaderChunk.shadowmap_pars_fragment,source);
  assert.equal(T.ShaderChunk.lights_fragment_begin,lights);
@@ -110,17 +111,60 @@ async function checkWebGL(){
      projectedShadow:changed(after,shadow,8)});
     scene.remove(light,light.target);
    }
+   // A single straight, oblique caster edge should darken monotonically
+   // along each column. The old sparse taps jump at individual texel boundaries.
+   const edgeScene=new T.Scene(),edgeCamera=new T.OrthographicCamera(-.5,.5,.5,-.5,.01,10);
+   edgeCamera.position.z=2;
+   const receiver=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshStandardMaterial({color:0xaaaaaa,roughness:1}));
+   receiver.receiveShadow=true;
+   const edge=new T.Mesh(new T.PlaneGeometry(2,1.5),new T.MeshStandardMaterial({side:T.DoubleSide,colorWrite:false,depthWrite:false}));
+   edge.position.set(0,.72,.1);
+   edge.rotation.z=.37;
+   edge.castShadow=true;
+   const key=new T.DirectionalLight(0xffffff,2.6);
+   key.position.z=4;key.castShadow=true;key.shadow.mapSize.setScalar(32);
+   Object.assign(key.shadow.camera,{left:-.5,right:.5,bottom:-.5,top:.5,near:.01,far:8});
+   key.shadow.camera.updateProjectionMatrix();
+   edgeScene.add(receiver,edge,key,new T.AmbientLight(0xffffff,.4));
+   const sparse={...old,shadowmap_pars_fragment:old.shadowmap_pars_fragment
+    .replace('float dx = texelSize.x;','vec2 filterStep = texelSize * max(1.0,-shadowRadius);\nfloat dx = filterStep.x;')
+    .replace('float dy = texelSize.y;','float dy = filterStep.y;').replace('uv + texelSize,','uv + filterStep,')};
+   const sampleEdge=(chunks,radius,program)=>{
+    Object.assign(T.ShaderChunk,chunks);
+    receiver.material.customProgramCacheKey=()=>program;
+    receiver.material.needsUpdate=true;
+    key.shadow.radius=radius;
+    renderer.setRenderTarget(target);
+    renderer.render(edgeScene,edgeCamera);
+    renderer.readRenderTargetPixels(target,0,0,size,size,pixels);
+    let reverse=0,transition=0;
+    for(let x=48;x<208;x++){
+     const value=y=>pixels[(y*size+x)*4],bright=value(35),dark=value(220);
+     if(bright-dark<20)throw Error('Independent caster shadow missing');
+     for(let y=36;y<=220;y++){
+      if(value(y)>value(y-1)+2)reverse++;
+      if(value(y)<bright-3&&value(y)>dark+3)transition++;
+     }
+    }
+    return {reverse,transition};
+   };
+   const edges={sparse:sampleEdge(sparse,-2.9,'sparse'),standard:sampleEdge(fixed,1,'standard'),
+    wide:sampleEdge(fixed,-2.9,'wide')};
    renderer.dispose();
    target.dispose();
-   return results;
+   return {results,edges};
   });
   assert.deepEqual(errors,[]);
-  for(const sample of results){
+  for(const sample of results.results){
    assert(sample.before>=100,'The old shader must reproduce the bands: '+JSON.stringify(sample));
    assert(sample.after<=2,'The corrected receiver remains smooth: '+JSON.stringify(sample));
    assert(sample.projectedShadow>=100,'A nearby independent caster still darkens the panel: '+JSON.stringify(sample));
   }
-  console.log('PASS WebGL shadow bands and independent occluder',results);
+  const {sparse,wide,standard}=results.edges;
+  assert(sparse.reverse>100,'The stretched taps must reproduce edge shimmer: '+JSON.stringify(results.edges));
+  assert.equal(wide.reverse,0,'The wide penumbra darkens smoothly across texel boundaries');
+  assert(wide.transition>standard.transition*1.2,'The corrected wide filter still softens the edge');
+  console.log('PASS WebGL shadow bands, independent occluder and wide penumbra',results);
  }finally{await browser.close();}
 }
 

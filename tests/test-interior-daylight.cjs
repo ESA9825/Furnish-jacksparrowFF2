@@ -71,7 +71,7 @@ require('../src/render/interior-daylight.js');
  assert.notEqual(floor.material,foot.material,'Surface-specific hooks never replace generic shared materials');
  assert.match(floorShader.fragmentShader,/floorContact/);
  assert.match(floorShader.fragmentShader,/finishTileUV/,'Saved layouts receive actual tile shading');
- assert.match(floorShader.fragmentShader,/filterStep = texelSize/);
+ assert.match(floorShader.fragmentShader,/#include <shadowmap_pars_fragment>/,'Decorated materials share the production shadow filter');
  assert.match(floorShader.fragmentShader,/-furnishReceiverSpread/);
  assert.match(floorShader.fragmentShader,/spotLightShadow.shadowRadius, vSpotLightCoord/,'Spot filters are unchanged');
  assert.equal(floor.material.roughness,floorMaterial.roughness);
