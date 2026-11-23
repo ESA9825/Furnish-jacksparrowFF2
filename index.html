@@ -810,6 +810,14 @@ let interiorDaylight,viewportAO,continuousCove=false;
 const gtaoButton=$('#viewport-gtao'),bloomButton=$('#viewport-bloom'),smaaButton=$('#viewport-smaa');
 let gtaoEnabled=false,bloomEnabled=false,smaaEnabled=false,bloomNight=false,bloomRevision=0;
 let viewportPointer=null,viewportRestoreAt=0;
+function cancelOrbitMouseDrag(){
+  if(!viewportPointer?.orbitMouseDrag)return false;
+  // OrbitControls r160 clears its active pointers through pointerup or pointercancel.
+  renderer.domElement.dispatchEvent(new PointerEvent('pointercancel',{
+    pointerId:viewportPointer.id,pointerType:'mouse',isPrimary:true,bubbles:true
+  }));
+  return true;
+}
 const VIEWPORT_RESOLUTION_SETTLE_MS=180;
 try{gtaoEnabled=localStorage.getItem('furnish-viewport-gtao-v1')==='1';}catch{}
 try{bloomEnabled=localStorage.getItem('furnish-viewport-bloom-v1')==='1';}catch{}
@@ -913,7 +921,10 @@ function init(){
   FurnishNavigation.bindOrbit(renderer.domElement,()=>orbit);
   orbit.enableDamping = false; orbit.maxPolarAngle = Math.PI*.995; orbit.minDistance = orbitMinDistance; orbit.maxDistance = 45;
   let orbitGesture = false;
-  orbit.addEventListener('start', () => { orbitGesture = true; });
+  orbit.addEventListener('start', () => {
+    orbitGesture = true;
+    if(viewportPointer?.mouseButton)viewportPointer.orbitMouseDrag=true;
+  });
   orbit.addEventListener('end', () => { orbitGesture = false; });
   orbit.addEventListener('change', () => {
     if (orbitGesture) fly = null;
@@ -948,16 +959,25 @@ function init(){
 
   const cv = renderer.domElement;
   cv.addEventListener('pointerdown',e=>{
-    if(e.isPrimary&&e.button>=0&&e.button<=2)viewportPointer={id:e.pointerId,x:e.clientX,y:e.clientY,moving:false};
+    if(e.isPrimary&&e.button>=0&&e.button<=2){
+      const mouseButton=e.pointerType==='mouse'?[1,4,2][e.button]:0;
+      viewportPointer={id:e.pointerId,x:e.clientX,y:e.clientY,moving:false,mouseButton};
+    }
   },true);
   window.addEventListener('pointermove',e=>{
-    if(viewportPointer?.id===e.pointerId&&!viewportPointer.moving&&Math.hypot(e.clientX-viewportPointer.x,e.clientY-viewportPointer.y)>3){
+    if(viewportPointer?.id!==e.pointerId)return;
+    if(viewportPointer.orbitMouseDrag&&!(e.buttons&viewportPointer.mouseButton)){
+      cancelOrbitMouseDrag();
+      return;
+    }
+    if(!viewportPointer.moving&&Math.hypot(e.clientX-viewportPointer.x,e.clientY-viewportPointer.y)>3){
       viewportPointer.moving=true;
       invalidate();
     }
   },true);
   const stopViewportDrag=e=>{
     if(!viewportPointer||(e.pointerId!==undefined&&viewportPointer.id!==e.pointerId))return;
+    if((e.target!==cv||e.type==='lostpointercapture')&&cancelOrbitMouseDrag())return;
     // Consecutive orbit gestures can share the smaller drawing buffer.
     // Resizing it twice can stall on macOS presentation backpressure.
     if(viewportPointer.moving&&nightInteraction())viewportRestoreAt=performance.now()+VIEWPORT_RESOLUTION_SETTLE_MS;
@@ -2116,6 +2136,7 @@ async function enter(showLoading){
 }
 async function exit(){
   ui.sceneMove=false;
+  cancelOrbitMouseDrag();
   globalThis.FurnishProgressiveView?.exit();
   sceneMeasure?.set(false);
   cancelElevationGesture();
@@ -2308,6 +2329,7 @@ function setMode(m){
   sceneMeasure?.set(false);
   cancelElevationGesture();
   if (anim) return;
+  cancelOrbitMouseDrag();
   clearObservation();
   opt.mode = m; syncModeBtns();
   updateProjection();

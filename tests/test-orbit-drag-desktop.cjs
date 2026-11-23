@@ -54,7 +54,7 @@ async function main() {
     const start = { x: Math.round(x + width * .55), y: Math.round(y + height * .45) };
     assert(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.tagName === 'CANVAS', start));
 
-    async function drag(checkMotion, pan = false) {
+    async function drag(checkMotion, pan = false, release) {
       await page.mouse.move(start.x, start.y);
       if (pan) await page.keyboard.down('Space');
       await page.mouse.down();
@@ -63,16 +63,18 @@ async function main() {
         window.dragStart = new Promise(resolve => document.addEventListener('pointermove', () => {
           resolve(View3D.automationCamera());
         }, { capture: true, once: true }));
-        window.dragEnd = new Promise(resolve => document.addEventListener('pointermove', () => {
+        window.dragEnd = new Promise(resolve => document.addEventListener('pointermove', event => {
+          window.dragPointerId = event.pointerId;
           resolve(View3D.automationCamera());
         }, { once: true }));
       });
       await page.mouse.move(start.x + 74, start.y + 27);
       const [before, moved] = await page.evaluate(() => Promise.all([window.dragStart, window.dragEnd]));
+      checkMotion(before, moved);
+      if (release) await release(moved);
       await page.mouse.up();
       if (pan) await page.keyboard.up('Space');
       assert.equal(await page.evaluate(() => View3D.interacting()), false);
-      checkMotion(before, moved);
       return moved;
     }
 
@@ -91,8 +93,37 @@ async function main() {
       assert(distance(before.target, moved.target) > 10, 'pan translates the orbit center');
     };
 
-    await staysAt(await drag(rotates), 300);
+    const released = await drag(rotates);
+    await page.mouse.move(start.x + 102, start.y + 38);
+    await staysAt(released, 300);
     await staysAt(await drag(pans, true), 300);
+    const resetOrbit = () => page.evaluate(() => View3D.automationCamera({ preset: 'whole' }));
+    const cdp = await page.context().newCDPSession(page);
+    await resetOrbit();
+    await drag(rotates, false, async moved => {
+      // Chromium sees the mouse move with no button held, but received no pointerup.
+      await cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: start.x + 102, y: start.y + 38, buttons: 0 });
+      await staysAt(moved, 100);
+      assert.equal(await page.evaluate(() => View3D.interacting()), false);
+    });
+    await resetOrbit();
+    await drag(rotates, false, async moved => {
+      assert(await canvas.evaluate(element => {
+        if (!element.hasPointerCapture(window.dragPointerId)) return false;
+        element.releasePointerCapture(window.dragPointerId);
+        return true;
+      }));
+      await page.mouse.move(start.x + 102, start.y + 38);
+      await staysAt(moved, 100);
+      assert.equal(await page.evaluate(() => View3D.interacting()), false);
+    });
+    await resetOrbit();
+    await drag(rotates, false, async moved => {
+      await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+      await page.mouse.move(start.x + 102, start.y + 38);
+      await staysAt(moved, 100);
+      assert.equal(await page.evaluate(() => View3D.interacting()), false);
+    });
     for (const [preset, check, pan] of [['#vTop', rotates, false], ['#vIso', pans, true]]) {
       await page.locator('.rail-tool-menu summary').click();
       const before = await camera();
@@ -105,7 +136,7 @@ async function main() {
     await page.screenshot({ path: path.join(job.dir, 'after-drag.png') });
     assert.deepEqual(errors, []);
     passed = true;
-    console.log('Packaged desktop: rotation and pan stop on release and interrupt preset animation.');
+    console.log('Packaged desktop: orbit stops on release, missing release, capture loss, and blur. Preset interruption and space pan pass.');
   } finally {
     try {
       if (app) await app.close();
