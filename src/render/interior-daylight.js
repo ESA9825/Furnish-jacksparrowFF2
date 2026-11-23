@@ -3,6 +3,7 @@
 'use strict';
 const planId='custom_mv37igji';
 const livingRooms=['area_fmv3qb1oi4','area_fmv3p2ig914','area_fmv3qajd93'];
+const livingRoomSet=new Set(livingRooms);
 const finishRooms=new Set([livingRooms[0],livingRooms[2]]);
 const bedrooms=['area_fmv3p1fkz7','area_fmv3oztg03'];
 const nightFinishRooms=new Set([...finishRooms,...bedrooms]);
@@ -94,7 +95,7 @@ function create(T,scene,{wx,wz,inside}){
  transform.rotation.x=-Math.PI/2;
  const overlay=new T.Group();
  scene.add(overlay);
- let patch,sky,field,finishField,finishTexture,wallsGroup,floors=[],bounds=null,lastPose='',daylight=0;
+ let patch,sky,field,finishField,finishTexture,wallsGroup,floors=[],bounds=null,lastPose='',daylight=0,openingsKey='';
  let roomById=new Map(),sofa=null;
  let nightRooms=[],nightSources=[],nightField,upperField,nightKey='',nightEnabled=false;
  let nightSky=false,windowSource;
@@ -118,10 +119,10 @@ function create(T,scene,{wx,wz,inside}){
   const width=alongX?right-left:back-front;
   return {id,lightRooms,alongX,normal,inner,outer,width,x,y,sill,head};
  }
- function mapLight(plan){
+ function mapLight(openings){
   const windows=[];
-  for(const [ref,roomId,ids] of apertures){
-   const window=plan.wins?.[plan.winRefs?.indexOf(ref)];
+  for(const [index,[,roomId,ids]] of apertures.entries()){
+   const window=openings[index];
    const room=roomById.get(roomId);
    if(!room||!window||!(window.head>window.sill))continue;
    windows.push(opening(window,room,new Set(ids),windows.length+1));
@@ -236,51 +237,41 @@ function create(T,scene,{wx,wz,inside}){
   finishTexture.generateMipmaps=true;
   uniforms.furnishFinishTexture.value=finishTexture;
  }
- // Widen the existing directional shadow filter on the selected
- // receivers. Negative radius is a local flag; spot shadows stay unchanged.
- function softenSun(shader){
-  const lighting=T.ShaderChunk?.lights_fragment_begin;
-  if(!lighting?.includes('directionalLightShadow.shadowRadius, vDirectionalShadowCoord'))return;
-  shader.fragmentShader=shader.fragmentShader.replace('#include <lights_fragment_begin>',
-   lighting.replace('directionalLightShadow.shadowRadius, vDirectionalShadowCoord',
-    '\n#ifdef SHADOWMAP_TYPE_PCF_SOFT\n-furnishReceiverSpread,\n#else\ndirectionalLightShadow.shadowRadius,\n#endif\nvDirectionalShadowCoord'));
- }
- function nichePanelling(model){
-  const backboards=[];
-  model.traverse(mesh=>{
-   if(mesh.isMesh&&mesh.userData.cabinetSection==='operationBack')backboards.push(mesh);
-  });
-  if(!backboards.length)return new Map();
-  inverse.copy(model.matrixWorld).invert();
-  const nicheBounds=new T.Box3(),transforms=new Map();
-  for(const mesh of backboards){
-   const localTransform=new T.Matrix4().multiplyMatrices(inverse,mesh.matrixWorld);
-   if(!mesh.geometry.boundingBox)mesh.geometry.computeBoundingBox();
-   nicheBounds.union(box.copy(mesh.geometry.boundingBox).applyMatrix4(localTransform));
-   transforms.set(mesh,localTransform);
+ function applySun(shader,soften,aperture){
+  let lighting=T.ShaderChunk?.lights_fragment_begin;
+  if(!lighting)return;
+  if(soften){
+   // Negative radius selects the wider filter without changing spot shadows.
+   lighting=lighting.replace('directionalLightShadow.shadowRadius, vDirectionalShadowCoord',
+    '\n#ifdef SHADOWMAP_TYPE_PCF_SOFT\n-furnishReceiverSpread,\n#else\ndirectionalLightShadow.shadowRadius,\n#endif\nvDirectionalShadowCoord');
   }
-  const {min,max}=nicheBounds;
-  const rect=new T.Vector4(min.x,min.y,1/Math.max(.001,max.x-min.x),1/Math.max(.001,max.y-min.y));
-  return new Map(backboards.map(mesh=>[mesh,{rect,transform:transforms.get(mesh),key:mesh.id}]));
+  if(aperture){
+   lighting=lighting.replace('getDirectionalLightInfo( directionalLight, directLight );',
+    `getDirectionalLightInfo( directionalLight, directLight );
+     directLight.color*=furnishSunThroughWindow;
+     directLight.visible=directLight.visible&&furnishSunThroughWindow>0.0;`);
+  }
+  shader.fragmentShader=shader.fragmentShader.replace('#include <lights_fragment_begin>',lighting);
  }
- function appearance(source,profile,niche,seam,upperReceiver,kitchenReceiver){
+ function appearance(source,profile,seam,upperReceiver,kitchenReceiver,sunReceiver){
   if(!source?.isMeshStandardMaterial||source.transparent)return source;
   if(!finishField||source.flatShading||(profile==='wall'&&(source.map||source.roughness<.8)))profile='';
   const pool=variants.get(source)||new Map();
   const fineEdge=profile==='cabinet'&&!!seam;
-  const variantKey=(profile==='niche'?profile+':'+niche.key:fineEdge?profile+':'+seam.toArray().join(','):profile)+'|'+upperReceiver+'|'+kitchenReceiver;
+  const variantKey=(fineEdge?profile+':'+seam.toArray().join(','):profile)+'|'+upperReceiver+'|'+kitchenReceiver+'|'+sunReceiver;
   if(pool.has(variantKey))return pool.get(variantKey);
   const material=source.clone();
   const satinTile=source.userData.satinTile===true||profile==='floor'&&!!source.userData.tileFinish?.layout;
   const tileDetail=profile==='floor'&&satinTile;
   const layout=source.userData.tileFinish?.layout;
   const groutHalfWidth=layout?layout.gap/(2*(Math.min(layout.width,layout.height)+layout.gap)):.006;
-  const paintDetail=profile==='wall',cabinetDetail=profile==='cabinet',nicheDetail=profile==='niche';
+  const paintDetail=profile==='wall',cabinetDetail=profile==='cabinet';
+  const apertureReceiver=sunReceiver==='room'||sunReceiver==='wall'&&paintDetail;
   const ceiling=profile==='ceiling',pile=profile==='pile',stone=profile==='stone';
   const latex=paintDetail||ceiling;
   const replacePaintColor=ceiling||paintDetail&&source.color.getHex()===0x37332b;
-  const veneer=profile==='veneer'||nicheDetail&&!!source.userData.cabinetSurface&&!!source.map;
-  const wood=profile==='wood'||nicheDetail||veneer;
+  const veneer=profile==='veneer';
+  const wood=profile==='wood'||veneer;
   const finishKind=veneer?'veneer':stone?'stone':profile==='matte'?'matte':'';
   const finishSurface=finishSurfaces[finishKind];
   const localFinish=finishSurface&&!veneer;
@@ -291,17 +282,13 @@ function create(T,scene,{wx,wz,inside}){
   // Keep source PBR values and pre-existing shaders. Export strips these
   // raster hooks and keeps the source values.
   const cacheKey=source.customProgramCacheKey();
-  material.customProgramCacheKey=()=>cacheKey+'|room-daylight-v12|'+smoothReflection+'|'+satinTile+'|'+profile+'|'+fineEdge+'|'+replacePaintColor+'|'+upperReceiver+'|'+kitchenReceiver+'|'+finishKind;
+  material.customProgramCacheKey=()=>cacheKey+'|room-daylight-v13|'+smoothReflection+'|'+satinTile+'|'+profile+'|'+fineEdge+'|'+replacePaintColor+'|'+upperReceiver+'|'+kitchenReceiver+'|'+finishKind+'|'+sunReceiver;
   material.onBeforeCompile=function(shader,renderer){
    source.onBeforeCompile.call(this,shader,renderer);
    Object.assign(shader.uniforms,uniforms);
    if(tileDetail)shader.uniforms.furnishFinishJoint={value:groutHalfWidth};
    if(fineEdge)shader.uniforms.furnishDoorHeights={value:seam};
-   if(nicheDetail){
-    shader.uniforms.furnishNicheRect={value:niche.rect};
-    shader.uniforms.furnishNicheLocal={value:niche.transform};
-   }
-   shader.vertexShader='varying vec3 furnishInteriorPosition;\n'+(localFinish?'varying vec3 furnishFinishPosition;\n':'')+(cabinetDetail?'varying vec2 furnishBoardPosition;\n':'')+(fineEdge?'varying float furnishIsDoorFace;\n':'')+(nicheDetail?'varying vec3 furnishNiche;\nuniform vec4 furnishNicheRect;\nuniform mat4 furnishNicheLocal;\n':'')+shader.vertexShader.replace('#include <project_vertex>',`
+   shader.vertexShader='varying vec3 furnishInteriorPosition;\n'+(localFinish?'varying vec3 furnishFinishPosition;\n':'')+(cabinetDetail?'varying vec2 furnishBoardPosition;\n':'')+(fineEdge?'varying float furnishIsDoorFace;\n':'')+shader.vertexShader.replace('#include <project_vertex>',`
     #include <project_vertex>
     vec4 furnishInteriorVertex=vec4(transformed,1.0);
     #ifdef USE_INSTANCING
@@ -311,10 +298,7 @@ function create(T,scene,{wx,wz,inside}){
     ${localFinish?'furnishFinishPosition=position;':''}
     ${cabinetDetail?'furnishBoardPosition=position.xy;':''}
     ${fineEdge?'furnishIsDoorFace=abs(normal.z);':''}
-    ${nicheDetail?`
-     vec3 boardAt=(furnishNicheLocal*vec4(position,1.0)).xyz;
-     furnishNiche=vec3((boardAt.xy-furnishNicheRect.xy)*furnishNicheRect.zw,normal.z);
-    `:''}`);
+   `);
    shader.fragmentShader=`
     varying vec3 furnishInteriorPosition;
     ${localFinish?'varying vec3 furnishFinishPosition;':''}
@@ -348,10 +332,26 @@ function create(T,scene,{wx,wz,inside}){
      uniform vec4 furnishSofaSize;
      uniform float furnishSofaVisible;
     `:''}
-    ${nicheDetail?'varying vec3 furnishNiche;':''}
     ${tileDetail?'uniform float furnishFinishJoint;':''}
     ${cabinetDetail?'varying vec2 furnishBoardPosition;':''}
     ${fineEdge?'varying float furnishIsDoorFace; uniform vec2 furnishDoorHeights;':''}
+    ${apertureReceiver?`
+    float furnishApertureSun(int id){
+     if(id==0||furnishDaylightSources[id].w==0.0)return 0.0;
+     vec3 delta=furnishDaylightSources[id].xyz-furnishInteriorPosition;
+     vec4 window=furnishWindowShapes[id];
+     vec3 sun=furnishInteriorSun.xyz;
+     float incidence=-dot(sun.xz,window.zw);
+     if(incidence<=0.001)return 0.0;
+     float travel=-dot(delta.xz,window.zw)/incidence;
+     if(travel<0.0)return 0.0;
+     vec3 hit=travel*sun-delta;
+     vec2 offset=abs(vec2(dot(hit.xz,window.wz),hit.y));
+     float edge=0.008+0.0047*travel;
+     vec2 coverage=1.0-smoothstep(window.xy-edge,window.xy+edge,offset);
+     return coverage.x*coverage.y;
+    }
+    `:''}
     void furnishWindowLight(int sourceIndex,float energy,vec3 normal,vec3 view,vec3 diffuse,
                             float metalness,float roughness,inout vec3 indirectDiffuse,inout vec3 indirectSpecular){
      if(sourceIndex==0||energy<=0.0)return;
@@ -414,6 +414,24 @@ function create(T,scene,{wx,wz,inside}){
      `:``}
     }
    `+shader.fragmentShader.replace('#include <lights_fragment_begin>',`
+    ${apertureReceiver?`
+     float furnishSunThroughWindow=1.0;
+     float furnishRoomDaylight=0.0;
+     if(furnishDaylightStrength>0.0){
+      vec2 roomPoint=furnishInteriorPosition.xz;
+      ${sunReceiver==='wall'?'roomPoint=wallPlan;':''}
+      float interior=${sunReceiver==='wall'?'hasPaint':'1.0'};
+      vec2 apertureUV=(roomPoint-furnishDaylightBounds.xy)*furnishDaylightBounds.zw;
+      vec2 texel=(floor(apertureUV*${resolution}.0)+0.5)/${resolution}.0;
+      vec4 opening=texture2D(furnishDaylightMap,texel);
+      ivec2 ids=ivec2(opening.ba*255.0+0.5);
+      if(interior>0.0&&furnishDaylightSources[ids.x].w>0.0){
+       furnishSunThroughWindow=mix(1.0,max(furnishApertureSun(ids.x),furnishApertureSun(ids.y)),interior);
+       vec2 sky=texture2D(furnishDaylightMap,apertureUV).rg;
+       furnishRoomDaylight=interior*(0.18+0.22*min(1.0,sky.x+sky.y))*furnishDaylightStrength;
+      }
+     }
+    `:''}
     ${profile?`
      float furnishReceiver=1.0;
      ${paintDetail?`
@@ -595,17 +613,10 @@ function create(T,scene,{wx,wz,inside}){
        *(0.065*nearFloor*(1.0-localCorner)*(1.0-sofaShade)*hasPaint*furnishDaylightStrength);
      }
     `:''}
-    ${nicheDetail?`
-     vec2 openingAt=clamp(furnishNiche.xy,0.0,1.0);
-     float side=1.0-smoothstep(0.0,0.23,min(openingAt.x,1.0-openingAt.x));
-     float hood=smoothstep(0.62,1.0,openingAt.y);
-     float bottom=1.0-smoothstep(0.0,0.15,openingAt.y);
-     float face=step(0.55,furnishNiche.z);
-     float occlusion=face*(0.14+0.19*side+0.30*hood+0.07*bottom);
-     reflectedLight.indirectDiffuse*=1.0-occlusion;
-     reflectedLight.indirectSpecular*=1.0-0.65*occlusion;
-     reflectedLight.indirectDiffuse+=diffuseColor.rgb*vec3(1.0,0.78,0.56)
-      *(0.17*face*(1.0-hood)*(1.0-side)*furnishDaylightStrength);
+    ${apertureReceiver?`
+     // A broad room return provides light on the far side of the window beam.
+     reflectedLight.indirectDiffuse+=diffuseColor.rgb*(1.0-metalnessFactor)
+      *vec3(1.0,0.96,0.90)*furnishRoomDaylight;
     `:''}
     ${nightReceiver||finishResponse?`
      if(furnishNightActive>0.0){
@@ -641,16 +652,20 @@ function create(T,scene,{wx,wz,inside}){
      }
     `:''}
    `);
-   if(profile&&!ceiling)softenSun(shader);
+   if(profile&&!ceiling||apertureReceiver)applySun(shader,profile&&!ceiling,apertureReceiver);
   };
   pool.set(variantKey,material);variants.set(source,pool);
   return material;
  }
- function paint(mesh,profile='',niche,seam,upperReceiver='',kitchenReceiver=false){
-  if(!bounds||!mesh.isMesh||decorated.has(mesh)||!box.setFromObject(mesh).intersectsBox(bounds))return;
-  const source=mesh.material,next=Array.isArray(source)?source.map(m=>appearance(m,profile,niche,seam,upperReceiver,kitchenReceiver)):appearance(source,profile,niche,seam,upperReceiver,kitchenReceiver);
+ function paint(mesh,profile='',seam,upperReceiver='',kitchenReceiver=false,sunReceiver=''){
+  const previous=decorated.get(mesh);
+  if(previous?.sunReceiver===sunReceiver||!bounds||!mesh.isMesh||!box.setFromObject(mesh).intersectsBox(bounds))return;
+  const source=previous?.source??mesh.material;
+  const variant=m=>appearance(m,profile,seam,upperReceiver,kitchenReceiver,sunReceiver);
+  const next=Array.isArray(source)?source.map(variant):variant(source);
+  if(previous&&(Array.isArray(next)?next.every((m,i)=>m===previous.next[i]):next===previous.next))return;
   if(Array.isArray(source)?source.every((m,i)=>m===next[i]):source===next)return;
-  decorated.set(mesh,{source,next});
+  decorated.set(mesh,{source,next,sunReceiver});
   mesh.material=next;
  }
  function findSupports(model,tightBase){
@@ -855,9 +870,12 @@ function create(T,scene,{wx,wz,inside}){
   if(plan?.id!==planId||!plan.rooms?.length){
    reset();return;
   }
+  const openings=apertures.map(([ref])=>plan.wins?.[plan.winRefs?.indexOf(ref)]);
+  const key=JSON.stringify([wx(0),wz(0),openings,plan.rooms.map(({id,poly,at})=>[id,poly,at])]);
+  if(openingsKey!==key){reset();openingsKey=key;}
   if(!patch){
    roomById=new Map(plan.rooms.filter(room=>room.poly?.length>=3).map(room=>[room.id,room]));
-   mapLight(plan);
+   mapLight(openings);
    const mask=dataTexture(32,32,(x,y)=>{
     const q=Math.max(Math.abs((x+.5)/16-1),Math.abs((y+.5)/16-1));
     const a=(1-q*q)**2;
@@ -886,7 +904,10 @@ function create(T,scene,{wx,wz,inside}){
     floor:floor?.position.y??(room.height??0)}];
   });
   if(!finishField)mapFinishes(archUp,paintedAreas);
-  for(const floor of floors)paint(floor,finishRooms.has(floor.userData.room)?'floor':'');
+  for(const floor of floors){
+   const room=floor.userData.room;
+   paint(floor,finishRooms.has(room)?'floor':'',undefined,'',false,livingRoomSet.has(room)?'room':'');
+  }
   archUp.updateWorldMatrix(true,true);
   const paintBounds=paintedAreas.map(({poly})=>new T.Box3().setFromPoints(poly.map(([x,z])=>new T.Vector3(x,0,z))));
   archUp.traverse(mesh=>{
@@ -904,13 +925,14 @@ function create(T,scene,{wx,wz,inside}){
    const part=mesh.userData.ceiling?.part;
    const paintedRoof=roomCeiling&&paintRooms.has(mesh.userData.layerObject.slice(12));
    if(roomCeiling||paintedGypsum||part==='flat'||part==='panel'||part==='panel-trim'){
-    accepted.add(mesh);paint(mesh,paintedRoof||paintedGypsum?'ceiling':'',undefined,undefined,
+    accepted.add(mesh);paint(mesh,paintedRoof||paintedGypsum?'ceiling':'',undefined,
      roomCeiling||part==='flat'||part==='panel'||part==='panel-trim'?'ceiling':'');
    }
    if(mesh.userData.recessWall||mesh.userData.wallFinish||mesh.userData.wallTiling||mesh.userData.room?.startsWith('bay_')){
     const wall=mesh.userData.recessWall||mesh.userData.wallFinish;
-    accepted.add(mesh);paint(mesh,wall&&!mesh.userData.walkOnly?'wall':'',undefined,undefined,
-     wall||mesh.userData.wallTiling?'wall':'',mesh.userData.wallTiling?.roomId===kitchenRoom);
+    accepted.add(mesh);paint(mesh,wall&&!mesh.userData.walkOnly?'wall':'',undefined,
+     wall||mesh.userData.wallTiling?'wall':'',mesh.userData.wallTiling?.roomId===kitchenRoom,
+     wall||mesh.userData.wallTiling?'wall':'');
    }
   });
   const byId=new Map(furniture.map(f=>[f.id,f]));
@@ -922,7 +944,7 @@ function create(T,scene,{wx,wz,inside}){
    if(!f||!roomById.has(model.userData.floorBase?.roomId))continue;
    const base=model.userData.floorBase;
    const scopedCabinet=f.type==='cabinet'&&finishRooms.has(base.roomId);
-   const niches=scopedCabinet?nichePanelling(model):null;
+   const sunReceiver=livingRoomSet.has(base.roomId)?'room':'';
    if(!sofa&&f.type==='sofa_yeswood_cherry'&&finishRooms.has(base.roomId)&&base.known&&!f.pose3D){
     sofa={model,floor:base.z/1000,width:(f.w??2160)/1000,depth:(f.d??892)/1000,height:(f.h??895)/1000};
    }
@@ -931,7 +953,6 @@ function create(T,scene,{wx,wz,inside}){
     const part=mesh.userData;
     const satin=scopedCabinet&&(part.cabinetDoorSize||part.cabinetDrawerBoard==='front')&&
      !part.cabinetHardware&&!mesh.material?.map&&mesh.material?.metalness===0;
-    const niche=niches?.get(mesh);
     const inSuite=finishRooms.has(base.roomId);
     const pile=inSuite&&f.type==='sofa_yeswood_cherry'&&mesh.material?.sheen>0;
     const coffeePart=inSuite&&part.cherryCoffeePart;
@@ -939,16 +960,17 @@ function create(T,scene,{wx,wz,inside}){
      (f.kitchen||f.type==='kitchenwall'||f.type==='rangehood_fotile_jcd10ta')&&!part.cabinetHardware;
     const matte=kitchenReceiver&&(part.cabinetDoorSize||part.cabinetDrawerBoard==='front')&&
      !mesh.material?.map&&mesh.material?.metalness===0;
-    const veneer=scopedCabinet&&mesh.material?.map&&part.cabinetSurface&&part.cabinetSurface!=='solid';
+    const veneer=scopedCabinet&&mesh.material?.map&&part.cabinetSurface&&
+     (part.cabinetSurface!=='solid'||part.cabinetSection==='operationBack');
     const finish=pile?'pile':coffeePart==='white-stone'?'stone':
-     coffeePart&&mesh.material?.map?'wood':niche?'niche':satin?'cabinet':veneer?'veneer':matte?'matte':'';
+     coffeePart&&mesh.material?.map?'wood':satin?'cabinet':veneer?'veneer':matte?'matte':'';
     let seam;
     if(f.id==='fmv62bwbp1'&&finish==='cabinet'&&part.cabinetDoorSize){
      if(!mesh.geometry.boundingBox)mesh.geometry.computeBoundingBox();
      const {min,max}=mesh.geometry.boundingBox;
      seam=new T.Vector2(min.y,max.y);
     }
-    accepted.add(mesh);paint(mesh,finish,niche,seam,'',!!kitchenReceiver);
+    accepted.add(mesh);paint(mesh,finish,seam,'',!!kitchenReceiver,sunReceiver);
    });
    if(contactTypes.test(f.type)&&!f.pose3D&&model.userData.floorBase.known&&Math.abs(model.position.y-model.userData.floorBase.z/1000)<.025){
     supports.set(model,findSupports(model,scopedCabinet));
@@ -1073,7 +1095,7 @@ function create(T,scene,{wx,wz,inside}){
   uniforms.furnishWindowRaster.value=0;updateWindowEmitter();
   finishField?.dispose();finishTexture?.dispose();
   uniforms.furnishFinishField.value=uniforms.furnishFinishTexture.value=null;
-  patch=sky=field=finishField=finishTexture=wallsGroup=bounds=null;roomById.clear();floors=[];sofa=null;uniforms.furnishSofaVisible.value=0;lastPose='';
+  patch=sky=field=finishField=finishTexture=wallsGroup=bounds=null;roomById.clear();floors=[];sofa=null;uniforms.furnishSofaVisible.value=0;lastPose='';openingsKey='';
  }
  function setNight(enabled,ambient=0){
   nightEnabled=enabled;

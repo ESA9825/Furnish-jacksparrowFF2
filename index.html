@@ -1095,12 +1095,12 @@ function buildEnvironment(){
     room.dispose();
   }
 }
-function mat(color, o = {}){
-  const key = color + JSON.stringify(o);
+function mat(color, o = {}, reflection){
+  const key = color + JSON.stringify(o) + (reflection===undefined?'':'|'+reflection);
   if (!matCache.has(key)){
     const m = FurnishModelPrimitives.createMaterial(THREE,color,{roughness:.7,...o});
     // 金属 / 光滑表面挂环境反射，墙面等哑光材质不挂，避免整体变亮
-    if (envTex && (m.metalness > 0 || m.roughness < .4)){ m.envMap = envTex; m.userData.env = m.metalness > .5 ? 1 : .5; m.envMapIntensity = m.userData.env*envK; }
+    if (envTex && (reflection!==undefined || m.metalness > 0 || m.roughness < .4)){ m.envMap = envTex; m.userData.env = reflection??(m.metalness > .5 ? 1 : .5); m.envMapIntensity = m.userData.env*envK; }
     matCache.set(key, m);
   }
   return matCache.get(key);
@@ -1216,7 +1216,7 @@ const syncIdentity=FurnishPartIdentity;
   if(f.obj?.positions?.length){
     const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(f.obj.positions,3));geo.computeVertexNormals();geo.computeBoundingBox();const b=geo.boundingBox,size=new THREE.Vector3();b.getSize(size);geo.translate(-(b.min.x+b.max.x)/2,-b.min.y,-(b.min.z+b.max.z)/2);const mesh=syncIdentity.produce("index:site-1",()=>new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:f.color||'#d9d2c5',roughness:.75,side:THREE.DoubleSide})));mesh.scale.set(f.w/1000/size.x,(f.h||800)/1000/size.y,f.d/1000/size.z);mesh.castShadow=true;mesh.receiveShadow=true;const g=new THREE.Group();g.add(mesh);g.userData.fid=f.id;g.position.set(wx(f.cx),0,wz(f.cy));g.rotation.y=-f.rot*Math.PI/180;return g;
   }
-  if(FurnishProducts.definition(f)?.trackSocket){const model=FurnishBullGB50KModel.build(THREE,f);model.position.set(wx(f.cx),0,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.scale.x=f.flip?-1:1;model.userData.fid=f.id;return model;}
+  if(FurnishProducts.definition(f)?.trackSocket){const model=FurnishBullGB50KModel.build(THREE,f,{material:mat});model.position.set(wx(f.cx),0,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.scale.x=f.flip?-1:1;model.userData.fid=f.id;return model;}
   if(typeof FurnishPanelBullG12Model!=='undefined'&&FurnishPanelBullG12Model.supported(f)){const model=FurnishPanelBullG12Model.build(THREE,f);model.position.set(wx(f.cx),model.position.y,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.scale.x=f.flip?-1:1;model.userData.fid=f.id;return model;}
   if(typeof FurnishElectricalBox!=='undefined'&&FurnishElectricalBox.supported(f)){const model=FurnishElectricalBoxModel.build(THREE,f);model.position.set(wx(f.cx),model.position.y,wz(f.cy));model.rotation.y=-f.rot*Math.PI/180;model.scale.x=f.flip?-1:1;model.userData.fid=f.id;return model;}
   const g = new THREE.Group(), w = M(f.w), d = M(f.d), c = f.color || '#ddd', bz = -d/2, R = rng(Math.round(f.w*7 + f.d*13 + f.cx + f.cy));
