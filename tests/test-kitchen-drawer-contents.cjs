@@ -79,7 +79,10 @@ for(const rot of [37,180])for(const flip of [false,true]){
  const travel=box.d-15;
  assert.throws(()=>B.update(part,choice,{travelMm:box.d+1}),/行程/);
  const rice={...placement(host,'rice','F40H8093S',false),brand:'苏泊尔'};
+ const {obj,...placed}=rice;
+ const catalogRice={...placed,type:'rice_cooker_supor_f40h8093s'};
  assert.equal(D.attachment(rice,[host,rice]),null,'legacy drawer does not carry appliances');
+ assert.equal(D.attachment(catalogRice,[host,catalogRice]),null);
  for(const phase of [0,.45,1]){
   const {cabinet}=B.update(part,choice,{travelMm:travel,open:phase>0,extension:phase});
   host.kitchen.modules[2].structure.cabinet=cabinet;
@@ -92,6 +95,8 @@ for(const rot of [37,180])for(const flip of [false,true]){
   assert.equal(match.componentId,component.id);
   near(Math.hypot(match.dx,match.dy),phase*travel);
   assert.equal(D.attachment({...rice,brand:'其他'},all),null);
+  assert.deepEqual(D.attachment(catalogRice,[host,catalogRice]),match);
+  assert.equal(D.attachment({...catalogRice,mountHeight:rice.mountHeight+2},[host,catalogRice]),null);
   const saved=P.pack({planId:'drawer-fixture',current:{furniture:all},designs:[],catalog:[]});
   assert.equal(saved.version,104);
   const recovered=P.unpack(saved).current.furniture;

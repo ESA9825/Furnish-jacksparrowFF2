@@ -5,7 +5,7 @@ const kitchen=()=>root.FurnishKitchen||require('./kitchen-core.js');
 const products=()=>root.FurnishProducts||require('./product-rules.js');
 const cabinetMotion=()=>root.FurnishCabinetMotion||require('./cabinet-motion.js');
 const trays=new Map([['906.213.59','drawer'],['803.430.04','innerTray'],['703.429.72','innerTray']]);
-const appliances=new Map([['F40H8093S','苏泊尔'],['KL65-V573','九阳']]);
+const appliances=new Map(Object.values(products().types).filter(r=>r.countertop?.drawer).map(r=>[r.identity.model,r.identity.brand]));
 const supportTolerance=2; // The saved items sit 1 mm above the production floor.
 const cached=new WeakMap();
 const eligible=(p,extendedOnly)=>!p.removed&&(p.travelMm!==undefined||!extendedOnly&&p.innerTray);
@@ -48,11 +48,12 @@ function floors(host){
 }
 
 function attachment(f,furniture,plan){
- if(f?.type!=='custom'||!f.obj||f.pose3D||!Array.isArray(furniture))return null;
- const appliance=appliances.get(f.model)===f.brand&&appliances.has(f.model);
- const kind=f.brand==='宜家/IKEA'?trays.get(f.model):null;
+ if(!f||f.pose3D||!Array.isArray(furniture))return null;
+ const P=products(),legacy=f.type==='custom'&&f.obj;
+ const appliance=legacy?appliances.has(f.model)&&appliances.get(f.model)===f.brand:!f.obj&&P.definition(f)?.countertop?.drawer;
+ const kind=legacy&&f.brand==='宜家/IKEA'?trays.get(f.model):null;
  if(!kind&&!appliance)return null;
- const P=products(),z=P.vertical(f);
+ const z=P.vertical(f);
  if(!z)return null;
  const ownFloor=plan?P.floorBase(plan,f,furniture):{known:true,z:0};
  if(!ownFloor.known)return null;

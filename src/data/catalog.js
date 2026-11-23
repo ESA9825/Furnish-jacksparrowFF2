@@ -3,6 +3,11 @@
 'use strict';
 const products=typeof module==='object'&&module.exports?require('../core/product-rules.js'):root.FurnishProducts;
 const cabinets=typeof module==='object'&&module.exports?require('../core/cabinet-core.js'):root.FurnishCabinet;
+const countertopItems=Object.entries(products.types).filter(([,rule])=>rule.countertop);
+function countertopLibrary(cookware){
+ return countertopItems.filter(([,rule])=>!!rule.countertop.cookware===cookware).map(([type,{countertop,height,identity}])=>
+  [type,countertop.name,countertop.width,countertop.depth,countertop.color,undefined,height,null,null,null,null,identity]);
+}
 const MATS = {
   wood:    {name:'橡木地板', price:320, sw:'#d8b88a'},
   walnut:  {name:'胡桃木地板', price:380, sw:'#9b7250'},
@@ -33,6 +38,7 @@ const LIB = [
     ["aquarium_mijia_2pro","米家智能鱼缸 2 Pro",505,292,"#191c20",0,products.height({type:"aquarium_mijia_2pro"})],
     ["stove_fotile_th36b","方太燃气灶 TH36B-T",750,440,"#111214",0,products.height({type:"stove_fotile_th36b"})],
     ["rangehood_fotile_jcd10ta","方太抽油烟机 JCD10TA",900,350,"#111214",0,products.height({type:"rangehood_fotile_jcd10ta"})],
+    ...countertopLibrary(false),
     ["stove","燃气灶",750,450,"#dcdcdc",2500],
     ["fridge","冰箱",700,700,"#dfe4e8",4000],
     ["washer_littleswan_tg10k60w","小天鹅洗衣机 TG10K60W · 10kg",595,560,"#f1f0ed",undefined,850],
@@ -60,6 +66,7 @@ const LIB = [
     ["robot_p20max_plumbed","石头 P20 Max 上下水版套装",381,475,"#f5f6f5",0,300],
     ["robot_p20max","石头 P20 Max 扫拖机器人",350,352,"#f5f6f5",0,79.8]
   ]},
+  {cat:'厨房锅具',items:countertopLibrary(true)},
   {cat:'柜体', items:[
     ["balcony_plant_rack","阳台开放花架 · 下部猫砂位",1880,500,"#5b615a",undefined,1600],
     ["balcony_plant_rack_step","两层阶梯花架 · 后排浅台／下部开放",1160,550,"#b89b74",undefined,1300],
@@ -289,7 +296,7 @@ const navigationGroups=[
  {id:'appliances',name:'家电与设备',en:'Appliances',children:[['cooking','厨房电器','Kitchen appliances'],['laundry','洗烘设备','Washers & dryers'],['climate','空调与温控','Climate'],['living','生活电器','Home appliances'],['services','安装设备','Service equipment']]},
  {id:'decor',name:'软装与灯饰',en:'Decor & lighting',children:[['lighting','灯具','Lighting'],['textiles','窗饰与布艺','Textiles'],['accessories','绿植与装饰','Accessories']]},
  {id:'fixtures',name:'门窗与卫浴',en:'Doors & bathroom',children:[['openings','门窗隔断','Doors & windows'],['sanitary','卫浴器具','Bathroom fixtures'],['sinks','水槽与台盆','Sinks']]},
- {id:'other',name:'其他用品',en:'Other items',children:[['pets','宠物用品','Pets'],['leisure','运动与乐器','Sports & music'],['drying','晾晒用品','Drying racks'],['custom','我的家具','My items'],['general','其他','Other']]},
+ {id:'other',name:'其他用品',en:'Other items',children:[['cookware','厨房锅具','Cookware'],['pets','宠物用品','Pets'],['leisure','运动与乐器','Sports & music'],['drying','晾晒用品','Drying racks'],['custom','我的家具','My items'],['general','其他','Other']]},
  {id:'auxiliary',name:'辅助工具',en:'Layout tools',children:[['blocks','占位体','Placeholders']]}
 ];
 const navigationTypeGroups={
@@ -301,6 +308,8 @@ const navigationTypeGroups={
 };
 function navigationCategory(it,cat){
  if(it[7])return 'other/custom';
+ const countertop=products.definition(it[0])?.countertop;
+ if(countertop)return countertop.cookware?'other/cookware':'appliances/cooking';
  if(it[0]==='block')return 'auxiliary/blocks';
  if(['pipebox','quartz_sill','window_surround','art_glass_partition'].includes(it[0]))return 'cabinetry/enclosures';
  if(it[0]==='vanity')return 'cabinetry/vanity';
@@ -321,7 +330,7 @@ const useTypes={
  bedroom:['quartz_sill','window_surround','bed','crib','nightstand','wardrobe','chest','dresser','curtain','curtain_mijia_3_pro','curtain_mijia_3_pro_sheer','curtain_sheer','blind_venetian','blind_honeycomb','blind_zebra','blind_bamboo','blind_roller','mirror','acwall','acwall_midea_mxc3p'],
  dining:['chair_ikea_vihals','table','table_folding_1100','table_folding_1200','table_folding_1300','roundtable','chair','barstool','island','cabinet','pendant'],
  study:['chair_ikea_vihals','quartz_sill','window_surround','chair_yeswood_s05118','stool_citylong_370','desk','chair','officechair','bookshelf','bookshelf_yeswood_y52y09','bookshelf_yeswood_y00y06','bookshelf_yeswood_y00y06058','armchair','floorlamp'],
- kitchen:['panel_light_300x600','stove','stove_fotile_th36b','rangehood_fotile_jcd10ta','fridge','fridge_french_drawer','dishwasher','dishwasher_mijia_countertop','water_purifier_mijia_1200g','ksink','sink_arrow_680','sink_arrow_750','ovencol','kitchenwall','island'],
+ kitchen:[...countertopItems.map(([type])=>type),'panel_light_300x600','stove','stove_fotile_th36b','rangehood_fotile_jcd10ta','fridge','fridge_french_drawer','dishwasher','dishwasher_mijia_countertop','water_purifier_mijia_1200g','ksink','sink_arrow_680','sink_arrow_750','ovencol','kitchenwall','island'],
  laundry:['washer_littleswan_tg10k60w','washer','dryer','dryingrack','drying_rack_hotata_y024','drying_rack_hotata_y024_2m','crank_hotata_y024_2m','robot_p20max','robot_p20max_tank','robot_p20max_plumbed'],
  bathroom:['bath_heater_aopu_se2','bath_heater_300x600','vanity','toilet','shower','shower_arrow_cream','bathtub','waterheater','waterheater_flat'],
  entry:['electrical_box_strong','electrical_box_weak','shoecab','bench_yeswood_oak','bench','mirror'],pet:[...petTypes]

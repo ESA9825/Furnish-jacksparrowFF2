@@ -340,6 +340,31 @@ for(const [type,profile,kind,height,brand,model,sourceUrl] of [
  ['garment_down_long_photo','garment-long-down','长款羽绒服',1260,'优衣库/UNIQLO（外观参考）','473548 · 照片厚片；悬挂尺寸估算','https://item.jd.com/10177558893420.html'],
  ['garment_jacket_photo','garment-autumn-jacket','秋季外套',800,'优衣库/UNIQLO（外观参考）','459592 · 照片厚片；悬挂尺寸估算','https://www.uniqlo.com/us/en/products/E459592-000/00?colorDisplayCode=37'],
 ])types[type]={kind,family:'storage-supply',storageSupply:profile,storageSupplyRevision:2,garmentPhoto:true,footprintMin:{w:100,d:10},height,anchor:'bottom',defaultFrontClearance:0,defaults:{mountHeight:0},fields:['mountHeight'],create:['mountHeight'],solidModel:{global:'FurnishStorageSupplyModel',module:'storage-supply',geometryVersion:1},identity:{brand,model,sourceUrl}};
+// The published kitchen assets predate the catalog. Retain their original
+// orientation for existing OBJ placements and use +Z as the new items' front.
+for(const [type,kind,name,size,color,asset,assetGlobal,brand,model,sourceUrl,options] of [
+ ['kettle_mijia_mjjysh01ym','热水壶','米家恒温电水壶 2 Pro · MJJYSH01YM',[273,155,242],'#f1f0ed',
+  'mijia-kettle-mjjysh01ym','FurnishMijiaKettleAsset','米家','MJJYSH01YM','https://www.mi.com/shop/buy/detail?product_id=16735',{plan:'kettle'}],
+ ['rice_cooker_supor_f40h8093s','电饭煲','苏泊尔 IH 电饭煲 4 L · F40H8093S',[270,326,235],'#c5a880',
+  'supor-rice-cooker-f40h8093s','FurnishSuporF40H8093SAsset','苏泊尔','F40H8093S','https://item.jd.com/100256686079.html',{reverse:true,drawer:true}],
+ ['air_fryer_joyoung_kl65_v573','空气炸锅','九阳空气炸锅 6.5 L · KL65-V573',[270,374,332],'#343839',
+  'joyoung-air-fryer-kl65-v573','FurnishJoyoungV573Asset','九阳','KL65-V573','https://item.jd.com/100066859056.html',{reverse:true,drawer:true}],
+ ['griddle_liven_lr_d3027s','电饼铛','利仁可拆洗电饼铛 · LR-D3027S',[346,381,172],'#292b2a',
+  'liven-griddle-lr-d3027s','FurnishLivenD3027SAsset','利仁','LR-D3027S','https://item.jd.com/100071917903.html',{reverse:true}],
+ ['microwave_midea_pm20m2','微波炉','美的微波炉 20 L · PM20M2',[459,352,281],'#2a2b2c',
+  'midea-microwave-pm20m2','FurnishMideaPM20M2Asset','美的','PM20M2','https://item.jd.com/100033969830.html',{reverse:true,plan:'microwave'}],
+ ['wok_ikea_vardagen_10488383','炒锅','宜家 VARDAGEN 瓦达恩带盖炒锅 32 cm · 104.883.83',[376.39,481.4,158.01],'#383736',
+  'ikea-vardagen-wok-10488383','FurnishIkeaVardagenWokAsset','宜家/IKEA','104.883.83','https://www.ikea.cn/cn/zh/p/vardagen-wok-with-lid-carbon-steel-10488383/',{reverse:true,plan:'wok',cookware:true}],
+ ['pot_ikea_365_40484251','蒸锅','宜家 IKEA 365+ 蒸锅组合底锅 5 L · 404.842.51',[311.63,234.38,263.95],'#c3c6c8',
+  'ikea-365-steam-pot-40484251','FurnishIkea365SteamerPotAsset','宜家/IKEA','404.842.51','https://www.ikea.cn/cn/zh/p/ikea-365-dai-gai-guo-bu-xiu-gang-40484251/',{plan:'pot',cookware:true}],
+ ['steamer_ikea_stabil_90163525','蒸屉','宜家 STABIL 斯塔比尔蒸屉 5 L · 901.635.25',[327.95,230.08,80.01],'#c3c6c8',
+  'ikea-stabil-steamer-90163525','FurnishIkeaStabilSteamerAsset','宜家/IKEA','901.635.25','https://www.ikea.cn/cn/zh/p/stabil-si-ta-bi-er-zheng-ti-bu-xiu-gang-90163525/',{plan:'insert',cookware:true}],
+]){
+ const [width,depth,height]=size;
+ types[type]={kind,height,anchor:'bottom',defaultFrontClearance:0,defaults:{mountHeight:0},fields:['mountHeight'],create:['mountHeight'],
+  solidModel:{global:'FurnishKitchenCountertopApplianceModel',module:'kitchen-countertop-appliance',geometryVersion:1},
+  identity:{brand,model,sourceUrl},countertop:{name,width,depth,color,asset,assetGlobal,...options}};
+}
 // Preserve each historical installation mechanism. New floor offsets are applied
 // at shared production/spatial boundaries, never inside individual constructors.
 for(const [type,rule] of Object.entries(types)){

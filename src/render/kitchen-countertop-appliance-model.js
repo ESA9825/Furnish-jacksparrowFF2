@@ -1,24 +1,33 @@
-/* Material-preserving display for known countertop products with custom OBJ placements. */
+/* Shared production models for built-in countertop items and matching legacy OBJ placements. */
 (function(root){
 'use strict';
-const assets=new Map([
- ['MJJYSH01YM','FurnishMijiaKettleAsset'],
- ['KL65-V573','FurnishJoyoungV573Asset'],
- ['LR-D3027S','FurnishLivenD3027SAsset'],
- ['PM20M2','FurnishMideaPM20M2Asset'],
- ['F40H8093S','FurnishSuporF40H8093SAsset'],
- ['104.883.83','FurnishIkeaVardagenWokAsset'],
- ['404.842.51','FurnishIkea365SteamerPotAsset'],
- ['901.635.25','FurnishIkeaStabilSteamerAsset'],
-]);
+const products=root.FurnishProducts||require('../core/product-rules.js');
+const byModel=new Map(Object.values(products.types).filter(r=>r.countertop).map(r=>[r.identity.model,r.countertop]));
+const profile=f=>!f.obj&&products.definition(f)?.countertop;
+const load=p=>root[p.assetGlobal]||(typeof require==='function'?require('../data/'+p.asset+'-blender-asset.js'):null);
 function asset(f){
+ const builtIn=profile(f);
+ if(builtIn)return load(builtIn);
  if(f.type!=='custom'||!f.obj?.positions?.length)return null;
- const key=assets.get(f.model),source=key&&root[key];
+ const legacy=byModel.get(f.model),source=legacy&&load(legacy);
  return source&&source.product.brand===f.brand&&source.product.sourceUrl===f.sourceUrl?source:null;
 }
-function build(T,source,f,material){
- const createMaterial=material?(_T,color,finish)=>material(color,finish):root.FurnishModelPrimitives.createMaterial;
- return root.FurnishStaticAssetModel.build(T,source,{...f,h:f.h||800},0,createMaterial);
+const supported=f=>!!(profile(f)||asset(f));
+function build(T,f,{material}={}){
+ const builtIn=profile(f),source=asset(f);
+ if(!source)throw Error('厨电或锅具模型未加载：'+f.type);
+ const primitives=root.FurnishModelPrimitives||require('./model-primitives.js');
+ const staticModel=root.FurnishStaticAssetModel||require('./static-asset-model.js');
+ const createMaterial=material?(_T,color,finish)=>material(color,finish):primitives.createMaterial;
+ const model=staticModel.build(T,source,{...f,h:builtIn?products.height(f):f.h||800},builtIn?products.value(f,'mountHeight'):0,createMaterial);
+ if(!builtIn?.reverse)return model;
+ const group=new T.Group();
+ group.userData.furnishAsset=model.userData.furnishAsset;
+ model.rotation.y=Math.PI;
+ group.add(model);
+ return group;
 }
-root.FurnishKitchenCountertopApplianceModel={asset,build};
+const api={asset,supported,build};
+if(typeof module==='object'&&module.exports)module.exports=api;
+else root.FurnishKitchenCountertopApplianceModel=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

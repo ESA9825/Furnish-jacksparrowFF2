@@ -21,6 +21,26 @@ if(t==='panel_bull_g12')return `<g data-wall-panel="true">${rc(-w/2,-d/2,w,d,c,'
 if(t==='pet_bowl_petstar_180')return ec(0,0,w/2,d/2,c)+ec(0,0,w*.44,d*.44,'#8db4c2');
 if(t==='cat_litter_yanxuan_25kg')return rc(-w/2,-d/2,w,d,c,'rx="2"')+rc(-w*.48,-d*.475,w*.96,d*.45,'#d8dcd6','data-folded-handle="true"')+rc(-w*.16,-d*.295,w*.32,d*.09,c,`rx="${d*.045}"`)+ln(-w/2,d*.46,w/2,d*.46)+`<text x="0" y="${d*.22}" text-anchor="middle" fill="#0874a6" font-size="${w*.18}">Mix</text>`;
 const products=typeof module==='object'&&module.exports?require('../core/product-rules.js'):root.FurnishProducts;
+const countertop=products.definition(t)?.countertop;
+if(countertop){
+ const lid='#b8bcbf',dark='#242627';
+ switch(countertop.plan){
+  case 'kettle':
+   return rc(-w*.5,-d*.19,w,d*.38,c,`rx="${d*.19}"`)+ec(0,0,d/2,d/2,c)+ec(0,0,d*.36,d*.36,'#e1dfda')+ec(0,0,d*.11,d*.11,dark);
+  case 'microwave':
+   return rc(-w/2,-d/2,w,d,c,'rx="4"')+ln(-w*.46,d*.43,w*.46,d*.43)+rc(w*.28,d*.27,w*.15,d*.09,dark);
+  case 'wok':
+   return rc(-w*.065,-d/2,w*.13,d,c,`rx="${w*.06}"`)+ec(0,-d*.14,w/2,d*.33,c)+ec(0,-d*.14,w*.40,d*.27,'#5b5956')+ec(0,-d*.14,w*.065,d*.05,dark);
+  case 'pot': case 'insert': {
+   const body=rc(-w/2,-d*.12,w,d*.24,c,`rx="${d*.10}"`)+ec(0,0,w*.36,d/2,c)+ec(0,0,w*.31,d*.43,lid);
+   const detail=countertop.plan==='pot'?rc(-w*.10,-d*.045,w*.20,d*.09,'none',`rx="${d*.045}"`):
+    [[0,0],[-.15,0],[.15,0],[0,-.21],[0,.21]].map(([x,y])=>ec(x*w,y*d,d*.015,d*.015,dark)).join('');
+   return body+detail;
+  }
+  default:
+   return rc(-w/2,-d/2,w,d,c,`rx="${Math.min(w,d)*.18}"`)+rc(-w*.25,d*.21,w*.5,d*.16,dark,`rx="${d*.05}"`);
+ }
+}
 const track=products.definition(t)?.trackSocket;
 if(track){
  const railDepth=d*track.railDepth/track.depth, moduleWidth=w*track.moduleDiameter/track.width;
