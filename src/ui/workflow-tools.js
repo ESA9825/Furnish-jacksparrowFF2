@@ -213,8 +213,10 @@ function initialize(){
  const lightSummary=document.createElement('summary');lightSummary.className='btn';lightSummary.append(localized(document.createElement('span'),'照明','Lighting'));
  const lightOptions=document.createElement('div');lightOptions.className='scene-light-options';
  lightOptions.append(document.querySelector('[data-t="lamps"]'),document.querySelector('[data-t="nightLights"]'),$('#sunSettings'));
+ const washStatus=localized(document.createElement('output'),'灯带补光计算中…','Calculating cove lighting…');
+ washStatus.id='ceiling-wash-status';washStatus.hidden=true;
  lightMenu.append(lightSummary,lightOptions);
- light.append($('#sun').closest('label'),$('#sunAltitude'),document.querySelector('[data-t="night"]'),lightMenu);
+ light.append($('#sun').closest('label'),$('#sunAltitude'),document.querySelector('[data-t="night"]'),lightMenu,washStatus);
  lightMenu.addEventListener('keydown',e=>{if(e.key==='Escape'&&lightMenu.open){e.stopPropagation();lightMenu.open=false;lightSummary.focus();}});
  document.addEventListener('pointerdown',e=>{if(lightMenu.open&&!lightMenu.contains(e.target))lightMenu.open=false;});
  $('#sunSettings').onclick=()=>{lightMenu.open=false;lightSummary.focus();openSunSettings();};

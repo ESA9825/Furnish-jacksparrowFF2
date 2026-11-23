@@ -9,6 +9,16 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),C=require('../s
  for(const l of lights){assert(l.intensity>0);assert(l.position.toArray().every(Number.isFinite));assert.equal(l.parent,receiver);assert.equal(l.target.parent,receiver);assert(l.castShadow);}
  const shader={uniforms:{},vertexShader:'#include <begin_vertex>',fragmentShader:'#include <emissivemap_fragment>'};receiver.material.onBeforeCompile(shader);assert(shader.uniforms.furnishWashMask.value.image.data.some(v=>v>0));assert(receiver.userData.ceilingWashEnergy>0);assert(!off.children.some(o=>o.userData.ceilingWashApplied));
  const hook=receiver.material.onBeforeCompile;M.applyWash(T,on);assert.equal(receiver.material.onBeforeCompile,hook,'repeated binding does not stack wrappers or lights');assert.equal(lamps(on).length,lights.length);
+ const Lighting=require('../src/core/lighting-core.js'),geometry=receiver.geometry;
+ M.setLights(on,false);receiver.onBeforeRender();
+ assert.equal(shader.uniforms.furnishWashVisible.value,0);assert.equal(emit.material.emissiveIntensity,0);
+ assert.equal(Lighting.collect(T,[on]).rects.length,0);assert(lights.every(light=>!light.visible&&!light.userData.previewLightEnabled));
+ M.setLights(on,true);receiver.onBeforeRender();
+ assert.equal(shader.uniforms.furnishWashVisible.value,1);assert(Lighting.collect(T,[on]).rects.length>0);
+ assert.equal(receiver.geometry,geometry);assert.equal(receiver.material.onBeforeCompile,hook);
+ const deferred=M.build(T,data(base),{wash:false}),pending=M.washSteps(T,deferred);
+ assert.equal(pending.next().done,false);pending.return();
+ assert(!deferred.children.some(o=>o.userData.ceilingWashApplied),'canceled bake must not alter the production meshes');
  const painted=M.build(T,data(base),{wash:false});
  M.applyWash(T,painted,{reflectPaint:true});
  const plaster=painted.children.find(o=>o.userData.ceiling.part==='flat');

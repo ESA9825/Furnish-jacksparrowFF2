@@ -3,7 +3,7 @@
 'use strict';
 // Stable authoring-site labels: keep existing labels when moving code; allocate new labels for new sites.
 const syncIdentity=root.FurnishPartIdentity||(typeof require==='function'?require('../core/part-identity.js'):null);
-const washMasks=new WeakMap();
+const washMasks=new WeakMap(),emitterLevels=new WeakMap();
 
 function build(THREE,data,{wx=v=>v/1000,wz=v=>v/1000,top=Infinity,lamps=true,bodies=[],wash=true}={}){
  const C=root.FurnishCeiling||require('../core/ceiling-core.js'),group=new THREE.Group();group.name='ceilings';
@@ -131,38 +131,71 @@ function build(THREE,data,{wx=v=>v/1000,wz=v=>v/1000,top=Infinity,lamps=true,bod
  if(wash)applyWash(THREE,group);
  for(const material of [surface,flatSurface,panelSurface,seamSurface,light,diffuser,diffuserOff,conflictLight])if(material&&!group.children.some(m=>m.material===material))material.dispose();return group;
 }
+function setLights(group,on){
+ group.traverse(o=>{
+  if(o.userData.ceilingStripLight)o.visible=o.userData.previewLightEnabled=on;
+  const part=o.userData.ceiling?.part,material=o.material;
+  if((part!=='light'&&part!=='diffuser')||!material)return;
+  if(!emitterLevels.has(material))emitterLevels.set(material,material.emissiveIntensity);
+  material.emissiveIntensity=on?emitterLevels.get(material):0;
+ });
+}
 // Bake the continuous wash only where a ray from the emitting face reaches
 // a real ceiling. Opaque production meshes, including channel walls/base, block it.
-function applyWash(T,group,{reflectPaint=false}={}){
+function* washSteps(T,group,{reflectPaint=false}={}){
  if(!T.Raycaster||!T.DataTexture)return;
  group.updateWorldMatrix(true,true);
- const segments=[],blockers=[];
- group.traverse(o=>{if(o.userData.ceilingWash)segments.push(...o.userData.ceilingWash.map(s=>({a:new T.Vector3(...s[0]),b:new T.Vector3(...s[1]),sample:s[2]||0,id:o.userData.ceiling?.id,emitter:o})));if(o.isMesh&&o.userData.ceiling?.part!=='light'&&o.userData.ceiling?.part!=='diffuser'&&!o.material?.transparent)blockers.push(o);});
+ const segments=[],blockers=[],poses=new Map();
+ group.traverse(o=>{
+  if(o.userData.ceilingWash)segments.push(...o.userData.ceilingWash.map(s=>({a:new T.Vector3(...s[0]),b:new T.Vector3(...s[1]),sample:s[2]||0,id:o.userData.ceiling?.id,emitter:o})));
+  if(!o.isMesh)return;
+  if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();
+  const matrix=o.matrixWorld.clone(),bounds=o.geometry.boundingBox.clone().applyMatrix4(matrix);
+  poses.set(o,{material:o.material,matrix,bounds});
+  if(o.userData.ceiling?.part!=='light'&&o.userData.ceiling?.part!=='diffuser'&&!o.material?.transparent)blockers.push(o);
+ });
  if(!segments.length)return;
- // Mesh.raycast can reject most receivers and blockers by their bounding
- // boxes before visiting triangles. Only the existence of a hit matters.
- for(const {geometry} of blockers)if(geometry.boundingBox===null)geometry.computeBoundingBox();
  const ray=new T.Raycaster(),hits=[],up=new T.Vector3(0,1,0),smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
- const intersects=o=>{hits.length=0;return ray.intersectObject(o,false,hits).length>0;};
+ // Observe the geometry at the start of the bake. View-only material and
+ // transform overrides can change between frames while its rows are sampled.
+ const probe=new T.Mesh();
+ const intersects=o=>{
+  const {material,matrix,bounds}=poses.get(o);
+  if(!ray.ray.intersectsBox(bounds))return false;
+  probe.geometry=o.geometry;probe.material=material;probe.matrixWorld.copy(matrix);
+  hits.length=0;return ray.intersectObject(probe,false,hits).length>0;
+ };
+ const receivers=[],prepared=[];
  group.traverse(o=>{
   const roof=o.userData.layerObject?.startsWith('roomCeiling:'),part=o.userData.ceiling?.part;
-  if(!o.isMesh||o.userData.ceilingWashApplied||!(roof||part==='flat')||Array.isArray(o.material))return;
-  o.geometry.computeBoundingBox();const bounds=o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld),size=bounds.getSize(new T.Vector3()),height=bounds.min.y;
-  const sources=segments.filter(({a})=>height-a.y>.002&&height-a.y<.8);if(!sources.length||size.x<.001||size.z<.001)return;
+  if(o.isMesh&&!o.userData.ceilingWashApplied&&(roof||part==='flat')&&!Array.isArray(o.material))receivers.push({o,roof});
+ });
+ for(const {o,roof} of receivers){
+  yield;
+  const {bounds}=poses.get(o),size=bounds.getSize(new T.Vector3()),height=bounds.min.y;
+  const sources=segments.filter(({a})=>height-a.y>.002&&height-a.y<.8);if(!sources.length||size.x<.001||size.z<.001)continue;
   const width=Math.min(192,Math.max(16,Math.ceil(size.x/.04))),depth=Math.min(192,Math.max(16,Math.ceil(size.z/.04))),pixels=new Uint8Array(width*depth*4),point=new T.Vector3(),direction=new T.Vector3();let sum=0;
   const obstacles=blockers.filter(m=>m!==o);
-  for(let y=0;y<depth;y++)for(let x=0;x<width;x++){
-   point.set(bounds.min.x+(x+.5)*size.x/width,height,bounds.min.z+(y+.5)*size.z/depth);ray.set(point.clone().addScaledVector(up,-.003),up);ray.near=0;ray.far=.006;if(!intersects(o))continue;const values=[0,0,0,0,0];
-   for(const {a,b,sample}of sources){
-    const dx=b.x-a.x,dz=b.z-a.z,t=Math.max(0,Math.min(1,((point.x-a.x)*dx+(point.z-a.z)*dz)/Math.max(1e-9,dx*dx+dz*dz))),source=a.clone().lerp(b,t),rise=point.y-source.y,d=Math.hypot(point.x-source.x,point.z-source.z),value=Math.exp(-d/.16)*smooth(.002,.035,rise)*(1-smooth(.5,.8,rise));
-    if(value<=Math.max(values[sample],.004))continue;
-    direction.copy(point).sub(source);const distance=direction.length();direction.normalize();ray.set(source.addScaledVector(direction,.0005),direction);ray.near=0;ray.far=distance-.002;
-    if(!obstacles.some(intersects))values[sample]=value;
+  for(let y=0;y<depth;y++){
+   yield;
+   for(let x=0;x<width;x++){
+    point.set(bounds.min.x+(x+.5)*size.x/width,height,bounds.min.z+(y+.5)*size.z/depth);ray.set(point.clone().addScaledVector(up,-.003),up);ray.near=0;ray.far=.006;if(!intersects(o))continue;const values=[0,0,0,0,0];
+    for(const {a,b,sample}of sources){
+     const dx=b.x-a.x,dz=b.z-a.z,t=Math.max(0,Math.min(1,((point.x-a.x)*dx+(point.z-a.z)*dz)/Math.max(1e-9,dx*dx+dz*dz))),source=a.clone().lerp(b,t),rise=point.y-source.y,d=Math.hypot(point.x-source.x,point.z-source.z),value=Math.exp(-d/.16)*smooth(.002,.035,rise)*(1-smooth(.5,.8,rise));
+     if(value<=Math.max(values[sample],.004))continue;
+     direction.copy(point).sub(source);const distance=direction.length();direction.normalize();ray.set(source.addScaledVector(direction,.0005),direction);ray.near=0;ray.far=distance-.002;
+     if(!obstacles.some(intersects))values[sample]=value;
+    }
+    const glow=values.reduce((a,b)=>a+b,0)/5,i=(y*width+x)*4,v=Math.round(glow*255);pixels[i]=pixels[i+1]=pixels[i+2]=v;pixels[i+3]=255;sum+=glow;
    }
-   const glow=values.reduce((a,b)=>a+b,0)/5,i=(y*width+x)*4,v=Math.round(glow*255);pixels[i]=pixels[i+1]=pixels[i+2]=v;pixels[i+3]=255;sum+=glow;
   }
-  const energy=sum*size.x*size.z/(width*depth);o.userData.ceilingWashEnergy=energy;
-  if(energy<.00001)return;
+  const energy=sum*size.x*size.z/(width*depth);
+  prepared.push({o,roof,bounds,size,height,sources,width,depth,pixels,energy});
+ }
+ return ()=>{
+ for(const {o,roof,bounds,size,height,sources,width,depth,pixels,energy} of prepared){
+  o.userData.ceilingWashEnergy=energy;
+  if(energy<.00001)continue;
   const texture=new T.DataTexture(pixels,width,depth,T.RGBAFormat);texture.minFilter=texture.magFilter=T.LinearFilter;texture.generateMipmaps=false;texture.needsUpdate=true;
   const material=o.material.clone();o.material=material;o.userData.ceilingOwnMaterial=true;o.userData.ceilingWashApplied=true;material.addEventListener('dispose',()=>texture.dispose());
   const maskBounds=new T.Vector4(bounds.min.x,bounds.min.z,size.x,size.z);
@@ -175,26 +208,24 @@ function applyWash(T,group,{reflectPaint=false}={}){
   washMasks.set(o,{texture,bounds:maskBounds,ceilingIds:new Set(sources.map(source=>source.id)),active});
   const reflected=reflectPaint&&(roof||o.userData.ceilingPaint);
   const visibleWash={value:1};
-  if(reflected){
-   const draw=o.onBeforeRender;
-   o.onBeforeRender=function(...args){
-    draw.apply(this,args);
-    visibleWash.value=active()?1:0;
-   };
-  }
+  const draw=o.onBeforeRender;
+  o.onBeforeRender=function(...args){
+   draw.apply(this,args);
+   visibleWash.value=active()?1:0;
+  };
   material.customProgramCacheKey=()=> 'ceiling-visible-wash-v3|'+reflected;
   material.onBeforeCompile=shader=>{
    shader.uniforms.furnishWashMask={value:texture};shader.uniforms.furnishWashBounds={value:maskBounds};shader.uniforms.furnishWashColor={value:new T.Color('#ffde9e')};
-   if(reflected)shader.uniforms.furnishWashVisible=visibleWash;
+   shader.uniforms.furnishWashVisible=visibleWash;
    const varying='varying vec3 vFurnishWashPosition;varying vec3 vFurnishWashNormal;\n';
    shader.vertexShader=varying+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvFurnishWashPosition=(modelMatrix*vec4(transformed,1.0)).xyz;vFurnishWashNormal=normalize(mat3(modelMatrix)*normal);');
    const lightingChunk=reflected?'#include <aomap_fragment>':'#include <emissivemap_fragment>';
    shader.fragmentShader=varying+'uniform sampler2D furnishWashMask;uniform vec4 furnishWashBounds;uniform vec3 furnishWashColor;\n'+
-    (reflected?'uniform float furnishWashVisible;\n':'')+shader.fragmentShader.replace(lightingChunk,`${lightingChunk}
+    'uniform float furnishWashVisible;\n'+shader.fragmentShader.replace(lightingChunk,`${lightingChunk}
     vec2 washUV=(vFurnishWashPosition.xz-furnishWashBounds.xy)/furnishWashBounds.zw;
     float wash=texture2D(furnishWashMask,washUV).r*max(0.0,-vFurnishWashNormal.y*(gl_FrontFacing?1.0:-1.0));
     ${reflected?'reflectedLight.indirectDiffuse+=diffuseColor.rgb*furnishWashColor*wash*furnishWashVisible*0.1625;':
-     'totalEmissiveRadiance+=furnishWashColor*wash*0.1625;'}
+     'totalEmissiveRadiance+=furnishWashColor*wash*furnishWashVisible*0.1625;'}
    `);
   };
   // A virtual diffuse ceiling bounce is created only after direct light has
@@ -205,7 +236,14 @@ function applyWash(T,group,{reflectPaint=false}={}){
    ray.set(world,up);ray.near=0;ray.far=.03;if(!ray.intersectObject(o,false).length)continue;
    const lamp=new T.SpotLight('#ffde9e',(root.FurnishLighting||require('../core/lighting-core.js')).radiometric(energy*12/count),7,Math.PI*.45,1,2),target=new T.Object3D();lamp.position.copy(o.worldToLocal(world.clone()));target.position.copy(o.worldToLocal(world.clone().add(new T.Vector3(0,-1,0))));lamp.target=target;lamp.userData.ceilingStripLight='bounce';lamp.castShadow=true;lamp.shadow.mapSize.set(512,512);lamp.shadow.camera.near=.02;lamp.shadow.bias=-.0001;lamp.shadow.normalBias=.025;o.add(lamp,target);
   }
- });
+ }
+ };
+}
+function applyWash(T,group,options){
+ const steps=washSteps(T,group,options);
+ let step;
+ do{step=steps.next();}while(!step.done);
+ step.value?.();
 }
 
 function preview({THREE,OrbitControls,host,data,focusLight=false,focusEnd=null,focusAssembly=false,bodies=[]}){
@@ -270,5 +308,5 @@ function createDisplay(THREE){
  }
  return {restore,clear,update,progressiveKey};
 }
-const api={build,preview,applyWash,createDisplay,washMask:mesh=>washMasks.get(mesh)};if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishCeilingModel=api;
+const api={build,preview,applyWash,washSteps,setLights,createDisplay,washMask:mesh=>washMasks.get(mesh)};if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishCeilingModel=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

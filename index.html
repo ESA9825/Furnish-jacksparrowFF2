@@ -1617,11 +1617,43 @@ const skirtMat = new THREE.MeshStandardMaterial({color:'#8b7f6e', roughness:.6})
 function shapeOf(poly, flip){ const s = new THREE.Shape(); poly.forEach(([x, y], i) => s[i ? 'lineTo' : 'moveTo'](wx(x), flip ? wz(y) : -wz(y))); return s; }
 
 let floorScenePlan=null;
+let ceilingWashNeeded=false,ceilingWashJob=null,ceilingWashTimer=null;
+function ceilingWashIndicator(){
+  const status=$('#ceiling-wash-status');
+  if(status)status.hidden=!active||!opt.lamps||!ceilingWashNeeded;
+}
+function pauseCeilingWash(){
+  clearTimeout(ceilingWashTimer);ceilingWashTimer=null;
+  ceilingWashJob?.return();ceilingWashJob=null;
+}
+function queueCeilingWash(){
+  if(ceilingWashTimer!==null||!ceilingWashNeeded||!opt.lamps||anim||fly||viewportPointer||opt.sunPreview||productionMotionPending())return;
+  ceilingWashTimer=setTimeout(()=>{
+    ceilingWashTimer=null;
+    if(!active||anim||fly||viewportPointer||opt.sunPreview||!opt.lamps)return;
+    if(!ceilingWashJob){
+      ceilingDisplay.restore();
+      ceilingWashJob=FurnishCeilingModel.washSteps(THREE,archUp,{reflectPaint:PLAN.id==='custom_mv37igji'});
+      try{ceilingWashJob.next();}finally{applyObservationLayers();}
+    }
+    const start=performance.now();let step;
+    do{step=ceilingWashJob.next();}while(!step.done&&performance.now()-start<6);
+    if(!step.done){queueCeilingWash();return;}
+    ceilingWashNeeded=false;ceilingWashJob=null;ceilingWashIndicator();
+    if(!step.value)return;
+    ceilingDisplay.clear();interiorDaylight?.reset();
+    step.value();FurnishCeilingModel.setLights(archUp,opt.lamps);
+    const materialWork=globalThis.FurnishMaterialUI?.work(state)||state;
+    const furnitureWork=globalThis.FurnishWardrobePlannerUI?.previewWork()||globalThis.FurnishCatalog?.previewWork()||materialWork;
+    interiorDaylight?.begin(opt.cut===2.8?floorScenePlan:null,archFloor,archUp,furnG,furnitureWork.furniture);
+    applyObservationLayers();bloomRevision++;invalidate(true);
+  },0);
+}
 function buildArch(){
 // Stable authoring-site labels: keep existing labels when moving code; allocate new labels for new sites.
 const syncIdentity=FurnishPartIdentity;
 
-  ceilingDisplay.clear();observation.clear();
+  pauseCeilingWash();ceilingDisplay.clear();observation.clear();
   interiorDaylight?.reset();
   clearGroup(archFloor); clearGroup(archUp); clearGroup(solarEnvelope); lampG.clear(); doors.length = 0; slidingDoors.length = 0; colliders = [];
   solarVertices.length=0;
@@ -1735,7 +1767,7 @@ const syncIdentity=FurnishPartIdentity;
   }
   archUp.add(FurnishWallFinishModel.build(THREE,finishPlan,{wx,wz,top:top*1000}));
   if(finishPlan.wallTiling)archUp.add(FurnishWallTilingModel.build(THREE,finishPlan,{wx,wz,top:top*1000}));
-  if(finishPlan.ceilings)archUp.add(FurnishCeilingModel.build(THREE,finishPlan.ceilings,{wx,wz,top:opt.cut===2.8?Infinity:top*1000,lamps:opt.lamps,wash:false,bodies:state.furniture.filter(f=>!furnitureError(f)).map(f=>({f,vertical:FurnishDesign.furnitureVerticalBounds(f,finishPlan,state.furniture)}))}));
+  if(finishPlan.ceilings)archUp.add(FurnishCeilingModel.build(THREE,finishPlan.ceilings,{wx,wz,top:opt.cut===2.8?Infinity:top*1000,wash:false,bodies:state.furniture.filter(f=>!furnitureError(f)).map(f=>({f,vertical:FurnishDesign.furnitureVerticalBounds(f,finishPlan,state.furniture)}))}));
   for(const s of finishPlan.wallFinish?.solids||[])if(s.bottom===0)colliders.push([wx(s.rect[0]),wz(s.rect[1]),wx(s.rect[2]),wz(s.rect[3])]);
   // 门洞、窗洞上方过梁（门窗矩形即洞口，head 默认 2.4m）
   syncIdentity.each("index.html:generator-46",[...DOORS.map(d => [d.rect, SWING_DOOR_HEIGHT]), ...SLIDES.map(s => [s.rect, s.v ? 2.4 : 2.1])],([r, h]) => { if (H > h) syncIdentity.produce("index.html:generator-call-15",()=>wallBox(r, h, H, top,paintFor(r))); });
@@ -1787,7 +1819,8 @@ const syncIdentity=FurnishPartIdentity;
     mesh.castShadow=true;solarEnvelope.add(mesh);
     solarVertices.length=0;
   }
-  FurnishCeilingModel.applyWash(THREE,archUp,{reflectPaint:PLAN.id==='custom_mv37igji'});
+  ceilingWashNeeded=!!finishPlan.ceilings?.items.some(item=>item.section?.light);
+  FurnishCeilingModel.setLights(archUp,opt.lamps);
   archUp.scale.setScalar(1);cutElectricalBoxWalls();
   applyLight(); applyGrow();
 }
@@ -1964,7 +1997,7 @@ function sync(force){
   if(displayChanged||materialLookChanged||lightingChanged)applyLight();
   const materialWork=globalThis.FurnishMaterialUI?.work(state)||state;
   const furnitureWork=globalThis.FurnishWardrobePlannerUI?.previewWork()||globalThis.FurnishCatalog?.previewWork()||materialWork;
-  const a = JSON.stringify([materialWork.styleAppearance,globalThis.FurnishWorkflowTools?.styleKey(),state.rooms, state.demolished, state.open, PLAN.beams, opt.cut,opt.lamps,H, PLAN.markers,state.furniture.filter(f=>(FurnishDesign.products().definition(f)?.downlight||FurnishDesign.products().definition(f)?.ceilingPanel)&&!f.obj).map(f=>[f.id,f.type,f.cx,f.cy,f.w,f.d,f.h,f.rot,f.flip,f.mountHeight]),state.furnitureDatum,state.wallFinishes,state.floorFinishes,state.wallTiling,state.ceilings,state.tileGrout,typeof FurnishWallFinish==='undefined'?[]:FurnishWallFinish.serviceOpenings(PLAN,state),typeof FurnishElectricalBox==='undefined'?[]:FurnishElectricalBox.cuts(FurnishProject.effectivePlan(PLAN,state),state.furniture)]), f = JSON.stringify([furnitureWork.furniture.map(({price,referencePrice,priceDate,purchaseStatus,purchaseNote,sourceUrl,...shape})=>shape),PLAN.markers,state.rooms,H,globalThis.FurnishWorkflowTools?.styleKey(),state.wallFinishes,state.floorFinishes,state.furnitureDatum]), l = JSON.stringify([state.rooms, opt.cut,H,PLAN.beams,state.wallFinishes,state.floorFinishes,state.wallTiling]);
+  const a = JSON.stringify([materialWork.styleAppearance,globalThis.FurnishWorkflowTools?.styleKey(),state.rooms, state.demolished, state.open, PLAN.beams, opt.cut,H, PLAN.markers,state.furniture.filter(f=>(FurnishDesign.products().definition(f)?.downlight||FurnishDesign.products().definition(f)?.ceilingPanel)&&!f.obj).map(f=>[f.id,f.type,f.cx,f.cy,f.w,f.d,f.h,f.rot,f.flip,f.mountHeight]),state.furnitureDatum,state.wallFinishes,state.floorFinishes,state.wallTiling,state.ceilings,state.tileGrout,typeof FurnishWallFinish==='undefined'?[]:FurnishWallFinish.serviceOpenings(PLAN,state),typeof FurnishElectricalBox==='undefined'?[]:FurnishElectricalBox.cuts(FurnishProject.effectivePlan(PLAN,state),state.furniture)]), f = JSON.stringify([furnitureWork.furniture.map(({price,referencePrice,priceDate,purchaseStatus,purchaseNote,sourceUrl,...shape})=>shape),PLAN.markers,state.rooms,H,globalThis.FurnishWorkflowTools?.styleKey(),state.wallFinishes,state.floorFinishes,state.furnitureDatum]), l = JSON.stringify([state.rooms, opt.cut,H,PLAN.beams,state.wallFinishes,state.floorFinishes,state.wallTiling]);
   const geometryChanged=force||a!==sigArch||f!==sigFurn;
   // Read-only scene polling must not reset a pointer gesture on the current models.
   if(displayChanged||geometryChanged)cancelElevationGesture();
@@ -2009,6 +2042,7 @@ let lightSwitches;
 function viewAmbient({night,environment}){return environment.ambient*(materialLook&&!night?.76:1);}
 function applyLight(){
   const light=sceneSun(),{position,altitude,night,environment:lighting,warm,sky=night?0:1}=light;
+  ceilingWashIndicator();
   const materialDay=materialLook&&!night,ambient=viewAmbient(light);
   if(bloomNight!==night){
     bloomNight=night;
@@ -2022,8 +2056,10 @@ function applyLight(){
   if(hemi.intensity!==ambient)FurnishLighting.cabinetContours(furnG,{...lighting,ambient});
   const switches=[night,opt.lamps,opt.nightLights].join(',');
   if(lightSwitches!==switches){
+    FurnishCeilingModel.setLights(archUp,opt.lamps);
     FurnishDownlightModel.setLights(furnG,opt.lamps,{night,nightLights:opt.nightLights});
     lightSwitches=switches;
+    bloomRevision++;
     invalidate(true);
   }
   if(sun.position.x!==position[0]||sun.position.y!==position[1]||sun.position.z!==position[2]||!sun.visible)requestSunShadow();
@@ -2283,6 +2319,7 @@ async function enter(showLoading){
   }
 }
 async function exit(){
+  pauseCeilingWash();
   ui.sceneMove=false;
   cancelOrbitMouseDrag();
   cancelSunPreview();
@@ -2300,6 +2337,7 @@ async function exit(){
   fly=null;orbit.enabled=false;showLabels(false);
   stage.classList.remove('is3d');
   active = false; cancelAnimationFrame(raf); raf = 0;
+  ceilingWashIndicator();
   clearTimeout(materialLookTimer);materialLookSettling=false;
   viewportAO?.release();
   graphicsIdleTimer=setTimeout(parkGraphics,GRAPHICS_IDLE_MS);
@@ -2802,6 +2840,7 @@ const clock = new THREE.Clock();
 function startLoop(){ invalidate(); if (!raf){ clock.getDelta(); raf = requestAnimationFrame(loop); } }
 function loop(){
   raf = requestAnimationFrame(loop);
+  queueCeilingWash();
   syncViewportPixelRatio();
   if(projectionPixelRatio!==devicePixelRatio){refreshCameraProjection(!!FurnishNavigation.cameraCalibration()?.orbitEnabled);invalidate();}
   const dt = Math.min(clock.getDelta(), .05), now = performance.now();
@@ -2898,6 +2937,7 @@ async function automationReady(){
  await Promise.all([FurnishCabinetModel.pendingVeneers(furnG),FurnishFloorFinishModel.pendingSamples(archFloor)]);
  // Saved furniture states must reach their production motion endpoints before capture.
  while(productionMotionPending()){if(performance.now()>until)throw Error('活动部件尚未稳定');await new Promise(r=>setTimeout(r,30));}
+  while(opt.lamps&&ceilingWashNeeded){if(!active||performance.now()>until)throw Error('灯带补光尚未完成');await new Promise(r=>setTimeout(r,30));}
  renderScene();labelRenderer.render(scene,camera);
 }
 async function automationCamera(options){
