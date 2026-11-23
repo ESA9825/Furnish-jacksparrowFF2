@@ -1,0 +1,115 @@
+{
+  "oak_wood_planks": {
+    "name": "Oak Wood Planks",
+    "authors": {
+      "Dimitrios Savva": "All"
+    },
+    "dimensions": [
+      1200.0000476837158,
+      1200.0000476837158
+    ],
+    "description": "Free 8K texture of varnished oak wood planks with warm grain, subtle gloss and seamless joins - ideal for realistic wooden flooring, furniture, and interior scenes.",
+    "maps": {
+      "color.jpg": {
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/oak_wood_planks/oak_wood_planks_diff_1k.jpg",
+        "sha256": "f715ed3e4346e94f971ef8dd61221ff6cc774886c20f65381e01e1dc0bb0a634",
+        "size": 696814
+      },
+      "normal.jpg": {
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/oak_wood_planks/oak_wood_planks_nor_gl_1k.jpg",
+        "sha256": "b4272cb2818f8f33f2620a2dc093c962f34920e9d485a4e132eb6d69de1ba950",
+        "size": 392213
+      },
+      "roughness.jpg": {
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/oak_wood_planks/oak_wood_planks_rough_1k.jpg",
+        "sha256": "10ced559145df3c537bf1ccef6dc767ef6c47e134c21a9650bab261fa95ecacf",
+        "size": 845590
+      }
+    }
+  },
+  "herringbone_parquet": {
+    "name": "Herringbone Parquet",
+    "authors": {
+      "Jenelle van Heerden": "Processing",
+      "Sergej Majboroda": "Photography"
+    },
+    "dimensions": [
+      3400.0000953674316,
+      3400.0000953674316
+    ],
+    "description": "Free 16K texture of glossy herringbone parquet - smooth, coated wooden planks with polished shine and subtle grain, ideal for interior flooring materials.",
+    "maps": {
+      "color.jpg": {
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/herringbone_parquet/herringbone_parquet_diff_1k.jpg",
+        "sha256": "d6c66492a6c4cfd4e8ed18c9cdd4e0303f3de4e04613d2adca8bc2b8f2dd2350",
+        "size": 829046
+      },
+      "normal.jpg": {
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/herringbone_parquet/herringbone_parquet_nor_gl_1k.jpg",
+        "sha256": "af6a822100fd6369bb75e43bb764f4a71ca41f521538ac796e92e681e3ad38f5",
+        "size": 373438
+      },
+      "roughness.jpg": {
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/herringbone_parquet/herringbone_parquet_rough_1k.jpg",
+        "sha256": "6058f5a1d27cef64f40057370188fec65c34998868d202a944f346ad9866ed62",
+        "size": 515202
+      }
+    }
+  },
+  "plank_flooring_04": {
+    "name": "Plank Flooring 04",
+    "authors": {
+      "Dimitrios Savva": "All"
+    },
+    "dimensions": [
+      2000,
+      2000
+    ],
+    "description": "Free 8k texture of varnished dark timber planks with subtle grain, narrow seams and a soft satin sheen.",
+    "maps": {
+      "color.jpg": {
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/plank_flooring_04/plank_flooring_04_diff_1k.jpg",
+        "sha256": "260fc03a322552176b59c8e6dfc463594daf1f15ed3fedb2601053d8dbd2162c",
+        "size": 585637
+      },
+      "normal.jpg": {
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/plank_flooring_04/plank_flooring_04_nor_gl_1k.jpg",
+        "sha256": "27a21545292901dbb75859efad06179c8ad35e2b705449db41ef195a088adeb4",
+        "size": 160830
+      },
+      "roughness.jpg": {
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/plank_flooring_04/plank_flooring_04_rough_1k.jpg",
+        "sha256": "6348fad1f576f77ad1094740ae4f5847ce827bcf9443b9a4f8a3f308486eb12f",
+        "size": 702370
+      }
+    }
+  },
+  "interior_tiles": {
+    "name": "Interior Tiles",
+    "authors": {
+      "Charlotte Baglioni": "All"
+    },
+    "dimensions": [
+      1899.9998569488525,
+      1899.9998569488525
+    ],
+    "description": "Free 16k material of beige ceramic square tiles with dark grout lines, subtle surface speckle, soft bevels and a low-sheen, slightly worn indoor flooring look.",
+    "maps": {
+      "color.jpg": {
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/interior_tiles/interior_tiles_diff_1k.jpg",
+        "sha256": "f267c4357e629f5ca2ab86f30da4fb0ae8c655a566cec6d81278df8d78dcca4a",
+        "size": 694562
+      },
+      "normal.jpg": {
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/interior_tiles/interior_tiles_nor_gl_1k.jpg",
+        "sha256": "fdfb9fe192d438176508290fe873e181d88c5e6444a43bbab2ec156c9a78aa33",
+        "size": 414639
+      },
+      "roughness.jpg": {
+        "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/interior_tiles/interior_tiles_rough_1k.jpg",
+        "sha256": "478b5cad03a064b9b25369223f8334d26c1bdc2cba08e3398c16234a4b2a1aaf",
+        "size": 521038
+      }
+    }
+  }
+}

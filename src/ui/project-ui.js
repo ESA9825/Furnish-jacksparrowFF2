@@ -39,6 +39,7 @@ function spaceIssueVolumes(plan,furniture,item,passage=800){
   try{const source=P.effectivePlan(PLAN,state),{draft,shift}=FurnishDraft.fromPlan(source,'custom_'+uid()),plan=FurnishDraft.build(draft),work=clone(state);
    work.plan=plan.id;work.architecture={draft,phase:'survey'};work.demolished=[];work.open={d:{},w:{}};work.spaceIgnored=[];
    FurnishLayers.remapBuiltin(work,source,plan,shift);
+   FurnishStyles.remapWallPaint(work,source,plan,shift);
    if(work.wallFinishes)FurnishWallFinish.remapBuiltin(work,source,plan,shift);
    if(work.wallTiling)FurnishWallTiling.remapBuiltin(work,source,plan,shift);
    if(work.tilePresets)FurnishTilePresets.remapBuiltin(work,source,plan,shift);

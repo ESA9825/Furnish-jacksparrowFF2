@@ -58,7 +58,7 @@ const workRules = FurnishWork.create({
   makeId:uid, colorFor:typeColor, materials:MATS,
 });
 const {fresh:freshWork,restore:fixWork,restoreFurniture:sanitizeFurn}=workRules;
-let STORE = 'huxing-design-v104';
+let STORE = 'huxing-design-v105';
 let store = FurnishWorkspaceCache.load({read:key=>localStorage.getItem(key), firstPlan:PLANS[0], restore:fixWork, key:STORE});
 // Preserve the actual cache before startup normalization adds defaults.
 STORE='huxing-design-v'+(store.v>=3?store.v:2);
@@ -230,10 +230,10 @@ function normalizeFurnitureEdit(work,previous,{furnitureEdit=false}={}){
     FurnishCabinet.normalizePegboardHatches(work.furniture,FurnishProject.effectivePlan(PLAN,work),{editable:f=>!furnitureLocked(f)});
   }
 }
-function commit(before,checkLayers=false,{sceneFirst=false,furnitureEdit=false}={}){
+function commit(before,checkLayers=false,{sceneFirst=false,furnitureEdit=false,appearanceEdit=false}={}){
   const previous=JSON.parse(before);
   try{
-    if(!globalThis.FurnishElectricalUI?.active())normalizeFurnitureEdit(state,previous,{furnitureEdit});
+    if(!appearanceEdit&&!globalThis.FurnishElectricalUI?.active())normalizeFurnitureEdit(state,previous,{furnitureEdit});
     globalThis.FurnishElectricalUI?.assertEditable(previous,state);
     if(checkLayers)FurnishLayers.assertEditable(previous,state);
   }catch(e){
@@ -248,7 +248,7 @@ function commit(before,checkLayers=false,{sceneFirst=false,furnitureEdit=false}=
   save({defer:sceneFirst});
   snapshot(false,previous,'编辑前',undefined,{owned:true});
 }
-function mutate(fn,{sceneFirst=false}={}){ const b=snap();try{fn();globalThis.FurnishElectricalUI?.assertEditable(JSON.parse(b),state);FurnishLayers.assertEditable(JSON.parse(b),state);}catch(e){state=JSON.parse(b);renderAll();throw e;}if(snap()===b)return;commit(b,true,{sceneFirst});renderAll({sceneFirst}); }
+function mutate(fn,{sceneFirst=false,appearanceEdit=false}={}){ const b=snap();try{fn();globalThis.FurnishElectricalUI?.assertEditable(JSON.parse(b),state);FurnishLayers.assertEditable(JSON.parse(b),state);}catch(e){state=JSON.parse(b);renderAll();throw e;}if(snap()===b)return;commit(b,true,{sceneFirst,appearanceEdit});renderAll({sceneFirst}); }
 function undo(){ if (!undoStack.length) return toast(tr('没有可撤销的操作', 'Nothing to undo')); try{globalThis.FurnishElectricalUI?.assertEditable(state,JSON.parse(undoStack.at(-1)));}catch(e){return toast('已到插座视图的撤销边界；家具布局受到保护');} redoStack.push(snap()); state = JSON.parse(undoStack.pop()); syncCutClipboard();validateSel(); save(); renderAll(); }
 function redo(){ if (!redoStack.length) return; try{globalThis.FurnishElectricalUI?.assertEditable(state,JSON.parse(redoStack.at(-1)));}catch(e){return toast('此重做会修改家具布局，请先退出插座视图');} undoStack.push(snap()); state = JSON.parse(redoStack.pop()); syncCutClipboard();validateSel(); save(); renderAll(); }
 function validateSel(){ if(ui.sel?.kind==='furn'){const ids=globalThis.FurnishElectricalUI?.active()?selIds().filter(id=>FurnishElectrical.panel(getF(id))):FurnishDesign.expandGroups(state.furniture,selIds().filter(id=>getF(id)));ui.sel=ids.length?{...ui.sel,id:ids.includes(ui.sel.id)?ui.sel.id:ids[0],ids}:null;}else if(ui.sel?.kind==='measure'&&!state.measures[ui.sel.id])ui.sel=null; }
@@ -579,6 +579,7 @@ addEventListener('resize', closeCtx);
 /* ======================= 对话框 ======================= */
 let dialogReturnFocus=null,dialogAfterClose=null,dialogBeforeClose=null,dialogDragCleanup=null;
 function openDialog({title, body, actions = [], wide = false, floating = false, onOpen, onClose, beforeClose}){
+  globalThis.FurnishMaterialUI?.close();
   dialogDragCleanup?.();dialogDragCleanup=null;
   dialogBeforeClose=beforeClose??null;
   window.FurnishWorkflowTools?.disposeDialog();dialogAfterClose=onClose??null;
@@ -1025,7 +1026,7 @@ async function setView(m){
         document.body.classList.add('m3d');
         await window.View3D.enter(showLoading);
       }finally{clearTimeout(slow);indicator.hidden=true;}
-    } else { viewMode = m; document.body.classList.remove('m3d'); await window.View3D.exit(); applyView(); flushSelectionPanel(); }
+    } else { window.FurnishMaterialUI?.close();viewMode = m; document.body.classList.remove('m3d'); await window.View3D.exit(); applyView(); flushSelectionPanel(); }
     $('#tip').textContent = TIPS()[m];
   } catch(e) {
     console.error(e);

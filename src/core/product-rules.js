@@ -672,7 +672,14 @@ const kindGroups={
  '自定义家具':'custom customround'
 };
 const kinds=Object.freeze(Object.fromEntries(Object.entries(kindGroups).flatMap(([kind,ids])=>ids.split(' ').map(id=>[id,kind]))));
-const styleAppearance=Object.freeze({formatVersion:97,scopes:['cabinet','curtains','furniture','frames','bays','floors'],surfaces:['floor','bay','frame'],palette:['front','body','soft','wood','textile','sheer','pop','frame','bay','floor']});
+const floorSamples=Object.freeze([
+ Object.freeze({id:'oak_wood_planks',name:'自然橡木直铺',repeatMm:1200}),
+ Object.freeze({id:'plank_flooring_04',name:'深棕木直铺',repeatMm:2000}),
+ Object.freeze({id:'herringbone_parquet',name:'木地板人字拼',repeatMm:3400}),
+ Object.freeze({id:'interior_tiles',name:'米色柔光方砖',repeatMm:1900})
+]);
+const floorSample=id=>floorSamples.find(sample=>sample.id===id);
+const styleAppearance=Object.freeze({formatVersion:97,materialFormatVersion:105,floorSamples,floorSample,scopes:['cabinet','curtains','furniture','frames','bays','floors'],surfaces:['floor','bay','frame'],palette:['front','body','soft','wood','textile','sheer','pop','frame','bay','floor']});
 function styleRole(f){
  if(!f||f.obj)return null;const r=definition(f);if(!r)return null;
  if(r.family==='window-covering')return r.covering?.kind==='sheer'?'sheer':'textile';

@@ -42,6 +42,51 @@ function floorOptions(work,roomId,kind){
  const styles=root.FurnishStyles||require('../core/style-core.js'),catalog=root.FurnishCatalogData||require('../data/catalog.js'),grout=root.FurnishTileGrout||require('../core/tile-grout-core.js');
  return {floorKind:kind,color:styles.surfaceColor(work,'floor',roomId)||catalog.materials[kind]?.sw,groutColor:grout.color(work,roomId,'floor')};
 }
+const floorImages=new Map();
+function sampleSources(id,folder){
+ if(root.location?.protocol!=='file:')return Promise.resolve(null);
+ return new Promise((resolve,reject)=>{
+  const script=document.createElement('script');script.src=folder+'offline.js';
+  script.onload=()=>{
+   const sources=root.FurnishFloorSampleImages?.[id];
+   if(sources)delete root.FurnishFloorSampleImages[id];
+   script.remove();if(sources)resolve(sources);else reject(Error('离线地板贴图未注册'));
+  };
+  script.onerror=()=>{script.remove();reject(Error('离线地板贴图缺失'));};
+  document.head.append(script);
+ });
+}
+function sampleMaterial(THREE,work,roomId){
+ if(!work.styleAppearance?.floorSamples)return null;
+ const id=root.FurnishStyles.materialValue(work,'floorSamples',roomId),profile=root.FurnishProducts.styleAppearance.floorSample(id);
+ if(!profile)return null;
+ let entry=floorImages.get(id);
+ if(!entry){
+  const roles={map:'color.jpg',normalMap:'normal.jpg',roughnessMap:'roughness.jpg'},folder=`assets/materials/floors/${id}/`;
+  const loads=[],sources=sampleSources(id,folder);entry={maps:{},profile,ready:null};
+  for(const [role,file]of Object.entries(roles)){
+   const image=new Image(),map=new THREE.Texture(image);
+   map.name=id+'-'+file.slice(0,-4);map.wrapS=map.wrapT=THREE.RepeatWrapping;map.anisotropy=4;
+   if(role==='map')map.colorSpace=THREE.SRGBColorSpace;
+   entry.maps[role]=map;
+   loads.push(sources.then(local=>new Promise(resolve=>{
+    image.onload=()=>{map.needsUpdate=true;resolve(true);};
+    image.onerror=()=>resolve(false);
+    image.src=local?.[file]||folder+file;
+   }),()=>false));
+  }
+  entry.ready=Promise.all(loads).then(results=>{entry.done=true;entry.failed=results.includes(false);root.dispatchEvent(new Event('furnish-floor-sample-ready'));});
+  floorImages.set(id,entry);
+ }
+ const material=new THREE.MeshStandardMaterial({...entry.maps,roughness:1,normalScale:new THREE.Vector2(.55,.55)});
+ material.userData.floorSample=id;material.userData.floorReflectance='#b79873';
+ return material;
+}
+function pendingSamples(group){
+ const ids=new Set();group?.traverse(o=>{if(o.material?.userData.floorSample)ids.add(o.material.userData.floorSample);});
+ const pending=[...ids].map(id=>floorImages.get(id)).filter(item=>!item.done||item.failed);
+ return pending.length?Promise.all(pending.map(async item=>{await item.ready;if(item.failed)throw Error('地板样片载入失败：'+item.profile.name);})):null;
+}
 function material(THREE,layout,{color='#e8e2d8',groutColor:custom,floorKind}={}){
  const tileColor=/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(color)?color:'#e8e2d8',groutColor=custom?new THREE.Color(custom):new THREE.Color(tileColor).multiplyScalar(.9);
  const detailed=ceramic(floorKind),size=detailed?512:1024,pitch=detailed?size/2:size;
@@ -93,9 +138,14 @@ function uv(THREE,geometry,layout,{wx=v=>v/1000,wz=v=>v/1000}={}){
 function surface(THREE,room,area,{wx=v=>v/1000,wz=v=>v/1000,material:provided,color}={}){
  const shapes=(room.polys||[room.poly]).map(poly=>{const s=new THREE.Shape();poly.forEach(([x,y],i)=>s[i?'lineTo':'moveTo'](wx(x),-wz(y)));return s;});
  const geometry=new THREE.ShapeGeometry(shapes);geometry.rotateX(-Math.PI/2);
- if(area.layout)uv(THREE,geometry,area.layout,{wx,wz});
+ const sample=provided?.userData.floorSample;
+ if(sample){
+  const size=root.FurnishProducts.styleAppearance.floorSample(sample).repeatMm/1000;
+  const positions=geometry.getAttribute('position'),uvs=geometry.getAttribute('uv');
+  for(let i=0;i<uvs.count;i++)uvs.setXY(i,(positions.getX(i)-wx(0))/size,-(positions.getZ(i)-wz(0))/size);
+ }else if(area.layout)uv(THREE,geometry,area.layout,{wx,wz});
  const m=provided||(typeof document==='undefined'||!area.layout?new THREE.MeshStandardMaterial({color:color||'#e8e2d8'}):material(THREE,area.layout,{color})),mesh=syncIdentity.produce("floor:generator-call-surface:"+(area.id||room.id),()=>syncIdentity.produce("floor-finish-model:site-1",()=>new THREE.Mesh(geometry,m)));
- mesh.position.y=(area.finishedZ??area.rawZ??0)/1000;mesh.receiveShadow=true;mesh.userData.floor=true;mesh.userData.floorFinishOwnMaterial=!!area.layout||!provided||!!provided.userData.tileFinish?.legacy&&!!provided.userData.tileFinish.groutColor;mesh.userData.room=area.roomId||room.id;return mesh;
+ mesh.position.y=(area.finishedZ??area.rawZ??0)/1000;mesh.receiveShadow=true;mesh.userData.floor=true;mesh.userData.floorFinishOwnMaterial=!!sample||!!area.layout||!provided||!!provided.userData.tileFinish?.legacy&&!!provided.userData.tileFinish.groutColor;mesh.userData.room=area.roomId||room.id;return mesh;
 }
 function layers(THREE,room,area,{wx=v=>v/1000,wz=v=>v/1000}={}){
  if(!Number.isFinite(area?.finishedZ))return null;
@@ -121,5 +171,5 @@ function stepEdges(THREE,steps,{wx=v=>v/1000,wz=v=>v/1000}={}){
   const mesh=syncIdentity.produce("floor-finish-model:site-3",()=>new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:'#827564',roughness:1,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1})));mesh.userData.floorStep=step;mesh.userData.floorFinishOwnMaterial=true;group.add(mesh);
  }return group;
 }
-const api={material,legacyMaterial,groutMaterial,uv,surface,layers,stepEdges,ceramic,tileFace,floorOptions};if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishFloorFinishModel=api;
+const api={material,legacyMaterial,groutMaterial,uv,surface,layers,stepEdges,ceramic,tileFace,floorOptions,sampleMaterial,pendingSamples};if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishFloorFinishModel=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

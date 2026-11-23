@@ -76,7 +76,7 @@ let styleScopeSelection=['cabinet'];
 function refreshStylePreview(){if(!stylePreview)return;stylePreview.work=FurnishStyles.preview(state,ROOMS,stylePreview.id,stylePreview.options);syncPreviewBanner();window.View3D?.sync();}
 function styleKey(){return styleId()?JSON.stringify([stylePreview.id,stylePreview.options]):null;}
 function styleWork(work=state){return styleId()&&work===state?stylePreview.work:work;}
-function previewStyle(id){const style=FurnishStyles.find(id);if(!style)return;closeDialog();stylePreview={id,planId:PLAN.id,source:snap(),options:{scopes:[...styleScopeSelection],palette:{}}};refreshStylePreview();ui.panelScope='design';ui.tab='style';renderPanel();drawer('panel',true);setView('3d').then(()=>window.View3D?.sync());syncPreviewBanner();}
+function previewStyle(id){globalThis.FurnishMaterialUI?.close();const style=FurnishStyles.find(id);if(!style)return;closeDialog();stylePreview={id,planId:PLAN.id,source:snap(),options:{scopes:[...styleScopeSelection],palette:{}}};refreshStylePreview();ui.panelScope='design';ui.tab='style';renderPanel();drawer('panel',true);setView('3d').then(()=>window.View3D?.sync());syncPreviewBanner();}
 function styleId(){if(stylePreview&&(PLAN.id!==stylePreview.planId||snap()!==stylePreview.source)){stylePreview=null;syncPreviewBanner();}return stylePreview?.id||null;}
 function syncPreviewBanner(){let banner=$('#style-preview-banner');if(!banner){banner=document.createElement('div');banner.id='style-preview-banner';banner.className='preview-banner only3d';$('#stage').append(banner);}banner.hidden=!stylePreview;banner.textContent=stylePreview?t('临时配色预览 · 尚未保存；地面材料与预算保持原值','Temporary colour preview · not saved; materials and budget unchanged'):'';}
 function styleCards(selected=styleId(),attribute='data-style-preview'){return styleCardsHTML(selected,attribute);}
@@ -128,6 +128,7 @@ let disposePreview=null;
 function disposeDialog(){disposePreview?.();disposePreview=null;proposal=null;$('#gProposal')?.remove();}
 function exportDXF(){openDialog({title:t('导出 DXF 布局图','Export DXF layout'),body:`<p>${t('单位 mm，CAD Y轴向上。按墙轮廓、门窗洞口、房间、家具外包、标注分层。用于布局交接；不含结构构造、立面、节点或施工图审核。','Millimetres, CAD Y up. Separate wall outlines, openings, rooms, furniture envelopes and annotations. For layout exchange; no construction details or drawing certification.')}</p><p>${t('洞口以独立图层标出；家具按旋转后的占地外包绘制。','Openings are on a separate layer; furniture uses its rotated footprint envelope.')}</p>`,actions:[{label:t('取消','Cancel')},{label:t('下载 DXF','Download DXF'),cls:'primary',fn:()=>{try{download(PLAN.name.replace(/[\\/:*?"<>|]/g,'_')+'-layout.dxf',new Blob([FurnishDXFExport.drawing(effective(),state)],{type:'application/dxf;charset=utf-8'}));return true;}catch(e){toast(e.message);return false;}}}]});}
 function afterRender(){
+ globalThis.FurnishMaterialUI?.afterRender();
  styleId();clearTimeout(checkTimer);const plan=effective(),key=checkSignature(plan);checking=key!==checkKey;
  const generation=++checkGeneration;
  const gestureActive=()=>globalThis.View3D?.interacting()||(typeof drag!=='undefined'&&(drag||pinch));
@@ -193,6 +194,7 @@ function initialize(){
  [...$('#tools').children].slice(3).forEach(b=>{b.classList.add('only2d');toolPop.append(b);});
  const cameraButton=$('#vCamera'),measureButton=$('#vMeasure');cameraButton.classList.add('only3d');measureButton.classList.add('only3d');toolPop.append(extra,finishes,$('#vIso').parentElement);rail.append($('#modes3d'),measureButton,cameraButton,toolMenu);
  document.body.append(toolPop);
+ const materialButton=$('#vMaterials');materialButton.classList.add('only3d');rail.insertBefore(materialButton,toolMenu);
  const lightingButton=$('#vLightingPreview');lightingButton.classList.add('only3d');rail.insertBefore(lightingButton,toolMenu);
  const placeTools=()=>{toolPop.hidden=!toolMenu.open;toolMenu.firstElementChild.setAttribute('aria-expanded',String(toolMenu.open));if(!toolMenu.open){if(toolPop.contains(document.activeElement))toolMenu.firstElementChild.focus({preventScroll:true});return;}const r=toolMenu.firstElementChild.getBoundingClientRect();Object.assign(toolPop.style,{left:Math.max(12,Math.min(r.right-300,innerWidth-312))+'px',bottom:Math.max(12,innerHeight-r.top+8)+'px',maxHeight:Math.max(100,r.top-20)+'px'});[...toolPop.querySelectorAll('button')].find(b=>b.getClientRects().length&&!b.disabled)?.focus({preventScroll:true});};
  toolMenu.addEventListener('toggle',placeTools);addEventListener('resize',()=>{toolMenu.open=false;});
