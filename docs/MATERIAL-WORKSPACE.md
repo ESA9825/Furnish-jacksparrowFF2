@@ -19,7 +19,7 @@
 | 自然橡木直铺 | [Oak Wood Planks](https://polyhaven.com/a/oak_wood_planks) | 1.2 m |
 | 深棕木直铺 | [Plank Flooring 04](https://polyhaven.com/a/plank_flooring_04) | 2.0 m |
 | 木地板人字拼 | [Herringbone Parquet](https://polyhaven.com/a/herringbone_parquet) | 3.4 m |
-| 米色柔光方砖 | [Interior Tiles](https://polyhaven.com/a/interior_tiles) | 1.9 m |
+| 米色方砖 | [Interior Tiles](https://polyhaven.com/a/interior_tiles) | 1.9 m |
 
 每款随软件分发 Poly Haven 原始 1K JPG 颜色、OpenGL 法线和粗糙度贴图，使用 [CC0](https://polyhaven.com/license)。[下载来源、作者和哈希](../assets/materials/floors/sources.json)由官方 API 核对。米色砖照片自带缝纹，程序地砖面色仍可以和实际毫米网格一起使用。人字拼样片为直角搭接。木地板拼法的施工排版暂沿项目已有能力。
 
@@ -36,3 +36,13 @@
 地板样片沿用原有实际贴图比例，分别调整粗糙度、法线强度和表层反射。原 800／600 砖的釉面反射在实际砖缝处变弱。支持室内窗洞光照的场景会在掠视角表现窗光柔亮过渡。反射参数用于实时外观，实际材料参数以产品资料为准。生产 GLB 传递贴图及 PBR 表层反射，窗洞亮带和接触阴影由实时视口绘制。
 
 本轮在 1601 隔离副本以同一日照和机位比较原砖、橡木直铺、人字拼和柔光砖，并验证取消后恢复原方案及原补光。离线 Chrome 以隔离夹具复验三类表面的应用、拖放取消和 GLB 表层反射。回归覆盖地面、砖缝、窗洞光照、材质预览及画质模块，未测帧率及窄屏。
+
+## 地砖表面与时段试看
+
+选中 800／600 地砖或米色方砖样片后，可以单独切换原砖面、柔光砖、亮面砖和哑光砖。颜色、花纹、砖规格、砖缝、起铺点和标高继续读取原设置。「原砖面」移除当前房间的表面覆盖。木地板和防滑砖沿用各自的材质。换成木地板后，房间先前的砖面覆盖会在重新使用支持的地砖时生效。
+
+光照试看提供早晨 08:00、正午 12:00、傍晚 17:30、夜间 21:00。日出日落读取方案的日期、纬度和北向，夜间按方案的灯具开关呈现。点击「方案光照」、关闭或应用材质会退出临时时段，日照设置仍由原工具编辑。「应用材质」只提交选材草稿。时段对照借鉴了 Set the Mood 的做法。用户提供的小红书笔记因访问限制未取得正文或图片。 [Set the Mood 官方演示](https://sael.net/interior/) · [用户提供的小红书笔记](https://www.xiaohongshu.com/discovery/item/6ae83abd00000000250111db?source=webshare&xhsshare=pc_web&xsec_token=ABBXdkJ3rA5fc3fAtbYCibkKk-rn90MQ33S9RllzUaHOk=&xsec_source=pc_share)
+
+`styleAppearance.floorTileSheens` 按房间保存 `satin`、`gloss` 或 `matte`，显式设置最低 v106，旧方案沿用原材质。GLB 传递颜色、适用的法线和对应的粗糙度、表层反射。实时画面按房间实际窗洞计算近似反光，亮面保留窗格轮廓，柔光扩大高光过渡，哑光显著压低反光。窗格反光受相机位置影响，支持相邻阳台的 1601 客餐厅窗光。布帘和家具的镜像遮挡未纳入该近似。光泽和粗糙度为选材预览参数，具体商品数据由厂家提供。
+
+1601 桌面副本通过同机位正午三类砖面对照、傍晚及夜间试看、取消、应用、撤销重做和保存后重载。离线直接打开通过切换试看时段、一次应用地面及其他表面、拖放取消、刷新和 GLB 贴图及表层反射回读。增量回归覆盖几何不变、内部窗光、砖缝预览、工作区兼容和旧缓存恢复。未执行全仓和窄屏验证。

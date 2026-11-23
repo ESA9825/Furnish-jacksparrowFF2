@@ -676,10 +676,17 @@ const floorSamples=Object.freeze([
  Object.freeze({id:'oak_wood_planks',name:'自然橡木直铺',repeatMm:1200}),
  Object.freeze({id:'plank_flooring_04',name:'深棕木直铺',repeatMm:2000}),
  Object.freeze({id:'herringbone_parquet',name:'木地板人字拼',repeatMm:3400}),
- Object.freeze({id:'interior_tiles',name:'米色柔光方砖',repeatMm:1900})
+ Object.freeze({id:'interior_tiles',name:'米色方砖',repeatMm:1900})
 ]);
 const floorSample=id=>floorSamples.find(sample=>sample.id===id);
-const styleAppearance=Object.freeze({formatVersion:97,materialFormatVersion:105,floorSamples,floorSample,scopes:['cabinet','curtains','furniture','frames','bays','floors'],surfaces:['floor','bay','frame'],palette:['front','body','soft','wood','textile','sheer','pop','frame','bay','floor']});
+const tileSheens=Object.freeze([
+ Object.freeze({id:'satin',name:'柔光砖',description:'宽而柔的反光'}),
+ Object.freeze({id:'gloss',name:'亮面砖',description:'清晰的窗光倒影'}),
+ Object.freeze({id:'matte',name:'哑光砖',description:'低反光，亮斑很淡'})
+]);
+const tileSheen=id=>tileSheens.find(sheen=>sheen.id===id);
+const supportsTileSheen=(kind,sample)=>sample?sample==='interior_tiles':kind==='tile800'||kind==='tile600';
+const styleAppearance=Object.freeze({formatVersion:97,materialFormatVersion:105,tileSheenFormatVersion:106,floorSamples,floorSample,tileSheens,tileSheen,supportsTileSheen,scopes:['cabinet','curtains','furniture','frames','bays','floors'],surfaces:['floor','bay','frame'],palette:['front','body','soft','wood','textile','sheer','pop','frame','bay','floor']});
 function styleRole(f){
  if(!f||f.obj)return null;const r=definition(f);if(!r)return null;
  if(r.family==='window-covering')return r.covering?.kind==='sheer'?'sheer':'textile';

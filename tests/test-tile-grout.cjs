@@ -46,6 +46,26 @@ const path=require('node:path'),tempBase=path.resolve(__dirname,'../output/playw
   assert.deepEqual(tileShader.uniforms.furnishJoint.value.toArray(),[2/802,2/402]);assert.match(tileShader.fragmentShader,/tileUV=vMapUv\*2\.0/);
   assert.match(tileShader.fragmentShader,/material.clearcoat\*=1\.0-tileJoint/);
   preview.clear();assert.equal(tiledMesh.material,porcelain);porcelain.map.dispose();porcelain.dispose();
+  const coats=['gloss','satin','matte'].map(sheen=>M.material(T,layout,{floorKind:'tile800',sheen}));
+  assert(coats[0].roughness<coats[1].roughness&&coats[1].roughness<coats[2].roughness);
+  assert(coats[0].clearcoat>coats[1].clearcoat&&coats[1].clearcoat>coats[2].clearcoat);
+  const aperture={rect:[1200,-100,3600,100],sill:.5,head:2.5};
+  const space={wx:x=>x/1000,wz:z=>z/1000,inside:require('../src/core/layout-geometry.js').inPoly};
+  const windows=M.roomWindows([aperture],{poly:[[500,100],[3900,100],[3900,2500],[500,2500]]},space);
+  assert.deepEqual(windows,[{center:[2.4,1.5,.1],divisions:3,shape:[1.2,1,0,1]}]);
+  assert.deepEqual(M.roomWindows([aperture],{poly:[[500,900],[3900,900],[3900,2500],[500,2500]]},space),[]);
+  const sky={value:new T.Vector4(1,.9,.8,1)};
+  M.tileReflection(T,coats[0],windows,sky,'tileJoint');
+  const decorated=coats[0].clone();decorated.onBeforeCompile=(...args)=>coats[0].onBeforeCompile(...args);
+  M.copyTileReflection(T,coats[0],decorated,{alreadyWrapped:true});tiledMesh.material=decorated;
+  preview.update({floorGroup,roomId:b,kind:'floor',color:'#654321'});
+  assert.equal(tiledMesh.material.roughness,coats[0].roughness);
+  const glazedShader={uniforms:{},vertexShader:'#include <project_vertex>',fragmentShader:'#include <map_fragment>\n#include <lights_fragment_end>'};
+  tiledMesh.material.onBeforeCompile(glazedShader);
+  assert.equal(glazedShader.uniforms.furnishTileSky,sky);
+  assert.deepEqual(glazedShader.uniforms.furnishTileWindowCenters.value[0].toArray(),[...windows[0].center,windows[0].divisions]);
+  assert.match(glazedShader.fragmentShader,/sheen\*\(0.11\+0.34\*edge\*edge\)\*\(1.0-tileJoint\)/);
+  preview.clear();decorated.dispose();for(const coat of coats){coat.map.dispose();coat.dispose();}
   shared.map.dispose();shared.dispose();geo.dispose();
  }finally{if(prior===undefined)delete global.document;else global.document=prior;}
  console.log('PASS room wall/floor grout, auto/custom/black, invalid input, independent scopes, v11 recovery, unchanged spatial confirmations and production preview isolation/cleanup');

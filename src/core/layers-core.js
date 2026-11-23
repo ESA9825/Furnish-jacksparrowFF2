@@ -43,7 +43,7 @@
  function objectValue(work,key){
   const [kind,...parts]=key.split(':'),id=parts.join(':');
   if(kind==='furniture')return work.furniture?.find(f=>f.id===id);
-  if(kind==='floor')return [work.floorFinishes?.areas?.[id],work.rooms?.[id]?.mat,work.tileGrout?.rooms?.[id]?.floor,work.styleAppearance?.floorOverrides?.[id],work.styleAppearance?.floorSamples?.[id]];
+  if(kind==='floor')return [work.floorFinishes?.areas?.[id],work.rooms?.[id]?.mat,work.tileGrout?.rooms?.[id]?.floor,work.styleAppearance?.floorOverrides?.[id],work.styleAppearance?.floorSamples?.[id],work.styleAppearance?.floorTileSheens?.[id]];
   if(kind==='wallTile'){const surfaces=work.wallTiling?.surfaces?.filter(s=>faceKey(s)===key),roomId=surfaces?.[0]?.roomId,override=work.tileGrout?.walls?.find(s=>faceKey(s)===key);return [surfaces,work.wallFinishes?.surfaces?.filter(s=>faceKey(s)===key),override||work.tileGrout?.rooms?.[roomId]?.wall];}
   if(kind==='ceiling')return work.ceilings?.items?.find(c=>c.id===id);
   if(kind==='roomCeiling')return [work.rooms?.[id]?.ceilingHeight,work.ceilingHeight];

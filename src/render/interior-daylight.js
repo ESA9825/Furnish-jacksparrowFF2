@@ -262,7 +262,7 @@ function create(T,scene,{wx,wz,inside}){
   if(pool.has(variantKey))return pool.get(variantKey);
   const material=source.clone();
   const floorKind=source.userData.tileFinish?.floorKind;
-  const oldSatin=source.userData.satinTile===true||profile==='floor'&&!!source.userData.tileFinish?.layout&&floorKind!=='antislip';
+  const oldSatin=!source.userData.floorTileSheen&&(source.userData.satinTile===true||profile==='floor'&&!!source.userData.tileFinish?.layout&&floorKind!=='antislip');
   const floorSheen=profile==='floor'?source.userData.floorWindowSheen:undefined;
   const satinTile=oldSatin||floorSheen!==undefined;
   const tileDetail=profile==='floor'&&oldSatin&&!floorKind;
@@ -664,6 +664,7 @@ function create(T,scene,{wx,wz,inside}){
    `);
    if(profile&&!ceiling||apertureReceiver)applySun(shader,profile&&!ceiling,apertureReceiver);
   };
+  if(source.userData.floorTileSheen)root.FurnishFloorFinishModel?.copyTileReflection(T,source,material,{alreadyWrapped:true});
   pool.set(variantKey,material);variants.set(source,pool);
   return material;
  }
@@ -1119,5 +1120,12 @@ function create(T,scene,{wx,wz,inside}){
  }
  return {begin,contacts,setLight,setNight,reset,overlay,panelRoom,prepareGlass};
 }
-root.FurnishInteriorDaylight={create};
+function linkedFloorWindows(plan,roomId){
+ if(plan.id!==planId)return [];
+ return apertures.flatMap(([ref,source,rooms])=>{
+  const window=plan.wins?.[plan.winRefs?.indexOf(ref)];
+  return window&&source!==roomId&&rooms.includes(roomId)?[{window,source}]:[];
+ });
+}
+root.FurnishInteriorDaylight={create,linkedFloorWindows};
 })(globalThis);

@@ -11,7 +11,8 @@ function create(THREE){
    if(!matches||!mesh.material.userData.tileFinish)return;
    const original=mesh.material,meta=original.userData.tileFinish;originals.set(mesh,original);
    if(!shared.has(original)){
-    const m=meta.groutOnly?M.groutMaterial(THREE,{color:meta.color,groutColor:color}):meta.legacy?M.legacyMaterial(THREE,original,{groutColor:color}):M.material(THREE,meta.layout,{color:meta.color,groutColor:color,floorKind:meta.floorKind});
+    const m=meta.groutOnly?M.groutMaterial(THREE,{color:meta.color,groutColor:color}):meta.legacy?M.legacyMaterial(THREE,original,{groutColor:color}):M.material(THREE,meta.layout,{color:meta.color,groutColor:color,floorKind:meta.floorKind,sheen:meta.sheen});
+    if(meta.sheen&&!meta.legacy)M.copyTileReflection(THREE,original,m);
     for(const key of ['side','polygonOffset','polygonOffsetFactor','polygonOffsetUnits','clippingPlanes','clipShadows'])m[key]=original[key];
     shared.set(original,m);created.add(m);
    }

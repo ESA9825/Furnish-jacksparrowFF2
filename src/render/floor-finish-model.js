@@ -6,6 +6,83 @@ const syncIdentity=root.FurnishPartIdentity||(typeof require==='function'?requir
 
 const ceramics=Object.freeze({tile800:.49,tile600:.53,antislip:.78});
 const ceramic=kind=>Object.hasOwn(ceramics,kind);
+const tileCoats=Object.freeze({
+ satin:{roughness:.46,clearcoat:.27,clearcoatRoughness:.34,reflection:.57,feather:.34},
+ gloss:{roughness:.13,clearcoat:.64,clearcoatRoughness:.12,reflection:2.35,feather:.045},
+ matte:{roughness:.86,clearcoat:.025,clearcoatRoughness:.78,reflection:.075,feather:.78}
+});
+const tileCoat=id=>Object.hasOwn(tileCoats,id)?tileCoats[id]:undefined;
+const maxWindows=4;
+const tileWindows=new WeakMap();
+const windowDivisions=(widthMetres,panels)=>panels===3?3:Math.max(1,Math.round(widthMetres/.9));
+function roomWindows(windows,room,{wx,wz,inside}){
+ if(!room)return [];
+ const shapes=room.polys||[room.poly];
+ return windows.flatMap(({rect:[a,b,c,d],sill,head=2.4,panels})=>{
+  if(!(head>sill))return [];
+  const alongX=c-a>=d-b,x=(a+c)/2,z=(b+d)/2,width=alongX?c-a:d-b;
+  const side=[-1,1].find(sign=>[0,-.32,.32].some(t=>shapes.some(poly=>inside(
+   alongX?x+t*width:sign>0?c+85:a-85,alongX?sign>0?d+85:b-85:z+t*width,poly))));
+  if(!side)return [];
+  return [{center:[wx(alongX?x:side>0?c:a),(head+sill)/2,wz(alongX?side>0?d:b:z)],divisions:windowDivisions(width/1000,panels),
+   shape:[width/2000,(head-sill)/2,alongX?0:side,alongX?side:0]}];
+ }).sort((a,b)=>b.shape[0]*b.shape[1]-a.shape[0]*a.shape[1]).slice(0,maxWindows);
+}
+function tileReflection(THREE,material,windows,daylight,joint='0.0'){
+ const coat=tileCoat(material.userData.floorTileSheen);
+ if(!coat||!windows?.length)return;
+ const prior=material.onBeforeCompile,cacheKey=material.customProgramCacheKey();
+ const centers={value:Array.from({length:maxWindows},(_,i)=>new THREE.Vector4(...(windows[i]?.center||[0,0,0]),windows[i]?.divisions||1))};
+ const shapes={value:Array.from({length:maxWindows},(_,i)=>new THREE.Vector4(...(windows[i]?.shape||[0,0,0,0])))};
+ material.customProgramCacheKey=()=>cacheKey+'|tile-window-v2|'+joint;
+ material.onBeforeCompile=function(shader,renderer){
+  prior.call(this,shader,renderer);
+  Object.assign(shader.uniforms,{furnishTileWindowCenters:centers,furnishTileWindowShapes:shapes,
+   furnishTileSky:daylight,furnishTileCoat:{value:new THREE.Vector2(coat.reflection,coat.feather)}});
+  shader.vertexShader='varying vec3 furnishTileWorld;\n'+shader.vertexShader.replace('#include <project_vertex>',`#include <project_vertex>
+   furnishTileWorld=(modelMatrix*vec4(transformed,1.0)).xyz;
+  `);
+  shader.fragmentShader=`varying vec3 furnishTileWorld;
+   uniform vec4 furnishTileWindowCenters[${maxWindows}];
+   uniform vec4 furnishTileWindowShapes[${maxWindows}];
+   uniform vec4 furnishTileSky;
+   uniform vec2 furnishTileCoat;
+  `+shader.fragmentShader.replace('#include <lights_fragment_end>',`#include <lights_fragment_end>
+   if(furnishTileSky.a>0.0){
+    vec3 observer=normalize(vViewPosition);
+    vec3 ray=inverseTransformDirection(reflect(-observer,normal),viewMatrix);
+    float edge=1.0-clamp(dot(observer,normal),0.0,1.0);
+    float sheen=0.0;
+    for(int i=0;i<${maxWindows};i++){
+     vec4 shape=furnishTileWindowShapes[i];
+     float incidence=-dot(ray.xz,shape.zw);
+     if(shape.x<=0.0||incidence<=0.015)continue;
+     vec4 window=furnishTileWindowCenters[i];
+     vec3 fromWindow=furnishTileWorld-window.xyz;
+     float travel=dot(fromWindow.xz,shape.zw)/incidence;
+     if(travel<=0.0)continue;
+     vec3 hit=fromWindow+ray*travel;
+     float lateral=dot(hit.xz,shape.wz);
+     vec2 distance=abs(vec2(lateral,hit.y));
+     vec2 falloff=1.0-smoothstep(max(vec2(0.001),shape.xy-furnishTileCoat.y),shape.xy+furnishTileCoat.y,distance);
+     float paneWidth=2.0*shape.x/window.w;
+     float frame=abs(fract((lateral+shape.x)/paneWidth+0.5)-0.5)*paneWidth;
+     float panes=mix(0.22+0.78*smoothstep(0.012,0.051,frame),1.0,smoothstep(0.05,0.30,furnishTileCoat.y));
+     sheen=max(sheen,panes*falloff.x*falloff.y/(1.0+0.025*travel*travel));
+    }
+    reflectedLight.indirectSpecular+=furnishTileSky.rgb*furnishTileSky.a*furnishTileCoat.x
+     *sheen*(0.11+0.34*edge*edge)*(1.0-${joint});
+   }
+  `);
+ };
+ tileWindows.set(material.onBeforeCompile,{windows,daylight,joint});
+}
+function copyTileReflection(THREE,from,to,{alreadyWrapped=false}={}){
+ const reflection=tileWindows.get(from.onBeforeCompile);
+ if(!reflection)return;
+ if(alreadyWrapped)tileWindows.set(to.onBeforeCompile,reflection);
+ else tileReflection(THREE,to,reflection.windows,reflection.daylight,reflection.joint);
+}
 // Presentation parameters for the supplied texture scans.
 const floorCoats=Object.freeze({
  oak_wood_planks:{tint:'#f4f8ff',reflectance:'#a5754c',normal:.38,roughness:.94,coat:.19,coatRoughness:.36,windowSheen:.75},
@@ -47,7 +124,8 @@ function tileFace(canvas,color,kind,variation=0){
 }
 function floorOptions(work,roomId,kind){
  const styles=root.FurnishStyles||require('../core/style-core.js'),catalog=root.FurnishCatalogData||require('../data/catalog.js'),grout=root.FurnishTileGrout||require('../core/tile-grout-core.js');
- return {floorKind:kind,color:styles.surfaceColor(work,'floor',roomId)||catalog.materials[kind]?.sw,groutColor:grout.color(work,roomId,'floor')};
+ return {floorKind:kind,color:styles.surfaceColor(work,'floor',roomId)||catalog.materials[kind]?.sw,
+  groutColor:grout.color(work,roomId,'floor'),sheen:styles.floorTileSheen(work,roomId,kind)};
 }
 const floorImages=new Map();
 function sampleSources(id,folder){
@@ -85,10 +163,11 @@ function sampleMaterial(THREE,work,roomId){
   entry.ready=Promise.all(loads).then(results=>{entry.done=true;entry.failed=results.includes(false);root.dispatchEvent(new Event('furnish-floor-sample-ready'));});
   floorImages.set(id,entry);
  }
- const finish=floorCoats[id];
- const material=new THREE.MeshPhysicalMaterial({...entry.maps,color:finish.tint,roughness:finish.roughness,
-  normalScale:new THREE.Vector2(finish.normal,finish.normal),clearcoat:finish.coat,clearcoatRoughness:finish.coatRoughness});
- material.userData.floorSample=id;material.userData.floorReflectance=finish.reflectance;material.userData.floorWindowSheen=finish.windowSheen;
+ const finish=floorCoats[id],sheen=root.FurnishStyles.floorTileSheen(work,roomId),coat=tileCoat(sheen);
+ const material=new THREE.MeshPhysicalMaterial({...entry.maps,color:finish.tint,roughness:coat?.roughness??finish.roughness,
+  normalScale:new THREE.Vector2(finish.normal,finish.normal),clearcoat:coat?.clearcoat??finish.coat,clearcoatRoughness:coat?.clearcoatRoughness??finish.coatRoughness});
+ material.userData.floorSample=id;material.userData.floorReflectance=finish.reflectance;
+ if(coat){material.roughnessMap=null;material.userData.floorTileSheen=sheen;}else material.userData.floorWindowSheen=finish.windowSheen;
  return material;
 }
 function pendingSamples(group){
@@ -96,7 +175,7 @@ function pendingSamples(group){
  const pending=[...ids].map(id=>floorImages.get(id)).filter(item=>!item.done||item.failed);
  return pending.length?Promise.all(pending.map(async item=>{await item.ready;if(item.failed)throw Error('地板样片载入失败：'+item.profile.name);})):null;
 }
-function material(THREE,layout,{color='#e8e2d8',groutColor:custom,floorKind}={}){
+function material(THREE,layout,{color='#e8e2d8',groutColor:custom,floorKind,sheen}={}){
  const tileColor=/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(color)?color:'#e8e2d8',groutColor=custom?new THREE.Color(custom):new THREE.Color(tileColor).multiplyScalar(.9);
  const detailed=ceramic(floorKind),size=detailed?512:1024,pitch=detailed?size/2:size;
  const canvas=document.createElement('canvas');canvas.width=canvas.height=size;const c=canvas.getContext('2d');
@@ -110,10 +189,11 @@ function material(THREE,layout,{color='#e8e2d8',groutColor:custom,floorKind}={})
  const map=new THREE.CanvasTexture(canvas);map.wrapS=map.wrapT=THREE.RepeatWrapping;map.colorSpace=THREE.SRGBColorSpace;map.flipY=false;
  if(detailed){map.repeat.set(.5,.5);map.anisotropy=8;}
  const glazed=detailed&&floorKind!=='antislip';
- const material=glazed?new THREE.MeshPhysicalMaterial({map,roughness:ceramics[floorKind],clearcoat:.24,clearcoatRoughness:.36}):
+ const coat=glazed?tileCoat(sheen):undefined;
+ const material=glazed?new THREE.MeshPhysicalMaterial({map,roughness:coat?.roughness??ceramics[floorKind],clearcoat:coat?.clearcoat??.24,clearcoatRoughness:coat?.clearcoatRoughness??.36}):
   new THREE.MeshStandardMaterial({map,roughness:detailed?ceramics[floorKind]:.72});
- if(glazed)material.userData.floorWindowSheen=.95;
- material.userData.tileFinish={color:tileColor,layout:{width:layout.width,height:layout.height,gap:layout.gap},...(custom?{groutColor:custom}:{}),...(detailed?{floorKind}:{})};
+ if(coat)material.userData.floorTileSheen=sheen;else if(glazed)material.userData.floorWindowSheen=.95;
+ material.userData.tileFinish={color:tileColor,layout:{width:layout.width,height:layout.height,gap:layout.gap},...(custom?{groutColor:custom}:{}),...(detailed?{floorKind}:{}),...(coat?{sheen}:{})};
  // Preserve the true grid pitch. A subpixel joint gets a modest screen-space
  // coverage floor instead of disappearing into texture mipmaps at room scale.
  material.onBeforeCompile=shader=>{
@@ -146,7 +226,26 @@ function material(THREE,layout,{color='#e8e2d8',groutColor:custom,floorKind}={})
 function legacyMaterial(THREE,original,{groutColor:custom}={}){
  const meta=original.userData.tileFinish,source=original.map.image,canvas=document.createElement('canvas');canvas.width=source.width;canvas.height=source.height;
  const c=canvas.getContext('2d');c.drawImage(source,0,0);const color=custom?new THREE.Color(custom):new THREE.Color(meta.color).multiplyScalar(.9);c.fillStyle='#'+color.getHexString();c.fillRect(0,0,canvas.width,meta.groutPixels);c.fillRect(0,0,meta.groutPixels,canvas.height);
- const map=original.map.clone();map.image=canvas;map.needsUpdate=true;const m=original.clone();m.map=map;m.userData.tileFinish={...meta,...(custom?{groutColor:custom}:{})};if(!custom)delete m.userData.tileFinish.groutColor;return m;
+ const map=original.map.clone();map.source=new THREE.Source(canvas);map.needsUpdate=true;const m=original.clone();m.map=map;m.userData.tileFinish={...meta,...(custom?{groutColor:custom}:{})};if(!custom)delete m.userData.tileFinish.groutColor;
+ m.onBeforeCompile=original.onBeforeCompile;m.customProgramCacheKey=original.customProgramCacheKey;return m;
+}
+function legacyCoat(THREE,map,sheen,roughness){
+ const coat=tileCoat(sheen);
+ if(!coat)return new THREE.MeshStandardMaterial({map,roughness});
+ const m=new THREE.MeshPhysicalMaterial({map,roughness:coat.roughness,clearcoat:coat.clearcoat,clearcoatRoughness:coat.clearcoatRoughness});
+ m.userData.floorTileSheen=sheen;
+ m.customProgramCacheKey=()=>'furnish-legacy-coated-tile-v1';
+ m.onBeforeCompile=shader=>{
+  shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',`#include <map_fragment>
+   vec2 seam=1.0-smoothstep(vec2(0.004),vec2(0.009),fract(vMapUv));
+   float tileJoint=max(seam.x,seam.y);
+  `).replace('#include <roughnessmap_fragment>',`#include <roughnessmap_fragment>
+   roughnessFactor=mix(roughnessFactor,0.88,tileJoint);
+  `).replace('#include <lights_physical_fragment>',`#include <lights_physical_fragment>
+   material.clearcoat*=1.0-tileJoint;
+  `);
+ };
+ return m;
 }
 function groutMaterial(THREE,{color='#e8e2d8',groutColor}={}){const m=new THREE.MeshStandardMaterial({color:groutColor||new THREE.Color(color).multiplyScalar(.9),roughness:.72});m.userData.tileFinish={color,groutOnly:true,...(groutColor?{groutColor}:{})};return m;}
 function uv(THREE,geometry,layout,{wx=v=>v/1000,wz=v=>v/1000}={}){
@@ -190,5 +289,5 @@ function stepEdges(THREE,steps,{wx=v=>v/1000,wz=v=>v/1000}={}){
   const mesh=syncIdentity.produce("floor-finish-model:site-3",()=>new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:'#827564',roughness:1,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1})));mesh.userData.floorStep=step;mesh.userData.floorFinishOwnMaterial=true;group.add(mesh);
  }return group;
 }
-const api={material,legacyMaterial,groutMaterial,uv,surface,layers,stepEdges,ceramic,tileFace,floorOptions,sampleMaterial,pendingSamples};if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishFloorFinishModel=api;
+const api={material,legacyMaterial,legacyCoat,roomWindows,windowDivisions,tileReflection,copyTileReflection,groutMaterial,uv,surface,layers,stepEdges,ceramic,tileFace,floorOptions,sampleMaterial,pendingSamples};if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishFloorFinishModel=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
