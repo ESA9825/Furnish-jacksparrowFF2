@@ -15,6 +15,25 @@ const payload=P.unpack(P.pack({planId:'p1',current:work,designs,catalog:[]}));as
 assert.throws(()=>P.validateWork({...work,scene3d:{...work.scene3d,hour:100}}),/三维/);
 assert.deepEqual(D.sceneSettings({hour:100,night:'yes'}),D.sceneSettings());
 designs=D.manageDesign(designs,'p1','delete',{id:designs[0].id});assert.equal(designs.length,1);assert.equal(designs[0].name,'B');
+
+const history=designs[0];
+const legacy={name:'Legacy history',planId:'p1',work};
+const keep={...history,name:'Unselected history'};
+const active={...history,name:'Editable design',editable:true};
+const other={...history,name:'Other plan history',planId:'p2'};
+const mixed=[history,legacy,keep,active,other];
+const beforeDeletion=JSON.stringify(mixed);
+const afterDeletion=D.deleteDesignHistory(mixed,'p1',[legacy,history,history]);
+assert.deepEqual(afterDeletion,[keep,active,other]);
+assert.equal(JSON.stringify(mixed),beforeDeletion);
+assert.deepEqual(D.deleteDesignHistory(afterDeletion,'p1',[keep]),[active,other]);
+assert.throws(()=>D.deleteDesignHistory(mixed,'p1',[]),/请选择/);
+for(const invalid of [active,other,{...history}]){
+ assert.throws(()=>D.deleteDesignHistory(mixed,'p1',[legacy,invalid]),/已变化/);
+ assert.equal(JSON.stringify(mixed),beforeDeletion);
+}
+assert.throws(()=>D.deleteDesignHistory(afterDeletion,'p1',[legacy]),/已变化/);
+
 // A distance edit cannot move furniture to another room through a solid divider.
 const plan={walls:[[-100,0,0,3000],[1900,0,2100,3000],[4000,0,4100,3000]],rooms:[{poly:[[0,0],[1900,0],[1900,3000],[0,3000]]},{poly:[[2100,0],[4000,0],[4000,3000],[2100,3000]]}],wins:[]};
 const item={id:'f',cx:1000,cy:1000,w:400,d:400,rot:30};

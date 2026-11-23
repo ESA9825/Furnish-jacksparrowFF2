@@ -226,6 +226,9 @@ main.drawer-panel #fab-editor{visibility:hidden}
 }
 
 .design-record{padding:12px;margin:10px 0;border:1px solid var(--line);border-radius:10px;overflow-wrap:anywhere}
+.design-history-check{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.design-history-check input{width:16px;height:16px;flex:none;margin:0;accent-color:var(--accent)}
+.design-history-removals{overflow-wrap:anywhere}
 @media print{.design-bar{display:none!important}}
 
 .layer-tree{display:grid;gap:5px}
