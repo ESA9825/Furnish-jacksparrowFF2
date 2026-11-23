@@ -4,6 +4,17 @@ const near=(a,b)=>assert(Math.abs(a-b)<1e-8,`${a} != ${b}`);
 (async()=>{
  const T=await import(JSON.parse(fs.readFileSync(require.resolve('../index.html'),'utf8').match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports.three);
  near(L.photometric(L.radiometric(100)),100);near(L.panel(100,.59,.39)*.59*.39,100/683);assert.throws(()=>L.panel(10,0,1));assert.equal(L.environment(true).exposure,10);
+ const {solarEnvironment}=L;
+ assert.deepEqual(solarEnvironment(-6),solarEnvironment(30,true));
+ assert.deepEqual(solarEnvironment(30),{sky:1,environment:L.environment(false,12,Math.sin(Math.PI/6))});
+ let lastAmbient=solarEnvironment(-6).environment.ambient*10,lastSun=0;
+ for(let altitude=-6;altitude<=6;altitude+=.25){
+  const {environment:e}=solarEnvironment(altitude),ambient=e.ambient*e.exposure,sun=e.sun*e.exposure;
+  assert(ambient>=lastAmbient&&ambient-lastAmbient<.04);
+  assert(sun>=lastSun&&sun-lastSun<.13);
+  if(altitude<=0)assert.equal(sun,0);
+  lastAmbient=ambient;lastSun=sun;
+ }
  for(const spec of Object.values(require('../scripts/lib/mijia-ceiling-light-specs.json'))){
   const [w,h,d]=spec.size,f={type:spec.type,w,h,d,mountHeight:2450,color:'#fff'},lamp=H.build(T,f);
   assert.deepEqual(lamp.children.filter(o=>o.isMesh).map(o=>o.name).sort(),[...spec.parts].sort());

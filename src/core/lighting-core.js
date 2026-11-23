@@ -9,6 +9,23 @@ function environment(night,hour=12,solarDaylight){
  return night?{exposure:10,ambient:.015,reflection:.015,sun:solarDaylight===undefined?radiometric(.05):0,background:'#1c2130',world:[.015,.015,.015]}:
   {exposure:1.05,ambient:1.1,reflection:1,sun:1.4+daylight*1.6,background:'#f5f2ea',world:[.35,.38,.44]};
 }
+function solarEnvironment(altitude,forcedNight=false){
+ const dusk=environment(true,12,0);
+ if(forcedNight||altitude<=-6)return {sky:0,environment:dusk};
+ const day=environment(false,12,Math.sin(altitude*Math.PI/180));
+ if(altitude>=6)return {sky:1,environment:day};
+ const smooth=x=>x*x*(3-2*x),sky=smooth((altitude+6)/12);
+ const mix=(a,b)=>a+(b-a)*sky;
+ const exposure=Math.exp(mix(Math.log(dusk.exposure),Math.log(day.exposure)));
+ // Interpolate exposed brightness so increasing exposure cannot brighten dusk.
+ const radiance=(a,b)=>mix(a*dusk.exposure,b*day.exposure)/exposure;
+ const background='#'+[1,3,5].map(i=>Math.round(mix(parseInt(dusk.background.slice(i,i+2),16),parseInt(day.background.slice(i,i+2),16))).toString(16).padStart(2,'0')).join('');
+ return {sky,environment:{
+  background,exposure,ambient:radiance(dusk.ambient,day.ambient),reflection:radiance(dusk.reflection,day.reflection),
+  sun:altitude<=0?0:day.sun*day.exposure/exposure*smooth(altitude/6),
+  world:day.world.map((v,i)=>radiance(dusk.world[i],v))
+ }};
+}
 const isPreviewLight=o=>!!(o.userData.downlightLight||o.userData.ceilingPanelLight||o.userData.pathLight||o.userData.ceilingStripLight);
 const contourColors=new WeakMap();
 // Unlit construction lines need the ambient attenuation that lit boards receive.
@@ -52,6 +69,6 @@ function collect(T,groups){
  });}
  return {version:VERSION,unit:'RGB radiometric equivalent; photometric / 683',rects,spots};
 }
-const api={VERSION,PHOTOMETRIC,radiometric,photometric,panel,environment,cabinetContours,isPreviewLight,isFill,requested,prioritize,collect};
+const api={VERSION,PHOTOMETRIC,radiometric,photometric,panel,environment,solarEnvironment,cabinetContours,isPreviewLight,isFill,requested,prioritize,collect};
 if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishLighting=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

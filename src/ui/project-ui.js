@@ -21,7 +21,7 @@ function spaceIssueVolumes(plan,furniture,item,passage=800){
 
  const button=document.createElement('button');button.className='btn outline';button.id='projectWorkspace';button.textContent=t('项目工作台','Project workspace');$('#tracePlan').after(button);button.onclick=()=>open('structure');
  function currentArchitecture(){return state.architecture?P.architecture(state.architecture):null;}
- let openingPreview=null;
+ let openingPreview=null,spaceRevision=0;
  function clearOpeningPreview(redraw=true){if(!openingPreview)return;openingPreview=null;if(redraw){renderWalls();renderRooms();renderOpenings();renderSel();}}
  function positionFields(d,o,prefix){const refs=FurnishDraft.openingReferences(d,o.id),ref=refs.find(r=>r.id===o.reference)||refs[0];return `<label>参考墙面<select id="${prefix}-reference">${refs.map(r=>`<option value="${esc(r.id)}" ${r.id===ref?.id?'selected':''}>${esc(r.label)}</option>`).join('')}</select></label>${field(prefix+'-position','洞口边缘距参考墙面 mm',Math.round(ref?.distance||0),'number','min="0" step="1"')}<small>默认最近墙面；绿色标记为参考墙面与净距。</small>`;}
  function bindOpeningInputs(a,o,prefix,ids,extra=()=>({}),locked=false){
@@ -65,7 +65,7 @@ function spaceIssueVolumes(plan,furniture,item,passage=800){
  function applyDraft(draft,windowId){const a=currentArchitecture();if(a.phase==='design')P.assertStructure(a.baseline,draft);const plan=FurnishDraft.build(draft),settings=P.remapRooms(ROOMS,plan.rooms,state.rooms);mutate(()=>{state.architecture={...a,draft};state.rooms=settings;state.demolished=[];state.open=P.remapOpenings(PLAN,plan,state.open,{windowId});});}
  function demolish(id){try{const a=currentArchitecture();if(a.phase!=='design')return toast(t('请先录入并确认原始结构，再开始拆改。','Confirm the original structure before demolition.'));const wall=a.draft.walls.find(w=>w.id===PLAN.wallRefs?.[Number(id.slice(1))]);if(!wall)return;if(wall.kind!=='n')return toast(t('承重墙和外墙已锁定，不可拆改。','Bearing and exterior walls are locked.'));const next=clone(a.draft);next.walls=next.walls.filter(w=>w.id!==wall.id);next.openings=next.openings.filter(o=>o.wall!==wall.id);applyDraft(next);toast(t('已拆除整段非承重墙，房间和面积已重新计算；可撤销恢复。','Partition removed; rooms and area recalculated. Undo to restore.'));}catch(e){toast(t('拆改未应用：','Demolition not applied: ')+e.message);}}
  svg.addEventListener('pointerdown',e=>{const el=e.target.closest('[data-restore-wall]');if(!el||ui.tool!=='demolish')return;e.preventDefault();e.stopImmediatePropagation();try{const a=currentArchitecture(),w=a.baseline.walls.find(w=>w.id===el.dataset.restoreWall),next=clone(a.draft);if(next.walls.some(v=>v.id===w.id))throw Error(t('墙体已被移动，请在墙属性中恢复位置。','Moved wall: restore its position in wall properties.'));next.walls.push(clone(w));next.openings.push(...clone(a.baseline.openings.filter(o=>o.wall===w.id)));applyDraft(next);}catch(err){toast(err.message);}},true);
- function afterRender(){let g=$('#gRenovation');if(!g){g=document.createElementNS('http://www.w3.org/2000/svg','g');g.id='gRenovation';$('#gWalls').after(g);}g.innerHTML='';if(!state.architecture?.baseline)return;const a=state.architecture,c=P.changes(a.baseline,a.draft);g.style.pointerEvents=ui.tool==='demolish'?'all':'none';g.innerHTML+=c.removed.map(w=>{const r=FurnishDraft.wallRect(w,a.baseline.scale);return `<rect data-restore-wall="${esc(w.id)}" x="${r[0]}" y="${r[1]}" width="${r[2]-r[0]}" height="${r[3]-r[1]}" fill="rgba(210,70,50,.12)" stroke="#c64a36" stroke-width="1.5" stroke-dasharray="6 4" vector-effect="non-scaling-stroke"><title>${t('拆除墙体：拆改工具下点击可恢复','Removed wall: click with demolition tool to restore')}</title></rect>`;}).join('')+c.added.map(w=>{const r=FurnishDraft.wallRect(w,a.draft.scale);return `<rect x="${r[0]}" y="${r[1]}" width="${r[2]-r[0]}" height="${r[3]-r[1]}" fill="none" stroke="#17806c" stroke-width="2" vector-effect="non-scaling-stroke" pointer-events="none"/>`;}).join('');}
+ function afterRender(){spaceRevision++;let g=$('#gRenovation');if(!g){g=document.createElementNS('http://www.w3.org/2000/svg','g');g.id='gRenovation';$('#gWalls').after(g);}g.innerHTML='';if(!state.architecture?.baseline)return;const a=state.architecture,c=P.changes(a.baseline,a.draft);g.style.pointerEvents=ui.tool==='demolish'?'all':'none';g.innerHTML+=c.removed.map(w=>{const r=FurnishDraft.wallRect(w,a.baseline.scale);return `<rect data-restore-wall="${esc(w.id)}" x="${r[0]}" y="${r[1]}" width="${r[2]-r[0]}" height="${r[3]-r[1]}" fill="rgba(210,70,50,.12)" stroke="#c64a36" stroke-width="1.5" stroke-dasharray="6 4" vector-effect="non-scaling-stroke"><title>${t('拆除墙体：拆改工具下点击可恢复','Removed wall: click with demolition tool to restore')}</title></rect>`;}).join('')+c.added.map(w=>{const r=FurnishDraft.wallRect(w,a.draft.scale);return `<rect x="${r[0]}" y="${r[1]}" width="${r[2]-r[0]}" height="${r[3]-r[1]}" fill="none" stroke="#17806c" stroke-width="2" vector-effect="non-scaling-stroke" pointer-events="none"/>`;}).join('');}
  function planFor(work){return P.effectivePlan(PLAN,work);}
  function summary(work){const b=P.estimate(planFor(work),work,MATS,priceOf);return {...b,rooms:b.counted.length,paint:b.paintArea,extra:b.renovation};}
  const nav=[['settings','层高设置','Ceiling height'],['structure','原始结构／拆改','Structure / changes'],['compare','方案比较','Compare'],['backup','项目备份','Backup'],['space','使用空间检查','Space checks'],['budget','装修工程预算','Renovation costs'],['products','品牌家具／模型','Products / models']];
@@ -116,7 +116,69 @@ function spaceIssueVolumes(plan,furniture,item,passage=800){
   window.View3D?.highlightIssue(item,volumes);
   g.innerHTML=polygons.map(p=>`<polygon points="${p.map(v=>v.join(',')).join(' ')}" fill="rgba(228,94,43,.15)" stroke="#e45e2b" stroke-width="3" vector-effect="non-scaling-stroke"/>`).join('')+(item.at?`<circle cx="${item.at[0]}" cy="${item.at[1]}" r="100" fill="none" stroke="#e45e2b" stroke-width="3" vector-effect="non-scaling-stroke"/>`:'')+`<title>${esc(item.message)}</title>`;svg.append(g);setTimeout(()=>g.remove(),8000);
  }
- function space(){content(`<p>${t('检查家具重叠／边缘越界、开门范围、墙体占用、梁／竖管与家具实体三维重叠、柜门／抽屉正面空间，并扫描候选狭窄间隙。阈值是你的设计偏好；间隙扫描不等于完整通行路径判断；检查不是建筑合规或安全认证。定位会选中相关对象；相关家具、开启范围／正面空间或间隙点高亮 8 秒。忽略记录在几何变化后失效。','Check furniture overlaps and edges outside rooms, door swing, wall collisions, 3D beam/body collisions, cabinet/drawer front space and candidate narrow gaps. Thresholds are design preferences; gap scanning is not route validation.')}</p><div class="project-grid">${field('space-passage',t('通道／间隙提醒阈值 mm','Gap warning threshold mm'),state.spaceThreshold||800,'number','min="300" max="2000"')}<button class="btn primary" id="space-run">${t('检查当前方案','Check current design')}</button></div><div id="space-results"></div>`);$('#space-run').onclick=()=>{try{const threshold=Number($('#space-passage').value),plan=planFor(state),issues=P.spaceCheck(plan,state.furniture,{passage:threshold});mutate(()=>state.spaceThreshold=threshold);const fingerprint=v=>P.checkFingerprint(v,plan,state.furniture,threshold);const ignored=state.spaceIgnored||[];$('#space-results').innerHTML=issues.length?`<table class="project-table">${issues.map((v,i)=>`<tr><td>${esc(v.name)}</td><td>${esc(v.message)}</td><td>${ignored.includes(fingerprint(v))?'已确认忽略 · ':''}<button class="btn" data-space-ignore="${i}">${ignored.includes(fingerprint(v))?'恢复提示':'确认后忽略'}</button><button class="btn" data-space-focus="${i}">${t('定位','Locate')}</button></td></tr>`).join('')}</table>`:`<p>${t('当前检查未发现问题。仍请核对家具实际开启方式。','No issues detected. Verify actual opening mechanisms.')}</p>`;document.querySelectorAll('[data-space-ignore]').forEach(b=>b.onclick=()=>{const key=fingerprint(issues[+b.dataset.spaceIgnore]);mutate(()=>state.spaceIgnored=ignored.includes(key)?ignored.filter(v=>v!==key):[...ignored.slice(-99),key]);$('#space-run').click();});document.querySelectorAll('[data-space-focus]').forEach(b=>b.onclick=()=>{const item=issues[+b.dataset.spaceFocus];closeDialog();if(item.doorIndex!==undefined){select({kind:'door',id:item.doorIndex});zoomToBox(DOORS[item.doorIndex].rect,500);}else if(item.kind==='passage'){select({kind:'room',id:item.id});zoomToBox(bbox(ROOMS.find(r=>r.id===item.id).poly),300);}else focusItem(item.id);highlightIssue(item);if($('#stage').classList.contains('is3d')){View3D.focusSelection();closeDrawers();}toast(item.message);});}catch(err){error(err);}};}
+ function space(){
+  content(`<form class="project-space-controls"><label for="space-passage">${t('通道间隙阈值（mm）','Gap threshold (mm)')}<input id="space-passage" type="number" min="300" max="2000" step="any" required value="${state.spaceThreshold||800}"></label><button class="btn primary" id="space-run" type="submit">${t('检查当前方案','Check current design')}</button></form>
+  <p class="project-note">${t('按此阈值提示局部狭窄处。完整动线需要现场复核。定位会高亮相关家具、门扇或间隙。','The threshold flags local pinch points. Verify the complete route on site. Locate highlights the relevant furniture, door or gap.')}</p>
+  <p id="space-check-status" role="status"></p><div id="space-results"></div>`);
+  const form=$('.project-space-controls'),input=$('#space-passage'),run=$('#space-run'),status=$('#space-check-status'),results=$('#space-results');
+  const views=[['unresolved','需处理','To review'],['pending','信息不足','Missing info'],['accepted','已核对','Reviewed'],['all','全部','All']];
+  const category=issue=>issue.ignored?'accepted':issue.pending?'pending':'unresolved';
+  let filter='unresolved',issues=[],checkedRevision,sourceWork,request=0,restoreFocus=false;
+  const stale=()=>sourceWork!==state||checkedRevision!==spaceRevision;
+  function render(focus){
+   const counts={unresolved:0,pending:0,accepted:0,all:issues.length};
+   for(const issue of issues)counts[category(issue)]++;
+   const rows=issues.map((v,i)=>({v,i})).filter(({v})=>filter==='all'||category(v)===filter);
+   results.innerHTML=`<div class="project-space-filters" role="group" aria-label="${t('按核对状态筛选','Filter by review status')}">${views.map(([id,zh,en])=>`<button class="btn ${filter===id?'on':''}" data-project-space-filter="${id}" aria-pressed="${filter===id}">${t(zh,en)} · ${counts[id]}</button>`).join('')}</div>
+   ${rows.length?`<table class="project-table project-space-table"><thead><tr><th scope="col">${t('对象','Object')}</th><th scope="col">${t('问题','Finding')}</th><th scope="col">${t('操作','Actions')}</th></tr></thead><tbody>${rows.map(({v,i})=>`<tr><th scope="row">${esc(nm(v.name))}</th><td><small>${t(...views.find(([id])=>id===category(v)).slice(1))}</small>${esc(v.message)}</td><td><div class="project-space-actions"><button class="btn" data-space-focus="${i}">${t('定位','Locate')}</button><button class="btn" data-space-ignore="${i}">${v.ignored?t('恢复提示','Restore warning'):t('确认后忽略','Mark reviewed')}</button></div></td></tr>`).join('')}</tbody></table>`:`<p class="muted">${t('此分类没有事项。','No findings in this category.')}</p>`}`;
+   if(focus)results.querySelector(`[data-project-space-filter="${filter}"]`).focus({preventScroll:true});
+  }
+  function reset(message=''){
+   request++;run.disabled=false;results.removeAttribute('aria-busy');results.replaceChildren();status.textContent=message;
+  }
+  const changed=()=>reset(t('方案或阈值已有变化，请重新检查。','The design or threshold changed. Run the check again.'));
+  input.oninput=changed;
+  form.onsubmit=e=>{
+   e.preventDefault();
+   if(run.disabled||!form.reportValidity())return;
+   const threshold=input.valueAsNumber,work=state,revision=spaceRevision;
+   const token=++request;
+   run.disabled=true;results.replaceChildren();results.setAttribute('aria-busy','true');
+   status.textContent=t('正在核对当前方案…','Checking the current design…');
+   error({message:''});
+   let steps;
+   function advance(){
+    if(token!==request||!form.isConnected){steps?.return();return;}
+    if(work!==state||revision!==spaceRevision){steps?.return();changed();return;}
+    try{
+     steps??=P.reviewSteps(planFor(work),{...work,spaceThreshold:threshold});
+     const start=performance.now();let step;
+     do{step=steps.next();}while(!step.done&&performance.now()-start<8);
+     if(!step.done){setTimeout(advance,0);return;}
+     if(threshold!==(state.spaceThreshold||800))mutate(()=>state.spaceThreshold=threshold);
+     issues=step.value;sourceWork=state;checkedRevision=spaceRevision;
+     reset(t(`检查完成 · ${issues.length} 项`,`Check complete · ${issues.length} findings`));
+     render(restoreFocus);restoreFocus=false;
+    }catch(err){restoreFocus=false;reset(t('空间检查未完成。','Space check did not finish.'));error(err);}
+   }
+   requestAnimationFrame(()=>setTimeout(advance,0));
+  };
+  results.onclick=e=>{
+   const button=e.target.closest('button');if(!button)return;
+   if(stale()){changed();return;}
+   if(button.dataset.projectSpaceFilter){filter=button.dataset.projectSpaceFilter;render(true);return;}
+   const index=Number(button.dataset.spaceIgnore??button.dataset.spaceFocus);
+   const item=issues[index];if(!item)return;
+   if(button.hasAttribute('data-space-focus')){locateIssue(item);return;}
+   const {ignored,...issue}=item,records=state.spaceIgnored||[];
+   try{
+    const key=P.checkFingerprint(issue,planFor(state),state.furniture,state.spaceThreshold||800);
+    mutate(()=>state.spaceIgnored=ignored?records.filter(v=>v!==key):[...records.slice(-99),key]);
+    // Apply the whole retained list, including any record evicted by its limit.
+    restoreFocus=true;run.click();
+   }catch(err){error(err);}
+  };
+ }
  function costs(){const q=P.quantities(planFor(state),state.architecture),rows=P.extraCosts(state.renovation||[],q);content(`<p>${t('家具、地面和乳胶漆由原报价计算。这里补充人工、拆改、水电、吊顶、防水、定制柜等费用，避免重复计价；单价由你输入。','Add labor, demolition, utilities, ceilings, waterproofing and cabinetry. Furniture/floors/paint are already included; enter your own rates and avoid double counting.')}</p><table class="project-table"><thead><tr><th>项目</th><th>工程量</th><th>单价</th><th>金额</th><th></th></tr></thead><tbody>${rows.items.map((r,i)=>`<tr><td>${esc(r.name)}<small> ${r.source==='manual'?'手填':'自动更新'}</small></td><td>${r.quantity.toFixed(2)} ${esc(r.unit)}</td><td>${yen(r.price)}</td><td>${yen(r.total)}</td><td><button class="btn" data-cost-edit="${i}">编辑</button><button class="btn" data-cost-delete="${i}">删除</button></td></tr>`).join('')}</tbody></table><p>${t('工程费用','Renovation costs')} ${yen(rows.total)} · ${t('全部预算','Total budget')} ${yen(budget().total)}</p><div class="project-grid">${field('cost-name',t('项目名称','Item name'),'人工')}${field('cost-unit',t('单位','Unit'),'项')}<label>${t('工程量来源','Quantity source')}<select id="cost-source"><option value="manual">手填工程量</option><option value="net">当前净面积 m²</option><option value="paint">墙面涂刷面积 m²</option><option value="removed">拆墙长度 m</option><option value="added">新建墙长度 m</option></select></label>${field('cost-quantity',t('手填工程量','Manual quantity'),1,'number','min="0" step="0.01"')}${field('cost-price',t('单价 ¥','Unit price ¥'),0,'number','min="0" step="0.01"')}<button class="btn primary" id="cost-add">${t('添加工程费用','Add cost')}</button></div><button class="btn" id="cost-export">${t('导出完整报价 CSV','Export full quote CSV')}</button>`);
   const rates=P.pricing(state.pricing);$('#project-content').insertAdjacentHTML('afterbegin',`<h4>材料单价与损耗</h4><button class="btn" data-material-specs>材料采购规格与片／箱计价</button><p class="project-note">按当前方案保存，方案比较与报价导出同步使用；金额显示到元。留空材料单价使用默认参考价。</p><div class="project-grid">${field('rate-floor-waste','地面损耗 %',rates.floorWaste,'number','min="0" max="100"')}${field('rate-paint-waste','乳胶漆损耗 %',rates.paintWaste,'number','min="0" max="100"')}${field('rate-paint','乳胶漆单价 ¥/m²',rates.paintPrice,'number','min="0"')}${Object.entries(MATS).map(([id,m])=>field('rate-mat-'+id,nm(m.name)+' ¥/'+(rates.materialSpecs?.[id]?.unit==='piece'?'片':rates.materialSpecs?.[id]?.unit==='pack'?'箱':'m²'),rates.materials[id]??'','number','min="0" placeholder="'+Math.round(m.price)+'"')).join('')}</div><p><button class="btn primary" id="rate-save">应用预算参数</button><button class="btn" id="rate-reset">恢复默认预算参数</button></p>`);
   $('#rate-save').onclick=()=>{try{const number=id=>{if(!$('#'+id).value.trim())throw Error('损耗率和乳胶漆单价不可留空');return Number($('#'+id).value);},next=P.pricing({...(state.pricing?.materialSpecs?{materialSpecs:state.pricing.materialSpecs}:{}),floorWaste:number('rate-floor-waste'),paintWaste:number('rate-paint-waste'),paintPrice:number('rate-paint'),materials:Object.fromEntries(Object.keys(MATS).filter(id=>$('#rate-mat-'+id).value.trim()).map(id=>[id,Number($('#rate-mat-'+id).value)]))});mutate(()=>state.pricing=next);open('budget');}catch(e){error(e);}};$('#rate-reset').onclick=()=>{mutate(()=>delete state.pricing);open('budget');};

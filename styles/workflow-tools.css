@@ -43,6 +43,11 @@
 body:has(#style-preview-banner:not([hidden])) #hint3d{display:none}
 .scene-light{position:absolute;right:12px;top:12px;z-index:4;background:var(--s-overlay);border:1px solid var(--line);border-radius:12px;padding:7px 10px;display:flex;align-items:center;gap:8px}
 .scene-light input{width:100px}.scene-light .range{display:flex;align-items:center;gap:6px;margin:0}.scene-light .btn{font-size:12px;padding:5px}
+.scene-light #scene-light-menu{position:relative}
+.scene-light #scene-light-menu summary{list-style:none;min-height:28px;padding-inline:8px}
+.scene-light #scene-light-menu summary::-webkit-details-marker{display:none}
+.scene-light #scene-light-menu[open] summary{background:var(--accent-soft);color:var(--accent-ink)}
+.scene-light-options{position:absolute;right:0;top:calc(100% + 11px);display:flex;gap:6px;width:max-content;padding:8px;border:1px solid var(--line);border-radius:10px;background:var(--panel);box-shadow:var(--shadow)}
 .workspace-preferences{position:relative}.workspace-preferences>.menu-pop{right:0;left:auto;width:240px}.workspace-preferences #langSel{display:flex;flex-wrap:wrap}.workspace-preferences .btn{margin:2px}
 .price-summary{padding:12px;border:1px solid var(--line);border-radius:12px;margin:12px 0;background:var(--soft)}
 .price-summary p{margin:5px 0}.price-counts{display:flex;flex-wrap:wrap;gap:8px}.price-counts span{padding:5px 8px;border-radius:8px;background:var(--card);font-size:12px}

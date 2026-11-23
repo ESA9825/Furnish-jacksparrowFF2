@@ -22,7 +22,7 @@ function installLibraryResize(){
  addEventListener('resize',()=>{finish(false);position();});position();
 }
 let checkGeneration=0;
-let stylePreview=null,checkTimer=0,checkKey='',issues=[],checking=false,proposal=null;
+let stylePreview=null,checkTimer=0,checkKey='',issues=[],checking=true,checkError='',proposal=null;
 const effective=()=>P.effectivePlan(PLAN,state),kindName={confirmed:['已确认价','Confirmed'],reference:['参考价','Reference'],missing:['未填写','Missing']};
 function basisHTML(){
  const basis=P.priceBasis(effective(),state,MATS,priceOf);
@@ -50,20 +50,25 @@ function materialSpecs(){
  }
  function preview(){try{const m=P.materialBreakdown(effective(),{...state,pricing:read()},MATS,priceOf).find(v=>v.m===active),p=m?.procurement;$('#material-error').textContent='';$('#material-estimate').innerHTML=p?`<p>${t('净面积','Net area')} ${m.a.toFixed(2)} m² → ${t('含损耗','With waste')} ${p.required.toFixed(2)} m²${p.pieces!==undefined?` → ${p.pieces} ${t('片','pieces')}${p.packs!==null?` → ${p.packs} ${t('箱','packs')}`:''}`:''}</p><p>${t('预计采购面积','Purchase area')} ${p.purchased.toFixed(2)} m² · ${t('金额','Cost')} ${yen(m.c)}</p>${materialRoomHTML(m)}`:`<p>${t('此材料尚未用于当前方案，保存后在使用时计算。','This material is not used yet; quantities appear when used.')}</p>`;}catch(e){$('#material-error').textContent=e.message;$('#material-estimate').innerHTML='';}}
 }
-const checkSignature=plan=>P.checkFingerprint({},plan,state.furniture,state.spaceThreshold||800)+JSON.stringify([state.spaceIgnored||[],state.furniture.map(f=>[f.name,FurnishProducts.modelError(f)]),plan.rooms.map(r=>r.name),(plan.doors||[]).map(d=>d.name)]);
-function checkNow(plan=effective(),key=checkSignature(plan)){++checkGeneration;clearTimeout(checkTimer);if(key!==checkKey){issues=P.review(plan,state);checkKey=key;}checking=false;syncBadge();return issues;}
+const checkSignature=plan=>P.checkFingerprint({},plan,state.furniture,state.spaceThreshold||800)+JSON.stringify([state.spaceIgnored||[],state.furniture.map(f=>[f.name,FurnishProducts.modelError(f)]),plan.rooms.map(r=>r.name),(plan.doors||[]).map(d=>d.name),(plan.ceilings?.items||[]).map(c=>c.name)]);
 function issueExplanation(v){const e=P.explainIssue(v);return `<small class="issue-kind">${esc(e.category)} · ${esc(e.status)}</small><details><summary>${t('如何核对','How to review')}</summary><p>${esc(e.action)}</p></details>`;}
 function spaceCounts(){return {unresolved:issues.filter(v=>!v.ignored&&!v.pending).length,pending:issues.filter(v=>!v.ignored&&v.pending).length,accepted:issues.filter(v=>v.ignored).length};}
-function reviewSummary(){const c=spaceCounts();return `<h3>${t('方案待办','Design review')}</h3><div class="review-counts">${[['unresolved','需处理','To review'],['pending','信息不足','Missing info'],['accepted','已核对','Accepted']].map(([id,zh,en])=>`<button class="btn" data-review-filter="${id}"><b>${c[id]}</b><span>${t(zh,en)}</span></button>`).join('')}</div><p class="muted small">${t('含实体重叠、开启预留和候选通道间隙，按事项计数；信息不足不代表已通过。','Counts cover solid overlaps, opening clearances and candidate gaps; missing information does not mean a pass.')}</p>`;}
-function syncBadge(){const c=spaceCounts();$('#space-status').innerHTML=ico('warn')+t(`核对：需处理 ${c.unresolved} · 信息不足 ${c.pending}`,`Review ${c.unresolved} · Missing info ${c.pending}`);$('#space-status').title=t('查看冲突、未知信息和已核对事项；不会自动移动家具。','Review conflicts, unknowns and accepted items; no automatic moves.');const summary=$('#panel .review-summary');if(summary)summary.innerHTML=reviewSummary();}
+function reviewSummary(){const c=spaceCounts();return `<h3>${t('方案待办','Design review')}</h3><div class="review-counts">${[['unresolved','需处理','To review'],['pending','信息不足','Missing info'],['accepted','已核对','Accepted']].map(([id,zh,en])=>`<button class="btn" data-review-filter="${id}"><b>${checking||checkError?'—':c[id]}</b><span>${t(zh,en)}</span></button>`).join('')}</div><p class="muted small">${t('含实体重叠、开启预留和候选通道间隙，按事项计数；信息不足不代表已通过。','Counts cover solid overlaps, opening clearances and candidate gaps; missing information does not mean a pass.')}</p>`;}
+function syncBadge(){
+ const c=spaceCounts(),badge=$('#space-status');
+ badge.innerHTML=ico('warn')+(checking?t('空间核对 · 更新中…','Space checks · Updating…'):checkError?t('空间检查待修复','Space checks need repair'):t(`核对：需处理 ${c.unresolved} · 信息不足 ${c.pending}`,`Review ${c.unresolved} · Missing info ${c.pending}`));
+ badge.title=checkError||t('查看冲突、未知信息和已核对事项','Review conflicts, missing information and reviewed findings');
+ const summary=$('#panel .review-summary');if(summary)summary.innerHTML=reviewSummary();
+}
+function reviewPanelOpen(){return ui.tab==='space'&&(!ui.sel||ui.panelScope==='design');}
 function spacePanel(){
  const filter=ui.spaceFilter||'unresolved',rows=issues.filter(v=>filter==='all'||filter==='accepted'?filter==='all'||v.ignored:filter==='pending'?!v.ignored&&v.pending:!v.ignored&&!v.pending);
- return `<div class="tabs"><button class="tab" data-tab="overview">${t('概览','Overview')}</button><button class="tab on" data-tab="space">${t('空间核对','Space checks')}</button></div><section><h3>${t('空间核对','Space checks')}</h3><p class="muted">${t('候选间隙扫描不等于完整通行路径判断。高度未知单列待确认，核对记录随几何变化失效。','Candidate gaps are not route validation. Unknown heights need confirmation; geometry changes invalidate accepted checks.')}</p><div class="actions"><button class="btn" data-space-full>${t('阈值与完整检查','Threshold and full check')}</button></div><div class="space-filters">${[['unresolved','需处理','To review'],['pending','信息不足','Missing info'],['accepted','已核对','Accepted'],['all','全部','All']].map(([id,zh,en])=>`<button class="btn ${filter===id?'on':''}" data-space-filter="${id}">${t(zh,en)} ${id==='all'?issues.length:spaceCounts()[id]}</button>`).join('')}</div><div class="space-cards">${checking?`<p>${t('正在更新…','Updating…')}</p>`:rows.slice(0,100).map(v=>`<article class="space-card ${v.ignored?'accepted':v.pending?'pending':''}"><b>${esc(nm(v.name))}</b>${issueExplanation(v)}<p>${esc(v.message)}</p><div class="actions"><button class="btn" data-space-locate="${issues.indexOf(v)}">${t('定位','Locate')}</button><button class="btn" data-space-accept="${issues.indexOf(v)}">${v.ignored?t('恢复提示','Restore warning'):t('确认后忽略','Accept after review')}</button>${!v.ignored&&['wall','outside'].includes(v.kind)?`<button class="btn" data-space-propose="${v.id}">${t('预览整理建议','Preview relocation')}</button>`:''}</div></article>`).join('')||`<p>${t('此分类没有事项','No items in this category')}</p>`}</div>${rows.length>100?`<p>${t('仅展示前100项；可打开完整检查。','First 100 shown; open the full check for all items.')}</p>`:''}</section>`;
+ return `<div class="tabs"><button class="tab" data-tab="overview">${t('概览','Overview')}</button><button class="tab on" data-tab="space">${t('空间核对','Space checks')}</button></div><section><h3>${t('空间核对','Space checks')}</h3><p class="muted">${t('候选间隙扫描不等于完整通行路径判断。高度未知单列待确认，核对记录随几何变化失效。','Candidate gaps are not route validation. Unknown heights need confirmation; geometry changes invalidate accepted checks.')}</p><div class="actions"><button class="btn" data-space-full>${t('阈值与完整检查','Threshold and full check')}</button></div><div class="space-filters">${[['unresolved','需处理','To review'],['pending','信息不足','Missing info'],['accepted','已核对','Accepted'],['all','全部','All']].map(([id,zh,en])=>`<button class="btn ${filter===id?'on':''}" data-space-filter="${id}">${t(zh,en)} ${checking||checkError?'—':id==='all'?issues.length:spaceCounts()[id]}</button>`).join('')}</div><div class="space-cards">${checking?`<p role="status">${t('正在更新…','Updating…')}</p>`:checkError?`<p role="alert">${esc(checkError)}</p>`:rows.slice(0,100).map(v=>`<article class="space-card ${v.ignored?'accepted':v.pending?'pending':''}"><b>${esc(nm(v.name))}</b>${issueExplanation(v)}<p>${esc(v.message)}</p><div class="actions"><button class="btn" data-space-locate="${issues.indexOf(v)}">${t('定位','Locate')}</button><button class="btn" data-space-accept="${issues.indexOf(v)}">${v.ignored?t('恢复提示','Restore warning'):t('确认后忽略','Accept after review')}</button>${!v.ignored&&['wall','outside'].includes(v.kind)?`<button class="btn" data-space-propose="${v.id}">${t('预览整理建议','Preview relocation')}</button>`:''}</div></article>`).join('')||`<p>${t('此分类没有事项','No items in this category')}</p>`}</div>${!checking&&!checkError&&rows.length>100?`<p>${t('仅展示前100项；可打开完整检查。','First 100 shown; open the full check for all items.')}</p>`:''}</section>`;
 }
 function openFullSpace(){FurnishWorkspace.open('space');$('#space-run').click();}
 function openSpace(){
  if(FurnishElectricalUI.active())return openFullSpace();
- checkNow();ui.panelScope='design';ui.tab='space';renderPanel();drawer('panel',true);
+ if(checkError)afterRender();ui.panelScope='design';ui.tab='space';renderPanel();drawer('panel',true);
 }
 function propose(id){
  const source=snap(),planId=PLAN.id,plan=effective(),next=FurnishPlacementSuggestions.suggest(plan,state,id),f=getF(id);
@@ -129,7 +134,7 @@ function disposeDialog(){disposePreview?.();disposePreview=null;proposal=null;$(
 function exportDXF(){openDialog({title:t('导出 DXF 布局图','Export DXF layout'),body:`<p>${t('单位 mm，CAD Y轴向上。按墙轮廓、门窗洞口、房间、家具外包、标注分层。用于布局交接；不含结构构造、立面、节点或施工图审核。','Millimetres, CAD Y up. Separate wall outlines, openings, rooms, furniture envelopes and annotations. For layout exchange; no construction details or drawing certification.')}</p><p>${t('洞口以独立图层标出；家具按旋转后的占地外包绘制。','Openings are on a separate layer; furniture uses its rotated footprint envelope.')}</p>`,actions:[{label:t('取消','Cancel')},{label:t('下载 DXF','Download DXF'),cls:'primary',fn:()=>{try{download(PLAN.name.replace(/[\\/:*?"<>|]/g,'_')+'-layout.dxf',new Blob([FurnishDXFExport.drawing(effective(),state)],{type:'application/dxf;charset=utf-8'}));return true;}catch(e){toast(e.message);return false;}}}]});}
 function afterRender(){
  globalThis.FurnishMaterialUI?.afterRender();
- styleId();clearTimeout(checkTimer);const plan=effective(),key=checkSignature(plan);checking=key!==checkKey;
+ styleId();clearTimeout(checkTimer);const plan=effective(),key=checkSignature(plan);checking=key!==checkKey;checkError='';
  const generation=++checkGeneration;
  const gestureActive=()=>globalThis.View3D?.interacting()||(typeof drag!=='undefined'&&(drag||pinch));
  // Review steps can contain expensive geometry reads even with a slice budget.
@@ -145,11 +150,11 @@ function afterRender(){
    if(gestureActive()){steps.return();checkTimer=setTimeout(update,180);return;}
    try{const start=performance.now();let step;do{step=steps.next();}while(!step.done&&performance.now()-start<8);
     if(!step.done){checkTimer=setTimeout(advance,0);return;}
-    issues=step.value;checkKey=key;checking=false;syncBadge();if(!ui.sel&&ui.tab==='space')renderPanel();
-   }catch(e){checking=false;$('#space-status').textContent=t('空间检查待修复','Space checks need repair');$('#space-status').title=e.message;}
+    issues=step.value;checkKey=key;checking=false;syncBadge();if(reviewPanelOpen())renderPanel();
+   }catch(e){checking=false;checkError=e.message;syncBadge();if(reviewPanelOpen())renderPanel();}
   };advance();
  };
- if(!checking)syncBadge();else{$('#space-status').textContent=t('空间核对 · 更新中…','Space checks · Updating…');checkTimer=setTimeout(update,180);}
+ syncBadge();if(checking)checkTimer=setTimeout(update,180);
  $('#gWallNet')?.remove();if(ui.sel?.kind==='wall')wallDimensions();
 }
 function openSunSettings(){
@@ -175,7 +180,7 @@ function openSunSettings(){
     mutate(()=>{
      state.scene3d=scene;
      if(nextDrawing.northAngle!==drawing.northAngle)state.drawing=nextDrawing;
-    });
+    },{sceneFirst:true,appearanceEdit:true});
     return true;
    }catch(e){$('#sun-settings-error').textContent=e.message;return false;}
   }}]
@@ -203,8 +208,16 @@ function initialize(){
  document.addEventListener('pointerdown',e=>{if(toolMenu.open&&!toolMenu.contains(e.target)&&!toolPop.contains(e.target))toolMenu.open=false;});
  const pref=document.createElement('details');pref.id='moreMenu';pref.className='menu workspace-preferences';pref.innerHTML=`<summary class="btn">${t('更多','More')}</summary><div class="menu-pop"></div>`;$('#saveMenu').before(pref);pref.lastElementChild.append($('#langSel'),$('#themeQuick'),$('#fullscreen'),$('#more-actions'));$('#more-actions').hidden=false;$('#resetBtn').remove();
  localized(pref.firstElementChild,'更多','More');
- const light=document.createElement('div');light.className='scene-light only3d';light.setAttribute('aria-label',t('日照与夜景','Sunlight and night'));$('#stage').append(light);light.append($('#sun').closest('label'),$('#sunAltitude'),$('#sunSettings'),document.querySelector('[data-t="night"]'));
- $('#sunSettings').onclick=openSunSettings;
+ const light=document.createElement('div');light.className='scene-light only3d';light.setAttribute('role','group');light.setAttribute('aria-label',t('场景照明','Scene lighting'));$('#stage').append(light);
+ const lightMenu=document.createElement('details');lightMenu.id='scene-light-menu';
+ const lightSummary=document.createElement('summary');lightSummary.className='btn';lightSummary.append(localized(document.createElement('span'),'照明','Lighting'));
+ const lightOptions=document.createElement('div');lightOptions.className='scene-light-options';
+ lightOptions.append(document.querySelector('[data-t="lamps"]'),document.querySelector('[data-t="nightLights"]'),$('#sunSettings'));
+ lightMenu.append(lightSummary,lightOptions);
+ light.append($('#sun').closest('label'),$('#sunAltitude'),document.querySelector('[data-t="night"]'),lightMenu);
+ lightMenu.addEventListener('keydown',e=>{if(e.key==='Escape'&&lightMenu.open){e.stopPropagation();lightMenu.open=false;lightSummary.focus();}});
+ document.addEventListener('pointerdown',e=>{if(lightMenu.open&&!lightMenu.contains(e.target))lightMenu.open=false;});
+ $('#sunSettings').onclick=()=>{lightMenu.open=false;lightSummary.focus();openSunSettings();};
  const badge=document.createElement('button');badge.id='space-status';badge.className='btn space-status';badge.onclick=openSpace;$('#stage').append(badge);syncBadge();
  $('#tgSpace').onclick=openSpace;
  const designMenu=$('#design-actions-menu');
@@ -231,7 +244,7 @@ function initialize(){
  localized($('#fileMenu summary span'),'导入／导出','Import / export');
  $('#fileMenu').addEventListener('toggle',()=>{if(!$('#fileMenu').open)return;const designs=store.designs.filter(d=>d.planId===PLAN.id);$('#file-project-scope').textContent=t(`导出「${PLAN.name}」的当前布置、${designs.filter(d=>d.editable===true).length} 个设计方案、${designs.filter(d=>d.editable!==true).length} 条历史记录及家具库。新电脑在此选择“导入项目”。其他户型需分别导出。`,`Export “${PLAN.name}”: current layout, ${designs.filter(d=>d.editable===true).length} designs, ${designs.filter(d=>d.editable!==true).length} history entries and furniture library. On the new computer, choose Import project here. Export other floor plans separately.`);});
  for(const [selector,zh,en,kind] of [['aside.lib','家具与房间','Furniture and rooms','lib'],['aside.right','属性与方案','Properties and design','panel']]){const heading=document.createElement('div');heading.className='sidebar-heading';heading.append(localized(document.createElement('b'),zh,en));const close=document.createElement('button');close.className='btn';close.innerHTML=ico('x');close.setAttribute('aria-label',t(zh==='家具与房间'?'关闭家具库':'关闭属性面板',kind==='lib'?'Close library':'Close properties'));close.onclick=()=>drawer(kind,false);heading.append(close);$(selector).prepend(heading);}
- document.addEventListener('click',e=>{const target=e.target.closest('button');if(!target)return;if(target.matches('[data-review-filter]')){ui.spaceFilter=target.dataset.reviewFilter;openSpace();}if(target.matches('[data-price-details]'))priceDetails();if(target.matches('[data-material-specs]'))materialSpecs();if(target.matches('[data-space-filter]')){ui.spaceFilter=target.dataset.spaceFilter;renderPanel();}if(target.matches('[data-space-full]'))openFullSpace();if(target.matches('[data-space-locate]'))FurnishWorkspace.locateIssue(issues[+target.dataset.spaceLocate]);if(target.matches('[data-space-accept]')){const {ignored,...issue}=issues[+target.dataset.spaceAccept],key=P.checkFingerprint(issue,effective(),state.furniture,state.spaceThreshold||800);mutate(()=>state.spaceIgnored=ignored?(state.spaceIgnored||[]).filter(v=>v!==key):[...(state.spaceIgnored||[]).slice(-99),key]);checkNow();renderPanel();}if(target.matches('[data-space-propose]'))propose(target.dataset.spacePropose);if(target.matches('[data-style-preview]'))previewStyle(target.dataset.stylePreview);if(target.matches('[data-style-cancel]')){cancelStyle();ui.tab='overview';renderPanel();}if(target.matches('[data-style-apply]')){const id=styleId();if(!id)return;const selection=structuredClone(stylePreview.options);if(target.dataset.styleApply==='selected'&&!selection.scopes.length)return;cancelStyle();mutate(()=>{if(target.dataset.styleApply==='selected')FurnishStyles.applySelected(state,ROOMS,id,selection);else if(target.dataset.styleApply==='cabinet')FurnishStyles.applyCabinets(state,id,selection.palette,selection.bodySurface);else if(target.dataset.styleApply==='full')FurnishStyles.apply(state,ROOMS,id,!!PLAN.customDraft,selection.palette,selection.bodySurface);else{FurnishStyles.applyColors(state,id,selection.palette,selection.bodySurface);}});ui.tab='overview';renderPanel();toast(t('配色已应用，可撤销','Colours applied; undo available'));}});
+ document.addEventListener('click',e=>{const target=e.target.closest('button');if(!target)return;if(target.matches('[data-review-filter]')){ui.spaceFilter=target.dataset.reviewFilter;openSpace();}if(target.matches('[data-price-details]'))priceDetails();if(target.matches('[data-material-specs]'))materialSpecs();if(target.matches('[data-space-filter]')){ui.spaceFilter=target.dataset.spaceFilter;renderPanel();}if(target.matches('[data-space-full]'))openFullSpace();if(target.matches('[data-space-locate]'))FurnishWorkspace.locateIssue(issues[+target.dataset.spaceLocate]);if(target.matches('[data-space-accept]')){const {ignored,...issue}=issues[+target.dataset.spaceAccept],key=P.checkFingerprint(issue,effective(),state.furniture,state.spaceThreshold||800);mutate(()=>state.spaceIgnored=ignored?(state.spaceIgnored||[]).filter(v=>v!==key):[...(state.spaceIgnored||[]).slice(-99),key]);renderPanel();}if(target.matches('[data-space-propose]'))propose(target.dataset.spacePropose);if(target.matches('[data-style-preview]'))previewStyle(target.dataset.stylePreview);if(target.matches('[data-style-cancel]')){cancelStyle();ui.tab='overview';renderPanel();}if(target.matches('[data-style-apply]')){const id=styleId();if(!id)return;const selection=structuredClone(stylePreview.options);if(target.dataset.styleApply==='selected'&&!selection.scopes.length)return;cancelStyle();mutate(()=>{if(target.dataset.styleApply==='selected')FurnishStyles.applySelected(state,ROOMS,id,selection);else if(target.dataset.styleApply==='cabinet')FurnishStyles.applyCabinets(state,id,selection.palette,selection.bodySurface);else if(target.dataset.styleApply==='full')FurnishStyles.apply(state,ROOMS,id,!!PLAN.customDraft,selection.palette,selection.bodySurface);else{FurnishStyles.applyColors(state,id,selection.palette,selection.bodySurface);}});ui.tab='overview';renderPanel();toast(t('配色已应用，可撤销','Colours applied; undo available'));}});
  const distanceAction=e=>{const target=e.target.closest('[data-wall-net]');if(!target||e.type==='keydown'&&!['Enter',' '].includes(e.key))return;e.preventDefault();e.stopImmediatePropagation();netDistance(target.dataset.wallTarget,target.dataset.wallNet);};svg.addEventListener('pointerdown',distanceAction,true);svg.addEventListener('keydown',distanceAction,true);
 }
 window.FurnishWorkflowTools={clearDistances:()=>$('#gWallNet')?.remove(),redrawDistances:wallDimensions,afterPanel,afterRender,spacePanel,stylePanel,styleCards,previewStyle,styleId,styleKey,styleWork,surfacePanel,disposeDialog,materialSpecs,priceDetails,exportDXF,openSpace};initialize();installLibraryResize();

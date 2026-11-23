@@ -181,7 +181,7 @@
             <button type="button" class="btn chip" data-layer="floorSteps" aria-pressed="false" title="显示门口两侧完成地面之间的高差" data-en-title="Show finished floor height differences at doorways" data-en="Floor step labels">地面高差</button>
             <button class="btn chip on" data-t="lamps" aria-pressed="true" title="控制主灯、台灯和灯带等常规照明" data-en-title="Toggle main lights, desk lamps and light strips" data-en="Main lights">主灯</button>
             <button class="btn chip on" data-t="nightLights" aria-pressed="true" title="夜景下独立开启低位夜灯" data-en-title="Toggle low-level nightlights in night mode" data-en="Nightlights">夜灯</button>
-            <button class="btn chip" data-t="night" data-en="Night">夜景</button>
+            <button class="btn chip" data-t="night" aria-pressed="false" data-en="Night">夜景</button>
           </div>
           <div class="chiprow" role="group" aria-label="吊顶显示 / Ceiling display"><span class="chip-cap" data-en="Ceiling">吊顶</span>
             <button class="btn chip" data-ceiling-display="solid" aria-pressed="false" data-en="Solid">实体</button>
@@ -1999,8 +1999,7 @@ function sceneSun({hour=opt.hour,night:nightMode=opt.night}=materialLighting||{}
   if(opt.solar){
     const {direction,altitude}=FurnishDrawing.solarPosition(opt.solar,hour,state.drawing);
     const night=nightMode||altitude<=0,daylight=Math.max(0,direction[1]);
-    const environment=FurnishLighting.environment(night,12,daylight);
-    return {position:direction.map(v=>v*24),altitude,night,environment,warm:1-daylight};
+    return {position:direction.map(v=>v*24),altitude,night,warm:1-daylight,...FurnishLighting.solarEnvironment(altitude,nightMode)};
   }
   const t = (Math.min(18,hour) - 6) / 12, az = Math.PI * (.15 + t*.7), el = Math.sin(Math.PI*t) * 1.05 + .15, warm = 1 - Math.sin(Math.PI*t);
   const [x,z]=FurnishDrawing.sun([Math.cos(az)*18,-Math.sin(az)*10+8],state.drawing);
@@ -2009,7 +2008,7 @@ function sceneSun({hour=opt.hour,night:nightMode=opt.night}=materialLighting||{}
 let lightSwitches;
 function viewAmbient({night,environment}){return environment.ambient*(materialLook&&!night?.76:1);}
 function applyLight(){
-  const light=sceneSun(),{position,altitude,night,environment:lighting,warm}=light;
+  const light=sceneSun(),{position,altitude,night,environment:lighting,warm,sky=night?0:1}=light;
   const materialDay=materialLook&&!night,ambient=viewAmbient(light);
   if(bloomNight!==night){
     bloomNight=night;
@@ -2035,10 +2034,10 @@ function applyLight(){
   hemi.intensity = ambient;
   hemi.color.setHex(materialDay?0xfffcf8:0xfff8ee);
   hemi.groundColor.setHex(materialDay?0xbab2aa:0xb9a88f);
-  scene.background = new THREE.Color(night ? 0x1c2130 : DK() ? 0x121110 : materialDay ? 0xdce1e7 : 0xf5f2ea);
-  ground.material.color.set(night ? 0x2a2e38 : DK() ? 0x26231e : materialDay ? 0xc5cbd2 : 0xf2eee7);
+  scene.background = new THREE.Color(0x1c2130).lerp(new THREE.Color(DK()?0x121110:materialDay?0xdce1e7:0xf5f2ea),sky);
+  ground.material.color.set(0x2a2e38).lerp(new THREE.Color(DK()?0x26231e:materialDay?0xc5cbd2:0xf2eee7),sky);
   renderer.toneMappingExposure = lighting.exposure;
-  floorSky.value.set(1,.91-.10*warm,.82-.22*warm,night?0:Math.min(1.2,.40+.24*lighting.sun));
+  floorSky.value.set(1,.91-.10*warm,.82-.22*warm,sky*Math.min(1.2,.40*1.05/lighting.exposure+.24*lighting.sun));
   if(envK!==lighting.reflection){
     envK = lighting.reflection; matCache.forEach(m => { if (m.envMap) m.envMapIntensity = m.userData.env*envK; });
   }
@@ -2047,17 +2046,22 @@ function applyLight(){
   const range=$('#sun'),mode=$('#sunMode'),readout=$('#sunAltitude');
   const hour=materialLighting?.hour??opt.hour;
   range.min=opt.solar?0:7;range.max=opt.solar||materialLighting?.night?24:18;range.value=hour;
-  range.disabled=!!materialLighting;
+  const fixedNight=opt.night&&!materialLighting;
+  range.disabled=!!materialLighting||fixedNight;
+  range.title=fixedNight?tr('关闭固定夜景后可调整日照','Turn off fixed night to adjust sunlight'):'';
   mode.dataset.zh=materialLighting?'试看':opt.solar?'太阳时':'日照';
   mode.dataset.en=materialLighting?'Preview':opt.solar?'Solar time':'Sun';
   mode.textContent=tr(mode.dataset.zh,mode.dataset.en);
-  readout.hidden=altitude===undefined;
-  if(altitude!==undefined){
+  readout.hidden=altitude===undefined&&!fixedNight;
+  if(fixedNight){
+    readout.dataset.zh='固定夜景';
+    readout.dataset.en='Fixed night';
+  }else if(altitude!==undefined){
     const degrees=altitude.toFixed(1)+'°';
     readout.dataset.zh='高度 '+degrees;
     readout.dataset.en='Alt. '+degrees;
-    readout.textContent=tr(readout.dataset.zh,readout.dataset.en);
   }
+  readout.textContent=readout.hidden?'':tr(readout.dataset.zh,readout.dataset.en);
   const minutes=Math.round(hour*60),h=Math.floor(minutes/60),m=minutes%60;
   $('#sunT').textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
   invalidate();
@@ -2708,9 +2712,9 @@ function bindUI(){
   document.querySelectorAll('[data-cut]').forEach(b => b.onclick = () => { if (opt.mode === 'walk') return; opt.cut = +b.dataset.cut; remember();syncCutBtns(); sync(); });
   document.querySelectorAll('[data-t]').forEach(b => b.onclick = () => {
     const k = b.dataset.t;
-    if(k==='lamps'||k==='nightLights'){
-      const enabled=k==='nightLights'?(opt.nightLights??opt.lamps):opt.lamps;
-      mutate(()=>{state.scene3d=FurnishDesign.patchSceneSettings(state.scene3d,{[k]:!enabled});},{sceneFirst:true});
+    if(k==='lamps'||k==='nightLights'||k==='night'){
+      const enabled=k==='nightLights'?(opt.nightLights??opt.lamps):opt[k];
+      mutate(()=>{state.scene3d=FurnishDesign.patchSceneSettings(state.scene3d,{[k]:!enabled});},{sceneFirst:true,appearanceEdit:true});
       return;
     }
     opt[k] = !opt[k]; b.classList.toggle('on', opt[k]);
@@ -2718,7 +2722,6 @@ function bindUI(){
     if (k === 'furn'||k === 'clearances'){ refreshTileInspection(); if (k==='furn'&&!opt.furn && ui.sel?.kind === 'furn') window.select(null); }
     if (k === 'wallNumbers') invalidate();
     if (k === 'labels') showLabels(opt.labels && opt.mode === 'orbit' && !anim);
-    if (k === 'night') applyLight();
   });
   $('#sun').oninput = e => {
     opt.sunPreview={work:state,scene:state.scene3d,hour:+e.target.value,pending:true};
@@ -2727,7 +2730,7 @@ function bindUI(){
     const hour=+e.target.value;
     opt.sunPreview=undefined;
     if(hour===FurnishDesign.sceneSettings(state.scene3d).hour){sync();return;}
-    mutate(()=>{state.scene3d=FurnishDesign.sceneSettings({...state.scene3d,hour});},{sceneFirst:true});
+    mutate(()=>{state.scene3d=FurnishDesign.sceneSettings({...state.scene3d,hour});},{sceneFirst:true,appearanceEdit:true});
   };
   $('#sun').onpointercancel = cancelSunPreview;
   window.addEventListener('blur',cancelSunPreview);

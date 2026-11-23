@@ -168,12 +168,15 @@
  // only a completed review populates the shared cache. Sync callers drain.
  function* reviewSteps(plan,work){
   const names=[];for(const f of work.furniture){yield;names.push([f.name,design().products().modelError(f)]);}
-  const passage=work.spaceThreshold||800,context=JSON.stringify(checkContext(plan,work.furniture,passage)),key=context+JSON.stringify([work.spaceIgnored||[],names,plan.rooms.map(r=>r.name),(plan.doors||[]).map(d=>d.name),(plan.ceilings?.items||[]).map(c=>c.name)]);
-  if(lastReview?.key===key)return clone(lastReview.issues);
-  const issues=yield* spaceCheckSteps(plan,work.furniture,{passage});const accepted=new Set();
+  const passage=work.spaceThreshold||800,context=JSON.stringify(checkContext(plan,work.furniture,passage)),key=context+JSON.stringify([names,plan.rooms.map(r=>r.name),(plan.doors||[]).map(d=>d.name),(plan.ceilings?.items||[]).map(c=>c.name)]);
+  if(lastReview?.key!==key){
+   const issues=yield* spaceCheckSteps(plan,work.furniture,{passage});
+   lastReview={key,issues};
+  }
+  const accepted=new Set();
   // Compare shared geometry once per saved confirmation, not once per finding.
   if(work.spaceIgnored?.length){for(const key of work.spaceIgnored){try{const saved=JSON.parse(key);if(saved?.version===3&&JSON.stringify(saved.context)===context)accepted.add(JSON.stringify(saved.issue));}catch{ /* Legacy malformed confirmation is simply inactive. */ }}}
-  const result=issues.map(v=>({...v,ignored:accepted.has(JSON.stringify(v))}));lastReview={key,issues:clone(result)};return result;
+  return clone(lastReview.issues.map(v=>({...v,ignored:accepted.has(JSON.stringify(v))})));
  }
  function explainIssue(issue){
   const groups={ceiling:['吊顶空间','核对真实截面、平顶板厚、发光位置和家具实体；安装与开启运动仍需结合现场核对。'],'dishwasher-opening':['洗碗机开启包络','核对完全开启所需的前伸空间和高度；当前开合状态不缩小保守包络，真实折叠连杆轨迹需人工复核。'],'dishwasher-side':['洗碗机出气预留','出气口侧面距墙／柜至少 200 mm；整侧机身保守检查，旋转镜像后随产品变化。'],'dishwasher-overhead':['洗碗机上方安装','核对台面至吊柜底 650 mm；机顶空间不足 50 mm 时，机门须比吊柜前沿向外错开大于 80 mm。'],'dishwasher-support':['台面承托与凸出','核对实际同高台面、孔洞及缺口；闭合机身需有承托，开门可能凸出台面。'],'dishwasher-spec':['洗碗机规格待核对','尺寸已缩放，原图安装标注不随模型缩放；按真实产品规格复核。'],model:['模型待修复','先修复模型数据，再核对实体与开启范围。'],outside:['房间边界','定位后核对折角与凹口，调整占地或家具尺寸。'],wall:['墙体占用','核对墙面净距；移动或缩小家具，不能移动锁定结构。'],overlap:['实体重叠','结合实际高度、嵌合位和安装方式核对；必要时调整位置或尺寸。'],door:['开门范围','核对门扇方向及完整开启范围，调整家具或合法的门扇设置。'],swingwall:['开门范围','核对门铰位置、开启方向和墙体；不要以删除结构消除提示。'],swings:['开门范围','核对两扇门同时打开的情况。'],beam:['竖向实体','核对家具底顶和梁底顶；未知高度需补录后复验。'],pipe:['管道实体','核对管径、板件切孔和实际安装；切孔不代表运动范围已通过。'],passage:['候选间隙','该结果是水平／竖向扫描的局部间隙，不是连续通行路径；结合实际动线核对。'],front:['操作预留','核对正面朝向、打开或操作所需空间。'],cabinetdoor:['柜门开启','核对生产门板扫掠与实际安装高度。'],cabinetdrawer:['抽屉开启','核对生产抽屉完全拉出范围。'],drawerfront:['操作预留','核对抽屉拉出后的地面操作空间。']};

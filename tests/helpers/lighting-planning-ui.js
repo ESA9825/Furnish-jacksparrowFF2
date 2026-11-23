@@ -4,7 +4,7 @@ module.exports=async(p,V)=>{
  const call=(name,args={})=>p.evaluate(({name,args})=>FurnishMcp.execute(name,args),{name,args});
  if(V.mode!=='desktop'){const source=require('../../scripts/workspace-files.cjs').create(require('node:path').resolve(__dirname,'../..')).read().workspace;source.work={[source.planId]:source.work[source.planId]};source.designs=source.designs.filter(d=>d.id===source.activeDesigns?.[source.planId]);source.customPlans=source.customPlans.filter(d=>d.id===source.planId);source.updatedAt=Date.now();await p.evaluate(async source=>{try{localStorage.setItem('huxing-design-v'+source.v,JSON.stringify(source));}catch{}await FurnishStorage.write(source);},source);await p.reload();await p.waitForFunction(()=>!repositoryBooting);}
  if(V.mode!=='desktop'){
-  const menu=p.locator('#showMenu'),summary=menu.locator('summary');
+  const menu=p.locator('#scene-light-menu'),summary=menu.locator('summary');
   const showMenu=async open=>{if(await menu.evaluate(e=>e.open)!==open)await summary.click();};
   const ids=await p.evaluate(()=>{const entries=libAll().flatMap(c=>c.items),soft=createCatalogFurniture(entries.find(it=>it[0]==='surface_light'),8410,4168)[0],night=createCatalogFurniture(entries.find(it=>it[0]==='panel_bull_g12'),5000,5425)[0];Object.assign(soft,{w:800,d:450,h:50,mountHeight:2590});Object.assign(night,{panelVariant:'nightlight',mountHeight:300});mutate(()=>{state.furniture.push(soft,night);state.scene3d=FurnishDesign.sceneSettings({night:true,lamps:true,labels:false,wallNumbers:false,clearances:false});});return [soft.id,night.id];});
   await p.evaluate(async()=>{await setView('3d');await View3D.automationCamera({view:'3d',mode:'orbit',horizontalFov:70,position:{x:8400,y:6100,z:1660},target:{x:8400,y:3500,z:1750}});});await V.screenshot('main-lights');
@@ -30,7 +30,7 @@ module.exports=async(p,V)=>{
   await nightButton.click({trial:true});await mainButton.click({trial:true});
   assert.equal(await nightButton.getAttribute('aria-pressed'),'true');
   assert.equal(await mainButton.getAttribute('aria-pressed'),'false');
-  await menu.locator('.showpop').evaluate(e=>Promise.all(e.getAnimations().map(animation=>animation.finished)));
+  await menu.locator('.scene-light-options').evaluate(e=>Promise.all(e.getAnimations().map(animation=>animation.finished)));
   await V.screenshot('narrow');
   assert.deepEqual(errors,[]);return ['independent light controls, undo/redo, preview signature change, cache save/reload and narrow viewport'];
  }
