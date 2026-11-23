@@ -277,6 +277,10 @@
   </section>
 
   <aside class="lib">
+    <div id="catalog-tabs" role="tablist" aria-label="家具库" data-en-aria="Furniture library">
+      <button type="button" class="btn" id="catalog-add-tab" role="tab" aria-selected="true" aria-controls="lib" data-mode="add" data-en="Add furniture">添加家具</button>
+      <button type="button" class="btn" id="catalog-placed-tab" role="tab" aria-selected="false" aria-controls="lib" tabindex="-1" data-mode="placed" data-en="Placed furniture">已摆放</button>
+    </div>
     <div id="lib3d" class="only3d">
       <h4 data-en="Rooms · click to fly there">房间 · 点击飞到该房间</h4>
       <div id="roomList"></div>
@@ -290,7 +294,6 @@
         <option value="all" data-collection="all">产品库</option>
         <option value="favorites" data-collection="favorites">本机收藏</option>
         <option value="custom" data-collection="custom">我的家具</option>
-        <option value="current" data-collection="current">当前方案</option>
       </select></label>
       <details id="catalog-filters">
         <summary id="catalog-filter-label">筛选 · 分类 / 用途 / 尺寸</summary>
@@ -305,7 +308,7 @@
       </details>
       <div class="catalog-status"><span id="catalog-result" role="status" aria-live="polite"></span><button class="btn" id="catalog-reset">清除筛选</button></div>
     </div>
-    <div id="lib"></div>
+    <div id="lib" role="tabpanel" aria-labelledby="catalog-add-tab"></div>
   </aside>
 
   <div id="view-workspace">

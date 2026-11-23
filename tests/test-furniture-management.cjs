@@ -10,6 +10,16 @@ assert.equal(rows[0].roomName,'起居室');assert.equal(rows[0].status,'planned'
 assert.equal(C.filter(rows,{room:'room:a',query:'起居室 餐椅'}).length,1);
 assert.equal(C.filter(rows,{room:'room:b',query:'餐椅'}).length,0);
 assert.equal(C.filter(rows,{query:'chair'},v=>v==='餐椅'?'Chair':v).length,2);
+const kitchenItems=C.rows(plan,{furniture:[
+ {...chair,id:'kettle',name:'米家恒温电水壶 2 Pro',type:'custom',brand:'米家',model:'MJJYSH01YM'},
+ {...chair,id:'socket',name:'电热水壶插座预留',type:'panel_bull_g12'},
+ {...chair,id:'heater',name:'电热水器',type:'waterheater'}
+]});
+for(const query of ['热水壶','电水壶','电热水壶','電熱水壺']){
+ assert.deepEqual(C.filter(kitchenItems,{query}).map(r=>r.id),['kettle','socket']);
+}
+assert.deepEqual(C.filter(kitchenItems,{query:'米家 热水壶 mjjysh01ym'}).map(r=>r.id),['kettle']);
+assert.deepEqual(C.filter(kitchenItems,{query:'电水'}).map(r=>r.id),['kettle']);
 assert.equal(C.roomKey({...chair,cx:3000},plan),'room:b');
 assert.equal(C.roomKey({...chair,cx:2999},plan),'room:a');
 assert.equal(C.roomKey({...chair,cx:3001,rot:270,flip:false},plan),'room:b');
@@ -45,4 +55,4 @@ assert.deepEqual(unpacked.current,roundtrip);assert.deepEqual(unpacked.designs[0
 const rules=W.create({makeId:()=> 'unused',colorFor:()=> '#bbbbbb',materials:require('../src/data/catalog.js').materials});
 const restored=rules.restore(clone(roundtrip),plan);assert.deepEqual(rules.restore(clone(restored),plan),restored);
 assert.equal(restored.furniture[0].locked,true);assert.equal(restored.furniture[0].purchaseStatus,'received');assert.equal(L.layerId(restored,'furniture:a'),'furniture-layer');
-console.log('PASS current furniture: room boundaries/holes/islands, explicit IDs, atomic locks/layers/purchasing, metadata preservation, confirmation stability and repeated project recovery');
+console.log('PASS current furniture: room boundaries/holes/islands, search aliases, atomic locks/layers/purchasing, metadata preservation, confirmation stability and repeated project recovery');

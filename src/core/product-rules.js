@@ -681,6 +681,17 @@ function styleRole(f){
  if(['茶几','茶台','梳妆台','书桌','圆桌','边几','餐桌','折叠餐桌','婴儿床','岛台','置物架','书柜'].includes(k))return 'wood';if(k==='地毯')return 'textile';return null;
 }
 function kind(f){const id=typeof f==='string'?f:f?.type;return definition(f)?.kind||(Object.hasOwn(kinds,id)?kinds[id]:'未分类');}
+const kettleNames=/(?:[电電][热熱]?|[热熱])水[壶壺]/g;
+function matchesSearch(fields,query){
+ const text=fields.join(' ').toLowerCase();
+ let alternate;
+ return query.trim().toLowerCase().split(/\s+/).every(word=>{
+  if(text.includes(word))return true;
+  if(!word.match(kettleNames))return false;
+  alternate??=text.replace(kettleNames,'热水壶');
+  return alternate.includes(word.replace(kettleNames,'热水壶'));
+ });
+}
 function supportsAction(f,action){return !f?.obj&&!!definition(f)?.actions?.includes(action);}
 // Exact historical defaults only: personal plan names are never inferred or overwritten.
 function upgradeIdentity(f){return f.type==='washer_littleswan_tg10k60w'&&f.name==='小天鹅 TG10K60W · 10kg'?{...f,name:'小天鹅洗衣机 TG10K60W · 10kg'}:f;}
@@ -1027,6 +1038,6 @@ function coveLightLayout(f){
  const w=f.w,d=f.d,h=height(f),t=P.wall;if(![w,d,h].every(Number.isFinite)||w<100||d<25||h<P.minHeight)throw Error('反射灯槽至少100×25×20mm');
  return {w,d,h,t,base:value(f,'mountHeight'),innerWidth:w-2*t,stripWidth:P.stripWidth,emitterHeight:P.emitterHeight,emitterZ:0,level:value(f,'lightPreviewLevel')/100,color:P.colors[value(f,'lightKelvin')],candela:w/1000*P.previewCandelaPerM*value(f,'lightPreviewLevel')/100};
 }
-const api={coveringRetrofit,softCoveringOnly,dryingRackLayout,editDryingRackDrop,styleAppearance,styleRole,cabinetAppearance,coveLightLayout,panelVariants,panelOptions,xiaomiPanelVariants,panelSpec,panelSpatialKey,editPanelVariant,cabinetService,cabinetBuilder,inventoryArrayDefaults,inventoryArrayConfig,inventoryArraySpacing,arrayQuantityEdit,clearPaperArray,paperArrayConfig,paperArrayLayout,editPaperArray,cabinetDetail,cabinetTiers,cabinetDrawerBox,cabinetBackPanel,cabinetEntry,bottomMode,bottomHeight,editBottomHeight,elevationOriginal,elevationSource,elevationDelta,elevatedRange,elevatedParts,elevatedZones,circulatorLayout,catalogMinimum,artGlass,artGlassPatterns,gardenLayout,windowLining,stoolStack,cabinetDoorLimits,kind,kinds,supportsAction,upgradeIdentity,wardrobeHanging,coveringLayout,coverSpecs,pocketLayout,cabinetSideClosure,cabinetTopClosure,cabinetConstruction,slidingGlass,slidingResizeFrame,resizeSliding,slidingLayout,slidingTracks,slidingCorner,downlightSpec,editDownlight,manifoldLayout,editManifold,resizeManifold,footprintMinimum,dimensions,assemblyBounds,pegboardAssembly,planBodyOutline,planOutline,floorStanding,teaBarDoors,teaBarOpeningZones,sinkBodyDepth,vesselSink,ceiling,types,fields,definition,supports,family,value,height,cabinetSpec,cabinetBase,validateField,validate,modelError,planFurnitureInput,initial,migrate,pipeBoxSignature,pipeBoxSides,pipeBoxPanels,hobCutout,editHobCutout,foldingTableGeometry,foldingTableOutline,editFoldingTablePose,dishwasherInstallation,sinkInstallation,showerInstallation,hoodInstallation,editHoodGeometry,resizeHoodGeometry,furnitureDatum,floorHost,floorBase,validateDatum,vertical,replacementResizeSource,replacement,serviceCut};
+const api={coveringRetrofit,softCoveringOnly,dryingRackLayout,editDryingRackDrop,styleAppearance,styleRole,cabinetAppearance,coveLightLayout,panelVariants,panelOptions,xiaomiPanelVariants,panelSpec,panelSpatialKey,editPanelVariant,cabinetService,cabinetBuilder,inventoryArrayDefaults,inventoryArrayConfig,inventoryArraySpacing,arrayQuantityEdit,clearPaperArray,paperArrayConfig,paperArrayLayout,editPaperArray,cabinetDetail,cabinetTiers,cabinetDrawerBox,cabinetBackPanel,cabinetEntry,bottomMode,bottomHeight,editBottomHeight,elevationOriginal,elevationSource,elevationDelta,elevatedRange,elevatedParts,elevatedZones,circulatorLayout,catalogMinimum,artGlass,artGlassPatterns,gardenLayout,windowLining,stoolStack,cabinetDoorLimits,kind,kinds,matchesSearch,supportsAction,upgradeIdentity,wardrobeHanging,coveringLayout,coverSpecs,pocketLayout,cabinetSideClosure,cabinetTopClosure,cabinetConstruction,slidingGlass,slidingResizeFrame,resizeSliding,slidingLayout,slidingTracks,slidingCorner,downlightSpec,editDownlight,manifoldLayout,editManifold,resizeManifold,footprintMinimum,dimensions,assemblyBounds,pegboardAssembly,planBodyOutline,planOutline,floorStanding,teaBarDoors,teaBarOpeningZones,sinkBodyDepth,vesselSink,ceiling,types,fields,definition,supports,family,value,height,cabinetSpec,cabinetBase,validateField,validate,modelError,planFurnitureInput,initial,migrate,pipeBoxSignature,pipeBoxSides,pipeBoxPanels,hobCutout,editHobCutout,foldingTableGeometry,foldingTableOutline,editFoldingTablePose,dishwasherInstallation,sinkInstallation,showerInstallation,hoodInstallation,editHoodGeometry,resizeHoodGeometry,furnitureDatum,floorHost,floorBase,validateDatum,vertical,replacementResizeSource,replacement,serviceCut};
 if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishProducts=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

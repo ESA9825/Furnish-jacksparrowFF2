@@ -984,7 +984,12 @@ button.replacement-product:focus-visible{outline:2px solid var(--accent);outline
 .app aside .sidebar-heading{background:var(--panel);padding-left:14px;padding-right:12px;letter-spacing:.02em}
 .app aside .sidebar-heading>b{font-size:12px;font-weight:650}
 .app aside .sidebar-heading .btn{background:transparent;border:0;box-shadow:none;color:var(--muted)}
-.app aside.lib #libTools{top:44px;padding:12px;gap:9px;background:var(--panel);box-shadow:0 6px 16px -12px rgba(30,20,10,.25);border-bottom:1px solid var(--line)}
+.app aside.lib{--library-heading-height:45px;--library-tabs-height:47px}
+#catalog-tabs{position:sticky;top:var(--library-heading-height);z-index:3;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;height:var(--library-tabs-height);padding:6px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+#catalog-tabs .btn{justify-content:center;min-width:0;padding:4px;border:1px solid transparent;border-radius:8px;background:var(--soft);box-shadow:none;color:var(--muted);font-size:12px}
+#catalog-tabs .btn[aria-selected="true"]{background:var(--accent-soft);color:var(--accent-ink);font-weight:650}
+#catalog-tabs .btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.app aside.lib #libTools{top:calc(var(--library-heading-height) + var(--library-tabs-height));padding:12px;gap:9px;background:var(--panel);box-shadow:0 6px 16px -12px rgba(30,20,10,.25);border-bottom:1px solid var(--line)}
 #libTools .lib-search input{border:1px solid var(--line);border-radius:10px;background-color:var(--soft);min-height:36px}
 #libTools .lib-search .btn{border:1px solid var(--line);background:var(--card);color:var(--ink);box-shadow:none}
 #libTools #catalog-use{min-height:34px;border-color:var(--line);border-radius:9px}
@@ -1051,7 +1056,7 @@ button.replacement-product:focus-visible{outline:2px solid var(--accent);outline
 #panel details:not(.cab-object-finder)>summary{font-size:11px;color:var(--muted);line-height:1.6;cursor:pointer}
 #panel .swatches{gap:7px}
 #panel .alert{border-radius:9px;font-size:11px;line-height:1.6}
-@media(max-width:1100px){.app aside.lib #libTools{top:48px}#lib .catalog-item-thumb{height:76px}#panel>section:not(.hero){margin:10px;padding:13px}}
+@media(max-width:1100px){.app aside.lib{--library-heading-height:49px}#lib .catalog-item-thumb{height:76px}#panel>section:not(.hero){margin:10px;padding:13px}}
 @media(prefers-reduced-motion:reduce){#lib .item{transition:none}}
 
 #lib .item .catalog-item-name{font-size:12px}
@@ -1087,7 +1092,8 @@ button.replacement-product:focus-visible{outline:2px solid var(--accent);outline
 #libTools .catalog-source,#libTools .catalog-use-label{display:grid;gap:5px;font-size:11px;color:var(--muted);min-width:0}
 #libTools #catalog-collections{display:block;width:100%;min-height:34px;padding:6px 10px;border:1px solid var(--line);border-radius:9px;background:var(--soft);color:var(--ink)}
 #libTools .catalog-filter-body{display:grid;gap:12px}
-.app aside.lib #libTools:has(#catalog-filters[open]){position:static}
+.app aside.lib #libTools:has(#catalog-filters[open]:not([hidden])){position:static}
+#libTools [hidden]{display:none}
 @media(max-width:1100px){#library-resize{display:none}}
 .scene-measure-overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:15;overflow:hidden}
 .scene-measure-overlay line,.scene-measure-overlay circle,.scene-measure-overlay rect{stroke:#087f75;stroke-width:2;fill:#fff;vector-effect:non-scaling-stroke}

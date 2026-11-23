@@ -19,5 +19,12 @@ assert.deepEqual(extra.find(c=>c.id==='other/custom').items,[custom]);
 assert.deepEqual(extra.find(c=>c.id==='other/general').items,[unknown]);
 assert.deepEqual(C.navigation([]),[]);
 assert.equal(C.navigation([{cat:'灯具',items:[unknown]}])[0].children[0].id,'decor/lighting');
+const kettle=leaf('appliances/cooking').find(it=>it[0]==='kettle_mijia_mjjysh01ym');
+for(const query of ['热水壶','电水壶','电热水壶','電熱水壺']){
+ assert(C.matches(kettle,{query:'米家 '+query,use:'kitchen',maxWidth:273}));
+ assert(!C.matches(kettle,{query,use:'bedroom'}));
+}
+assert(!C.matches(kettle,{query:'热水器'}));
+assert(C.matches(custom,{query:'热水壶'},{name:'自定义電水壺'}));
 for(const g of nav)assert(g.children.length&&g.children.every(c=>c.items.length));
-console.log('PASS complete unique taxonomy, source identity/specs unchanged, lighting/cabinets/sinks by kind, room uses retained, custom/unknown fallbacks');
+console.log('PASS complete unique taxonomy, source identity/specs unchanged, room uses, search aliases and custom/unknown fallbacks');

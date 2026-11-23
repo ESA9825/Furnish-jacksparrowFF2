@@ -21,10 +21,11 @@
   });
  }
  function filter(rows,{room='all',query=''}={},localize=v=>v){
-  const words=query.trim().toLowerCase().split(/\s+/).filter(Boolean),P=project();
+  const P=project(),products=get('FurnishProducts','product-rules');
   return rows.filter(r=>{
-   const f=r.furniture,text=[f.name,localize(f.name),f.brand,f.model,r.roomName,localize(r.roomName),r.layer.name,r.status,P.purchaseStates[r.status]].join(' ').toLowerCase();
-   return (room==='all'||r.room===room)&&words.every(w=>text.includes(w));
+   if(room!=='all'&&r.room!==room)return false;
+   const f=r.furniture,fields=[f.name,localize(f.name),f.brand,f.model,r.roomName,localize(r.roomName),r.layer.name,r.status,P.purchaseStates[r.status]];
+   return products.matchesSearch(fields,query);
   });
  }
  function apply(work,ids,operation){

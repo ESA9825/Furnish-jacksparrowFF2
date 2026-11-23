@@ -16,7 +16,14 @@ async (page,V)=>{
   });
   const screenshot=async name=>{await p.waitForTimeout(450);await p.screenshot({path:V.output('playwright/current-furniture/'+mode+'-'+name+'.png')});};
   const pick=id=>p.locator(`[data-current-check="${id}"]`),action=id=>p.locator(`[data-current-action="${id}"]`);
-  await p.locator('#catalog-collections').selectOption('current');
+  await p.locator('#libSearch').fill('管理椅');
+  await p.getByRole('tab',{name:'已摆放'}).click();
+  check(await p.locator('#libSearch').inputValue()==='管理椅'&&await p.locator('[data-current-row]').count()===2,'switching to placed keeps the search');
+  await p.getByRole('tab',{name:'已摆放'}).press('ArrowLeft');
+  check(await p.getByRole('tab',{name:'添加家具'}).getAttribute('aria-selected')==='true','keyboard switches tabs');
+  check(await p.locator('#libSearch').inputValue()==='管理椅','switching back keeps the search');
+  await p.getByRole('tab',{name:'已摆放'}).click();
+  await p.locator('#catalog-reset').click();
   check(await p.locator('[data-current-row]').count()===4,'all placed furniture including hidden and outside');
   await p.locator('#current-room').selectOption(data.room);check(await p.locator('[data-current-row]').count()===2,'room filter');
   const beforeLocate=await p.evaluate(()=>JSON.stringify(state));await p.locator('[data-current-locate="manage-a"]').click();
@@ -49,13 +56,13 @@ async (page,V)=>{
   await p.locator('#current-bulk summary').click();await p.locator('#current-open-layers').click();await p.locator('#layer-name').fill('管理中新建层');await p.locator('#layer-create').click();await p.locator('#layer-sidebar-close').click();
   check((await p.locator('#current-target-layer option').allTextContents()).includes('管理中新建层'),'layer manager changes refresh assignment options');
   await p.locator('#catalog-reset').click();await p.locator('#current-bulk').evaluate(e=>e.open=false);await screenshot('desktop');
-  await V.waitForCache(p);await p.reload();await p.locator('#catalog-collections').selectOption('current');
+  await V.waitForCache(p);await p.reload();await p.getByRole('tab',{name:'已摆放'}).click();
   check(await p.evaluate(()=>getF('manage-a').purchaseStatus==='ordered'&&FurnishLayers.layerId(state,'furniture:manage-a')==='manage-layer'),'refresh persists metadata');
   await pick('manage-a').check();await p.evaluate(id=>setPlan(id),data.otherPlan);
   check(await p.locator('[data-current-check]:checked').count()===0,'plan switching clears stale checks');
   await p.evaluate(id=>setPlan(id),data.planId);check(await p.locator('[data-current-row]').count()===4,'return to original plan');
   await p.getByRole('button',{name:'3D 场景',exact:true}).click();await p.waitForFunction(()=>is3D()&&!switching);
-  check(await p.locator('#catalog-collections').isVisible(),'current-plan navigation remains available in 3D');
+  check(await p.getByRole('tab',{name:'已摆放'}).isVisible(),'placed tab remains available in 3D');
   await p.locator('[data-current-locate="manage-a"]').click();check(await p.evaluate(()=>selIds().includes('manage-a')),'3D locate');
   await p.getByRole('button',{name:'2D 平面',exact:true}).click();await p.waitForFunction(()=>!is3D()&&!switching);
   await p.setViewportSize({width:390,height:844});
@@ -69,7 +76,7 @@ async (page,V)=>{
   check(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'mobile width');await screenshot('mobile-batch');
   await p.locator('#current-bulk').evaluate(e=>e.open=false);await screenshot('mobile');
   await p.evaluate(()=>setTheme('dark'));await screenshot('mobile-dark');await p.evaluate(()=>setTheme('light'));
-  await p.evaluate(()=>setLang('en'));check((await p.locator('[data-collection="current"]').innerText())==='Current plan','localized navigation');
+  await p.evaluate(()=>setLang('en'));check(await p.getByRole('tab',{name:'Placed furniture'}).isVisible(),'localized navigation');
   check((await p.locator('#current-bulk-label').innerText()).includes('Bulk actions'),'localized bulk actions');
   check(!errors.length,'page errors: '+errors.join('; '));results.push({mode,status:'PASS',errors});await context.close();
  }

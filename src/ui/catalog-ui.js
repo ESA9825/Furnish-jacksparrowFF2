@@ -8,8 +8,29 @@
  density.onclick=()=>{panes.catalogCompact=!panes.catalogCompact;try{localStorage.setItem(PANES,JSON.stringify(panes));}catch{}syncDensity();};$('#catalog-result').parentElement.append(density);syncDensity();
  for(const id of ['catalog-max-w','catalog-max-d'])$('#'+id).oninput=buildLib;
  $('#catalog-use').onchange=e=>{libUI.use=e.target.value;buildLib();};
- $('#catalog-reset').onclick=()=>{resetCatalogFilters();if(libUI.collection==='current')window.FurnishCurrentFurniture?.reset();buildCats();buildLib();};
- $('#catalog-collections').onchange=e=>{if(libUI.collection===e.target.value)return;resetCatalogFilters();libUI.collection=e.target.value;if(libUI.collection==='current')window.FurnishCurrentFurniture?.reset();buildCats();buildLib();};
+ $('#catalog-reset').onclick=()=>{resetCatalogFilters();if(libUI.mode==='placed')window.FurnishCurrentFurniture?.reset();buildCats();buildLib();};
+ $('#catalog-collections').onchange=e=>{
+  if(libUI.collection===e.target.value)return;
+  resetCatalogFilters({keepSearch:true});libUI.collection=e.target.value;buildCats();buildLib();
+ };
+ const tabs=[...document.querySelectorAll('#catalog-tabs [role="tab"]')];
+ function activateTab(tab){
+  if(tab.disabled)return;
+  if(libUI.mode!==tab.dataset.mode){
+   libUI.mode=tab.dataset.mode;
+   if(libUI.mode==='placed')window.FurnishCurrentFurniture?.reset();
+   buildLib();$('aside.lib').scrollTop=0;
+  }
+  tab.focus({preventScroll:true});
+ }
+ tabs.forEach((tab,index)=>{
+  tab.onclick=()=>activateTab(tab);
+  tab.onkeydown=e=>{
+   if(!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
+   e.preventDefault();e.stopPropagation();
+   activateTab(tabs[e.key==='Home'?0:e.key==='End'?tabs.length-1:1-index]);
+  };
+ });
  function details(it){
   const replacementSession=session,c=source(it),h=FurnishCatalogData.itemHeight(it),uses=FurnishCatalogData.itemUses(it).map(id=>{const u=FurnishCatalogData.uses.find(u=>u[0]===id);return tr(u[1],u[2]);}),isArea=FurnishKitchen.isLaundryAreaItem(it),isLaundry=!!c.kitchen?.laundry;
   const row=(label,value)=>`<div><dt>${label}</dt><dd>${esc(value)}</dd></div>`;
@@ -150,7 +171,7 @@
   cancel();const token=startToken;closeFabEditor(false);
   if(token!==startToken||selItems().length!==1||selIds()[0]!==f.id||getF(f.id)!==f)return;
   session={id:f.id,planId:PLAN.id,before:snap(),candidate:null,anchor:'current'};$('#stage').classList.add('replacing');
-  resetCatalogFilters();libUI.collection='all';
+  resetCatalogFilters();libUI.mode='add';libUI.collection='all';
   buildCats();buildLib();
   $('#libTools').insertAdjacentHTML('afterbegin',`<div id="replacement-banner" role="status"><span class="replacement-mode-dot" aria-hidden="true"></span><div><small>替换模式</small><b title="${esc(nm(f.name))}">${esc(nm(f.name))}</b></div><button class="btn" data-replacement-cancel aria-label="退出替换" title="退出替换">${ico('x')}</button></div>`);
   $('#stage').insertAdjacentHTML('beforeend',`<section id="replacement-panel" aria-label="家具替换预览"><div class="replacement-head"><span class="replacement-head-icon" aria-hidden="true">↔</span><div><h3>替换家具</h3><span id="replacement-subtitle">先预览，再决定</span></div><button class="btn" id="replacement-collapse" aria-expanded="true" aria-controls="replacement-content replacement-footer" aria-label="收起预览面板" title="收起预览面板">−</button><button class="btn" data-replacement-cancel aria-label="关闭替换预览" title="关闭替换预览">${ico('x')}</button></div><div class="replacement-body" id="replacement-content"><div id="replacement-info" role="status" aria-live="polite"></div><div id="replacement-picker" hidden></div><fieldset id="replacement-anchor"><legend>定位基准</legend><div class="replacement-anchor-options">${anchorOptions()}</div><p id="replacement-anchor-help"></p></fieldset><div class="replacement-legend"><span><i class="replacement-old-line"></i>原占地</span><span><i class="replacement-new-line"></i>新家具</span></div><details class="replacement-explainer"><summary>替换后会保留什么？</summary><p>保留编号、朝向与分组；使用新品规格、配色和采购资料，采购状态重置为计划购买。背面基准随旋转变化，不自动贴墙或缩放新品。</p></details></div><div class="replacement-footer" id="replacement-footer"><button class="btn" id="replacement-pick">选择家具</button><button class="btn primary" id="replacement-apply" disabled>确认替换<span aria-hidden="true"> →</span></button><small>确认后可一次撤销恢复</small></div></section>`);

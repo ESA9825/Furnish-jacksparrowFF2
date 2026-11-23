@@ -350,9 +350,9 @@ function itemHeight(it){
 }
 const itemIdentity=it=>it[11]??products.definition(it[0])?.identity;
 function matches(it,{query='',maxWidth=0,maxDepth=0,use='all'}={},extra={}){
- const identity=itemIdentity(it)||{};
- const text=[products.kind(it[0]),it[1],...itemUses(it).map(id=>uses.find(u=>u[0]===id).slice(1).join(' ')),identity.brand,identity.model,extra.name,extra.brand,extra.model].join(' ').toLowerCase();
- return query.trim().toLowerCase().split(/\s+/).every(word=>text.includes(word))&&(!maxWidth||it[2]<=maxWidth)&&(!maxDepth||it[3]<=maxDepth)&&(use==='all'||itemUses(it).includes(use));
+ const identity=itemIdentity(it)||{},itemUse=itemUses(it);
+ const fields=[products.kind(it[0]),it[1],...itemUse.map(id=>uses.find(u=>u[0]===id).slice(1).join(' ')),identity.brand,identity.model,extra.name,extra.brand,extra.model];
+ return products.matchesSearch(fields,query)&&(!maxWidth||it[2]<=maxWidth)&&(!maxDepth||it[3]<=maxDepth)&&(use==='all'||itemUse.includes(use));
 }
 const api={materials:MATS,library:LIB,typePrices:TYPE_PRICE,findItem,browseLibrary,navigation,uses,itemUses,itemKey,itemHeight,itemIdentity,matches};
 if(typeof module==='object'&&module.exports)module.exports=api;

@@ -692,7 +692,7 @@ function openCustom(){
       if (!(c.w >= 50 && c.d >= 50 && c.w <= 20000 && c.d <= 20000 && c.h > 0 && c.h <= 20000 && c.price <= 1e7)){ toast(tr('尺寸需在 50–20000 mm 之间', 'Size must be 50–20000 mm')); return false; }
       if((store.custom||[]).length>=500)return toast(tr('家具库最多 500 个自定义条目。','Up to 500 custom catalog entries.'));
       (store.custom ||= []).push(c); save();
-      resetCatalogFilters();libUI.collection='custom';buildCats();buildLib();
+      resetCatalogFilters();libUI.mode='add';libUI.collection='custom';buildCats();buildLib();
       const it = libAll().at(-1).items.at(-1);
       const p = ui.sel?.kind === 'room' ? (b => ({x:(b[0]+b[2])/2, y:(b[1]+b[3])/2}))(bbox(ROOMS.find(r => r.id === ui.sel.id).poly))
         : drawingCenter();
@@ -725,20 +725,26 @@ const itemCard = (it, ci, ii) => { const [t,n,w,d,col,price,,cid] = it, pad = Ma
     <div class="catalog-item-spec"><small>${w}×${d} <span>mm</span></small><small>${tr('高','H')} ${Number.isFinite(h)?h+' mm':tr('待核对','Unknown')}</small></div>
     <div class="catalog-item-price"><span>${tr('参考','Ref.')}</span><strong>${knownPrice?FurnishProject.purchaseMoney(price):tr('未录入','Unknown')}</strong></div><button class="catalog-details" data-catalog-details>${tr('查看规格','Details')} <span aria-hidden="true">↗</span></button></div>`; };
 function syncCatalogControls(){
-  const current=libUI.collection==='current';
-  const replacing=!!window.FurnishCatalog?.active();
+  const placed=libUI.mode==='placed';
+  $('#catalog-placed-tab').disabled=!!window.FurnishCatalog?.active();
+  for(const tab of document.querySelectorAll('#catalog-tabs [role="tab"]')){
+    const selected=tab.dataset.mode===libUI.mode;
+    tab.setAttribute('aria-selected',String(selected));
+    tab.tabIndex=selected?0:-1;
+    if(selected)$('#lib').setAttribute('aria-labelledby',tab.id);
+  }
   $('#catalog-collections').setAttribute('aria-label',tr('浏览范围','Browse collection'));
-  $('#catalog-collections [data-collection="current"]').disabled=replacing;
-  $('#catalog-filters').hidden=current;$('#catalog-use').hidden=current;
+  for(const id of ['catalog-filters','addCustom','catalog-density']){const control=$('#'+id);if(control)control.hidden=placed;}
+  $('#catalog-collections').closest('label').hidden=placed;
   document.querySelectorAll('#catalog-collections [data-collection]').forEach(b=>{
     b.selected=b.dataset.collection===libUI.collection;
-    b.textContent=tr(...({all:['产品库','Product library'],favorites:['本机收藏','Favorites'],custom:['我的家具','My items'],current:['当前方案','Current plan']}[b.dataset.collection]));
+    b.textContent=tr(...({all:['产品库','Product library'],favorites:['本机收藏','Favorites'],custom:['我的家具','My items']}[b.dataset.collection]));
   });
   $('#catalog-reset').textContent=tr('清除筛选','Clear filters');
 }
 function buildLib(){
   syncCatalogControls();
-  if(libUI.collection==='current'){window.FurnishCurrentFurniture?.render();return;}
+  if(libUI.mode==='placed'){window.FurnishCurrentFurniture?.render();return;}
   const q = libUI.q.trim().toLowerCase();
   let count=0;
   let html = catalogUnfiltered() ? recentsHTML() : '';
@@ -943,7 +949,7 @@ addEventListener('afterprint', () => { if (printTheme === 'dark') setTheme('dark
 $('#printPlan').onclick = () => window.print();
 
 /* ======================= 家具库：搜索 / 分类 / 最近使用 ======================= */
-const libUI = {q:'', cat:'all',use:'all',collection:'all'};
+const libUI = {q:'',cat:'all',use:'all',mode:'add',collection:'all'};
 const CATALOG_FAVORITES_KEY='huxing-catalog-favorites';
 let catalogFavorites=(()=>{try{const rows=JSON.parse(localStorage.getItem(CATALOG_FAVORITES_KEY));return new Set(Array.isArray(rows)?rows.filter(v=>typeof v==='string').slice(0,1000):[]);}catch{return new Set();}})();
 function toggleCatalogFavorite(it){
@@ -951,8 +957,12 @@ function toggleCatalogFavorite(it){
  try{localStorage.setItem(CATALOG_FAVORITES_KEY,JSON.stringify([...next]));}catch{toast(tr('收藏保存失败，请检查浏览器存储空间。','Could not save favorites. Check browser storage.'));return;}
  catalogFavorites=next;buildCats();buildLib();
 }
-function catalogUnfiltered(){return libUI.collection==='all'&&libUI.cat==='all'&&libUI.use==='all'&&!libUI.q.trim()&&!$('#catalog-max-w')?.value&&!$('#catalog-max-d')?.value;}
-function resetCatalogFilters(){libUI.cat='all';libUI.use='all';libUI.q='';$('#libSearch').value='';for(const id of ['catalog-max-w','catalog-max-d'])if($('#'+id))$('#'+id).value='';}
+function catalogUnfiltered(){return libUI.mode==='add'&&libUI.collection==='all'&&libUI.cat==='all'&&libUI.use==='all'&&!libUI.q.trim()&&!$('#catalog-max-w')?.value&&!$('#catalog-max-d')?.value;}
+function resetCatalogFilters({keepSearch=false}={}){
+  libUI.cat='all';libUI.use='all';
+  if(!keepSearch){libUI.q='';$('#libSearch').value='';}
+  for(const id of ['catalog-max-w','catalog-max-d'])$('#'+id).value='';
+}
 const RECENT_KEY = 'huxing-recent';
 const recentKey = n => typeof n==='string'?'legacy:'+n:n.catalogId?'catalog:'+n.catalogId:n.type+':'+n.name;
 const findItem = n => { const matches=[];libAll().forEach((c,ci)=>c.items.forEach((it,ii)=>{if(typeof n==='string'?it[1]===n:n.catalogId?it[7]===n.catalogId:it[0]===n.type&&it[1]===n.name)matches.push([ci,ii]);}));return matches.length===1?matches[0]:null; };
@@ -1140,7 +1150,7 @@ $('#fileIn').onchange = e => {
   });
   e.target.value = '';
 };
-$('#libSearch').addEventListener('input', e => { libUI.q = e.target.value; if(libUI.collection==='current')window.FurnishCurrentFurniture?.filterChanged();else buildLib(); });
+$('#libSearch').addEventListener('input', e => { libUI.q = e.target.value; if(libUI.mode==='placed')window.FurnishCurrentFurniture?.filterChanged();else buildLib(); });
 // 横竖屏切换、表头换行等都会改变画布尺寸；尺寸从 0 恢复（如首次布局）时重新适应窗口
 // 其余尺寸变化（收起 / 展开面板等）保持画面中心不动
 let lastW = 0, lastH = 0;

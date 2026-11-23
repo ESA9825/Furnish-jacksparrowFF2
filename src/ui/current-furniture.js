@@ -3,7 +3,7 @@
  'use strict';
  const C=FurnishFurnitureManagement,L=FurnishLayers,P=FurnishProject;
  let owner=null,room='all',checked=new Set(),bulkOpen=false,error='',targetLayer='0',targetStatus='planned';
- const active=()=>libUI.collection==='current';
+ const active=()=>libUI.mode==='placed';
  function selectionChanged(){if(active()){const ids=new Set(selIds());document.querySelectorAll('#lib [data-current-row]').forEach(row=>row.classList.toggle('located',ids.has(row.dataset.currentRow)));}}
  const statusName=id=>tr(P.purchaseStates[id],{planned:'To select',confirmed:'Confirmed',ordered:'Ordered',received:'Received'}[id]);
  function reset(){room='all';checked.clear();bulkOpen=false;error='';}
@@ -30,7 +30,7 @@
  }
  function render(){
   if(!active())return;
-  if(owner!==PLAN.id){owner=PLAN.id;reset();libUI.q='';$('#libSearch').value='';targetLayer='0';targetStatus='planned';}
+  if(owner!==PLAN.id){owner=PLAN.id;reset();targetLayer='0';targetStatus='planned';}
   const plan=P.effectivePlan(PLAN,state),all=C.rows(plan,state),rooms=[...(plan.rooms||[]).map(r=>({id:'room:'+r.id,name:state.rooms?.[r.id]?.name||r.name})),{id:'unassigned',name:tr('未归属房间','Unassigned')},{id:'outside',name:tr('户型外','Outside plan')}];
   if(!rooms.some(r=>r.id===room))room='all';
   const rows=C.filter(all,{room,query:libUI.q},nm),ids=new Set(rows.map(r=>r.id));checked=new Set([...checked].filter(id=>ids.has(id)));
@@ -54,7 +54,7 @@
      <button class="btn" id="current-open-layers">${tr('管理／新建图层','Manage / create layers')}</button>
     </div></details>
    <p id="current-error" class="project-error" role="alert">${esc(error)}</p>
-   ${rows.length?rooms.map(g=>{const items=rows.filter(r=>r.room===g.id);return items.length?`<section class="current-room-group"><h4>${esc(nm(g.name))} · ${items.length}</h4>${items.map(row).join('')}</section>`:'';}).join(''):`<p class="hint">${tr(all.length?'当前筛选下没有家具，试试全部房间或清除搜索。':'当前方案还没有家具，可从“全部产品”添加。',all.length?'No matching items. Try all rooms or clear search.':'This plan has no furniture. Add some from All items.')}</p>`}
+   ${rows.length?rooms.map(g=>{const items=rows.filter(r=>r.room===g.id);return items.length?`<section class="current-room-group"><h4>${esc(nm(g.name))} · ${items.length}</h4>${items.map(row).join('')}</section>`:'';}).join(''):`<p class="hint">${tr(all.length?'当前筛选下没有家具，试试全部房间或清除搜索。':'当前方案还没有家具，可切换到「添加家具」。',all.length?'No matching items. Try all rooms or clear search.':'This plan has no furniture. Switch to Add furniture.')}</p>`}
   </section>`;
   $('#catalog-result').textContent=tr(`${rows.length} / ${all.length} 件家具`,`${rows.length} / ${all.length} items`);
   $('#current-room').onchange=e=>{room=e.target.value;filterChanged();};
