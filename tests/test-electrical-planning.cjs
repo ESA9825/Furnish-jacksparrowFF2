@@ -20,6 +20,17 @@ const low={...panel,cx:500,cy:2000,mountHeight:100},high={...low,cx:2000};assert
 const unknown=clone(floors);delete unknown.floorFinish.areas.high.finishedZ;assert.equal(E.surfaces(unknown,work,high).length,0,'unknown floor height must not invent a cabinet mounting face');
 const faces=E.surfaces({walls:[[0,0,1000,200]]},work,panel);assert.equal(faces.filter(s=>s.kind==='wall').length,4);
 assert.equal(E.points(work)[0].number,'E01');assert.equal(E.points(work)[0].center,543);
+assert.equal(E.pointName(' E35 · N3：玄关入户三键 · N3 · 与通道端 E15 双控 '),'玄关入户三键 · 与通道端 E15 双控');
+assert.equal(E.pointName('E35入户三键 · 公牛 G12 / 客厅 L90'),'入户三键 · 公牛 G12 / 客厅 L90');
+assert.equal(E.pointName('E27灯头 / 16A'),'灯头 / 16A');
+assert.equal(E.pointName('E27A 型号'),'E27A 型号');
+assert.equal(E.displayName({...panel,name:'E35 · 玄关插座'}),'玄关插座');
+assert.equal(E.displayName({...cabinet,name:'E35 · 玄关柜体'}),'E35 · 玄关柜体');
+assert.equal(E.renamePoint('插座','E60 · 玄关充电'),'玄关充电');
+assert.equal(E.renamePoint('N3 · 地脚灯','N4 · 夜间地脚灯'),'夜间地脚灯');
+assert.equal(E.renamePoint('E35入户三键','入户三键'),'E35入户三键');
+assert.equal(E.renamePoint('E35入户三键','E32 · Entry switches'),'E35 · Entry switches');
+assert.throws(()=>E.renamePoint('插座','E60 · N3'),/请输入用途／名称/);
 assert.equal(E.purpose('E25 · 主卧普通床头柜电源 · 台灯及充电',['主卧']),'普通床头柜电源 · 台灯及充电');
 assert.equal(E.purpose('N3 · 次卧下床落脚灯 · N3 · 独立感应',['次卧']),'下床落脚灯 · 独立感应');
 assert.equal(E.purpose('E18 · 原独立进线 E1 · 次卧备用',['厨房']),'原独立进线 E1 · 次卧备用');
@@ -38,6 +49,9 @@ for(const order of [switches,[...switches].reverse()]){
 }
 assert(!E.controlPairs([...switches,switchPoint('duplicate','E67 · 另一开关')]).links.has(wired.id));
 assert(!E.controlPairs([wired,{...wiredPeer,name:'门口开关'}]).links.size);
+const renamedPeer={...wiredPeer,name:E.renamePoint(wiredPeer.name,'E02 · 过道开关')};
+assert.equal(E.pointName(renamedPeer.name),'过道开关');
+assert.deepEqual(E.controlPairs([renamedPeer,wired]).links.get(wired.id),new Map([[wiredPeer.id,new Set(['wired'])]]));
 assert(!E.controlPairs([wired,{...wiredPeer,panelVariant:'socket5-diagonal'}]).links.size);
 assert(!E.controlPairs([{...wired,name:'E29 · 不与 E67 双控'},wiredPeer]).links.size);
 assert.deepEqual(E.controlPairs([smart,{...smartPeer,name:'E28 · 与 E27 两地控制'}]).links.get(smartPeer.id).get(smart.id),new Set(['mijia']));

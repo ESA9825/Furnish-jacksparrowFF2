@@ -149,7 +149,7 @@ globalThis.FurnishWiringUI=(()=>{
   const {points,length,reversals}=geometry(route),existing=routes().some(r=>r.id===route.id);
   const formRows=route.points.map((p,i)=>{
    const f=p.furnitureId&&getF(p.furnitureId),q=points[i];
-   const link=p.furnitureId?`<small>${esc(f?.name||'原点位已删除')}${q.unresolved?' · 待核对':''}</small><button class="btn" type="button" data-wire-detach="${i}">解除关联</button>`:'';
+   const link=p.furnitureId?`<small>${esc(E.displayName(f)||'原点位已删除')}${q.unresolved?' · 待核对':''}</small><button class="btn" type="button" data-wire-detach="${i}">解除关联</button>`:'';
    const fields=p.furnitureId?'':Object.keys(axisLabels).map(axis=>`<label>${axisLabels[axis]}<input type="number" step="any" data-wire-axis="${axis}" data-wire-index="${i}" value="${Number.isFinite(p[axis])?p[axis]:''}" required></label>`).join('');
    const riser=p.furnitureId&&!q.unresolved&&points.length>1
     ?`<button class="btn" type="button" data-wire-riser="${i}" aria-label="点 ${i+1} 改为贴墙升降">贴墙升降</button>`:'';

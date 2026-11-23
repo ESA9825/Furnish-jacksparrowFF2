@@ -21,10 +21,23 @@ function assertEditable(before,after){
 }
 const pointNumber=i=>'E'+String(i+1).padStart(2,'0');
 const leadingCode=/^([EN]\d+)(?:\s*[·・:：-]\s*|\s+|(?=[\u3400-\u9fff])|$)/i;
-function purpose(name,roomNames=[]){
- let label=name.trim();
+function pointName(name){
+ let label=typeof name==='string'?name.trim():'';
  while(leadingCode.test(label))label=label.replace(leadingCode,'');
- label=label.replace(/\s*[·・]\s*N\d+(?=\s*(?:[·・]|$))/gi,'');
+ return label.replace(/\s*[·・]\s*N\d+(?=\s*(?:[·・]|$))/gi,'').trim();
+}
+function displayName(f){return panel(f)?pointName(f.name)||P().kind(f):f?.name;}
+function legacyCode(name){return typeof name==='string'?name.trim().match(leadingCode)?.[1].toUpperCase():undefined;}
+function renamePoint(previous,input){
+ const name=pointName(input);
+ if(!name)throw Error('请输入用途／名称');
+ if(name===pointName(previous))return previous;
+ // The original E code is a lookup key for two-way switch notes in saved plans.
+ const code=legacyCode(previous);
+ return code?.startsWith('E')?`${code} · ${name}`:name;
+}
+function purpose(name,roomNames=[]){
+ const label=pointName(name);
  const room=roomNames.filter(Boolean).sort((a,b)=>b.length-a.length).find(name=>label.startsWith(name));
  return room?label.slice(room.length).replace(/^[\s·・:：-]+/,''):label;
 }
@@ -32,7 +45,7 @@ function controlPairs(furniture){
  const panels=furniture.filter(panel),aliases=new Map(),numbers=new Map(),links=new Map(),references=new Map();
  panels.forEach((f,i)=>{
   numbers.set(f.id,pointNumber(i));
-  const code=f.name.trim().match(leadingCode)?.[1].toUpperCase();
+  const code=legacyCode(f.name);
   if(code?.startsWith('E'))aliases.set(code,aliases.has(code)?null:f);
  });
  for(const f of panels){
@@ -179,6 +192,6 @@ function routeGeometry(route,plan,furniture,byId=new Map(furniture.map(f=>[f.id,
  const length=unresolved||reversals.length?null:path.reduce((sum,p,i)=>i?sum+distance(path[i-1],p):0,0);
  return {points,path,length,unresolved,reversals};
 }
-const api={panel,assertEditable,purpose,controlPairs,points,surfaces,place,nearest,wireKinds,routeLimits,validateRoutes,boxKind,endpointKind,endpoint,routeGeometry,conduitDiameters,conduitDefault,conduitProfile};
+const api={panel,assertEditable,pointName,displayName,renamePoint,purpose,controlPairs,points,surfaces,place,nearest,wireKinds,routeLimits,validateRoutes,boxKind,endpointKind,endpoint,routeGeometry,conduitDiameters,conduitDefault,conduitProfile};
 root.FurnishElectrical=api;if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
