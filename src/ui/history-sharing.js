@@ -46,12 +46,12 @@ function restoreDesignHistory(id){
     toast(tr('已恢复历史记录，可撤销','History restored; undo available'));
   }catch(e){toast(e.message);}
 }
-function snapshot(force,data=state,reason='自动快照',planId=PLAN.id){
+function snapshot(force,data=state,reason='自动快照',planId=PLAN.id,{owned=false}={}){
   if(storageWiping)return;
   const now = Date.now();
   if (!force && now - lastSnap < 30000) return;     // 节流：30 秒内只存一次（force 用于导入/重置等大动作）
   lastSnap = now;
-  hist=FurnishProject.recoveryEntry(hist,planId,data,reason,now);persistHistory();
+  hist=FurnishProject.recoveryEntry(hist,planId,data,reason,now,{owned});persistHistory();
   renderHist();
 }
 function renderHist(){
@@ -87,7 +87,7 @@ function applySharedWork({plan,work}){
 function initializeHistorySharing(){
   hist=FurnishRecoveryStorage.readCache(()=>localStorage.getItem(HIST_KEY));
   historyPersistence=FurnishRecoveryStorage.create({
-    writeCache:json=>localStorage.setItem(HIST_KEY,json),writeStore:entries=>window.FurnishStorage.writeHistory(entries),
+    writeCache:json=>localStorage.setItem(HIST_KEY,json),writeStore:(entries,json)=>window.FurnishStorage.writeHistory(entries,json),
     isCurrent:entries=>!storageWiping&&hist===entries,onChange:error=>historySaveErr=error,
   });
   window.FurnishStorage?.historyReady.then(saved=>{

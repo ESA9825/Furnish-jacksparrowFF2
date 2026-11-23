@@ -265,7 +265,7 @@
   const items=furniture.map((f,index)=>{
    // Only vertical/box derivations are reused. Every pair's current overlap
    // and topological order are still checked after each movement.
-   const lineage=[],seen=new Set();for(let host=f;host&&!seen.has(host.id);host=products().floorHost(host,furniture)){seen.add(host.id);lineage.push(host);}
+   const lineage=[],seen=new Set();for(let host=f;host&&!seen.has(host.id);host=products().floorHost(host,furniture)){seen.add(host.id);lineage.push(products().planFurnitureInput(host));}
    const key=JSON.stringify(lineage);let bounds=orderBoundsCache.get(f);
    if(bounds?.key!==key||bounds.floorKey!==floorKey){const countertop=f.type==='counter'&&f.kitchen&&kitchen().hasCountertop(f)?kitchen().baseElevation(f)+f.kitchen.baseHeight+(plan?products().floorBase(plan,f,furniture).z:0):null;bounds={key,floorKey,vertical:furnitureVerticalBounds(f,plan,furniture),box:G.aabb({...f,rot:f.rot||0}),countertop};orderBoundsCache.set(f,bounds);}
    return {f,index,layer:layer(f),vertical:bounds.vertical,box:bounds.box,countertop:bounds.countertop,after:[],incoming:0};

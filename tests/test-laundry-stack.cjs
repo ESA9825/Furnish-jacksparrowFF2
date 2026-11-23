@@ -40,7 +40,7 @@ const app=fs.readFileSync(require.resolve('../src/app.js'),'utf8');
 const transaction=require('./helpers/layer-context.cjs').createContext(Object.assign({FurnishDownlightModel:require("../src/render/downlight-model.js"),FurnishPartIdentity:require("../src/core/part-identity.js"),syncIdentity:require("../src/core/part-identity.js")},{FurnishKitchen:require('../src/core/kitchen-core.js'),FurnishDesign:D,state:{furniture:[{...washer},{...dryer,mountHeight:0}]},undoStack:[],redoStack:[],save(){this.saved=JSON.stringify(this.state);},snapshot(){}}));
 // Exercise the actual commit hook used by property changes and planar dragging.
 transaction.save=()=>{transaction.saved=JSON.stringify(transaction.state);};
-vm.runInContext(app.match(/function normalizeFurnitureEdit[^\n]+\nfunction commit\(before\)\{[^\n]+/)[0],transaction);
+vm.runInContext(require('./helpers/production-source.cjs').betweenFunctions(app,'normalizeFurnitureEdit','mutate'),transaction);
 const oldWork=JSON.stringify(transaction.state);transaction.state.furniture[1].mountHeight=850;transaction.before=oldWork;
 vm.runInContext('commit(before)',transaction);assert.equal(JSON.parse(transaction.saved).furniture[1].mountHeight,870);assert.equal(JSON.parse(transaction.undoStack[0]).furniture[1].mountHeight,0);
 transaction.before=JSON.stringify(transaction.state);transaction.state.furniture[1].stackHeight=35;
@@ -64,6 +64,7 @@ elements['#fStackHeight'].onchange({target:{value:'0'}});assert.equal(current.st
  const {RoundedBoxGeometry}=await import('data:text/javascript;base64,'+Buffer.from(roundedSource).toString('base64'));
  const modelCtx=require('./helpers/layer-context.cjs').createContext(Object.assign({FurnishDownlightModel:require("../src/render/downlight-model.js"),FurnishPartIdentity:require("../src/core/part-identity.js"),syncIdentity:require("../src/core/part-identity.js")},{THREE,RoundedBoxGeometry,FurnishDesign:D,FurnishCabinet:require('../src/core/cabinet-core.js'),M:v=>v/1000,wx:v=>v/1000,wz:v=>v/1000,rng:()=>()=>.5,mat:(color,o)=>new THREE.MeshStandardMaterial({color,...o}),screenMat:()=>new THREE.MeshStandardMaterial({color:'#1f6f6a'})}));
  Object.assign(modelCtx,{FurnishArmchairModel:require('../src/render/armchair-model.js'),FurnishSlidingOpeningModel:require('../src/render/sliding-opening-model.js'),FurnishManifoldModel:require('../src/render/manifold-model.js'),FurnishBasicFurnitureModel:require('../src/render/basic-furniture-model.js'),FurnishModelPrimitives:require('../src/render/model-primitives.js'),FurnishApplianceModel:require('../src/render/appliance-model.js')});
+ vm.runInContext(fs.readFileSync(require.resolve('../src/render/kitchen-countertop-appliance-model.js'),'utf8'),modelCtx);
  vm.runInContext(html.slice(html.indexOf('const primitives ='),html.indexOf('/* ======================= 建筑')),modelCtx);
  const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-6,`${a} != ${b}`);
  for(const type of ['washer','dryer'])for(const h of [undefined,700,1000])for(const mountHeight of [undefined,0,850])for(const rot of [0,90])for(const flip of [false,true]){
@@ -72,9 +73,9 @@ elements['#fStackHeight'].onchange({target:{value:'0'}});assert.equal(current.st
   model.traverse(o=>{if(o.isMesh)assert.ok(o.geometry.attributes.position.array.every(Number.isFinite));});
  }
  modelCtx.state={furniture:[dryer]};modelCtx.furnG=new THREE.Group();modelCtx.clearGroup=g=>g.clear();modelCtx.opt={furn:true};modelCtx.applyGrow=()=>{};modelCtx.furnitureError=require('../src/core/product-rules.js').modelError;modelCtx.furnitureRenderErrors=new Map();modelCtx.syncModelErrors=()=>{};
- Object.assign(modelCtx,{FurnishProject:{effectivePlan:()=>({})},PLAN:{},FurnishProducts:require('../src/core/product-rules.js'),M:v=>v/1000});
+ Object.assign(modelCtx,{FurnishDrawerContents:require('../src/core/drawer-contents.js'),continuousCove:null,FurnishProject:{effectivePlan:()=>({})},PLAN:{},FurnishProducts:require('../src/core/product-rules.js'),M:v=>v/1000});
  require('./helpers/production-source.cjs').loadSceneFurniture(html,modelCtx,'buildLabels');
- vm.runInContext('buildFurn()',modelCtx);const before=modelCtx.furnG.children[0];
+ vm.runInContext('buildFurn()',modelCtx);const before=modelCtx.furnG.children[0];assert.deepEqual([...modelCtx.furnitureRenderErrors],[]);
  modelCtx.state.furniture=[{...dryer,cx:500}];vm.runInContext('buildFurn()',modelCtx);assert.equal(modelCtx.furnG.children[0],before);near(before.position.y,.85);
  modelCtx.state.furniture=[{...dryer,h:1000,mountHeight:950}];vm.runInContext('buildFurn()',modelCtx);assert.notEqual(modelCtx.furnG.children[0],before);near(new THREE.Box3().setFromObject(modelCtx.furnG.children[0]).max.y,1.95);
  for(const h of [700,900,1000]){

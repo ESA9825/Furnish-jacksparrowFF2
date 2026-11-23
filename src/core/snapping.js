@@ -352,7 +352,7 @@
   }
   const furnitureEntityCache=new WeakMap();
   function orientEntity(e){const ring=e.rings[0]||[],signed=ring.reduce((sum,p,i)=>{const q=ring[(i+1)%ring.length];return sum+p[0]*q[1]-q[0]*p[1];},0),boundary=edges(e.rings);return {...e,edges:signed<0?boundary.map(edge=>({a:edge.b,b:edge.a})):boundary};}
-  function furnitureEntity(f){const key=JSON.stringify(f),old=furnitureEntityCache.get(f);if(old?.key===key)return old.entity;const entity=orientEntity({kind:'furniture',id:f.id,name:f.name,smooth:!!geometry.localOutline(f)&&!(root.FurnishProducts||require('./product-rules.js')).definition(f)?.telescopic?.allMoving,rings:furnitureRings(f)});furnitureEntityCache.set(f,{key,entity});return entity;}
+  function furnitureEntity(f){const key=JSON.stringify((root.FurnishProducts||require('./product-rules.js')).planFurnitureInput(f)),old=furnitureEntityCache.get(f);if(old?.key===key)return old.entity;const entity=orientEntity({kind:'furniture',id:f.id,name:f.name,smooth:!!geometry.localOutline(f)&&!(root.FurnishProducts||require('./product-rules.js')).definition(f)?.telescopic?.allMoving,rings:furnitureRings(f)});furnitureEntityCache.set(f,{key,entity});return entity;}
   function entities({rects=[],furniture=[]}){
     const out=rects.map((r,i)=>({kind:'wall',id:i,name:'',rings:[[[r[0],r[1]],[r[2],r[1]],[r[2],r[3]],[r[0],r[3]]]]}));
     const walls=out.map(e=>{

@@ -85,10 +85,11 @@ function boundedBodies(f,plan,furniture){
   return bounded;
 }
 function volumeOverlap(a,b,plan,furniture){
+  return boundedBodiesOverlap(a,b,boundedBodies(a,plan,furniture),boundedBodies(b,plan,furniture));
+}
+function boundedBodiesOverlap(a,b,left,right){
   const M=root.FurnishCabinetMotion||require('./cabinet-motion.js');
-  // Resolve live dependencies before reusing bounds of an immutable parts
-  // array. Height clipping can only shrink the full projection.
-  const left=boundedBodies(a,plan,furniture),right=boundedBodies(b,plan,furniture);
+  // Height clipping can only shrink the full projection.
   return left.some(({part:A,box:X})=>right.some(({part:B,box:Y})=>
     X[2]>Y[0]&&Y[2]>X[0]&&X[3]>Y[1]&&Y[3]>X[1]&&verticalOverlap(a,b,[A.vertical,B.vertical])&&
     polygonOverlap(M.section(A,B.vertical),M.section(B,A.vertical),A.actualBoard||B.actualBoard?1e-6:5)));
@@ -116,9 +117,11 @@ function collisions(furniture,plan,focusId){
   const C=root.FurnishCabinet||(typeof require==='function'?require('./cabinet-core.js'):null);
   const M=root.FurnishCabinetMotion||require('./cabinet-motion.js');
   const box = L.map(f=>{if(!P.definition(f)?.telescopic)return aabb(f);const [x0,y0,x1,y1]=bbox(footprints(f,{plan,furniture}).flat());return {hw:Math.max(f.cx-x0,x1-f.cx),hh:Math.max(f.cy-y0,y1-f.cy)};});
-  const vertical=[],bases=[];
+  const vertical=[],bases=[],solids=[];
   const range=i=>Object.hasOwn(vertical,i)?vertical[i]:(vertical[i]=D?.furnitureVerticalBounds(L[i],plan,furniture));
   const base=i=>bases[i]??=P.floorBase(plan,L[i],furniture);
+  // All pairs in this synchronous scan read the same poses and scene.
+  const solid=i=>solids[i]??=boundedBodies(L[i],plan,furniture);
   const openHood=f=>P.definition(f)?.hoodMotion&&P.value(f,'hoodPanelOpen');
   const fitsBay=(a,b)=>(!P.definition(a)?.fridgeMotion&&!P.definition(b)?.fridgeMotion&&(C.fridgeFitsBay(a,b)||C.fridgeFitsBay(b,a)))||C.hoodBayFit(a,b)?.fits||C.hoodBayFit(b,a)?.fits;
   // Keep the original pair orientation and ordering for focused results.
@@ -131,7 +134,7 @@ function collisions(furniture,plan,focusId){
       if (tuckedSeatPair(a,b)) continue;
       if(!verticalOverlap(a,b,[range(i),range(j)]))continue;
       if(C&&!openHood(a)&&!openHood(b)&&fitsBay(a,b)&&(!plan||base(i).known&&base(j).known&&Math.abs(base(i).z-base(j).z)<1e-6))continue;
-      if (M.supportsSolids(a)||M.supportsSolids(b)||P.family(a,'pipe-box')||P.family(b,'pipe-box')?volumeOverlap(a,b,plan,furniture):obbOverlap(a,b)) out.push([a.id, b.id]);
+      if (M.supportsSolids(a)||M.supportsSolids(b)||P.family(a,'pipe-box')||P.family(b,'pipe-box')?boundedBodiesOverlap(a,b,solid(i),solid(j)):obbOverlap(a,b)) out.push([a.id, b.id]);
     }
   }
   return out;

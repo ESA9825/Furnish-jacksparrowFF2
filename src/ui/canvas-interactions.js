@@ -88,7 +88,7 @@ function directionalMeasurements(f=selItems()){
   // Include the full work, selected values and temporary opening geometry:
   // moving a neighbour, opening a door or restoring data must never reuse gaps.
   // View translation/scale do not change millimetre distances.
-  const members=Array.isArray(f)?f:[f],rotation=FurnishDrawing.clearanceFrame(members,drawingRotation()).rotation,plan=canvasEffectivePlan(),key=JSON.stringify([WALLS,WINS,members,ui.layers.furn,rotation]);
+  const members=Array.isArray(f)?f:[f],rotation=FurnishDrawing.clearanceFrame(members,drawingRotation()).rotation,plan=canvasEffectivePlan(),key=JSON.stringify([WALLS,WINS,members.map(FurnishProducts.planFurnitureInput),ui.layers.furn,rotation]);
   if(directionalMeasurementCache?.key!==key||directionalMeasurementCache.plan!==plan)directionalMeasurementCache={key,plan,value:FurnishSnapping.directional(members,{...measurementScene(),rotation})};
   return directionalMeasurementCache.value;
 }
@@ -190,7 +190,8 @@ function endDrag(cancel){
       if (f){ const ox = f.cx, oy = f.cy; pushOut(f,d.kind==='move'?d.axis:undefined); if (Math.hypot(f.cx-ox, f.cy-oy) > 60) toast(tr('已自动避开墙体', 'Moved off the wall automatically')); }
     }
     if(d.kind==='move'&&d.ids.length===1){const f=getF(d.id);if(f&&!f.obj&&FurnishProducts.definition(f)?.ceilingPanel){try{Object.assign(f,FurnishCeiling.fitCeilingPanel(FurnishProject.effectivePlan(PLAN,state),f,state.furniture));}catch(error){toast(error.message);}}}
-    try{commit(d.before,true,{sceneFirst:true});}catch(error){toast(error.message);} renderAll({sceneFirst:true});
+    try{commit(d.before,true,{sceneFirst:true,furnitureEdit:true});}catch(error){toast(error.message);return;}
+    renderAll({sceneFirst:true});
     if(['size','kitchen-run','kitchen-extension','kitchen-divider','assembly-size'].includes(d.kind)&&d.resizeError)toast(d.resizeError);
   }
 }
@@ -407,7 +408,9 @@ function onPointerEnd(e){
   // A release can carry a newer position than the last pointermove.
   if(e.type==='pointerup'&&drag?.kind==='measure')processCanvasPointerMove(e);
   if(e.type==='pointerup'&&drag?.kind==='move'&&Number.isFinite(e.clientX)&&Number.isFinite(e.clientY)){
-    flushCanvasPointer(true);processCanvasPointerMove(e);
+    const last=drag.pointer;
+    flushCanvasPointer(true);
+    if(!last||e.clientX!==last.clientX||e.clientY!==last.clientY||e.shiftKey!==last.shiftKey||e.altKey!==last.altKey)processCanvasPointerMove(e);
   }
   endDrag(e.type === 'pointercancel');
 }

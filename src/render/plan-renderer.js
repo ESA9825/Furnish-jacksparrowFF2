@@ -291,8 +291,8 @@ function canvasEffectivePlan(){
  // JSON per pointer frame. Custom work does not read the base PLAN.
  const a=state.architecture,base=a?null:PLAN,sourceDXF=a?.draft?.sourceDXF,baseDXF=base?.customDraft?.sourceDXF;
  const architecture=a?{...a,draft:{...a.draft,sourceDXF:undefined}}:a,baseInput=base?.customDraft?{...base,customDraft:{...base.customDraft,sourceDXF:undefined}}:base;
- const key=JSON.stringify([baseInput,architecture,state.rooms,state.demolished,state.open,state.ceilingHeight,state.wallFinishes,state.floorFinishes,state.wallTiling,state.ceilings,state.tileGrout,state.furnitureDatum,state.furniture]);
- if(canvasPlanCache?.key!==key||canvasPlanCache.sourceDXF!==sourceDXF||canvasPlanCache.baseDXF!==baseDXF)canvasPlanCache={key,sourceDXF,baseDXF,plan:FurnishProject.effectivePlan(PLAN,state)};
+ const key=JSON.stringify([baseInput,architecture,state.rooms,state.demolished,state.open,state.ceilingHeight,state.wallFinishes,state.floorFinishes,state.wallTiling,state.ceilings,state.tileGrout,state.furnitureDatum,state.furniture.map(FurnishProducts.planFurnitureInput)]);
+ if(canvasPlanCache?.key!==key||canvasPlanCache.plan.furniture!==state.furniture||canvasPlanCache.sourceDXF!==sourceDXF||canvasPlanCache.baseDXF!==baseDXF)canvasPlanCache={key,sourceDXF,baseDXF,plan:FurnishProject.effectivePlan(PLAN,state)};
  if(canvasPlanScope)canvasPlanScope.plan=canvasPlanCache.plan;
  return canvasPlanCache.plan;
 }
@@ -612,7 +612,7 @@ function renderAll({sceneFirst=false,replan=false,fit=false}={}){
   withCanvasPlan(()=>{
     if(fit)fitView({redraw:false});
     renderGrid(); renderRooms(); renderFurn(); renderWalls(); renderLabels(); renderDims(); renderMeasure(); renderNotes(); renderSel();
-    renderPanel(); updateHeader(); renderDesignBar();
+    renderPanel({sceneFirst}); updateHeader(); renderDesignBar();
   });
   if(replan)window.View3D?.replan();else window.View3D?.sync();
   window.FurnishWorkspace?.afterRender();

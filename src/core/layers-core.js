@@ -50,7 +50,7 @@
  }
  function assertEditable(before,after){
   // Explicit layer management and whole-project restoration have separate semantics.
-  if(onlyChange(before,after))return;
+  if(JSON.stringify(before.objectLayers)!==JSON.stringify(after.objectLayers)&&onlyChange(before,after))return;
   const keys=new Set([...(before.furniture||[]).map(furnitureKey),...Object.keys(before.objectLayers?.assignments||{})]);
   if(list(before).find(l=>l.id==='0')?.locked){
    for(const id of Object.keys(before.rooms||{})){keys.add('floor:'+id);keys.add('roomCeiling:'+id);}

@@ -672,7 +672,17 @@ function clipAxis(poly,axis,edge,sign){const out=[];for(let i=0;i<poly.length;i+
 function adaptObstacles(f,plan,list=[]){
  const next=clone(f),k=next.kitchen,notes=[];if(!k||f.locked)return {furniture:next,notes};delete k.obstacleFit;validate(next);if(!k.autoAvoid)return {furniture:next,notes};
  const Z=zones(),G=root.FurnishGeometry||(typeof require==='function'?require('./layout-geometry.js'):null),R=root.FurnishProducts||(typeof require==='function'?require('./product-rules.js'):null),Draft=root.FurnishDraft||(typeof require==='function'?require('./floorplan-core.js'):null),obstacles=[];
- const add=(p,vertical,name,flags={})=>{if(!p?.length)return;obstacles.push({...flags,p:p.map(([x,y])=>local(next,x,y)),vertical:vertical?{...vertical,bottom:vertical.bottom-baseElevation(next),top:vertical.top-baseElevation(next)}:null,name});};
+ const modules=cabinetLayout(next),blocks=cornerBlocks(next),top=outline(next);
+ const moduleCorners=modules.flatMap(m=>{const a=m.rot*Math.PI/180,c=Math.cos(a),s=Math.sin(a);
+  return rectPoly({x:0,y:0,w:m.width,d:m.depth??k.depth}).map(([x,y])=>[m.x+x*c-y*s,m.y+x*s+y*c]);});
+ const [x0,y0,x1,y1]=G.bbox([...top,...moduleCorners,...blocks.flatMap(rectPoly)]);
+ const clearance=1e-7,base=baseElevation(next);
+ const add=(p,vertical,name,flags={})=>{
+  if(!p?.length)return;
+  const polygon=p.map(([x,y])=>local(next,x,y)),[loX,loY,hiX,hiY]=G.bbox(polygon);
+  // The full nominal modules, corner blocks and worktop bound every exact cut.
+  if(hiX<x0-clearance||hiY<y0-clearance||loX>x1+clearance||loY>y1+clearance)return;
+  obstacles.push({...flags,p:polygon,vertical:vertical?{...vertical,bottom:vertical.bottom-base,top:vertical.top-base}:null,name});};
  for(const w of plan.walls||[])add([[w[0],w[1]],[w[2],w[1]],[w[2],w[3]],[w[0],w[3]]],w[5]?.vertical||{bottom:0,top:w[4]==='low'?Math.min(1000,plan.ceilingHeight??2800):plan.ceilingHeight??2800},'墙体');
  for(const b of plan.beams||[]){const v=Draft.beamVertical(b,plan.ceilingHeight??2800);add(b.poly,v?.assumed?null:v,b.name||'房梁');}
  // Automatic trimming must not nest a kitchen into another cabinet's cavity.
@@ -683,12 +693,12 @@ function adaptObstacles(f,plan,list=[]){
   // Stone still uses actual production solids; no fictitious installation margin.
   if(service)for(const p of G.footprints(other))add(p,(root.FurnishDesign||require('./design-core.js')).furnitureVerticalBounds(other),other.name||'后部设备',{rearService:true,bodyOnly:true});
   for(const part of parts)add(part.p,part.vertical,other.name||'障碍物',{skipBody:service});}
- const overlapsHeight=(v,lo,hi)=>v&&Math.min(v.top,hi)-Math.max(v.bottom,lo)>1e-6,depths=[],cuts=[],corners=[],top=outline(next),linked=new Set(list.filter(v=>v.counterLink?.hostId===f.id).map(v=>v.counterLink.module));
+ const overlapsHeight=(v,lo,hi)=>v&&Math.min(v.top,hi)-Math.max(v.bottom,lo)>1e-6,depths=[],cuts=[],corners=[],linked=new Set(list.filter(v=>v.counterLink?.hostId===f.id).map(v=>v.counterLink.module));
  // A role alone does not prove that equipment has been installed. Protect real
  // surface devices too, including freely placed devices without counterLink.
  for(const device of list.filter(v=>isDevice(v)&&onSurface(v,next))){const polys=G.footprints(device).map(poly=>poly.map(p=>local(next,...p)));for(const m of layout(next))if(polys.some(poly=>Z.area(Z.decompose([rectPoly(m),poly],p=>Z.inside(p,rectPoly(m))&&Z.inside(p,poly)))>.01))linked.add(m.index);}
  const usable=obstacles.map(o=>({...o,pieces:Z.decompose([o.p],p=>Z.inside(p,o.p))}));
- for(const m of cabinetLayout(next)){
+ for(const m of modules){
   if(m.role==='empty')continue;const nominal=m.depth??k.depth,angle=m.rot*Math.PI/180,c=Math.cos(angle),s=Math.sin(angle);let back=-nominal/2,serviceBack=-nominal/2,otherBack=-nominal/2;
   for(const o of usable){if(o.skipBody||!overlapsHeight(o.vertical,o.rearService?0:plinth(f),moduleHeight(f,m)))continue;for(const piece of o.pieces){let p=piece.map(([x,y])=>[(x-m.x)*c+(y-m.y)*s,-(x-m.x)*s+(y-m.y)*c]);const inRearHalf=o.rearService&&Math.max(...p.map(v=>v[1]))<=1e-6;for(const [axis,edge,sign] of [[0,-m.width/2,1],[0,m.width/2,-1],[1,-nominal/2,1],[1,nominal/2,-1]])p=clipAxis(p,axis,edge,sign);if(p.length>2&&Math.abs(Z.signed(p))>.01){const edge=Math.max(...p.map(v=>v[1]));back=Math.max(back,edge);if(inRearHalf)serviceBack=Math.max(serviceBack,edge);else otherBack=Math.max(otherBack,edge);}}}
   const depth=Math.round((nominal/2-back)*1e6)/1e6;if(depth>=nominal-1e-5)continue;
@@ -697,7 +707,7 @@ function adaptObstacles(f,plan,list=[]){
   if(depth<avoidanceRules().minDepth-1e-6){notes.push(`模块 ${m.index+1} 剩余柜深不足 ${avoidanceRules().minDepth} mm，保留原柜体，请调整位置`);continue;}
   depths.push({index:m.index,depth:Math.max(avoidanceRules().minDepth,depth),...(rearService?{rearService:true}:{})});
  }
- for(const [index,b] of cornerBlocks(next).entries()){
+ for(const [index,b] of blocks.entries()){
   const sx=cornerSide(next)==='right'?-1:1,sy=index===0?1:-1,min=avoidanceRules().minDepth;let ix=0,iy=0;
   for(const o of usable){if(o.skipBody||!overlapsHeight(o.vertical,o.rearService?0:plinth(f),k.baseHeight))continue;for(const piece of o.pieces){let p=piece.map(([x,y])=>[(x-b.x)*sx+b.w/2,(y-b.y)*sy+b.d/2]);for(const [axis,edge,sign] of [[0,ix,1],[0,b.w,-1],[1,iy,1],[1,b.d,-1]])p=clipAxis(p,axis,edge,sign);if(p.length<3||Math.abs(Z.signed(p))<=.01)continue;
     const xmin=Math.min(...p.map(q=>q[0])),ymin=Math.min(...p.map(q=>q[1])),xmax=Math.max(...p.map(q=>q[0])),ymax=Math.max(...p.map(q=>q[1])),options=[];

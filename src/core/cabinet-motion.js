@@ -69,7 +69,7 @@ result.push({boardIndex:result.length,poly:poly.map(([x,z])=>[(x+offset[0])*1000
  const furnitureSolids=()=>root.FurnishFurnitureSolids||(typeof require==='function'?require('./furniture-solids.js'):null);
  const supportsSolids=f=>!!f&&!f.obj&&!!(furnitureSolids()?.supported(f)||f.kitchen||C().supported(f));
  const validModels=new WeakMap();
- function validModel(f,products){if(!f||typeof f!=='object')return !products.modelError(f);const key=JSON.stringify(f),old=validModels.get(f);if(old?.key===key)return old.valid;const valid=!products.modelError(f);validModels.set(f,{key,valid});return valid;}
+ function validModel(f,products){if(!f||typeof f!=='object')return !products.modelError(f);const key=JSON.stringify(products.planFurnitureInput(f)),old=validModels.get(f);if(old?.key===key)return old.valid;const valid=!products.modelError(f);validModels.set(f,{key,valid});return valid;}
  function solidParts(f,{furniture=[],plan}={}){
   if(!supportsSolids(f))return null;
   if(furnitureSolids()?.supported(f))return furnitureSolids().parts(f,{furniture,plan});

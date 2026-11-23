@@ -20,6 +20,19 @@ const tallTable={id:'table-installation-fixture',type:'coffeetable_yeswood_cherr
 A(P.dishwasherChecks(plan,dish,{furniture:[dish,tallTable]}).checks.filter(c=>c.kind==='dishwasher-overhead').every(c=>c.ok===true),'scaled mesh fixture uses real horizontal panels, not its full envelope');
 // Unknown probe heights cannot be interpreted as a verified empty cavity.
 const host={...fixtures[0],id:'h',h:450,cx:0,cy:0,rot:0},unknown={...probe(host,[0,25,120]),type:'unmodelled',h:undefined,mountHeight:undefined};A(S.cabinetInterior(unknown,{furniture:[host,unknown]}).pending);
+const probes=[-20,0,20].map((x,i)=>({...probe(host,[x,0,75]),id:'p'+i}));
+const scene=[probes[0],host,...probes.slice(1)],expected=[['p0','h'],['h','p1'],['h','p2']];
+const solidParts=M.solidParts;
+let hostReads=0;
+M.solidParts=(f,...args)=>{if(f===host)hostReads++;return solidParts(f,...args);};
+try{
+ A.deepEqual(G.collisions(scene,plan),expected);
+ A.equal(hostReads,1,'resolve each object once across all pairs in a scan');
+ A.deepEqual(G.collisions(scene,plan,host.id),expected,'focused scan preserves pair order');
+ A.equal(hostReads,2);
+ host.cx+=10000;
+ A.deepEqual(G.collisions(scene,plan),[],'a new scan reads the current pose');
+}finally{M.solidParts=solidParts;}
 (async()=>{
  const imports=JSON.parse(fs.readFileSync(require.resolve('../index.html'),'utf8').match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports,T=await import(imports.three),roundedSource=Buffer.from(imports['three/addons/geometries/RoundedBoxGeometry.js'].split(',')[1],'base64').toString().replace(/from (['"])three\1/g,(_,q)=>'from '+q+imports.three+q),Rounded=(await import('data:text/javascript;base64,'+Buffer.from(roundedSource).toString('base64'))).RoundedBoxGeometry;
  for(const source of fixtures){

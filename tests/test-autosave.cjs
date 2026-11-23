@@ -8,8 +8,10 @@ function setup(options={}){
     now:()=>42,
     writeCache:json=>{cacheWrites++; if(options.cacheFails)throw Error('quota'); snapshots.push(JSON.parse(json));},
     dropHistoryCache:()=>{drops++; if(options.dropFails)throw Error('blocked');},
-    writeStore:value=>{
-      snapshots.push(JSON.parse(JSON.stringify(value)));
+    writeStore:(value,json)=>{
+      const snapshot=JSON.parse(json);
+      assert.deepEqual(snapshot,value,'durable storage receives the exact cache snapshot');
+      snapshots.push(snapshot);
       if(options.syncFailure)throw Error('unavailable');
       const task=deferred();tasks.push(task);return task.promise;
     },

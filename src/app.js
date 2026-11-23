@@ -151,7 +151,7 @@ let saveErr = false, savedAt = store.updatedAt||0, storageWiping = false, savePe
 const autosave = FurnishAutosave.create({
   writeCache: json => localStorage.setItem(STORE, json),
   dropHistoryCache: () => localStorage.removeItem('huxing-history'),
-  writeStore: value => {repositoryClient?.schedule(value);return window.FurnishStorage.write(value);},
+  writeStore: (value,json) => {repositoryClient?.schedule(value,json);return window.FurnishStorage.writeSerialized(json);},
   isCurrent: (value, version) => !storageWiping && store === value && store.updatedAt === version,
   onChange: status => { saveErr=status.error; savePending=status.pending; savedAt=status.savedAt; syncSaved(); },
   onFailure: () => toast(tr('自动保存失败，请立即导出项目文件备份。','Autosave failed; export a project file now.')),
@@ -210,8 +210,44 @@ function saveNow(){
 }
 
 const snap = () => JSON.stringify(state);
-function normalizeFurnitureEdit(work,previous){FurnishDesign.normalizeInventoryArrays(work.furniture);if(!(globalThis.FurnishLayers?.onlyChange(previous,work)||globalThis.FurnishTileEditor?.onlyChange(previous,work)||globalThis.FurnishTilePresets?.onlyChange(previous,work)||globalThis.FurnishTileGrout?.onlyChange(previous,work)||(previous.furnitureDatum!==work.furnitureDatum&&FurnishFloorFinish.onlyChange(previous,work))||((previous.wallFinishes||work.wallFinishes)&&FurnishWallFinish.onlyFinishChange(previous,work))||((previous.floorFinishes||work.floorFinishes)&&FurnishFloorFinish.onlyChange(previous,work))||((previous.wallTiling||work.wallTiling)&&FurnishWallTiling.onlyChange(previous,work))||((previous.ceilings||work.ceilings)&&FurnishCeiling.onlyChange(previous,work)))){if(work.furniture.some(f=>f.kitchen?.autoAvoid))FurnishKitchen.normalizeObstacles(work.furniture,FurnishProject.effectivePlan(PLAN,work)); FurnishKitchen.normalize(work.furniture,previous.furniture); FurnishDesign.normalizeLaundryStacks(work.furniture,previous.furniture);} if(work.furniture.some(f=>(Array.isArray(f.cabinet?.columns)&&f.cabinet.columns.some(col=>col?.pegboardHatch?.mode==='auto'))))FurnishCabinet.normalizePegboardHatches(work.furniture,FurnishProject.effectivePlan(PLAN,work),{editable:f=>!furnitureLocked(f)}); }
-function commit(before){ const sceneFirst=arguments[2]?.sceneFirst===true,previous=JSON.parse(before);if(!globalThis.FurnishElectricalUI?.active())normalizeFurnitureEdit(state,previous); if(arguments[1]===true||globalThis.FurnishElectricalUI?.active()){try{globalThis.FurnishElectricalUI?.assertEditable(previous,state);if(arguments[1]===true)FurnishLayers.assertEditable(previous,state);}catch(e){state=previous;renderAll();throw e;}} undoStack.push(before); if (undoStack.length > 150) undoStack.shift(); redoStack.length = 0; save({defer:sceneFirst}); snapshot(false,previous,'编辑前'); }
+function normalizeFurnitureEdit(work,previous,{furnitureEdit=false}={}){
+  FurnishDesign.normalizeInventoryArrays(work.furniture);
+  const onlyFinishEdit=!furnitureEdit&&(globalThis.FurnishLayers?.onlyChange(previous,work)
+    ||globalThis.FurnishTileEditor?.onlyChange(previous,work)
+    ||globalThis.FurnishTilePresets?.onlyChange(previous,work)
+    ||globalThis.FurnishTileGrout?.onlyChange(previous,work)
+    ||(previous.furnitureDatum!==work.furnitureDatum&&FurnishFloorFinish.onlyChange(previous,work))
+    ||((previous.wallFinishes||work.wallFinishes)&&FurnishWallFinish.onlyFinishChange(previous,work))
+    ||((previous.floorFinishes||work.floorFinishes)&&FurnishFloorFinish.onlyChange(previous,work))
+    ||((previous.wallTiling||work.wallTiling)&&FurnishWallTiling.onlyChange(previous,work))
+    ||((previous.ceilings||work.ceilings)&&FurnishCeiling.onlyChange(previous,work)));
+  if(!onlyFinishEdit){
+    if(work.furniture.some(f=>f.kitchen?.autoAvoid))FurnishKitchen.normalizeObstacles(work.furniture,FurnishProject.effectivePlan(PLAN,work));
+    FurnishKitchen.normalize(work.furniture,previous.furniture);
+    FurnishDesign.normalizeLaundryStacks(work.furniture,previous.furniture);
+  }
+  if(work.furniture.some(f=>Array.isArray(f.cabinet?.columns)&&f.cabinet.columns.some(col=>col?.pegboardHatch?.mode==='auto'))){
+    FurnishCabinet.normalizePegboardHatches(work.furniture,FurnishProject.effectivePlan(PLAN,work),{editable:f=>!furnitureLocked(f)});
+  }
+}
+function commit(before,checkLayers=false,{sceneFirst=false,furnitureEdit=false}={}){
+  const previous=JSON.parse(before);
+  try{
+    if(!globalThis.FurnishElectricalUI?.active())normalizeFurnitureEdit(state,previous,{furnitureEdit});
+    globalThis.FurnishElectricalUI?.assertEditable(previous,state);
+    if(checkLayers)FurnishLayers.assertEditable(previous,state);
+  }catch(e){
+    state=previous;
+    store.work[PLAN.id]=state;
+    renderAll();
+    throw e;
+  }
+  undoStack.push(before);
+  if(undoStack.length>150)undoStack.shift();
+  redoStack.length=0;
+  save({defer:sceneFirst});
+  snapshot(false,previous,'编辑前',undefined,{owned:true});
+}
 function mutate(fn,{sceneFirst=false}={}){ const b=snap();try{fn();globalThis.FurnishElectricalUI?.assertEditable(JSON.parse(b),state);FurnishLayers.assertEditable(JSON.parse(b),state);}catch(e){state=JSON.parse(b);renderAll();throw e;}if(snap()===b)return;commit(b,true,{sceneFirst});renderAll({sceneFirst}); }
 function undo(){ if (!undoStack.length) return toast(tr('没有可撤销的操作', 'Nothing to undo')); try{globalThis.FurnishElectricalUI?.assertEditable(state,JSON.parse(undoStack.at(-1)));}catch(e){return toast('已到插座视图的撤销边界；家具布局受到保护');} redoStack.push(snap()); state = JSON.parse(undoStack.pop()); syncCutClipboard();validateSel(); save(); renderAll(); }
 function redo(){ if (!redoStack.length) return; try{globalThis.FurnishElectricalUI?.assertEditable(state,JSON.parse(redoStack.at(-1)));}catch(e){return toast('此重做会修改家具布局，请先退出插座视图');} undoStack.push(snap()); state = JSON.parse(redoStack.pop()); syncCutClipboard();validateSel(); save(); renderAll(); }
@@ -238,9 +274,9 @@ function renderableFurniture(){return state.furniture.filter(f=>{
   if(furnitureRenderErrors.has(f.id))return false;
   // During an actual rigid drag, finite translation/rotation/reflection cannot
   // invalidate a previously checked local model. Position-seeded builders keep
-  // the full pose key; normal renders and release always validate the full f.
+  // the full pose key; normal renders and release validate the world pose.
   const moving=typeof drag!=='undefined'&&drag?.kind==='move'&&drag.ids?.includes(f.id),local=moving&&!FurnishProducts.definition(f)?.solidModel?.positionSeed&&[f.cx,f.cy,f.rot].every(Number.isFinite);
-  const {cx,cy,rot,flip,...model}=f,key=JSON.stringify(local?['drag-local',model]:f);if(renderableFurnitureCache.get(f)===key)return true;
+  const input=FurnishProducts.planFurnitureInput(f),{cx,cy,rot,flip,...model}=input,key=JSON.stringify(local?['drag-local',model]:input);if(renderableFurnitureCache.get(f)===key)return true;
   if(FurnishProducts.modelError(f))return false;
   try{FurnishGeometry.bodyParts(f);renderableFurnitureCache.set(f,key);return true;}catch(e){furnitureRenderErrors.set(f.id,e.message||String(e));return false;}
 });}

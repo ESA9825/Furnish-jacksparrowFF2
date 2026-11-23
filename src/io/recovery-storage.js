@@ -10,11 +10,11 @@
     let generation=0;
     function invalidate(){generation++;}
     function persist(entries){
-      const token=++generation;let cached=true;
-      try{writeCache(JSON.stringify(entries));}catch(e){cached=false;}
+      const token=++generation;let cached=true,json;
+      try{json=JSON.stringify(entries);writeCache(json);}catch(e){cached=false;}
       const current=()=>token===generation&&isCurrent(entries);
       if(current())onChange(!cached);
-      let task;try{task=writeStore(entries);}catch(e){task=Promise.reject(e);}
+      let task;try{task=writeStore(entries,json);}catch(e){task=Promise.reject(e);}
       return Promise.resolve(task).then(()=>{if(current())onChange(false);},()=>{if(current())onChange(!cached);});
     }
     return {persist,invalidate};

@@ -33,9 +33,9 @@
         if(current()) onChange({error, pending, savedAt});
       };
       publish(!cached, !cached);
-      // Invoke immediately: the storage adapter snapshots the mutable workspace.
+      // Share the same immutable snapshot with both durable destinations.
       let task;
-      try { task = writeStore(value); }
+      try { task = writeStore(value,json); }
       catch(e) { task = Promise.reject(e); }
       const result = Promise.resolve(task).then(() => {
         publish(false, false);

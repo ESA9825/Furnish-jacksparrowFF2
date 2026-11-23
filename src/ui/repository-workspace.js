@@ -5,12 +5,16 @@
  async function request(route,method='GET',body,extraHeaders={}){
   const timeout=method==='GET'&&route==='/workspace'?60000:['PUT','POST'].includes(method)&&['/workspace','/storage','/restore'].includes(route)?120000:15000;
   const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),timeout);
-  try{const response=await fetch('/api/furnish'+route,{method,cache:'no-store',signal:abort.signal,headers:{...(body?{'Content-Type':'application/json','X-Furnish-Request':'workspace-v1'}:{}),...extraHeaders},...(body?{body:JSON.stringify(body)}:{})});const value=await response.json();if(!response.ok)throw Object.assign(Error(value.error||'仓库服务不可用'),{status:response.status,...(value.code?{code:value.code}:{}),...(value.supportedWorkspaceVersions?{supportedWorkspaceVersions:value.supportedWorkspaceVersions}:{})});return value;}
+  try{const response=await fetch('/api/furnish'+route,{method,cache:'no-store',signal:abort.signal,headers:{...(body?{'Content-Type':'application/json','X-Furnish-Request':'workspace-v1'}:{}),...extraHeaders},...(body?{body:body instanceof Blob?body:JSON.stringify(body)}:{})});const value=await response.json();if(!response.ok)throw Object.assign(Error(value.error||'仓库服务不可用'),{status:response.status,...(value.code?{code:value.code}:{}),...(value.supportedWorkspaceVersions?{supportedWorkspaceVersions:value.supportedWorkspaceVersions}:{})});return value;}
   catch(e){if(e.name==='AbortError')throw Object.assign(Error('本地文件请求超时（'+timeout/1000+' 秒），请保留浏览器缓存并重试'),{code:'ETIMEDOUT'});throw e;}
   finally{clearTimeout(timer);}
  }
+ function writeWorkspace(snapshot,baseRevision){
+  const body=new Blob(['{"workspace":',snapshot.json,',"baseRevision":',JSON.stringify(baseRevision),'}']);
+  return request('/workspace','PUT',body);
+ }
  async function fingerprint(value){const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(C.text(value)));return Array.from(new Uint8Array(bytes),v=>v.toString(16).padStart(2,'0')).join('');}
- async function cache(value){if(value.v>=3)STORE='huxing-design-v'+value.v;let cached=false;try{localStorage.setItem(STORE,JSON.stringify(value));cached=true;}catch{/* IndexedDB remains available. */}try{await window.FurnishStorage.write(value);return true;}catch{return cached;}}
+ async function cache(value){if(value.v>=3)STORE='huxing-design-v'+value.v;const json=JSON.stringify(value);let cached=false;try{localStorage.setItem(STORE,json);cached=true;}catch{/* IndexedDB remains available. */}try{await window.FurnishStorage.writeSerialized(json);return true;}catch{return cached;}}
  let backendCheck=null,backendRoot=null;
  function ensureBackend(progress=()=>{}){
   if(backendCheck)return backendCheck;
@@ -107,7 +111,7 @@
     return;
    }
    stage(1,'正在读取并校验正式文件…','Reading and validating the workspace…');
-   repositoryClient=FurnishRepositoryStorage.create({request,fingerprint,ensureBackend,delay:60000,debounce:false,onChange:()=>syncSaved(),onAcknowledge:({revision})=>{if(storageWiping)return;store._repository={revision,clean:revision};cache(store);}});
+   repositoryClient=FurnishRepositoryStorage.create({request,writeWorkspace,fingerprint,ensureBackend,delay:60000,debounce:false,onChange:()=>syncSaved(),onAcknowledge:({revision})=>{if(storageWiping)return;store._repository={revision,clean:revision};cache(store);}});
    const next=await repositoryClient.initialize([repositoryInitialCache,saved,...FurnishWorkspaceCache.candidates({read:key=>localStorage.getItem(key),key:STORE})]);
    await showDrawing();
    if(next){applyWorkspace(next,{validated:repositoryClient.loadedValidatedFile});if(store.v>=7)store.v=Math.max(store.v,9);renderWorkspace();stage(3,'正在更新本机恢复缓存…','Updating local recovery cache…');store._repository={revision:repositoryClient.revision,clean:await fingerprint(store)};await cache(store);}
