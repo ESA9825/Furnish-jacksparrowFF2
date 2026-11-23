@@ -32,8 +32,8 @@ const horizon=`
  varying vec2 screenUv;
  uniform vec2 pixel;
  uniform vec2 focal;
+ uniform float reach;
  ${positionSource}
- const float reach=0.34;
  vec3 normalAt(vec2 uv,vec3 p){
   vec2 x=vec2(pixel.x,0.0),y=vec2(0.0,pixel.y);
   vec3 west=viewPoint(uv-x,depthAt(uv-x)),east=viewPoint(uv+x,depthAt(uv+x));
@@ -129,6 +129,7 @@ const resolve=`
  uniform sampler2D occlusion;
  uniform vec2 aoSize;
  uniform float strength;
+ uniform float aoLimit;
  uniform sampler2D bloom;
  uniform bool hasBloom;
  ${positionSource}
@@ -149,7 +150,7 @@ const resolve=`
     +tap(base+vec2(1.0,0.0),f.x*(1.0-f.y),z)
     +tap(base+vec2(0.0,1.0),(1.0-f.x)*f.y,z)
     +tap(base+vec2(1.0,1.0),f.x*f.y,z);
-   float dark=min(0.145,strength*sum.x/max(sum.y,0.09));
+   float dark=min(aoLimit,strength*sum.x/max(sum.y,0.09));
    color.rgb*=1.0-dark;
   }
   if(hasBloom){
@@ -171,11 +172,11 @@ function create(T,renderer,{onSmaaChange=()=>{}}={}){
  const uniforms={sceneDepth:{value:null},inverseProjection:{value:new T.Matrix4()}};
  const make=(fragmentShader,extra)=>new T.ShaderMaterial({vertexShader:vertex,fragmentShader,
   uniforms:{...uniforms,...extra},depthTest:false,depthWrite:false,toneMapped:false});
- const ao=make(horizon,{pixel:{value:new T.Vector2()},focal:{value:new T.Vector2()}});
+ const ao=make(horizon,{pixel:{value:new T.Vector2()},focal:{value:new T.Vector2()},reach:{value:.34}});
  const aoSize=new T.Vector2();
  const filter=make(denoise,{occlusion:{value:null},aoSize:{value:aoSize}});
  const composite=make(resolve,{beauty:{value:null},occlusion:{value:null},aoSize:{value:aoSize},
-  strength:{value:.43},bloom:{value:null},hasBloom:{value:false}});
+  strength:{value:.43},aoLimit:{value:.145},bloom:{value:null},hasBloom:{value:false}});
  const triangle=new T.Mesh(geometry,ao);
  triangle.frustumCulled=false;scene.add(triangle);
  const gl=renderer.getContext();
@@ -260,7 +261,7 @@ function create(T,renderer,{onSmaaChange=()=>{}}={}){
   fullscreen(smaaInput,composite);
   return smaa.draw(smaaInput,checkTarget,fullscreen);
  }
- function draw(main,camera,{aoEnabled=true,bloomRevision,smaaEnabled=false}={}){
+ function draw(main,camera,{aoEnabled=true,contactOnly=false,bloomRevision,smaaEnabled=false}={}){
   if(!supported||failed||renderer.getRenderTarget()||gl.isContextLost())return false;
   const autoReset=renderer.info.autoReset;
   try{
@@ -272,6 +273,7 @@ function create(T,renderer,{onSmaaChange=()=>{}}={}){
     uniforms.inverseProjection.value.copy(camera.projectionMatrixInverse);
     const projection=camera.projectionMatrix.elements;
     ao.uniforms.focal.value.set(projection[0],projection[5]);
+    ao.uniforms.reach.value=contactOnly?.18:.34;
     fullscreen(buffer,ao);fullscreen(filtered,filter);
    }
    let glow=null;
@@ -285,7 +287,8 @@ function create(T,renderer,{onSmaaChange=()=>{}}={}){
      if(!aoEnabled&&!smaaEnabled)return false;
     }
    }
-   composite.uniforms.strength.value=aoEnabled?.43:0;
+   composite.uniforms.strength.value=aoEnabled?(contactOnly?.38:.43):0;
+   composite.uniforms.aoLimit.value=contactOnly?.105:.145;
    composite.uniforms.bloom.value=glow;
    composite.uniforms.hasBloom.value=!!glow;
    if(smaaEnabled&&!smaaFailed){

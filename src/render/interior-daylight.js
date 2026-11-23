@@ -262,8 +262,10 @@ function create(T,scene,{wx,wz,inside}){
   if(pool.has(variantKey))return pool.get(variantKey);
   const material=source.clone();
   const floorKind=source.userData.tileFinish?.floorKind;
-  const satinTile=source.userData.satinTile===true||profile==='floor'&&!!source.userData.tileFinish?.layout&&floorKind!=='antislip';
-  const tileDetail=profile==='floor'&&satinTile&&!floorKind;
+  const oldSatin=source.userData.satinTile===true||profile==='floor'&&!!source.userData.tileFinish?.layout&&floorKind!=='antislip';
+  const floorSheen=profile==='floor'?source.userData.floorWindowSheen:undefined;
+  const satinTile=oldSatin||floorSheen!==undefined;
+  const tileDetail=profile==='floor'&&oldSatin&&!floorKind;
   const layout=source.userData.tileFinish?.layout;
   const groutHalfWidth=layout?layout.gap/(2*(Math.min(layout.width,layout.height)+layout.gap)):.006;
   const paintDetail=profile==='wall',cabinetDetail=profile==='cabinet';
@@ -283,11 +285,12 @@ function create(T,scene,{wx,wz,inside}){
   // Keep source PBR values and pre-existing shaders. Export strips these
   // raster hooks and keeps the source values.
   const cacheKey=source.customProgramCacheKey();
-  material.customProgramCacheKey=()=>cacheKey+'|room-daylight-v14|'+smoothReflection+'|'+satinTile+'|'+profile+'|'+fineEdge+'|'+replacePaintColor+'|'+upperReceiver+'|'+kitchenReceiver+'|'+finishKind+'|'+sunReceiver;
+  material.customProgramCacheKey=()=>cacheKey+'|room-daylight-v15|'+smoothReflection+'|'+satinTile+'|'+(floorSheen!==undefined)+'|'+profile+'|'+fineEdge+'|'+replacePaintColor+'|'+upperReceiver+'|'+kitchenReceiver+'|'+finishKind+'|'+sunReceiver;
   material.onBeforeCompile=function(shader,renderer){
    source.onBeforeCompile.call(this,shader,renderer);
    Object.assign(shader.uniforms,uniforms);
    if(tileDetail)shader.uniforms.furnishFinishJoint={value:groutHalfWidth};
+   if(floorSheen!==undefined)shader.uniforms.furnishFloorSheen={value:floorSheen};
    if(fineEdge)shader.uniforms.furnishDoorHeights={value:seam};
    shader.vertexShader='varying vec3 furnishInteriorPosition;\n'+(localFinish?'varying vec3 furnishFinishPosition;\n':'')+(cabinetDetail?'varying vec2 furnishBoardPosition;\n':'')+(fineEdge?'varying float furnishIsDoorFace;\n':'')+shader.vertexShader.replace('#include <project_vertex>',`
     #include <project_vertex>
@@ -334,6 +337,7 @@ function create(T,scene,{wx,wz,inside}){
      uniform float furnishSofaVisible;
     `:''}
     ${tileDetail?'uniform float furnishFinishJoint;':''}
+    ${floorSheen!==undefined?'uniform float furnishFloorSheen;':''}
     ${cabinetDetail?'varying vec2 furnishBoardPosition;':''}
     ${fineEdge?'varying float furnishIsDoorFace; uniform vec2 furnishDoorHeights;':''}
     ${apertureReceiver?`
@@ -405,7 +409,12 @@ function create(T,scene,{wx,wz,inside}){
       vec2 falloff=1.0-smoothstep(aperture.xy*0.55,aperture.xy+spread,offset);
       float weight=falloff.x*falloff.y*step(0.015,incidence)*step(0.0,travel);
       float fresnel=${stone?'0.12+0.32':'0.16+0.24'}*pow(1.0-clamp(dot(view,normal),0.0,1.0),3.0);
-      ${satinTile?`
+      ${floorSheen!==undefined?`
+       float lowAngle=1.0-clamp(dot(view,normal),0.0,1.0);
+       float coatResponse=mix(1.0,0.24,smoothstep(0.52,0.88,roughness));
+       indirectSpecular+=tint*emitter.w*furnishFloorSheen*coatResponse*
+        (weight*(0.05+0.24*lowAngle*lowAngle)+0.037*facing*pow(max(dot(normal,halfVector),0.0),4.0));
+      `:satinTile?`
        float lowAngle=1.0-clamp(dot(view,normal),0.0,1.0);
        indirectSpecular+=tint*weight*(0.025+0.11*lowAngle*lowAngle)*emitter.w;
       `:`

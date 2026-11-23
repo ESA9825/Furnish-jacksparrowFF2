@@ -35,14 +35,16 @@ const path=require('node:path'),tempBase=path.resolve(__dirname,'../output/playw
    })};return canvas;
   }};
   const layout={width:800,height:400,gap:2},porcelain=M.material(T,layout,{floorKind:'tile800',groutColor:'#000000'});
+  assert(porcelain.isMeshPhysicalMaterial);assert(porcelain.clearcoat>0);
   assert.deepEqual(porcelain.map.repeat.toArray(),[.5,.5]);
   assert.deepEqual(atlas,[[0,0],[256,0],[0,256],[256,256]].map(([x,y])=>[x,y,256*800/802,256*400/402]));
   assert.equal(new Set(patterns.map(p=>p.join(','))).size,4);assert(patterns.every(p=>new Set(p).size>1));
   const tiledMesh=new T.Mesh(geo,porcelain);tiledMesh.userData={floor:true,room:b};floorGroup.add(tiledMesh);
   preview.update({floorGroup,roomId:b,kind:'floor',color:'#123456'});
-  assert.equal(tiledMesh.material.userData.tileFinish.floorKind,'tile800');assert.equal(tiledMesh.material.roughness,porcelain.roughness);
-  const tileShader={uniforms:{},fragmentShader:'#include <map_fragment>'};tiledMesh.material.onBeforeCompile(tileShader);
+  assert.equal(tiledMesh.material.userData.tileFinish.floorKind,'tile800');assert.equal(tiledMesh.material.roughness,porcelain.roughness);assert.equal(tiledMesh.material.clearcoat,porcelain.clearcoat);
+  const tileShader={uniforms:{},fragmentShader:'#include <map_fragment>\n#include <roughnessmap_fragment>\n#include <lights_physical_fragment>'};tiledMesh.material.onBeforeCompile(tileShader);
   assert.deepEqual(tileShader.uniforms.furnishJoint.value.toArray(),[2/802,2/402]);assert.match(tileShader.fragmentShader,/tileUV=vMapUv\*2\.0/);
+  assert.match(tileShader.fragmentShader,/material.clearcoat\*=1\.0-tileJoint/);
   preview.clear();assert.equal(tiledMesh.material,porcelain);porcelain.map.dispose();porcelain.dispose();
   shared.map.dispose();shared.dispose();geo.dispose();
  }finally{if(prior===undefined)delete global.document;else global.document=prior;}

@@ -6,6 +6,13 @@ const syncIdentity=root.FurnishPartIdentity||(typeof require==='function'?requir
 
 const ceramics=Object.freeze({tile800:.49,tile600:.53,antislip:.78});
 const ceramic=kind=>Object.hasOwn(ceramics,kind);
+// Presentation parameters for the supplied texture scans.
+const floorCoats=Object.freeze({
+ oak_wood_planks:{tint:'#f4f8ff',reflectance:'#a5754c',normal:.38,roughness:.94,coat:.19,coatRoughness:.36,windowSheen:.75},
+ plank_flooring_04:{tint:'#f8f9ff',reflectance:'#563c2d',normal:.46,roughness:.95,coat:.18,coatRoughness:.40,windowSheen:.65},
+ herringbone_parquet:{tint:'#f0f6ff',reflectance:'#a78553',normal:.37,roughness:.9,coat:.28,coatRoughness:.31,windowSheen:1},
+ interior_tiles:{tint:'#f6faff',reflectance:'#b8a48a',normal:.54,roughness:.96,coat:.32,coatRoughness:.32,windowSheen:1.15}
+});
 const faceSize=256;
 const grain=new Map();
 function noise(x,y,scale,seed){
@@ -66,7 +73,7 @@ function sampleMaterial(THREE,work,roomId){
   const loads=[],sources=sampleSources(id,folder);entry={maps:{},profile,ready:null};
   for(const [role,file]of Object.entries(roles)){
    const image=new Image(),map=new THREE.Texture(image);
-   map.name=id+'-'+file.slice(0,-4);map.wrapS=map.wrapT=THREE.RepeatWrapping;map.anisotropy=4;
+   map.name=id+'-'+file.slice(0,-4);map.wrapS=map.wrapT=THREE.RepeatWrapping;map.anisotropy=8;
    if(role==='map')map.colorSpace=THREE.SRGBColorSpace;
    entry.maps[role]=map;
    loads.push(sources.then(local=>new Promise(resolve=>{
@@ -78,8 +85,10 @@ function sampleMaterial(THREE,work,roomId){
   entry.ready=Promise.all(loads).then(results=>{entry.done=true;entry.failed=results.includes(false);root.dispatchEvent(new Event('furnish-floor-sample-ready'));});
   floorImages.set(id,entry);
  }
- const material=new THREE.MeshStandardMaterial({...entry.maps,roughness:1,normalScale:new THREE.Vector2(.55,.55)});
- material.userData.floorSample=id;material.userData.floorReflectance='#b79873';
+ const finish=floorCoats[id];
+ const material=new THREE.MeshPhysicalMaterial({...entry.maps,color:finish.tint,roughness:finish.roughness,
+  normalScale:new THREE.Vector2(finish.normal,finish.normal),clearcoat:finish.coat,clearcoatRoughness:finish.coatRoughness});
+ material.userData.floorSample=id;material.userData.floorReflectance=finish.reflectance;material.userData.floorWindowSheen=finish.windowSheen;
  return material;
 }
 function pendingSamples(group){
@@ -99,8 +108,11 @@ function material(THREE,layout,{color='#e8e2d8',groutColor:custom,floorKind}={})
  }
  else{c.fillStyle=tileColor;c.fillRect(0,0,width,height);}
  const map=new THREE.CanvasTexture(canvas);map.wrapS=map.wrapT=THREE.RepeatWrapping;map.colorSpace=THREE.SRGBColorSpace;map.flipY=false;
- if(detailed){map.repeat.set(.5,.5);map.anisotropy=4;}
- const material=new THREE.MeshStandardMaterial({map,roughness:detailed?ceramics[floorKind]:.72});
+ if(detailed){map.repeat.set(.5,.5);map.anisotropy=8;}
+ const glazed=detailed&&floorKind!=='antislip';
+ const material=glazed?new THREE.MeshPhysicalMaterial({map,roughness:ceramics[floorKind],clearcoat:.24,clearcoatRoughness:.36}):
+  new THREE.MeshStandardMaterial({map,roughness:detailed?ceramics[floorKind]:.72});
+ if(glazed)material.userData.floorWindowSheen=.95;
  material.userData.tileFinish={color:tileColor,layout:{width:layout.width,height:layout.height,gap:layout.gap},...(custom?{groutColor:custom}:{}),...(detailed?{floorKind}:{})};
  // Preserve the true grid pitch. A subpixel joint gets a modest screen-space
  // coverage floor instead of disappearing into texture mipmaps at room scale.
@@ -117,10 +129,17 @@ function material(THREE,layout,{color='#e8e2d8',groutColor:custom,floorKind}={})
    joint*=step(vec2(0.0000001),furnishJoint);
    float tone=fract(sin(dot(floor(tileUV),vec2(12.9898,78.233)))*43758.5453);
    diffuseColor.rgb*=${detailed?'0.988+0.024*tone':'0.965+0.045*tone'};
-   diffuseColor.rgb=mix(diffuseColor.rgb,furnishGroutColor,max(joint.x,joint.y)*${detailed?'0.55':'0.9'});
+   float tileJoint=max(joint.x,joint.y);
+   diffuseColor.rgb=mix(diffuseColor.rgb,furnishGroutColor,tileJoint*${detailed?'0.55':'0.9'});
+  `);
+  if(glazed)shader.fragmentShader=shader.fragmentShader.replace('#include <roughnessmap_fragment>',`#include <roughnessmap_fragment>
+   // A grout line interrupts the coat even when its colour is close to the tile.
+   roughnessFactor=mix(roughnessFactor+0.035*(tone-.5),0.82,tileJoint);
+  `).replace('#include <lights_physical_fragment>',`#include <lights_physical_fragment>
+   material.clearcoat*=1.0-tileJoint;
   `);
  };
- material.customProgramCacheKey=()=> detailed?'furnish-ceramic-grid-v1':'furnish-tile-grid-v3';return material;
+ material.customProgramCacheKey=()=> glazed?'furnish-glazed-grid-v1':detailed?'furnish-ceramic-grid-v1':'furnish-tile-grid-v3';return material;
 }
 // Old room textures have illustrative pixel joints and metre UVs, without a
 // saved layout or known layer heights. Recolour only those existing pixels.

@@ -819,6 +819,7 @@ const solarVertices=[];
 const sunPreviewDetails=[];
 const gtaoButton=$('#viewport-gtao'),bloomButton=$('#viewport-bloom'),smaaButton=$('#viewport-smaa');
 let gtaoEnabled=false,bloomEnabled=false,smaaEnabled=false,bloomNight=false,bloomRevision=0;
+let materialLook=false,materialLookSettling=false,materialLookTimer=0;
 let viewportPointer=null,viewportRestoreAt=0;
 function cancelOrbitMouseDrag(){
   if(!viewportPointer?.orbitMouseDrag)return false;
@@ -833,6 +834,12 @@ try{gtaoEnabled=localStorage.getItem('furnish-viewport-gtao-v1')==='1';}catch{}
 try{bloomEnabled=localStorage.getItem('furnish-viewport-bloom-v1')==='1';}catch{}
 try{smaaEnabled=localStorage.getItem('furnish-viewport-smaa-v1')==='1';}catch{}
 const viewportEffectScope=()=>PLAN.id==='custom_mv37igji'&&globalThis.FurnishProgressiveView?.mode()==='smooth';
+function settleMaterialLook(){
+  if(!materialLook)return;
+  materialLookSettling=true;
+  clearTimeout(materialLookTimer);
+  materialLookTimer=setTimeout(()=>{materialLookSettling=false;invalidate();},140);
+}
 const nightInteraction=()=>bloomNight&&viewportEffectScope()&&!anim&&opt.mode==='orbit'&&
   (viewportPointer?.moving||performance.now()<viewportRestoreAt);
 function syncViewportPixelRatio(){
@@ -858,7 +865,7 @@ function updateEffectControls(){
   }
 }
 function releaseViewportIfIdle(){
-  if(!gtaoEnabled&&!(bloomEnabled&&bloomNight)&&!smaaEnabled)viewportAO?.release();
+  if(!materialLook&&(!viewportEffectScope()||!gtaoEnabled&&!(bloomEnabled&&bloomNight)&&!smaaEnabled))viewportAO?.release();
 }
 let archFloor, archUp, furnG, clearanceG, labelG, wallLabelG, lampG, colliders = [], selKey = null, selHelper = null;
 let electricalG, electricalKey='';
@@ -939,6 +946,7 @@ function init(){
   orbit.addEventListener('end', () => { orbitGesture = false; });
   orbit.addEventListener('change', () => {
     if (orbitGesture) fly = null;
+    settleMaterialLook();
     invalidate();
   });
   walkCtl = new PointerLockControls(camera, document.body);
@@ -1797,7 +1805,7 @@ function buildFurn(work=state){
   furnG.visible = opt.furn&&!globalThis.FurnishTilePresetUI?.inspecting(); selKey = null; applyGrow();
   const light=sceneSun();
   FurnishDownlightModel.setLights(furnG,opt.lamps,{night:light.night,nightLights:opt.nightLights});
-  FurnishLighting.cabinetContours(furnG,light.environment);
+  FurnishLighting.cabinetContours(furnG,{...light.environment,ambient:viewAmbient(light)});
   syncModelErrors();
 }
 
@@ -1898,8 +1906,13 @@ function syncElectrical(){
 
 function sync(force){
   if (!inited || (!active && !force)) return;
+  const materialMode=!!globalThis.FurnishMaterialUI?.active(),materialLookChanged=materialMode!==materialLook;
+  if(materialLookChanged){
+    materialLook=materialMode;
+    if(!materialLook){clearTimeout(materialLookTimer);materialLookSettling=false;releaseViewportIfIdle();}
+  }
   updateEffectControls();
-  if(gtaoButton.hidden)viewportAO?.release();
+  if(gtaoButton.hidden&&!materialLook)viewportAO?.release();
   H=FurnishProject.ceilingHeight(state)/1000;
   const settings=FurnishDesign.sceneSettings(state.scene3d);
   const preview=opt.sunPreview;
@@ -1920,8 +1933,8 @@ function sync(force){
     });
     furnG.visible=opt.furn&&!globalThis.FurnishTilePresetUI?.inspecting();
     showLabels(opt.labels&&opt.mode==='orbit'&&!anim);
-    applyLight();
   }
+  if(displayChanged||materialLookChanged)applyLight();
   const materialWork=globalThis.FurnishMaterialUI?.work(state)||state;
   const furnitureWork=globalThis.FurnishWardrobePlannerUI?.previewWork()||globalThis.FurnishCatalog?.previewWork()||materialWork;
   const a = JSON.stringify([materialWork.styleAppearance,globalThis.FurnishWorkflowTools?.styleKey(),state.rooms, state.demolished, state.open, PLAN.beams, opt.cut,opt.lamps,H, PLAN.markers,state.furniture.filter(f=>(FurnishDesign.products().definition(f)?.downlight||FurnishDesign.products().definition(f)?.ceilingPanel)&&!f.obj).map(f=>[f.id,f.type,f.cx,f.cy,f.w,f.d,f.h,f.rot,f.flip,f.mountHeight]),state.furnitureDatum,state.wallFinishes,state.floorFinishes,state.wallTiling,state.ceilings,state.tileGrout,typeof FurnishWallFinish==='undefined'?[]:FurnishWallFinish.serviceOpenings(PLAN,state),typeof FurnishElectricalBox==='undefined'?[]:FurnishElectricalBox.cuts(FurnishProject.effectivePlan(PLAN,state),state.furniture)]), f = JSON.stringify([furnitureWork.furniture.map(({price,referencePrice,priceDate,purchaseStatus,purchaseNote,sourceUrl,...shape})=>shape),PLAN.markers,state.rooms,H,globalThis.FurnishWorkflowTools?.styleKey(),state.wallFinishes,state.floorFinishes,state.furnitureDatum]), l = JSON.stringify([state.rooms, opt.cut,H,PLAN.beams,state.wallFinishes,state.floorFinishes,state.wallTiling]);
@@ -1967,8 +1980,10 @@ function sceneSun(){
   return {position:[x,Math.sin(el)*20+3,z],night:opt.night,environment:FurnishLighting.environment(opt.night,opt.hour),warm};
 }
 let lightSwitches;
+function viewAmbient({night,environment}){return environment.ambient*(materialLook&&!night?.76:1);}
 function applyLight(){
-  const {position,altitude,night,environment:lighting,warm}=sceneSun();
+  const light=sceneSun(),{position,altitude,night,environment:lighting,warm}=light;
+  const materialDay=materialLook&&!night,ambient=viewAmbient(light);
   if(bloomNight!==night){
     bloomNight=night;
     if(!night){
@@ -1978,7 +1993,7 @@ function applyLight(){
     updateEffectControls();
   }
   sun.userData.radiometricLight=true;
-  if(hemi.intensity!==lighting.ambient)FurnishLighting.cabinetContours(furnG,lighting);
+  if(hemi.intensity!==ambient)FurnishLighting.cabinetContours(furnG,{...lighting,ambient});
   const switches=[night,opt.lamps,opt.nightLights].join(',');
   if(lightSwitches!==switches){
     FurnishDownlightModel.setLights(furnG,opt.lamps,{night,nightLights:opt.nightLights});
@@ -1990,9 +2005,11 @@ function applyLight(){
   sun.color.setHSL(.09, .5 + warm*.4, .92 - warm*.12);
   sun.intensity = lighting.sun;
   sun.visible = sun.intensity>0;
-  hemi.intensity = lighting.ambient;
-  scene.background = new THREE.Color(night ? 0x1c2130 : DK() ? 0x121110 : 0xf5f2ea);
-  ground.material.color.set(night ? 0x2a2e38 : DK() ? 0x26231e : 0xf2eee7);
+  hemi.intensity = ambient;
+  hemi.color.setHex(materialDay?0xfffcf8:0xfff8ee);
+  hemi.groundColor.setHex(materialDay?0xbab2aa:0xb9a88f);
+  scene.background = new THREE.Color(night ? 0x1c2130 : DK() ? 0x121110 : materialDay ? 0xdce1e7 : 0xf5f2ea);
+  ground.material.color.set(night ? 0x2a2e38 : DK() ? 0x26231e : materialDay ? 0xc5cbd2 : 0xf2eee7);
   renderer.toneMappingExposure = lighting.exposure;
   if(envK!==lighting.reflection){
     envK = lighting.reflection; matCache.forEach(m => { if (m.envMap) m.envMapIntensity = m.userData.env*envK; });
@@ -2249,6 +2266,7 @@ async function exit(){
   fly=null;orbit.enabled=false;showLabels(false);
   stage.classList.remove('is3d');
   active = false; cancelAnimationFrame(raf); raf = 0;
+  clearTimeout(materialLookTimer);materialLookSettling=false;
   viewportAO?.release();
   graphicsIdleTimer=setTimeout(parkGraphics,GRAPHICS_IDLE_MS);
 }
@@ -2730,11 +2748,14 @@ function renderScene(onlySun=false){
     requestSunShadow();
     sunPreviewDetails.length=0;
   }
-  const bloom=bloomEnabled&&bloomNight&&(!viewportAO||viewportAO.bloomAvailable());
-  const smaa=smaaEnabled&&(!viewportAO||viewportAO.smaaAvailable());
-  if(!sunScrubbing&&(gtaoEnabled||bloom||smaa)&&!anim&&viewportEffectScope()){
+  const settledMaterial=materialLook&&!materialLookSettling&&!viewportPointer?.moving&&!fly&&opt.mode==='orbit';
+  const manualEffects=viewportEffectScope();
+  const ao=settledMaterial||manualEffects&&gtaoEnabled;
+  const bloom=manualEffects&&bloomEnabled&&bloomNight&&(!viewportAO||viewportAO.bloomAvailable());
+  const smaa=(settledMaterial||manualEffects&&smaaEnabled)&&(!viewportAO||viewportAO.smaaAvailable());
+  if(!sunScrubbing&&(ao||bloom||smaa)&&!anim){
     viewportAO??=FurnishViewportGTAO.create(THREE,renderer,{onSmaaChange:()=>invalidate()});
-    const drawn=viewportAO.draw(scene,camera,{aoEnabled:gtaoEnabled,bloomRevision:bloom?bloomRevision:undefined,smaaEnabled:smaa});
+    const drawn=viewportAO.draw(scene,camera,{aoEnabled:ao,contactOnly:settledMaterial,bloomRevision:bloom?bloomRevision:undefined,smaaEnabled:smaa});
     if(!drawn||(bloom&&!viewportAO.bloomAvailable())||(smaa&&!viewportAO.smaaAvailable()))updateEffectControls();
     if(drawn)return;
     viewportAO.release();

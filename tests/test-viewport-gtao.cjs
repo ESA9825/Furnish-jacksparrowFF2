@@ -22,7 +22,7 @@ require('../src/render/viewport-smaa.js');
   getContext:()=>gl,getRenderTarget:()=>target,
   setRenderTarget(value){target=value;},
   getDrawingBufferSize(out){return out.set(width,height);},
-  render(scene){recorded.push({scene,target,background:scene.background?.clone()});}
+  render(scene){const uniforms=scene.children[0]?.material?.uniforms;recorded.push({scene,target,background:scene.background?.clone(),reach:uniforms?.reach?.value,strength:uniforms?.strength?.value,aoLimit:uniforms?.aoLimit?.value});}
  };
  let lookupsLoaded=0;
  global.Image=class {set src(value){assert.match(value,/^data:image\/png;base64,/);this.onload();}};
@@ -43,6 +43,13 @@ require('../src/render/viewport-smaa.js');
  assert.deepEqual([filtered.width,filtered.height],[1421,778]);
  assert.equal(recorded[3].target,null);
  assert.equal(renderer.info.autoReset,true);
+ assert.equal(recorded[1].reach,.34);assert.equal(recorded[3].aoLimit,.145);
+ recorded.length=0;
+ assert.equal(effect.draw(model,camera,{contactOnly:true}),true);
+ assert.equal(recorded[1].reach,.18);assert.equal(recorded[3].strength,.38);assert.equal(recorded[3].aoLimit,.105);
+ recorded.length=0;
+ assert.equal(effect.draw(model,camera),true);
+ assert.equal(recorded[1].reach,.34);assert.equal(recorded[3].strength,.43);assert.equal(recorded[3].aoLimit,.145);
  recorded.length=0;
  assert.equal(effect.draw(model,camera,{aoEnabled:false}),true);
  assert.equal(recorded.length,2);
