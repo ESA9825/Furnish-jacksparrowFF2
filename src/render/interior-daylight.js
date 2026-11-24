@@ -121,13 +121,18 @@ function create(T,scene,{wx,wz,inside}){
   const width=alongX?right-left:back-front;
   return {id,lightRooms,alongX,normal,inner,outer,width,x,y,sill,head};
  }
- function mapLight(openings,entryBoundary,projectSegment){
+ function mapLight(openings,entryBoundaries,projectSegment){
   const windows=[];
+  const rooms=[...roomById.values()];
+  const adjoining=rooms.filter(room=>adjoiningIds.has(room.id));
   for(const [index,[,roomId,ids]] of apertures.entries()){
    const window=openings[index];
    const room=roomById.get(roomId);
    if(!room||!window||!(window.head>window.sill))continue;
-   windows.push(opening(window,room,new Set(ids),windows.length+1));
+   const entryBoundary=entryBoundaries[index];
+   const shadedEdges=ids.includes(livingRooms[2])?
+    adjoining.filter(neighbor=>neighbor.id!==entryRoom||!entryBoundary.length):[];
+   windows.push({...opening(window,room,new Set(ids),windows.length+1),entryBoundary,shadedEdges});
   }
   if(!windows.length)return;
   const corners=[...roomById.values()].flatMap(room=>room.poly);
@@ -139,33 +144,29 @@ function create(T,scene,{wx,wz,inside}){
    uniforms.furnishDaylightSources.value[w.id].set(wx(w.alongX?w.x:w.inner),(w.sill+w.head)/2,wz(w.alongX?w.inner:w.y),w.lightRooms.has(livingRooms[0])?1:0);
    uniforms.furnishWindowShapes.value[w.id].set(w.width/2000,(w.head-w.sill)/2,w.alongX?0:w.normal,w.alongX?w.normal:0);
   }
-  const rooms=[...roomById.values()];
-  const adjoining=rooms.filter(room=>adjoiningIds.has(room.id)&&!(entryBoundary.length&&room.id===entryRoom));
   const litRooms=rooms.filter(room=>windows.some(w=>w.lightRooms.has(room.id)));
+  function spill(x,y,boundary){
+   const distance=Math.min(...boundary.map(([a,b])=>{
+    const {point:[px,py]}=projectSegment([x,y],a,b);
+    return Math.hypot(x-px,y-py);
+   }));
+   const t=Math.max(0,1-distance/entryFalloff);
+   return t*t*(3-2*t);
+  }
   field=dataTexture(resolution,resolution,(i,j)=>{
    const x=xmin+(i+.5)/resolution*(xmax-xmin),y=ymin+(j+.5)/resolution*(ymax-ymin);
    // Extend window light up to nearby wall faces outside the room polygons.
    // Inside the open entry, distance from the shared edge controls the spill.
    const exact=rooms.find(room=>inside(x,y,room.poly));
    const near=exact?[exact]:litRooms.filter(room=>edgeDistance(x,y,room.poly)<=90);
-   let entryWeight=0;
-   if(exact?.id===entryRoom&&entryBoundary.length){
-    const distance=Math.min(...entryBoundary.map(([a,b])=>{
-     const {point:[px,py]}=projectSegment([x,y],a,b);
-     return Math.hypot(x-px,y-py);
-    }));
-    const t=Math.max(0,1-distance/entryFalloff);
-    entryWeight=t*t*(3-2*t);
-   }
    const weights=[];
    for(const w of windows){
     const coverage=near.some(room=>w.lightRooms.has(room.id))?1:
-     w.lightRooms.has(livingRooms[0])?entryWeight:0;
+     exact?.id===entryRoom&&w.entryBoundary.length?spill(x,y,w.entryBoundary):0;
     if(!coverage)continue;
     const lateral=Math.max(0,Math.abs(w.alongX?x-w.x:y-w.y)-w.width/2);
     const depth=Math.max(0,((w.alongX?y:x)-w.inner)*w.normal);
-    const edge=w.lightRooms.has(livingRooms[2])?
-     Math.min(1,...adjoining.map(room=>edgeDistance(x,y,room.poly)/780)):1;
+    const edge=Math.min(1,...w.shadedEdges.map(room=>edgeDistance(x,y,room.poly)/780));
     const area=Math.min(1,Math.sqrt(w.width*(w.head-w.sill)/2500));
     const soft=coverage*area*Math.exp(-depth/(w.width*1.25)-lateral*lateral/600000)*edge*edge*(3-2*edge);
     weights.push([Math.round(soft*255),w.id]);
@@ -901,16 +902,21 @@ function create(T,scene,{wx,wz,inside}){
   }
   const openings=apertures.map(([ref])=>plan.wins?.[plan.winRefs?.indexOf(ref)]);
   const zones=root.FurnishZoneGeometry||require('../core/zone-geometry.js');
-  const living=plan.rooms.find(room=>room.id===livingRooms[0]),entry=plan.rooms.find(room=>room.id===entryRoom);
-  // Functional zones can share a floor edge inside a single physical room.
-  const entryBoundary=entry?.parentRoom&&entry.parentRoom===living?.parentRoom?
-   [...zones.sharedBoundary(living.rings||[living.poly],entry.rings||[entry.poly])]:[];
-  const receiver=id=>livingRoomSet.has(id)?'room':id===entryRoom&&entryBoundary.length?'entry':'';
-  const key=JSON.stringify([wx(0),wz(0),openings,entryBoundary,plan.rooms.map(({id,poly,at})=>[id,poly,at])]);
+  const entry=plan.rooms.find(room=>room.id===entryRoom),entryEdges=new Map();
+  // A window can spill through any open edge adjoining one of its receiving zones.
+  for(const room of plan.rooms){
+   if(livingRoomSet.has(room.id)&&entry?.parentRoom&&entry.parentRoom===room.parentRoom){
+    entryEdges.set(room.id,[...zones.sharedBoundary(room.rings||[room.poly],entry.rings||[entry.poly])]);
+   }
+  }
+  const entryBoundaries=apertures.map(([,,ids],i)=>openings[i]?ids.flatMap(id=>entryEdges.get(id)||[]):[]);
+  const hasEntryLight=entryBoundaries.some(edges=>edges.length);
+  const receiver=id=>livingRoomSet.has(id)?'room':id===entryRoom&&hasEntryLight?'entry':'';
+  const key=JSON.stringify([wx(0),wz(0),openings,entryBoundaries,plan.rooms.map(({id,poly,at})=>[id,poly,at])]);
   if(openingsKey!==key){reset();openingsKey=key;}
   if(!patch){
    roomById=new Map(plan.rooms.filter(room=>room.poly?.length>=3).map(room=>[room.id,room]));
-   mapLight(openings,entryBoundary,zones.projectSegment);
+   mapLight(openings,entryBoundaries,zones.projectSegment);
    const mask=dataTexture(32,32,(x,y)=>{
     const q=Math.max(Math.abs((x+.5)/16-1),Math.abs((y+.5)/16-1));
     const a=(1-q*q)**2;

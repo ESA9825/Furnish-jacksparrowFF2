@@ -411,10 +411,10 @@ require('../src/render/interior-daylight.js');
  assert.doesNotMatch(openShader.fragmentShader,/furnishSunThroughWindow/,'Entry spill uses the existing physical direct shadows');
  const openTexture=openShader.uniforms.furnishDaylightMap.value;
  const lookup=openShader.uniforms.furnishDaylightBounds.value;
- const openingLight=(x,y)=>{
+ const openingLight=(x,y,channel=0)=>{
   const {width,height,data}=openShader.uniforms.furnishDaylightMap.value.image;
   const col=Math.floor((x/1000-lookup.x)*lookup.z*width),row=Math.floor((y/1000-lookup.y)*lookup.w*height);
-  return data[4*(col+row*width)];
+  return data[4*(col+row*width)+channel];
  };
  const livingEdge=openingLight(3770,2300),entryEdge=openingLight(3830,2300);
  assert.ok(entryEdge>0&&Math.abs(livingEdge-entryEdge)<=8,'Adjoining texels on either side of the open boundary have almost equal energy');
@@ -426,5 +426,22 @@ require('../src/render/interior-daylight.js');
  assert.equal(openingLight(4010,2300),0,'A gap between room footprints keeps the entry behind a wall unlit');
  begin({...openPlan,rooms:[...openPlan.rooms.slice(0,2),{...openEntry,parentRoom:'separate'}]});
  assert.equal(openingLight(4010,2300),0,'A different physical room does not receive spill');
+
+ const diningZone={id:dining,parentRoom:'shared',poly:[[0,5000],[3800,5000],[3800,8000],[0,8000]]};
+ const extendedEntry={...openEntry,poly:[[3800,0],[5300,0],[5300,8000],[3800,8000]]};
+ const joinedPlan={...openPlan,rooms:[...openPlan.rooms.slice(0,2),extendedEntry,diningZone],
+  winRefs:[...plan.winRefs,'cad_window_23_6'],wins:[...plan.wins,plan.wins[0]]};
+ begin(joinedPlan);
+ const diningEdge=openingLight(3770,6700),entryDiningEdge=openingLight(3830,6700);
+ assert.ok(entryDiningEdge>0&&Math.abs(diningEdge-entryDiningEdge)<=8,'Window light also crosses the open dining–entry edge beyond the living-room falloff');
+ assert.ok(entryDiningEdge>openingLight(4310,6700)&&openingLight(4310,6700)>openingLight(4850,6700));
+ assert.equal(openingLight(5200,6700),0);
+ assert.ok(openingLight(3830,2300,1)>0,'The second window still crosses the adjoining living edge');
+ assert.equal(openingLight(3830,6700,1),0,'The second window has no light path via the dining zone');
+ const blockedDining={...diningZone,poly:[[0,5000],[3680,5000],[3680,8000],[0,8000]]};
+ begin({...joinedPlan,rooms:[...joinedPlan.rooms.slice(0,-1),blockedDining]});
+ assert.equal(openingLight(3830,6700),0,'A wall gap blocks the dining path even with another open edge at the entry');
+ begin({...joinedPlan,rooms:[...joinedPlan.rooms.slice(0,-1),{...diningZone,parentRoom:'separate'}]});
+ assert.equal(openingLight(3830,6700),0,'A boundary between separate physical rooms never contributes daylight');
  console.log('PASS scoped windows, open-entry daylight falloff, night return, surface materials, contacts, visibility and cleanup');
 })().catch(error=>{console.error(error);process.exitCode=1;});
