@@ -14,7 +14,16 @@ const color=(work,id,kind,face)=>{const T=root.FurnishWallTiling||(typeof requir
 const values=(work,targets)=>targets.flatMap(t=>[color(work,t.roomId,t.kind),...(t.kind==='wall'?(work.tileGrout?.walls||[]).filter(s=>s.roomId===t.roomId).map(s=>s.mode==='custom'?s.color:undefined):[])]);
 const matches=(work,targets,value)=>values(work,targets).every(c=>c===value);
 function clean(next,data){if(!data.walls?.length)delete data.walls;if(Object.keys(data.rooms).length||data.walls?.length)next.tileGrout=data;else delete next.tileGrout;validate(next.tileGrout);return next;}
-function editFace(work,plan,face,value){validate(work.tileGrout);const T=root.FurnishWallTiling||require('./wall-tiling-core.js');if(!face||!T.faces(plan,work).some(f=>T.same(f,face))||value!==undefined&&!valid(value))throw Error('墙面或美缝颜色已变化');const next=clone(work),data=next.tileGrout||{version:1,rooms:{}};data.walls=(data.walls||[]).filter(s=>!T.same(s,face));if(value!==data.rooms[face.roomId]?.wall)data.walls.push({...T.binding(face),mode:value===undefined?'auto':'custom',...(value===undefined?{}:{color:value.toLowerCase()})});return clean(next,data);}
+function setFace(data,T,face,value){
+ data.walls=(data.walls||[]).filter(s=>!T.same(s,face));
+ if(value!==data.rooms[face.roomId]?.wall)data.walls.push({...T.binding(face),mode:value===undefined?'auto':'custom',...(value===undefined?{}:{color:value.toLowerCase()})});
+}
+function setRoom(data,id,kind,value){
+ const row=data.rooms[id]??={};
+ if(value===undefined)delete row[kind];else row[kind]=value.toLowerCase();
+ if(!Object.keys(row).length)delete data.rooms[id];
+}
+function editFace(work,plan,face,value){validate(work.tileGrout);const T=root.FurnishWallTiling||require('./wall-tiling-core.js');if(!face||!T.faces(plan,work).some(f=>T.same(f,face))||value!==undefined&&!valid(value))throw Error('墙面或美缝颜色已变化');const next=clone(work),data=next.tileGrout||{version:1,rooms:{}};setFace(data,T,face,value);return clean(next,data);}
 function autoColor(base='#e8e2d8'){
  if(/^#[0-9a-f]{3}$/i.test(base))base='#'+[...base.slice(1)].map(c=>c+c).join('');
  if(!valid(base))base='#e8e2d8';
@@ -25,9 +34,8 @@ function edit(work,plan,id,kind,value){
  if(['__proto__','constructor','prototype'].includes(id)||!['wall','floor'].includes(kind)||value!==undefined&&!valid(value))throw Error('请选择跟随砖色或填写 #RRGGBB 美缝颜色');
  const room=plan.rooms.find(r=>r.id===id&&r.counted!==false),setting=work.rooms?.[id]||room;
  if(!room||kind==='wall'&&!(root.FurnishWallTiling||require('./wall-tiling-core.js')).eligible(room,setting)||kind==='floor'&&!(root.FurnishFloorFinish||require('./floor-finish-core.js')).tiled(setting.mat||room.mat))throw Error('此区域没有对应的瓷砖设置');
- const next=clone(work),data=next.tileGrout||{version:1,rooms:{}},r=data.rooms[id]||{};
- if(value===undefined)delete r[kind];else r[kind]=value.toLowerCase();
- if(Object.keys(r).length)data.rooms[id]=r;else delete data.rooms[id];
+ const next=clone(work),data=next.tileGrout||{version:1,rooms:{}};
+ setRoom(data,id,kind,value);
  if(kind==='wall'&&data.walls)data.walls=data.walls.filter(s=>s.roomId!==id);
  return clean(next,data);
 }
@@ -39,5 +47,29 @@ function targets(work,plan,ids,kinds){
  if(!out.length)throw Error('所选范围没有对应的墙砖或地砖');return out;
 }
 function batch(work,plan,ids,kinds,value){let next=work;const list=targets(work,plan,ids,kinds);for(const t of list)next=edit(next,plan,t.roomId,t.kind,value);return next;}
-const api={validate,color,autoColor,edit,editFace,values,matches,targets,batch,onlyChange};if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishTileGrout=api;
+function editSurfaces(work,plan,edits){
+ if(!edits.length)return work;
+ validate(work.tileGrout);
+ const T=root.FurnishWallTiling||require('./wall-tiling-core.js'),F=root.FurnishFloorFinish||require('./floor-finish-core.js');
+ const walls=edits.some(e=>e.face)?T.faces(plan,work):[],rooms=new Map(plan.rooms.filter(r=>r.counted!==false).map(r=>[r.id,r]));
+ const data=work.tileGrout?clone(work.tileGrout):{version:1,rooms:{}};
+ for(const {roomId,face,value} of edits){
+  const room=rooms.get(roomId);
+  if(!room||['__proto__','constructor','prototype'].includes(roomId)||value!==undefined&&!valid(value)||
+    (face?face.roomId!==roomId||!walls.some(w=>T.same(w,face)):!F.tiled(work.rooms?.[roomId]?.mat||room.mat)))throw Error('瓷砖表面或美缝颜色无效');
+  if(face)setFace(data,T,face,value?.toLowerCase());else setRoom(data,roomId,'floor',value);
+ }
+ return clean({...work},data);
+}
+function remapBuiltin(work,before,after,shift){
+ if(!work.tileGrout?.walls)return;
+ const W=root.FurnishWallFinish||require('./wall-finish-core.js'),T=root.FurnishWallTiling||require('./wall-tiling-core.js'),mapped=new Map();
+ for(const wall of work.tileGrout.walls){
+  const {roomId,...face}=T.binding(wall),fake={wallFinishes:{version:1,surfaces:[face]}};
+  W.remapBuiltin(fake,before,after,shift);
+  for(const face of fake.wallFinishes.surfaces){const next=T.binding({...face,roomId});mapped.set(JSON.stringify(next),{...next,mode:wall.mode,...(wall.color?{color:wall.color}:{})});}
+ }
+ work.tileGrout.walls=[...mapped.values()];validate(work.tileGrout);
+}
+const api={validate,color,autoColor,edit,editFace,editSurfaces,values,matches,targets,batch,remapBuiltin,onlyChange};if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishTileGrout=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

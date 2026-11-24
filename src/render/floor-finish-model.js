@@ -178,7 +178,8 @@ function pendingSamples(group){
 function material(THREE,layout,{color='#e8e2d8',groutColor:custom,floorKind,sheen}={}){
  const tileColor=/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(color)?color:'#e8e2d8',groutColor=custom?new THREE.Color(custom):new THREE.Color(tileColor).multiplyScalar(.9);
  const detailed=ceramic(floorKind),size=detailed?512:1024,pitch=detailed?size/2:size;
- const glazed=detailed&&floorKind!=='antislip',solidGloss=glazed&&sheen==='gloss';
+ const coat=tileCoat(sheen);
+ const glazed=detailed&&floorKind!=='antislip'||!!coat,solidGloss=glazed&&sheen==='gloss';
  const canvas=document.createElement('canvas');canvas.width=canvas.height=size;const c=canvas.getContext('2d');
  const width=pitch*layout.width/(layout.width+layout.gap),height=pitch*layout.height/(layout.height+layout.gap);
  c.fillStyle='#'+groutColor.getHexString();c.fillRect(0,0,size,size);
@@ -191,8 +192,7 @@ function material(THREE,layout,{color='#e8e2d8',groutColor:custom,floorKind,shee
  }
  const map=new THREE.CanvasTexture(canvas);map.wrapS=map.wrapT=THREE.RepeatWrapping;map.colorSpace=THREE.SRGBColorSpace;map.flipY=false;
  if(detailed){map.repeat.set(.5,.5);map.anisotropy=8;}
- const coat=glazed?tileCoat(sheen):undefined;
- const material=glazed?new THREE.MeshPhysicalMaterial({map,roughness:coat?.roughness??ceramics[floorKind],clearcoat:coat?.clearcoat??.24,clearcoatRoughness:coat?.clearcoatRoughness??.36}):
+ const material=glazed?new THREE.MeshPhysicalMaterial({map,roughness:coat?.roughness??ceramics[floorKind]??.72,clearcoat:coat?.clearcoat??.24,clearcoatRoughness:coat?.clearcoatRoughness??.36}):
   new THREE.MeshStandardMaterial({map,roughness:detailed?ceramics[floorKind]:.72});
  if(coat)material.userData.floorTileSheen=sheen;else if(glazed)material.userData.floorWindowSheen=.95;
  material.userData.tileFinish={color:tileColor,layout:{width:layout.width,height:layout.height,gap:layout.gap},...(custom?{groutColor:custom}:{}),...(detailed?{floorKind}:{}),...(coat?{sheen}:{})};
@@ -221,7 +221,7 @@ function material(THREE,layout,{color='#e8e2d8',groutColor:custom,floorKind,shee
    material.clearcoat*=1.0-tileJoint;
   `);
  };
- material.customProgramCacheKey=()=> solidGloss?'furnish-solid-gloss-grid-v1':glazed?'furnish-glazed-grid-v1':detailed?'furnish-ceramic-grid-v1':'furnish-tile-grid-v3';return material;
+ material.customProgramCacheKey=()=> `furnish-tile-grid-v4|${detailed}|${glazed}|${solidGloss}`;return material;
 }
 // Old room textures have illustrative pixel joints and metre UVs, without a
 // saved layout or known layer heights. Recolour only those existing pixels.

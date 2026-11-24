@@ -40,8 +40,10 @@ function spaceIssueVolumes(plan,furniture,item,passage=800){
    work.plan=plan.id;work.architecture={draft,phase:'survey'};work.demolished=[];work.open={d:{},w:{}};work.spaceIgnored=[];
    FurnishLayers.remapBuiltin(work,source,plan,shift);
    FurnishStyles.remapWallPaint(work,source,plan,shift);
+   FurnishStyles.remapWallTiles(work,source,plan,shift);
    if(work.wallFinishes)FurnishWallFinish.remapBuiltin(work,source,plan,shift);
    if(work.wallTiling)FurnishWallTiling.remapBuiltin(work,source,plan,shift);
+   FurnishTileGrout.remapBuiltin(work,source,plan,shift);
    if(work.tilePresets)FurnishTilePresets.remapBuiltin(work,source,plan,shift);
    if(work.ceilings)FurnishCeiling.shift(work,shift);
    if(work.floorFinishes)for(const s of Object.values(work.floorFinishes.areas))if(s.layout)s.layout.origin=s.layout.origin.map((v,i)=>v+shift);

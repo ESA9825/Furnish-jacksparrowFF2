@@ -14,7 +14,7 @@
   if(!ids.has('0'))bad('必须保留 0 图层');
   for(const [key,id]of Object.entries(data.assignments)){
    if(!safe(key)||!/^(furniture|floor|wallTile|ceiling|roomCeiling):.+/.test(key)||typeof id!=='string'||!ids.has(id))bad('物体图层分配无效');
-   if(key.startsWith('wallTile:')){let a;try{a=JSON.parse(key.slice(9));}catch{bad('墙砖图层绑定无效');}if(!Array.isArray(a)||a.length!==5||!safe(a[0])||![-1,1].includes(a[1])||typeof a[2]!=='boolean'||![a[3],a[4]].every(n=>typeof n==='number'&&Number.isFinite(n))||a[3]<0||a[4]>1||a[4]<=a[3])bad('墙砖图层绑定无效');}
+   if(key.startsWith('wallTile:')&&!tileFace(key))bad('墙砖图层绑定无效');
   }
  }
  const list=work=>work.objectLayers?.layers||[zero()];
@@ -24,6 +24,15 @@
  const locked=(work,key)=>layer(work,key).locked;
  const furnitureKey=f=>'furniture:'+f.id;
  const faceKey=f=>'wallTile:'+JSON.stringify([f.wallId,f.side,!!f.cross,...f.range.map(n=>Number(n.toFixed(6)))]);
+ function tileFace(key){
+  if(typeof key!=='string'||!key.startsWith('wallTile:'))return;
+  try{
+   const a=JSON.parse(key.slice(9));
+   if(!Array.isArray(a)||a.length!==5)return;
+   const [wallId,side,cross,lo,hi]=a;
+   if(safe(wallId)&&[-1,1].includes(side)&&typeof cross==='boolean'&&Number.isFinite(lo)&&Number.isFinite(hi)&&lo>=0&&hi<=1&&lo<hi)return {wallId,side,cross,range:[lo,hi]};
+  }catch{/* Invalid persisted binding. */}
+ }
  // Joined finish solids retain raw along-wall extents. Functional areas and
  // physical rooms can have different ids; bind by source, side, normal and range.
  function wallFinishKey(plan,solid){
@@ -44,7 +53,7 @@
   const [kind,...parts]=key.split(':'),id=parts.join(':');
   if(kind==='furniture')return work.furniture?.find(f=>f.id===id);
   if(kind==='floor')return [work.floorFinishes?.areas?.[id],work.rooms?.[id]?.mat,work.tileGrout?.rooms?.[id]?.floor,work.styleAppearance?.floorOverrides?.[id],work.styleAppearance?.floorSamples?.[id],work.styleAppearance?.floorTileSheens?.[id]];
-  if(kind==='wallTile'){const surfaces=work.wallTiling?.surfaces?.filter(s=>faceKey(s)===key),roomId=surfaces?.[0]?.roomId,override=work.tileGrout?.walls?.find(s=>faceKey(s)===key);return [surfaces,work.wallFinishes?.surfaces?.filter(s=>faceKey(s)===key),override||work.tileGrout?.rooms?.[roomId]?.wall];}
+  if(kind==='wallTile'){const surfaces=work.wallTiling?.surfaces?.filter(s=>faceKey(s)===key),roomId=surfaces?.[0]?.roomId,override=work.tileGrout?.walls?.find(s=>faceKey(s)===key);return [surfaces,work.wallFinishes?.surfaces?.filter(s=>faceKey(s)===key),override||work.tileGrout?.rooms?.[roomId]?.wall,work.styleAppearance?.wallTileMaterials?.[key]];}
   if(kind==='ceiling')return work.ceilings?.items?.find(c=>c.id===id);
   if(kind==='roomCeiling')return [work.rooms?.[id]?.ceilingHeight,work.ceilingHeight];
  }
@@ -72,6 +81,6 @@
   }
   work.objectLayers.assignments=assignments;validate(work.objectLayers);
  }
- const api={validate,list,layerId,layer,visible,locked,furnitureKey,faceKey,wallFinishKey,create,update,remove,assign,onlyChange,assertEditable,copyAssignments,remapBuiltin};
+ const api={validate,list,layerId,layer,visible,locked,furnitureKey,faceKey,tileFace,wallFinishKey,create,update,remove,assign,onlyChange,assertEditable,copyAssignments,remapBuiltin};
  if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishLayers=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

@@ -9,15 +9,17 @@ function uv(THREE,geometry,layout,[u0,bottom,u1,height]){
  for(const point of [[u0,bottom],[u1,bottom],[u1,height],[u0,bottom],[u1,height],[u0,height]]){const q=F.transform(layout,point,true);out.push(q[0]/(layout.width+layout.gap),q[1]/(layout.height+layout.gap));}
  const current=geometry.getAttribute('uv');if(current?.array.length===out.length){current.array.set(out);current.needsUpdate=true;}else geometry.setAttribute('uv',new THREE.Float32BufferAttribute(out,2));return geometry;
 }
-function build(THREE,plan,{wx=v=>v/1000,wz=v=>v/1000,top=Infinity}={}){
+function build(THREE,plan,{wx=v=>v/1000,wz=v=>v/1000,top=Infinity,work=plan}={}){
  const group=new THREE.Group(),T=root.FurnishWallTiling||require('../core/wall-tiling-core.js'),materials=new Map(),owners=new Set();
+ const S=root.FurnishStyles||require('../core/style-core.js'),G=root.FurnishTileGrout||require('../core/tile-grout-core.js');
  const sources=plan.wallTiling?.surfaces||[],entries=sources.flatMap(e=>[...T.patterns(e),...(e.bandJoints||[]).map(j=>({...e,sections:j.sections,bandJoint:true,partId:j.partId}))]);
  for(const e of syncIdentity.records("wall-tiling-model.js:generator-1",entries)){
   if(!Number.isFinite(e.originZ)||!Number.isFinite(e.position)||!Number.isFinite(e.floorZ))continue;
-  const layout=T.grid(e),groutColor=(root.FurnishTileGrout||require('../core/tile-grout-core.js')).color(plan,e.face.roomId,'wall',e.face),key=JSON.stringify([e.face.roomId,layout.width,layout.height,layout.gap,groutColor,!!e.bandJoint]);
+  const layout=T.grid(e),groutColor=G.color(work,e.face.roomId,'wall',e.face),{color,sheen}=S.wallTileMaterial(work,e.face)||{};
+  const key=JSON.stringify([e.face.roomId,layout.width,layout.height,layout.gap,groutColor,color,sheen,!!e.bandJoint]);
   for(const rect of syncIdentity.records("wall-tiling-model.js:generator-2",e.sections)){
    const [u0,bottom,u1,uncutTop]=rect,height=Math.min(top,uncutTop);if(height<=bottom)continue;
-   if(!materials.has(key)){const M=root.FurnishFloorFinishModel||require('./floor-finish-model.js'),material=e.bandJoint?M.groutMaterial(THREE,{groutColor}):typeof document==='undefined'?new THREE.MeshStandardMaterial({color:'#e8e2d8'}):M.material(THREE,layout,{groutColor});material.polygonOffset=true;material.polygonOffsetFactor=-2;material.polygonOffsetUnits=-2;materials.set(key,material);}
+   if(!materials.has(key)){const M=root.FurnishFloorFinishModel||require('./floor-finish-model.js'),material=e.bandJoint?M.groutMaterial(THREE,{color,groutColor}):typeof document==='undefined'?new THREE.MeshStandardMaterial({color:color||'#e8e2d8'}):M.material(THREE,layout,{color,sheen,groutColor});material.polygonOffset=true;material.polygonOffsetFactor=-2;material.polygonOffsetUnits=-2;materials.set(key,material);}
    const local=[[u0,bottom],[u1,bottom],[u1,height],[u0,bottom],[u1,height],[u0,height]],positions=[];
    for(const [u,z] of local){const point=[0,0];point[e.axis]=e.zero+e.dir*u;point[e.normal]=e.position+e.face.side*.2;positions.push(wx(point[0]),z/1000,wz(point[1]));}
    const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));uv(THREE,geometry,layout,[u0,bottom,u1,height]);geometry.computeVertexNormals();

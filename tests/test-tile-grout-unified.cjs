@@ -5,6 +5,15 @@ const before=copy(work),all=G.batch(work,plan,ids,['wall','floor'],'#AABBCC');as
 const subset=G.batch(all,plan,[ids[0]],['floor'],undefined);assert.equal(G.color(subset,ids[0],'wall'),'#aabbcc');assert.equal(G.color(subset,ids[0],'floor'),undefined);assert.deepEqual(subset.tileGrout.rooms[ids[1]],all.tileGrout.rooms[ids[1]]);assert(!G.batch(all,plan,ids,['wall','floor'],undefined).tileGrout);
 for(const [rooms,kinds,value] of [[[],['wall'],'#112233'],[ids,[],'#112233'],[ids,['bad'],'#112233'],[[ids[0],'missing'],['wall'],'#112233'],[ids,['wall'],'#bad']])assert.throws(()=>G.batch(work,plan,rooms,kinds,value));assert.deepEqual(work,before,'invalid batch is atomic');
 const room={...plan.rooms[0],id:'wood',mat:'wood',use:'bedroom'},mixed={...plan,rooms:[...plan.rooms,room]},settings={...work,rooms:{...work.rooms,wood:{mat:'wood',use:'bedroom'}}};assert.equal(G.targets(settings,mixed,[...ids,'wood'],['wall','floor']).length,4);assert.throws(()=>G.targets(settings,mixed,['wood'],['wall','floor']));assert.equal(P.formatVersion([all]),11);assert(G.onlyChange(work,all));
+const WT=require('../src/core/wall-tiling-core.js'),faces=WT.faces(plan,work).filter(face=>face.roomId===ids[0]);
+const patched=G.editSurfaces(all,plan,[{roomId:ids[1],value:'#112233'},{roomId:ids[0],face:faces[0],value:undefined},{roomId:ids[0],face:faces[1],value:'#223344'}]);
+assert.equal(G.color(patched,ids[1],'floor'),'#112233');
+assert.equal(G.color(patched,ids[0],'wall',faces[0]),undefined);
+assert.equal(G.color(patched,ids[0],'wall',faces[1]),'#223344');
+assert.equal(G.color(patched,ids[0],'wall',faces[2]),'#aabbcc');
+assert.equal(G.color(all,ids[0],'wall',faces[0]),'#aabbcc');
+assert.throws(()=>G.editSurfaces(all,plan,[{roomId:ids[0],value:'#112233'},{roomId:'missing',value:'#abcdef'}]));
+assert.equal(G.color(all,ids[0],'floor'),'#aabbcc');
 (async()=>{const T=await import(JSON.parse(fs.readFileSync(require.resolve('../index.html'),'utf8').match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports.three),prior=global.document;try{
  global.document={createElement:()=>({getContext:()=>({fillRect(){}})})};const M=require('../src/render/floor-finish-model.js'),V=require('../src/render/tile-grout-preview.js'),material=M.material(T,{width:800,height:400,gap:2}),geometry=new T.BoxGeometry(),wallGroup=new T.Group(),floorGroup=new T.Group();const meshes=[];
  for(const roomId of ids){const w=new T.Mesh(geometry,material),f=new T.Mesh(geometry,material);w.userData.wallTiling={roomId};f.userData={floor:true,room:roomId};wallGroup.add(w);floorGroup.add(f);meshes.push(w,f);}

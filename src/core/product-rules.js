@@ -685,8 +685,8 @@ const tileSheens=Object.freeze([
  Object.freeze({id:'matte',name:'哑光砖',description:'低反光，亮斑很淡'})
 ]);
 const tileSheen=id=>tileSheens.find(sheen=>sheen.id===id);
-const supportsTileSheen=(kind,sample)=>sample?sample==='interior_tiles':kind==='tile800'||kind==='tile600';
-const styleAppearance=Object.freeze({formatVersion:97,materialFormatVersion:105,tileSheenFormatVersion:106,floorSamples,floorSample,tileSheens,tileSheen,supportsTileSheen,scopes:['cabinet','curtains','furniture','frames','bays','floors'],surfaces:['floor','bay','frame'],palette:['front','body','soft','wood','textile','sheer','pop','frame','bay','floor']});
+const supportsTileSheen=(kind,sample)=>sample?sample==='interior_tiles':(root.FurnishFloorFinish||require('./floor-finish-core.js')).tiled(kind);
+const styleAppearance=Object.freeze({formatVersion:97,materialFormatVersion:105,tileSheenFormatVersion:106,wallTileMaterialFormatVersion:107,floorSamples,floorSample,tileSheens,tileSheen,supportsTileSheen,scopes:['cabinet','curtains','furniture','frames','bays','floors'],surfaces:['floor','bay','frame'],palette:['front','body','soft','wood','textile','sheer','pop','frame','bay','floor']});
 function styleRole(f){
  if(!f||f.obj)return null;const r=definition(f);if(!r)return null;
  if(r.family==='window-covering')return r.covering?.kind==='sheer'?'sheer':'textile';

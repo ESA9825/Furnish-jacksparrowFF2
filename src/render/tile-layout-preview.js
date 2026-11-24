@@ -29,7 +29,7 @@ function create({THREE,OrbitControls,host,onSelect=()=>{},onBasis=()=>{},onGestu
    const material=floorModel.material(THREE,area.layout,finish);
    model.add(floorModel.surface(THREE,area.room,area,{wx,wz,material}));
   }
-  model.add(root.FurnishWallTilingModel.build(THREE,plan,{wx,wz}));model.add(root.FurnishWallFinishModel.build(THREE,plan,{wx,wz}));
+  model.add(root.FurnishWallTilingModel.build(THREE,plan,{wx,wz,work}));model.add(root.FurnishWallFinishModel.build(THREE,plan,{wx,wz}));
   // Picking sheets reuse the real cut wall sections, including disabled faces.
   // They do not add a physical layer or infer missing finish thickness.
   for(const face of faces){const e=T.elevation(plan,work,face);if(!Number.isFinite(e.position))continue;const t=targets.find(t=>t.kind==='wall'&&E.contains(t,face));for(const rect of e.sections){const [u,z,U,Z]=rect,positions=[];for(const p of [[u,z],[U,z],[U,Z],[u,z],[U,Z],[u,Z]]){const a=[0,p[1],0];a[e.axis===0?0:2]=e.zero+e.dir*p[0];a[e.normal===0?0:2]=e.position-face.side*.4;positions.push(...world(a).toArray());}const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.computeVertexNormals();const mesh=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({color:'#bbb4a8',transparent:true,opacity:.08,depthWrite:false,side:THREE.DoubleSide}));mesh.userData.tileTarget=t;mesh.userData.tilePickingSheet=true;model.add(mesh);}}

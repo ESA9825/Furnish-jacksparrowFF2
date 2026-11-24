@@ -18,7 +18,7 @@
 [data-tiling-workspace] h3{margin:0 0 12px}[data-tiling-workspace] h4{margin:18px 0 8px}[data-tiling-workspace] label{display:block;font-size:13px}[data-tiling-workspace] input,[data-tiling-workspace] select{max-width:100%;min-width:0}[data-tiling-workspace] select{width:100%}
 [data-tiling-workspace] .tiling-target{display:flex;gap:8px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--line);cursor:pointer}[data-tiling-workspace] input[type=checkbox]{width:16px;height:16px;flex:none}[data-tiling-targets]{max-height:440px;overflow:auto}.tiling-target small{display:block;color:var(--muted);margin-top:3px}.tiling-targets>.actions{gap:4px;margin:10px 0}.tiling-targets>.actions .btn{font-size:12px;padding:6px 8px}
 .tiling-preview{min-width:0}.tiling-preview svg{width:100%;height:auto;max-height:490px;border-radius:12px;background:#fffdf8}.tiling-preview>label{margin:10px 0}.tiling-preview .actions{margin-top:0}[data-tiling-3d]{height:440px;position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden}[data-tiling-3d] canvas{width:100%;height:100%;display:block;touch-action:none}
-.tiling-settings{min-width:0}.tiling-settings details{border-top:1px solid var(--line);padding:12px 0}.tiling-settings summary{cursor:pointer;font-size:13px;font-weight:600}.tiling-settings details>.form{margin-top:12px}.tiling-settings p{font-size:12px;line-height:1.6}.tiling-settings>.form{margin:10px 0}.tiling-settings [data-tile-color-label]{margin:10px 0}.tiling-preset-groups{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.tiling-preset-groups label{display:flex;align-items:center;gap:6px}.tiling-close-note{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px;border:1px solid var(--accent);border-radius:10px}.tiling-close-note[hidden],[data-tiling-workspace] [hidden]{display:none!important}[data-tiling-summary]{margin-bottom:0;font-weight:600;font-size:13px}.tiling-intro{margin-top:0}
+.tiling-settings{min-width:0}.tiling-settings details{border-top:1px solid var(--line);padding:12px 0}.tiling-settings summary{cursor:pointer;font-size:13px;font-weight:600}.tiling-settings details>.form{margin-top:12px}.tiling-settings p{font-size:12px;line-height:1.6}.tiling-settings>.form{margin:10px 0}.tiling-preset-groups{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.tiling-preset-groups label{display:flex;align-items:center;gap:6px}.tiling-close-note{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px;border:1px solid var(--accent);border-radius:10px}.tiling-close-note[hidden],[data-tiling-workspace] [hidden]{display:none!important}[data-tiling-summary]{margin-bottom:0;font-weight:600;font-size:13px}.tiling-intro{margin-top:0}
 
 
 [data-tiling-workspace] .form{grid-template-columns:repeat(2,minmax(0,1fr))}[data-tiling-workspace] .form label{min-width:0}.tiling-source{overflow-wrap:anywhere}
@@ -45,3 +45,8 @@
 #material-panel .material-options .btn{min-height:28px;padding:3px 8px;border:1px solid transparent}
 #material-panel .material-options .btn[aria-pressed=true]{color:var(--ink);background:var(--soft);border-color:var(--accent)}
 .material-editing .fab{visibility:hidden}
+
+[data-material-tile-count]:empty,[data-material-grout-state]:empty{display:none}
+[data-material-tile-filter]{display:flex;align-items:center;gap:6px}
+[data-material-tile-filter][hidden]{display:none}
+[data-material-grout] input[type=color]{width:36px;height:28px;padding:2px;border:1px solid var(--line);border-radius:5px;background:var(--paper)}

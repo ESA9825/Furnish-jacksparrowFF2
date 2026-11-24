@@ -316,8 +316,13 @@
   <main id="stage">
     <section id="material-panel" aria-label="材质" hidden>
       <div class="material-panel-heading"><strong data-material-target>点选场景中的表面</strong><span data-material-count role="status"></span><button type="button" class="btn" data-material-close aria-label="关闭材质面板">关闭</button><button type="button" class="btn primary" data-material-apply disabled>应用材质</button></div>
+      <div class="material-options" role="group" aria-label="材质范围">
+        <button type="button" class="btn" data-material-mode="surface" aria-pressed="true">点选表面</button><button type="button" class="btn" data-material-mode="tiles" aria-pressed="false">批量瓷砖</button>
+        <label data-material-tile-filter hidden><span>范围</span><select aria-label="瓷砖范围" data-material-tile-kind><option value="all">墙砖和地砖</option><option value="floor">地砖</option><option value="wall">墙砖</option></select></label><span data-material-tile-count role="status"></span>
+      </div>
       <div data-material-samples></div>
       <div class="material-options" data-material-sheen hidden><span>砖面</span><div data-material-sheen-options role="group" aria-label="地砖表面"></div></div>
+      <div class="material-options" data-material-grout hidden><span>美缝</span><button type="button" class="btn" data-material-grout-auto>跟随砖色</button><input type="color" aria-label="美缝颜色" data-material-grout-color value="#d0c9bd"><button type="button" class="btn" data-material-grout-use>使用此颜色</button><span data-material-grout-state role="status"></span></div>
       <div class="material-options"><span>光照试看</span><div data-material-light-options role="group" aria-label="光照试看"></div></div>
       <p data-material-message role="status"></p>
     </section>
@@ -1196,7 +1201,7 @@ function floorMat(kind,color,{refined=false,sheen}={}){
       for(let c=0;c<3;c++)underlying.data[at+c]*=m;
     }
     g.putImageData(underlying,0,0);
-  } else if (kind === 'marble'){
+  } else if (kind === 'marble'&&sheen!=='gloss'){
     g.strokeStyle = 'rgba(160,150,135,.35)';
     for (let k = 0; k < 6; k++){ g.lineWidth = 1 + R()*3; g.beginPath(); g.moveTo(R()*W, 0); g.bezierCurveTo(R()*W, R()*Hh, R()*W, R()*Hh, R()*W, Hh); g.stroke(); }
   } else if (kind === 'terrazzo'){
@@ -1766,7 +1771,7 @@ const syncIdentity=FurnishPartIdentity;
     }
   }
   archUp.add(FurnishWallFinishModel.build(THREE,finishPlan,{wx,wz,top:top*1000}));
-  if(finishPlan.wallTiling)archUp.add(FurnishWallTilingModel.build(THREE,finishPlan,{wx,wz,top:top*1000}));
+  if(finishPlan.wallTiling)archUp.add(FurnishWallTilingModel.build(THREE,finishPlan,{wx,wz,top:top*1000,work:appearanceWork}));
   if(finishPlan.ceilings)archUp.add(FurnishCeilingModel.build(THREE,finishPlan.ceilings,{wx,wz,top:opt.cut===2.8?Infinity:top*1000,wash:false,bodies:state.furniture.filter(f=>!furnitureError(f)).map(f=>({f,vertical:FurnishDesign.furnitureVerticalBounds(f,finishPlan,state.furniture)}))}));
   for(const s of finishPlan.wallFinish?.solids||[])if(s.bottom===0)colliders.push([wx(s.rect[0]),wz(s.rect[1]),wx(s.rect[2]),wz(s.rect[3])]);
   // 门洞、窗洞上方过梁（门窗矩形即洞口，head 默认 2.4m）
@@ -1997,7 +2002,7 @@ function sync(force){
   if(displayChanged||materialLookChanged||lightingChanged)applyLight();
   const materialWork=globalThis.FurnishMaterialUI?.work(state)||state;
   const furnitureWork=globalThis.FurnishWardrobePlannerUI?.previewWork()||globalThis.FurnishCatalog?.previewWork()||materialWork;
-  const a = JSON.stringify([materialWork.styleAppearance,globalThis.FurnishWorkflowTools?.styleKey(),state.rooms, state.demolished, state.open, PLAN.beams, opt.cut,H, PLAN.markers,state.furniture.filter(f=>(FurnishDesign.products().definition(f)?.downlight||FurnishDesign.products().definition(f)?.ceilingPanel)&&!f.obj).map(f=>[f.id,f.type,f.cx,f.cy,f.w,f.d,f.h,f.rot,f.flip,f.mountHeight]),state.furnitureDatum,state.wallFinishes,state.floorFinishes,state.wallTiling,state.ceilings,state.tileGrout,typeof FurnishWallFinish==='undefined'?[]:FurnishWallFinish.serviceOpenings(PLAN,state),typeof FurnishElectricalBox==='undefined'?[]:FurnishElectricalBox.cuts(FurnishProject.effectivePlan(PLAN,state),state.furniture)]), f = JSON.stringify([furnitureWork.furniture.map(({price,referencePrice,priceDate,purchaseStatus,purchaseNote,sourceUrl,...shape})=>shape),PLAN.markers,state.rooms,H,globalThis.FurnishWorkflowTools?.styleKey(),state.wallFinishes,state.floorFinishes,state.furnitureDatum]), l = JSON.stringify([state.rooms, opt.cut,H,PLAN.beams,state.wallFinishes,state.floorFinishes,state.wallTiling]);
+  const a = JSON.stringify([materialWork.styleAppearance,globalThis.FurnishWorkflowTools?.styleKey(),state.rooms, state.demolished, state.open, PLAN.beams, opt.cut,H, PLAN.markers,state.furniture.filter(f=>(FurnishDesign.products().definition(f)?.downlight||FurnishDesign.products().definition(f)?.ceilingPanel)&&!f.obj).map(f=>[f.id,f.type,f.cx,f.cy,f.w,f.d,f.h,f.rot,f.flip,f.mountHeight]),state.furnitureDatum,state.wallFinishes,state.floorFinishes,state.wallTiling,state.ceilings,materialWork.tileGrout,typeof FurnishWallFinish==='undefined'?[]:FurnishWallFinish.serviceOpenings(PLAN,state),typeof FurnishElectricalBox==='undefined'?[]:FurnishElectricalBox.cuts(FurnishProject.effectivePlan(PLAN,state),state.furniture)]), f = JSON.stringify([furnitureWork.furniture.map(({price,referencePrice,priceDate,purchaseStatus,purchaseNote,sourceUrl,...shape})=>shape),PLAN.markers,state.rooms,H,globalThis.FurnishWorkflowTools?.styleKey(),state.wallFinishes,state.floorFinishes,state.furnitureDatum]), l = JSON.stringify([state.rooms, opt.cut,H,PLAN.beams,state.wallFinishes,state.floorFinishes,state.wallTiling]);
   const geometryChanged=force||a!==sigArch||f!==sigFurn;
   // Read-only scene polling must not reset a pointer gesture on the current models.
   if(displayChanged||geometryChanged)cancelElevationGesture();
@@ -2365,6 +2370,10 @@ function pickMaterial(e){
   if(!hit)return null;
   const o=hit.object,d=o.userData;
   if(d.floor&&d.room&&!FurnishLayers.locked(state,'floor:'+d.room))return {kind:'floor',id:d.room};
+  if(d.wallTiling){
+    const face=FurnishWallTiling.binding(d.wallTiling),id=FurnishLayers.faceKey(face);
+    return FurnishLayers.locked(state,id)?null:{kind:'wallTile',id,face};
+  }
   if(d.paintFaces&&!FurnishLayers.locked(state,'wallPaint:'+d.paintFaces.id)){
     const side=d.paintFaces.faces.indexOf(hit.face?.materialIndex);
     if(side>=0)return {kind:'wall',id:d.paintFaces.id,side:side===0?1:-1};
@@ -2442,12 +2451,13 @@ function updateSel(){
     if(materialTarget){
       const target=materialTarget,bounds=new THREE.Box3();
       const furniture=furnG.children.find(o=>o.userData.fid===target.id);
-      const group=target.kind==='floor'?archFloor:target.kind==='wall'?archUp:furniture;
+      const group=target.kind==='floor'?archFloor:target.kind==='wall'||target.kind==='wallTile'?archUp:furniture;
       group?.updateMatrixWorld(true);
       group?.traverse(o=>{
         if(!o.isMesh||!sceneObjectShown(o))return;
         const d=o.userData,p=d.cabinetBuilder;
         if(target.kind==='floor'&&(!d.floor||d.doorway||d.room!==target.id)||target.kind==='wall'&&d.paintFaces?.id!==target.id)return;
+        if(target.kind==='wallTile'&&(!d.wallTiling||!FurnishWallTiling.same(d.wallTiling,target.face)))return;
         if(target.kind==='front'&&(p?.boxId!==target.boxId||p?.componentId!==target.componentId||!d.cabinetDoorSize&&d.cabinetDrawerBoard!=='front'&&!d.cabinetFoldDoor))return;
         if(target.kind==='board'&&(p?.boxId!==target.boxId||target.componentId&&p.componentId!==target.componentId))return;
         if(target.kind==='legacyFront'&&(d.cabinetPart?.column!==target.column||!d.cabinetDoorSize&&d.cabinetDrawerBoard!=='front'))return;

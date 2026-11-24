@@ -27,18 +27,22 @@ function furniture(f,id,overrides={},bodySurface){
 }
 function applyCabinets(work,id,overrides={},bodySurface){if(!find(id))return null;work.furniture=work.furniture.map(f=>{const next=furniture(f,id,overrides,bodySurface);return next.cabinet?.appearance||next.kitchen?.appearance?next:f;});work.style=id;return find(id);}
 function applyColors(work,id,overrides={},bodySurface){if(!find(id))return null;work.furniture=work.furniture.map(f=>furniture(f,id,overrides,bodySurface));work.style=id;return find(id);}
-function materialRules(){const r=products().styleAppearance;return {floorSamples:r.floorSample,wallPaint:validColor,floorTileSheens:r.tileSheen};}
+const tileLayers=()=>root.FurnishLayers||require('./layers-core.js');
+function materialRules(){const r=products().styleAppearance;return {floorSamples:r.floorSample,wallPaint:validColor,floorTileSheens:r.tileSheen,wallTileMaterials:validWallTile};}
+function validWallTile(v){return v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).length>0&&Object.keys(v).every(k=>k==='color'?validColor(v.color):k==='sheen'&&products().styleAppearance.tileSheen(v.sheen));}
+function validMaterialKey(key,id){return key==='wallPaint'?validWallKey(id):key==='wallTileMaterials'?!!tileLayers().tileFace(id):true;}
 function validateAppearance(value){
  if(value===undefined)return;const r=products().styleAppearance,rules=materialRules();if(!value||typeof value!=='object'||Array.isArray(value)||value.version!==1||Object.keys(value).some(k=>!['version',...Object.keys(rules),...r.surfaces.flatMap(k=>[k+'Color',k+'Overrides'])].includes(k)))throw Error('风格表面配色无效');
  for(const k of r.surfaces){if(value[k+'Color']!==undefined&&!validColor(value[k+'Color']))throw Error('风格颜色须为六位HEX');const rows=value[k+'Overrides'];if(rows!==undefined&&(!rows||typeof rows!=='object'||Array.isArray(rows)||Object.keys(rows).length>1000||Object.entries(rows).some(([id,c])=>!id||id.length>500||!validColor(c))))throw Error('局部表面配色无效');}
  for(const [key,validate] of Object.entries(rules)){
-  const rows=value[key];if(rows!==undefined&&(!rows||typeof rows!=='object'||Array.isArray(rows)||Object.keys(rows).length>1000||Object.entries(rows).some(([id,value])=>!id||id.length>500||key==='wallPaint'&&!validWallKey(id)||!validate(value))))throw Error('表面材质无效');
+  const rows=value[key];if(rows!==undefined&&(!rows||typeof rows!=='object'||Array.isArray(rows)||Object.keys(rows).length>1000||Object.entries(rows).some(([id,value])=>!id||id.length>500||!validMaterialKey(key,id)||!validate(value))))throw Error('表面材质无效');
  }
 }
 function surfaceColor(work,kind,id){const a=work?.styleAppearance;const overrides=a?.[kind+'Overrides'];return overrides&&Object.hasOwn(overrides,id)?overrides[id]:a?.[kind+'Color'];}
 function frameKey(plan,index){return plan.winRefs?.[index]??'window:'+index;}
 function editSurface(work,kind,id,value){if(!products().styleAppearance.surfaces.includes(kind)||typeof id!=='string'||!id||value!==undefined&&!validColor(value))throw Error('表面配色无效');validateAppearance(work.styleAppearance);work.styleAppearance??={version:1};const a=work.styleAppearance,key=kind+'Overrides';if(value===undefined){if(a[key]){delete a[key][id];if(!Object.keys(a[key]).length)delete a[key];}}else Object.defineProperty(a[key]??={},id,{value,enumerable:true,configurable:true,writable:true});if(Object.keys(a).length===1)delete work.styleAppearance;}
 const materialValue=(work,key,id)=>{const rows=work.styleAppearance?.[key];return rows&&Object.hasOwn(rows,id)?rows[id]:undefined;};
+const wallTileMaterial=(work,face)=>materialValue(work,'wallTileMaterials',tileLayers().faceKey(face));
 function floorTileSheen(work,id,kind){
  const rules=products().styleAppearance,sample=materialValue(work,'floorSamples',id);
  if(rules.supportsTileSheen(kind??work.rooms?.[id]?.mat,sample))return rules.tileSheen(materialValue(work,'floorTileSheens',id))?.id;
@@ -46,13 +50,23 @@ function floorTileSheen(work,id,kind){
 const wallKey=(id,side)=>JSON.stringify([id,side]);
 function editMaterial(work,key,id,value){
  const rules=materialRules(),valid=Object.hasOwn(rules,key)?rules[key]:null;
- if(!valid||typeof id!=='string'||!id||id.length>500||key==='wallPaint'&&!validWallKey(id)||value!==undefined&&!valid(value))throw Error('表面材质无效');
+ if(!valid||typeof id!=='string'||!id||id.length>500||!validMaterialKey(key,id)||value!==undefined&&!valid(value))throw Error('表面材质无效');
  const appearance=work.styleAppearance??={version:1};
  const rows={...appearance[key]};
  if(value===undefined)delete rows[id];else Object.defineProperty(rows,id,{value,enumerable:true,configurable:true,writable:true});
  if(Object.keys(rows).length)appearance[key]=rows;else delete appearance[key];
  if(Object.keys(appearance).length===1)delete work.styleAppearance;
  validateAppearance(work.styleAppearance);
+}
+function remapWallTiles(work,before,after,shift){
+ const rows=work.styleAppearance?.wallTileMaterials;if(!rows)return;
+ const L=tileLayers(),W=root.FurnishWallFinish||require('./wall-finish-core.js'),mapped={};
+ for(const [key,value] of Object.entries(rows)){
+  const face=L.tileFace(key),fake={wallFinishes:{version:1,surfaces:[face]}};
+  W.remapBuiltin(fake,before,after,shift);
+  for(const target of fake.wallFinishes.surfaces)mapped[L.faceKey(target)]=value;
+ }
+ work.styleAppearance.wallTileMaterials=mapped;
 }
 function remapWallPaint(work,before,after,shift){
  const rows=work.styleAppearance?.wallPaint;if(!rows)return;
@@ -78,6 +92,6 @@ function apply(work, rooms, id, custom = false, overrides={}, bodySurface) {
  const style=find(id);if(!style)return null;applySelected(work,rooms,id,{scopes:products().styleAppearance.scopes,palette:overrides,bodySurface});
  rooms.forEach(room=>{const material=design.styleFloor(room,work.rooms[room.id],style,custom);if(material)work.rooms[room.id].mat=material;});work.style=id;return style;
 }
-const api={find,apply,color,furniture,applyColors,applyCabinets,palette,category,validateAppearance,surfaceColor,frameKey,editSurface,materialValue,editMaterial,floorTileSheen,wallKey,remapWallPaint,options,applySelected,preview};
+const api={find,apply,color,furniture,applyColors,applyCabinets,palette,category,validateAppearance,surfaceColor,frameKey,editSurface,materialValue,editMaterial,floorTileSheen,wallTileMaterial,wallKey,remapWallPaint,remapWallTiles,options,applySelected,preview};
 if(inNode)module.exports=api;else root.FurnishStyles=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
