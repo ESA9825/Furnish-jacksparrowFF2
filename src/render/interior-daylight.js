@@ -23,6 +23,7 @@ const apertures=[
  ['cad_window_7_1','area_fmv3qdfiz23',['area_fmv3qdfiz23']]
 ];
 const contactTypes=/^(sofa|armchair|chair|coffeetable|table|roundtable|bed|nightstand|desk|cabinet|bookshelf|cat_tree|cat_tower|plant_clivia|plant_spider|aircon_floor)/;
+const cabinetContactTolerance=.005;
 const resolution=192;
 const maxApertures=apertures.length+1; // slot zero is always unlit
 // Tile lengths in metres and micro-height in metres. Painted boards and
@@ -698,31 +699,50 @@ function create(T,scene,{wx,wz,inside}){
   decorated.set(mesh,{source,next,sunReceiver});
   mesh.material=next;
  }
- function findSupports(model,tightBase){
+ function findSupports(model,cabinet){
   model.updateWorldMatrix(true,true);
   inverse.copy(model.matrixWorld).invert();
-  const parts=[];
+  const parts=[],footprints=[];
+  const tolerance=cabinet?cabinetContactTolerance:.025;
   model.traverse(mesh=>{
    if(!mesh.isMesh)return;
    const data=mesh.userData;
-   if(tightBase&&(data.cabinetDrawerBoard||data.cabinetDoorSize||data.cabinetFoldDoor))return;
+   if(cabinet&&(!mesh.visible||data.cabinetPart||data.cabinetDrawerBoard||data.cabinetDoorSize||data.cabinetFoldDoor))return;
    if(!mesh.geometry.boundingBox)mesh.geometry.computeBoundingBox();
    matrix.multiplyMatrices(inverse,mesh.matrixWorld);
    box.copy(mesh.geometry.boundingBox).applyMatrix4(matrix);
-   // Only low geometry in contact with the known floor carries a patch.
-   if(Math.abs(box.min.y)>(tightBase?.005:.025))return;
+   if(box.min.y>tolerance)return;
+   if(cabinet){
+    // Read only the bottom of a foot or board, including eased edges and bevels.
+    const vertices=mesh.geometry.getAttribute('position');
+    if(!vertices)return;
+    let bottom=Infinity;
+    box.makeEmpty();
+    for(let i=0;i<vertices.count;i++){
+     local.fromBufferAttribute(vertices,i).applyMatrix4(matrix);
+     bottom=Math.min(bottom,local.y);
+     if(Math.abs(local.y)<=tolerance)box.expandByPoint(local);
+    }
+    if(Math.abs(bottom)<=tolerance){
+     box.min.y=box.max.y=0;
+     footprints.push(box.clone());
+    }
+    return;
+   }
+   if(Math.abs(box.min.y)>tolerance)return;
    box.getCenter(center);box.getSize(length);
    if(length.x<=.012||length.z<=.012)return;
-   if(tightBase&&data.cabinetSection==='bottom'&&length.x>.28&&length.z>.06){
-    // A floor-level base shades the floor just beyond its physical edges.
-    parts.unshift([center.x,box.max.z,length.x+.04,.10]);
-    parts.push([box.min.x,center.z,.08,length.z+.04],[box.max.x,center.z,.08,length.z+.04]);
-   }else if(tightBase&&length.x>.28&&length.z>.06){
-    // Draw the narrow front contact of an actual low rigid board.
-    parts.unshift([center.x,box.max.z+.018,length.x+.08,.18]);
-    parts.push([box.min.x-.012,center.z,.14,length.z+.07],[box.max.x+.012,center.z,.14,length.z+.07]);
-   }else parts.push([center.x,center.z,length.x+.19,length.z+.19]);
+   parts.push([center.x,center.z,length.x+.19,length.z+.19]);
   });
+  for(const [i,footprint] of footprints.entries()){
+   // A larger support already covers nested contacts. Keep one copy of equal footprints.
+   if(footprints.some((other,j)=>i!==j&&other.containsBox(footprint)&&(j<i||!footprint.containsBox(other))))continue;
+   footprint.getCenter(center);footprint.getSize(length);
+   if(length.x>.28&&length.z>.06){
+    parts.unshift([center.x,footprint.max.z,length.x+.04,.10]);
+    parts.push([footprint.min.x,center.z,.08,length.z+.04],[footprint.max.x,center.z,.08,length.z+.04]);
+   }else parts.push([center.x,center.z,length.x+.06,length.z+.06]);
+  }
   return parts.slice(0,8);
  }
  function configureNight(furnG,archUp){
@@ -885,12 +905,13 @@ function create(T,scene,{wx,wz,inside}){
    uniforms.furnishSofaSize.value.set(sofa.width/2,sofa.depth/2,sofa.floor,sofa.floor+sofa.height);
   }
   let count=0;
-  for(const [model,parts] of entries){
+  for(const [model,{parts,cabinet}] of entries){
    if(!model.visible||!model.parent?.visible)continue;
    model.updateMatrixWorld();
+   const tolerance=cabinet?cabinetContactTolerance:.026;
    for(const [x,z,w,d] of parts){
     local.set(x,0,z).applyMatrix4(model.matrixWorld);
-    const floor=floors.find(o=>o.visible&&Math.abs(o.position.y-local.y)<.026&&o.userData.interiorPolygon&&inside(local.x,local.z,o.userData.interiorPolygon));
+    const floor=floors.find(o=>o.visible&&Math.abs(o.position.y-local.y)<tolerance&&o.userData.interiorPolygon&&inside(local.x,local.z,o.userData.interiorPolygon));
     if(!floor||count>=patch.instanceMatrix.count)continue;
     transform.position.set(local.x,floor.position.y+.0025,local.z);
     transform.rotation.set(-Math.PI/2,0,model.rotation.y);
@@ -983,6 +1004,7 @@ function create(T,scene,{wx,wz,inside}){
    }
   });
   const byId=new Map(furniture.map(f=>[f.id,f]));
+  const cabinetRules=root.FurnishCabinet||require('../core/cabinet-core.js');
   furnG.updateWorldMatrix(true,true);
   configureNight(furnG,archUp);
   supports.clear();sofa=null;
@@ -1020,7 +1042,8 @@ function create(T,scene,{wx,wz,inside}){
     accepted.add(mesh);paint(mesh,finish,seam,'',!!kitchenReceiver,sunReceiver);
    });
    if(contactTypes.test(f.type)&&!f.pose3D&&model.userData.floorBase.known&&Math.abs(model.position.y-model.userData.floorBase.z/1000)<.025){
-    supports.set(model,findSupports(model,scopedCabinet));
+    const cabinet=cabinetRules.supported(f);
+    supports.set(model,{parts:findSupports(model,cabinet),cabinet});
    }
   }
   for(const [mesh,{source}] of decorated){
