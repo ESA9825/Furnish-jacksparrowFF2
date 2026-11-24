@@ -390,5 +390,41 @@ require('../src/render/interior-daylight.js');
  begin({...plan,winRefs:[]});
  assert.equal(pilot.overlay.children.length,1);
  assert.equal(foot.material,material);
- console.log('PASS scoped windows and night return, surface materials, contacts, visibility and cleanup');
+
+ const entryId='area_fmv3qb1oi5';
+ const entryFloor=new T.Mesh(new T.PlaneGeometry(1.5,5),floorMaterial);
+ entryFloor.position.set(4.55,.06,2.5);
+ entryFloor.rotation.x=-Math.PI/2;
+ entryFloor.userData={floor:true,room:entryId};
+ archFloor.add(entryFloor);
+ const openEntry={id:entryId,parentRoom:'shared',poly:[[3800,0],[5300,0],[5300,5000],[3800,5000]]};
+ const openPlan={...plan,rooms:[{id,poly,parentRoom:'shared'},plan.rooms[1],openEntry]};
+ const entryShader=()=>{
+  const output={uniforms:{},vertexShader:'#include <project_vertex>',fragmentShader:
+   '#include <roughnessmap_fragment>\n#include <lights_fragment_begin>\n#include <aomap_fragment>'};
+  entryFloor.material.onBeforeCompile(output);
+  return output;
+ };
+ begin(openPlan);
+ const openShader=entryShader();
+ assert.match(openShader.fragmentShader,/furnishRoomDaylight/);
+ assert.doesNotMatch(openShader.fragmentShader,/furnishSunThroughWindow/,'Entry spill uses the existing physical direct shadows');
+ const openTexture=openShader.uniforms.furnishDaylightMap.value;
+ const lookup=openShader.uniforms.furnishDaylightBounds.value;
+ const openingLight=(x,y)=>{
+  const {width,height,data}=openShader.uniforms.furnishDaylightMap.value.image;
+  const col=Math.floor((x/1000-lookup.x)*lookup.z*width),row=Math.floor((y/1000-lookup.y)*lookup.w*height);
+  return data[4*(col+row*width)];
+ };
+ const livingEdge=openingLight(3770,2300),entryEdge=openingLight(3830,2300);
+ assert.ok(entryEdge>0&&Math.abs(livingEdge-entryEdge)<=8,'Adjoining texels on either side of the open boundary have almost equal energy');
+ assert.ok(entryEdge>openingLight(4310,2300)&&openingLight(4310,2300)>openingLight(4850,2300));
+ assert.equal(openingLight(5200,2300),0,'Spill fades out inside the entry');
+ const separated={...openEntry,poly:[[3930,0],[5300,0],[5300,5000],[3930,5000]]};
+ begin({...openPlan,rooms:[...openPlan.rooms.slice(0,2),separated]});
+ assert.notEqual(openShader.uniforms.furnishDaylightMap.value,openTexture,'Closing the open boundary invalidates the field');
+ assert.equal(openingLight(4010,2300),0,'A gap between room footprints keeps the entry behind a wall unlit');
+ begin({...openPlan,rooms:[...openPlan.rooms.slice(0,2),{...openEntry,parentRoom:'separate'}]});
+ assert.equal(openingLight(4010,2300),0,'A different physical room does not receive spill');
+ console.log('PASS scoped windows, open-entry daylight falloff, night return, surface materials, contacts, visibility and cleanup');
 })().catch(error=>{console.error(error);process.exitCode=1;});

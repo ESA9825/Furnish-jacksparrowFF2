@@ -8,8 +8,10 @@ const finishRooms=new Set([livingRooms[0],livingRooms[2]]);
 const bedrooms=['area_fmv3p1fkz7','area_fmv3oztg03'];
 const nightFinishRooms=new Set([...finishRooms,...bedrooms]);
 const paintRooms=new Set([...finishRooms,...bedrooms,'bay_cad_window_11_5','bay_cad_window_10_4']);
-const adjoiningIds=new Set(['area_fmv3qb1oi5','area_fmv3qcck717']);
+const entryRoom='area_fmv3qb1oi5';
 const kitchenRoom='area_fmv3qcck717';
+const adjoiningIds=new Set([entryRoom,kitchenRoom]);
+const entryFalloff=1250; // mm from the open boundary
 const apertures=[
  // Opening ref, room receiving the light, additional continuous or bay floor.
  ['cad_window_9_3','area_fmv3p2ig914',livingRooms],
@@ -119,7 +121,7 @@ function create(T,scene,{wx,wz,inside}){
   const width=alongX?right-left:back-front;
   return {id,lightRooms,alongX,normal,inner,outer,width,x,y,sill,head};
  }
- function mapLight(openings){
+ function mapLight(openings,entryBoundary,projectSegment){
   const windows=[];
   for(const [index,[,roomId,ids]] of apertures.entries()){
    const window=openings[index];
@@ -138,23 +140,34 @@ function create(T,scene,{wx,wz,inside}){
    uniforms.furnishWindowShapes.value[w.id].set(w.width/2000,(w.head-w.sill)/2,w.alongX?0:w.normal,w.alongX?w.normal:0);
   }
   const rooms=[...roomById.values()];
-  const adjoining=rooms.filter(room=>adjoiningIds.has(room.id));
+  const adjoining=rooms.filter(room=>adjoiningIds.has(room.id)&&!(entryBoundary.length&&room.id===entryRoom));
   const litRooms=rooms.filter(room=>windows.some(w=>w.lightRooms.has(room.id)));
   field=dataTexture(resolution,resolution,(i,j)=>{
    const x=xmin+(i+.5)/resolution*(xmax-xmin),y=ymin+(j+.5)/resolution*(ymax-ymin);
-   // Use the exact owning room first. The allowance lights the wall faces
-   // beside furniture and room footprints without crossing into a neighbor.
+   // Extend window light up to nearby wall faces outside the room polygons.
+   // Inside the open entry, distance from the shared edge controls the spill.
    const exact=rooms.find(room=>inside(x,y,room.poly));
    const near=exact?[exact]:litRooms.filter(room=>edgeDistance(x,y,room.poly)<=90);
+   let entryWeight=0;
+   if(exact?.id===entryRoom&&entryBoundary.length){
+    const distance=Math.min(...entryBoundary.map(([a,b])=>{
+     const {point:[px,py]}=projectSegment([x,y],a,b);
+     return Math.hypot(x-px,y-py);
+    }));
+    const t=Math.max(0,1-distance/entryFalloff);
+    entryWeight=t*t*(3-2*t);
+   }
    const weights=[];
    for(const w of windows){
-    if(!near.some(room=>w.lightRooms.has(room.id)))continue;
+    const coverage=near.some(room=>w.lightRooms.has(room.id))?1:
+     w.lightRooms.has(livingRooms[0])?entryWeight:0;
+    if(!coverage)continue;
     const lateral=Math.max(0,Math.abs(w.alongX?x-w.x:y-w.y)-w.width/2);
     const depth=Math.max(0,((w.alongX?y:x)-w.inner)*w.normal);
     const edge=w.lightRooms.has(livingRooms[2])?
      Math.min(1,...adjoining.map(room=>edgeDistance(x,y,room.poly)/780)):1;
     const area=Math.min(1,Math.sqrt(w.width*(w.head-w.sill)/2500));
-    const soft=area*Math.exp(-depth/(w.width*1.25)-lateral*lateral/600000)*edge*edge*(3-2*edge);
+    const soft=coverage*area*Math.exp(-depth/(w.width*1.25)-lateral*lateral/600000)*edge*edge*(3-2*edge);
     weights.push([Math.round(soft*255),w.id]);
    }
    // Keep aperture slots stable inside a room even where one side is faint.
@@ -270,6 +283,7 @@ function create(T,scene,{wx,wz,inside}){
   const groutHalfWidth=layout?layout.gap/(2*(Math.min(layout.width,layout.height)+layout.gap)):.006;
   const paintDetail=profile==='wall',cabinetDetail=profile==='cabinet';
   const apertureReceiver=sunReceiver==='room'||sunReceiver==='wall'&&paintDetail;
+  const returnReceiver=apertureReceiver||sunReceiver==='entry';
   const ceiling=profile==='ceiling',pile=profile==='pile',stone=profile==='stone';
   const latex=paintDetail||ceiling;
   const replacePaintColor=ceiling||paintDetail&&source.color.getHex()===0x37332b;
@@ -285,7 +299,7 @@ function create(T,scene,{wx,wz,inside}){
   // Keep source PBR values and pre-existing shaders. Export strips these
   // raster hooks and keeps the source values.
   const cacheKey=source.customProgramCacheKey();
-  material.customProgramCacheKey=()=>cacheKey+'|room-daylight-v15|'+smoothReflection+'|'+satinTile+'|'+(floorSheen!==undefined)+'|'+profile+'|'+fineEdge+'|'+replacePaintColor+'|'+upperReceiver+'|'+kitchenReceiver+'|'+finishKind+'|'+sunReceiver;
+  material.customProgramCacheKey=()=>cacheKey+'|room-daylight-v16|'+smoothReflection+'|'+satinTile+'|'+(floorSheen!==undefined)+'|'+profile+'|'+fineEdge+'|'+replacePaintColor+'|'+upperReceiver+'|'+kitchenReceiver+'|'+finishKind+'|'+sunReceiver;
   material.onBeforeCompile=function(shader,renderer){
    source.onBeforeCompile.call(this,shader,renderer);
    Object.assign(shader.uniforms,uniforms);
@@ -424,8 +438,8 @@ function create(T,scene,{wx,wz,inside}){
      `:``}
     }
    `+shader.fragmentShader.replace('#include <lights_fragment_begin>',`
-    ${apertureReceiver?`
-     float furnishSunThroughWindow=1.0;
+    ${returnReceiver?`
+     ${apertureReceiver?'float furnishSunThroughWindow=1.0;':''}
      float furnishRoomDaylight=0.0;
      if(furnishDaylightStrength>0.0){
       vec2 roomPoint=furnishInteriorPosition.xz;
@@ -435,10 +449,14 @@ function create(T,scene,{wx,wz,inside}){
       vec2 texel=(floor(apertureUV*${resolution}.0)+0.5)/${resolution}.0;
       vec4 opening=texture2D(furnishDaylightMap,texel);
       ivec2 ids=ivec2(opening.ba*255.0+0.5);
-      if(interior>0.0&&furnishDaylightSources[ids.x].w>0.0){
+      ${apertureReceiver?`
+      if(interior>0.0&&furnishDaylightSources[ids.x].w>0.0)
        furnishSunThroughWindow=mix(1.0,max(furnishApertureSun(ids.x),furnishApertureSun(ids.y)),interior);
+      `:''}
+      if(interior>0.0){
        vec2 sky=texture2D(furnishDaylightMap,apertureUV).rg;
-       furnishRoomDaylight=interior*(0.18+0.22*min(1.0,sky.x+sky.y))*furnishDaylightStrength;
+       float livingSky=dot(sky,vec2(furnishDaylightSources[ids.x].w,furnishDaylightSources[ids.y].w));
+       furnishRoomDaylight=interior*(0.18*smoothstep(0.0,0.12,livingSky)+0.22*min(1.0,livingSky))*furnishDaylightStrength;
       }
      }
     `:''}
@@ -623,7 +641,7 @@ function create(T,scene,{wx,wz,inside}){
        *(0.065*nearFloor*(1.0-localCorner)*(1.0-sofaShade)*hasPaint*furnishDaylightStrength);
      }
     `:''}
-    ${apertureReceiver?`
+    ${returnReceiver?`
      // A broad room return provides light on the far side of the window beam.
      reflectedLight.indirectDiffuse+=diffuseColor.rgb*(1.0-metalnessFactor)
       *vec3(1.0,0.96,0.90)*furnishRoomDaylight;
@@ -882,11 +900,17 @@ function create(T,scene,{wx,wz,inside}){
    reset();return;
   }
   const openings=apertures.map(([ref])=>plan.wins?.[plan.winRefs?.indexOf(ref)]);
-  const key=JSON.stringify([wx(0),wz(0),openings,plan.rooms.map(({id,poly,at})=>[id,poly,at])]);
+  const zones=root.FurnishZoneGeometry||require('../core/zone-geometry.js');
+  const living=plan.rooms.find(room=>room.id===livingRooms[0]),entry=plan.rooms.find(room=>room.id===entryRoom);
+  // Functional zones can share a floor edge inside a single physical room.
+  const entryBoundary=entry?.parentRoom&&entry.parentRoom===living?.parentRoom?
+   [...zones.sharedBoundary(living.rings||[living.poly],entry.rings||[entry.poly])]:[];
+  const receiver=id=>livingRoomSet.has(id)?'room':id===entryRoom&&entryBoundary.length?'entry':'';
+  const key=JSON.stringify([wx(0),wz(0),openings,entryBoundary,plan.rooms.map(({id,poly,at})=>[id,poly,at])]);
   if(openingsKey!==key){reset();openingsKey=key;}
   if(!patch){
    roomById=new Map(plan.rooms.filter(room=>room.poly?.length>=3).map(room=>[room.id,room]));
-   mapLight(openings);
+   mapLight(openings,entryBoundary,zones.projectSegment);
    const mask=dataTexture(32,32,(x,y)=>{
     const q=Math.max(Math.abs((x+.5)/16-1),Math.abs((y+.5)/16-1));
     const a=(1-q*q)**2;
@@ -917,7 +941,7 @@ function create(T,scene,{wx,wz,inside}){
   if(!finishField)mapFinishes(archUp,paintedAreas);
   for(const floor of floors){
    const room=floor.userData.room;
-   paint(floor,finishRooms.has(room)?'floor':'',undefined,'',false,livingRoomSet.has(room)?'room':'');
+   paint(floor,finishRooms.has(room)?'floor':'',undefined,'',false,receiver(room));
   }
   archUp.updateWorldMatrix(true,true);
   const paintBounds=paintedAreas.map(({poly})=>new T.Box3().setFromPoints(poly.map(([x,z])=>new T.Vector3(x,0,z))));
@@ -955,7 +979,7 @@ function create(T,scene,{wx,wz,inside}){
    if(!f||!roomById.has(model.userData.floorBase?.roomId))continue;
    const base=model.userData.floorBase;
    const scopedCabinet=f.type==='cabinet'&&finishRooms.has(base.roomId);
-   const sunReceiver=livingRoomSet.has(base.roomId)?'room':'';
+   const sunReceiver=receiver(base.roomId);
    if(!sofa&&f.type==='sofa_yeswood_cherry'&&finishRooms.has(base.roomId)&&base.known&&!f.pose3D){
     sofa={model,floor:base.z/1000,width:(f.w??2160)/1000,depth:(f.d??892)/1000,height:(f.h??895)/1000};
    }

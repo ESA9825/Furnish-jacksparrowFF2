@@ -133,7 +133,20 @@
  }
  const area=pieces=>pieces.reduce((n,p)=>n+Math.abs(signed(p)),0);
  function ringPath(rings){if(!rings.length)return [];const start=rings[0][0],poly=[...rings[0],start];for(const ring of rings.slice(1))poly.push(...ring,ring[0],start);return poly;}
- function adjacent(A,B){return segments(A).some(([a,b])=>segments(B).some(([c,d])=>{const dx=b[0]-a[0],dy=b[1]-a[1],length=Math.hypot(dx,dy),project=p=>((p[0]-a[0])*dx+(p[1]-a[1])*dy)/length;return Math.abs(cross(a,b,c))/length<1e-5&&Math.abs(cross(a,b,d))/length<1e-5&&Math.min(length,Math.max(project(c),project(d)))-Math.max(0,Math.min(project(c),project(d)))>1e-5;}));}
+ function* sharedBoundary(A,B){
+  const other=segments(B);
+  for(const [a,b] of segments(A)){
+   const dx=b[0]-a[0],dy=b[1]-a[1],length=Math.hypot(dx,dy);
+   const project=p=>((p[0]-a[0])*dx+(p[1]-a[1])*dy)/length;
+   for(const [c,d] of other){
+    if(Math.abs(cross(a,b,c))/length>=1e-5||Math.abs(cross(a,b,d))/length>=1e-5)continue;
+    const cAt=project(c),dAt=project(d);
+    const start=Math.max(0,Math.min(cAt,dAt)),end=Math.min(length,Math.max(cAt,dAt));
+    if(end-start>1e-5)yield [start,end].map(v=>[a[0]+dx*v/length,a[1]+dy*v/length]);
+   }
+  }
+ }
+ function adjacent(A,B){return !sharedBoundary(A,B).next().done;}
  function splitRegion(rings,line){
   if(!Array.isArray(line)||line.length<2||line.length>100||line.some(p=>!Array.isArray(p)||p.length!==2||p.some(v=>!Number.isFinite(v))))fail('折线须包含 2–100 个有效点');
   const outer=rings.filter(r=>signed(r)>0);if(outer.length!==1)fail('请先选择一个连续区域再用折线拆分');
@@ -150,5 +163,5 @@
   const combined=result.flatMap(g=>g.polys),difference=area(decompose([...rings,...combined],p=>inside(p,original)!==combined.some(poly=>inside(p,poly))));if(difference>.01||Math.abs(area(combined)-Math.abs(signed(original)))>.1)fail('折线拆分面积校验失败');
   return result;
  }
- const api={boundaryEdgeMeasurements,setBoundaryEdgeDistance,moveBoundaryEdge,alignPoint,projectSegment,snapBoundaryPoint,moveOrthogonalVertex,inside,signed,validatePolygon,decompose,outline,area,ringPath,adjacent,splitRegion};root.FurnishZoneGeometry=api;if(typeof module!=='undefined')module.exports=api;
+ const api={boundaryEdgeMeasurements,setBoundaryEdgeDistance,moveBoundaryEdge,alignPoint,projectSegment,snapBoundaryPoint,moveOrthogonalVertex,inside,signed,validatePolygon,decompose,outline,area,ringPath,sharedBoundary,adjacent,splitRegion};root.FurnishZoneGeometry=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window==='undefined'?globalThis:window);
