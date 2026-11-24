@@ -11,6 +11,19 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),S=require('../s
  const door=f.cabinet.boxes[0].components.find(p=>p.kind==='door'),wd=B.update(f,{boxId:'box1',componentId:door.id},{surface:'walnut'});let woodDoor=0;Model.build(T,wd,box).traverse(n=>{if(n.isMesh&&n.userData.cabinetDoorSize){woodDoor++;assert(n.material.map);assert.equal(n.material.color.getHexString(),'765239');}});assert(woodDoor);
  let drawers=B.add(B.create({id:'drawers',cx:4000,cy:4000,rot:0}),'drawers',{boxId:'box1'}).furniture;drawers=S.furniture(drawers,'warm-walnut');const drawer=drawers.cabinet.boxes[0].components[0];drawers=B.update(drawers,{boxId:'box1',componentId:drawer.id},{surface:'solid',color:'#81916a'});let fronts=0,interiors=0;Model.build(T,drawers,box).traverse(n=>{if(!n.isMesh)return;if(n.userData.cabinetDrawerBoard==='front'){fronts++;assert(!n.material.map);assert.equal(n.material.color.getHexString(),'81916a');}else if(n.userData.cabinetDrawerBoard){interiors++;assert(n.material.map);assert.equal(n.material.color.getHexString(),'765239');}});assert(fronts&&interiors);
  const recolored={...f,color:'#bbccdd'};Model.build(T,recolored,box).traverse(n=>{if(n.isMesh&&n.userData.cabinetDoorSize)assert.equal(n.material.color.getHexString(),'bbccdd');});
+ const tv=S.furniture({...C.preset('tv-floor'),type:'tvstand',id:'tv',cx:4000,cy:4000,rot:0,color:'#f3f0e8'},'warm-walnut');
+ for(const cabinet of [tv,B.upgrade(tv)]){
+  const model=Model.build(T,cabinet,box);model.updateMatrixWorld(true);
+  const ray=new T.Raycaster(new T.Vector3(-1.2,1,0),new T.Vector3(0,-1,0));
+  const fixed=ray.intersectObject(model,true)[0].object;
+  const moving=[];
+  model.traverse(o=>{if(o.isMesh&&o.userData.cabinetPart?.lid)moving.push(o);});
+  const lid=moving.find(o=>!o.userData.cabinetDrawerBoard),front=moving.find(o=>o.userData.cabinetDrawerBoard==='front');
+  assert.equal(lid.material,fixed.material,'The moving lid and fixed top boards share the body finish');
+  assert.ok(lid.material.map);
+  assert.equal(front.material.color.getHexString(),'f3f0e8');
+  assert.equal(front.material.map,null);
+ }
  const legacy={...C.preset('storage'),type:'cabinet',id:'legacy',cx:4000,cy:4000,rot:0};const themed=S.furniture(legacy,'warm-walnut'),upgraded=B.upgrade(themed);assert.deepEqual(upgraded.cabinet.appearance,themed.cabinet.appearance);assert.deepEqual(B.preset(f,null,'styled reusable').cabinet.appearance,f.cabinet.appearance);
  const packed=J.pack({planId:'demo',current:{furniture:[custom,wk.furniture[0]]},designs:[{name:'style',work:{furniture:[custom]}}],catalog:[]});assert.equal(packed.version,96);assert.deepEqual(J.unpack(packed).current.furniture,[custom,wk.furniture[0]]);let restored=[custom];for(let i=0;i<3;i++)restored=D.restoreFurniture(restored,{makeId:()=> 'x',colorFor:()=> '#fff'});assert.deepEqual(restored,[custom]);assert.equal(JSON.parse(R.text({v:96,planId:'demo',work:{demo:{furniture:[custom]}},designs:[],custom:[]})).version,96);
  const appearance=require('../src/core/product-rules.js').cabinetAppearance;

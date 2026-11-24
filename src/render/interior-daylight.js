@@ -704,14 +704,20 @@ function create(T,scene,{wx,wz,inside}){
   const parts=[];
   model.traverse(mesh=>{
    if(!mesh.isMesh)return;
+   const data=mesh.userData;
+   if(tightBase&&(data.cabinetDrawerBoard||data.cabinetDoorSize||data.cabinetFoldDoor))return;
    if(!mesh.geometry.boundingBox)mesh.geometry.computeBoundingBox();
    matrix.multiplyMatrices(inverse,mesh.matrixWorld);
    box.copy(mesh.geometry.boundingBox).applyMatrix4(matrix);
    // Only low geometry in contact with the known floor carries a patch.
-   if(Math.abs(box.min.y)>.025)return;
+   if(Math.abs(box.min.y)>(tightBase?.005:.025))return;
    box.getCenter(center);box.getSize(length);
    if(length.x<=.012||length.z<=.012)return;
-   if(tightBase&&length.x>.28&&length.z>.06){
+   if(tightBase&&data.cabinetSection==='bottom'&&length.x>.28&&length.z>.06){
+    // A floor-level base shades the floor just beyond its physical edges.
+    parts.unshift([center.x,box.max.z,length.x+.04,.10]);
+    parts.push([box.min.x,center.z,.08,length.z+.04],[box.max.x,center.z,.08,length.z+.04]);
+   }else if(tightBase&&length.x>.28&&length.z>.06){
     // Draw the narrow front contact of an actual low rigid board.
     parts.unshift([center.x,box.max.z+.018,length.x+.08,.18]);
     parts.push([box.min.x-.012,center.z,.14,length.z+.07],[box.max.x+.012,center.z,.14,length.z+.07]);

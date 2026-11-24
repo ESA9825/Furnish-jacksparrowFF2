@@ -510,7 +510,7 @@ const syncIdentity=root.FurnishPartIdentity||(typeof require==='function'?requir
    if(!o.isMesh||!o.geometry?.attributes?.position||Array.isArray(o.material))return;
    const d=o.userData,m=o.material,pick=d.cabinetBuilder,b=f.cabinet?.boxes?.find(b=>b.id===pick?.boxId),p=b?.components.find(p=>p.id===pick?.componentId);
    // Hardware, glass, lights and stone retain their physical material.
-   if(d.cabinetHardware||d.cabinetHangingRod||d.cabinetAccessory||d.cabinetPart&&!d.cabinetDoorSize&&!d.cabinetDrawerBoard&&!d.cabinetFoldDoor||d.cabinetServicePart?.match(/^(leg|clip)-/ )||p?.kind==='rail'||m.metalness>.25||m.transparent&&m.opacity<.5||m.emissiveIntensity>0&&m.emissive?.getHex()>0||d.kitchenSlab)return;
+   if(d.cabinetHardware||d.cabinetHangingRod||d.cabinetAccessory||d.cabinetPart&&!d.cabinetPart.lid&&!d.cabinetDoorSize&&!d.cabinetDrawerBoard&&!d.cabinetFoldDoor||d.cabinetServicePart?.match(/^(leg|clip)-/ )||p?.kind==='rail'||m.metalness>.25||m.transparent&&m.opacity<.5||m.emissiveIntensity>0&&m.emissive?.getHex()>0||d.kitchenSlab)return;
    const cfg=d.cabinetTier==='upper'?f.cabinet?.tiers?.upper:f.cabinet,theme=cfg?.appearance??appearance;
    const plinth=!!B?.isPlinth(p)||d.cabinetSection==='plinth',role=plinth?(theme?.plinth??appearance?.plinth):undefined,bodyTheme=theme?.bodySurface!==undefined;
    const col=cfg?.columns?.[d.cabinetPart?.column??d.cabinetShelf?.column??0],front=!!d.cabinetDoorSize||d.cabinetDrawerBoard==='front'||d.cabinetFoldDoor;
