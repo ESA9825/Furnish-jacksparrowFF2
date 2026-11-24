@@ -2,13 +2,13 @@
   "format": 2,
   "description": "Generated repository index; paths relative to repository root. This is metadata, not the application loading manifest.",
   "counts": {
-    "blenderModels": 59,
-    "parametricVerificationConfigurations": 93,
-    "verificationConfigurations": 152,
-    "catalogEntries": 195,
-    "catalogTypes": 165,
-    "productDossiers": 86,
-    "referenceImages": 368,
+    "blenderModels": 63,
+    "parametricVerificationConfigurations": 101,
+    "verificationConfigurations": 164,
+    "catalogEntries": 207,
+    "catalogTypes": 177,
+    "productDossiers": 90,
+    "referenceImages": 373,
     "missingReferences": 20
   },
   "models": [
@@ -1117,6 +1117,188 @@
         "assets/models/downlight-labot-ip65/references/jd/19.jpg",
         "assets/models/downlight-labot-ip65/references/jd/20.jpg"
       ]
+    },
+    {
+      "profile": "bed-yeswood-y83b33",
+      "type": "bed_yeswood_y83b33",
+      "name": "源氏木语 Y83B33 悬浮箱体床 · 1.8米（原木色）",
+      "sizeMm": [
+        1840,
+        2150,
+        917
+      ],
+      "parts": 60,
+      "runtimeVersion": 1,
+      "runtime": {
+        "path": "src/data/bed-yeswood-y83b33-blender-asset.js",
+        "sha256": "0489c51728b3be373c735e55aef4d8ad904a527526be653ff11cc8e0c5d2983b",
+        "normalization": "utf8-lf"
+      },
+      "sourceSha256": "cdc30b946215753be8dba7737b484cfe52ea405773fceb387fa4bf0baf6a91bf",
+      "current": {
+        "blend": "assets/models/bed-yeswood-y83b33/v3/bed-yeswood-y83b33-v1.blend",
+        "glb": "assets/models/bed-yeswood-y83b33/v3/bed-yeswood-y83b33-v1.glb"
+      },
+      "document": "docs/BED-YESWOOD-Y83B33.md",
+      "constructor": "src/render/bed-yeswood-y83b33-model.js",
+      "author": "scripts/blender-model-bed-yeswood-y83b33.py",
+      "files": [
+        {
+          "path": "assets/models/bed-yeswood-y83b33/v1/y83b33-1800.blend",
+          "role": "retained-other",
+          "sha256": "cfb262fda4d117f9bbdc8409bd815fd5f624294f09ad441f6d75d48b668a5642",
+          "bytes": 170114
+        },
+        {
+          "path": "assets/models/bed-yeswood-y83b33/v1/y83b33-1800.glb",
+          "role": "retained-other",
+          "sha256": "041656112086c8a9b473a67325c3eabf433f287680255d044fd639b52a51f033",
+          "bytes": 885308
+        },
+        {
+          "path": "assets/models/bed-yeswood-y83b33/v3/bed-yeswood-y83b33-v1.blend",
+          "role": "published-source",
+          "sha256": "7d1daf9b1d87f9e2083a36df39f248e6e9f0b5ca58a10ba44059cd17fc012973",
+          "bytes": 175323
+        },
+        {
+          "path": "assets/models/bed-yeswood-y83b33/v3/bed-yeswood-y83b33-v1.glb",
+          "role": "published-source",
+          "sha256": "cdc30b946215753be8dba7737b484cfe52ea405773fceb387fa4bf0baf6a91bf",
+          "bytes": 890872
+        }
+      ],
+      "dossier": "assets/models/bed-yeswood-y83b33/asset.json",
+      "references": [
+        "assets/models/bed-yeswood-y83b33/references/hero.jpg",
+        "assets/models/bed-yeswood-y83b33/references/side.jpg",
+        "assets/models/bed-yeswood-y83b33/references/headboard.jpg",
+        "assets/models/bed-yeswood-y83b33/references/dimensions.jpg",
+        "assets/models/bed-yeswood-y83b33/references/storage-construction.jpg"
+      ]
+    },
+    {
+      "profile": "mattress-y83b33",
+      "type": "bed_mattress_y83b33",
+      "name": "Y83B33 搭配床垫 · 米白 1.8米",
+      "sizeMm": [
+        1800,
+        2000,
+        220
+      ],
+      "parts": 4,
+      "runtimeVersion": 1,
+      "runtime": {
+        "path": "src/data/mattress-y83b33-blender-asset.js",
+        "sha256": "8b1b913dcf01e739f13b9947552bdfb3334772581681cd52b595f42a0a7dd34f",
+        "normalization": "utf8-lf"
+      },
+      "sourceSha256": "05364fb77bf7f4e2c4739f0fea05776e44e194fbab670e200824b748a2fa2d87",
+      "current": {
+        "blend": "assets/models/mattress-y83b33/v1/mattress-y83b33-v1.blend",
+        "glb": "assets/models/mattress-y83b33/v1/mattress-y83b33-v1.glb"
+      },
+      "document": "docs/BED-YESWOOD-Y83B33.md",
+      "constructor": "src/render/bed-yeswood-y83b33-model.js",
+      "author": "scripts/blender-model-y83b33-bedding.py",
+      "files": [
+        {
+          "path": "assets/models/mattress-y83b33/v1/mattress-y83b33-v1.blend",
+          "role": "published-source",
+          "sha256": "aa7729952e619f9cf0e03cad201faf7e6ec4cc7bbb91ff0ec2e310b3bcbd2976",
+          "bytes": 311182
+        },
+        {
+          "path": "assets/models/mattress-y83b33/v1/mattress-y83b33-v1.glb",
+          "role": "published-source",
+          "sha256": "05364fb77bf7f4e2c4739f0fea05776e44e194fbab670e200824b748a2fa2d87",
+          "bytes": 386912
+        }
+      ],
+      "dossier": "assets/models/mattress-y83b33/asset.json",
+      "references": []
+    },
+    {
+      "profile": "pillow-y83b33",
+      "type": "bed_pillow_y83b33",
+      "name": "Y83B33 搭配枕头 · 米白",
+      "sizeMm": [
+        790,
+        480,
+        140
+      ],
+      "parts": 1,
+      "runtimeVersion": 1,
+      "runtime": {
+        "path": "src/data/pillow-y83b33-blender-asset.js",
+        "sha256": "c4104d217e0578dc0222a91016e490e3c6b799a823f80fcddc3e8b185307b549",
+        "normalization": "utf8-lf"
+      },
+      "sourceSha256": "036b44e49b5cd6dfd83bd6f509992fa3932496d332f37d8292a0a28e4b69d97b",
+      "current": {
+        "blend": "assets/models/pillow-y83b33/v1/pillow-y83b33-v1.blend",
+        "glb": "assets/models/pillow-y83b33/v1/pillow-y83b33-v1.glb"
+      },
+      "document": "docs/BED-YESWOOD-Y83B33.md",
+      "constructor": "src/render/bed-yeswood-y83b33-model.js",
+      "author": "scripts/blender-model-y83b33-bedding.py",
+      "files": [
+        {
+          "path": "assets/models/pillow-y83b33/v1/pillow-y83b33-v1.blend",
+          "role": "published-source",
+          "sha256": "1e89d8c11c0c3c367a9b702fc6736c2a28802484a8a954d7690d2384aa7b122d",
+          "bytes": 134566
+        },
+        {
+          "path": "assets/models/pillow-y83b33/v1/pillow-y83b33-v1.glb",
+          "role": "published-source",
+          "sha256": "036b44e49b5cd6dfd83bd6f509992fa3932496d332f37d8292a0a28e4b69d97b",
+          "bytes": 56536
+        }
+      ],
+      "dossier": "assets/models/pillow-y83b33/asset.json",
+      "references": []
+    },
+    {
+      "profile": "duvet-y83b33",
+      "type": "bed_duvet_y83b33",
+      "name": "Y83B33 搭配被子 · 暖白",
+      "sizeMm": [
+        1940,
+        1560,
+        245
+      ],
+      "parts": 2,
+      "runtimeVersion": 1,
+      "runtime": {
+        "path": "src/data/duvet-y83b33-blender-asset.js",
+        "sha256": "ac3346bfe062ed9c554c31ff41a6fae5a56c7c65ea005d5409a613ecffde4e54",
+        "normalization": "utf8-lf"
+      },
+      "sourceSha256": "59cff7e2d52f89215d6654fb7fd58e2e349a4b43096d0b495f6bb1de3869044a",
+      "current": {
+        "blend": "assets/models/duvet-y83b33/v2/duvet-y83b33-v1.blend",
+        "glb": "assets/models/duvet-y83b33/v2/duvet-y83b33-v1.glb"
+      },
+      "document": "docs/BED-YESWOOD-Y83B33.md",
+      "constructor": "src/render/bed-yeswood-y83b33-model.js",
+      "author": "scripts/blender-model-y83b33-bedding.py",
+      "files": [
+        {
+          "path": "assets/models/duvet-y83b33/v2/duvet-y83b33-v1.blend",
+          "role": "published-source",
+          "sha256": "8d8b8998d04235643c0a1905f819ec7e47755dafa660d1091b917b900be37054",
+          "bytes": 452132
+        },
+        {
+          "path": "assets/models/duvet-y83b33/v2/duvet-y83b33-v1.glb",
+          "role": "published-source",
+          "sha256": "59cff7e2d52f89215d6654fb7fd58e2e349a4b43096d0b495f6bb1de3869044a",
+          "bytes": 496320
+        }
+      ],
+      "dossier": "assets/models/duvet-y83b33/asset.json",
+      "references": []
     },
     {
       "profile": "desk-lamp-mijia-pro",
@@ -6107,6 +6289,72 @@
     },
     {
       "format": 1,
+      "id": "bed-yeswood-y83b33",
+      "name": "源氏木语 Y83B33 悬浮箱体床 · 1.8米（原木色）",
+      "types": [
+        "bed_yeswood_y83b33"
+      ],
+      "route": "blender",
+      "document": "docs/BED-YESWOOD-Y83B33.md",
+      "sourceLinks": [
+        "https://item.jd.com/100044602286.html?pcdk=MG4r60Y2ibeWxq_vo-JHkagkgWIlqGNJ52dg6jGhCaw%3D.M8AW.sbc1",
+        "https://yeswoodhome.com/products/yws-696045565660"
+      ],
+      "references": [
+        {
+          "path": "references/hero.jpg",
+          "kind": "product-page",
+          "url": "https://yeswoodhome.com/cdn/shop/files/yeswood-0d61c3ab0d51bb951bedf18a6a99306d9c6ff85eefa9f0fe27bbe8258c7e6b91.png",
+          "sha256": "36ed0a28f9ccb13ccc91144b0beffe2df19354839a9d557f52054e4b237881dc",
+          "bytes": 221177
+        },
+        {
+          "path": "references/side.jpg",
+          "kind": "product-page",
+          "url": "https://yeswoodhome.com/cdn/shop/files/yeswood-1abb6c9e1c6ec2e5d2aa5fa1f64d36cf4c26cc0ac024bdf1644180628f16b894.jpg",
+          "sha256": "ecbaaf712bdad8aaa531275b3751b358453f77c35afe90bdc653b66366d3a811",
+          "bytes": 172659
+        },
+        {
+          "path": "references/headboard.jpg",
+          "kind": "product-page",
+          "url": "https://cdn.shopify.com/s/files/1/0054/8411/8114/files/yeswood-920279dce4d64c7b35b3aa1e818f3e74347486cb39e056a0500540f9ec5c46c6.jpg",
+          "sha256": "47f7b154afd08669b2e18c470128ad1c2cd9e04756fef8b7ca17d3a1849451ca",
+          "bytes": 87922
+        },
+        {
+          "path": "references/dimensions.jpg",
+          "kind": "product-page",
+          "url": "https://cdn.shopify.com/s/files/1/0054/8411/8114/files/yeswood-2ca8ff14a844e4f19499d4215a84b482fa61cc7aa6afa500e533805057c43dac.jpg",
+          "sha256": "5aede20581010f9bdfbbfc5ab0b562d859b7dd91f4e19f6e8645c940509cc7f5",
+          "bytes": 96118
+        },
+        {
+          "path": "references/storage-construction.jpg",
+          "kind": "product-page",
+          "url": "https://cdn.shopify.com/s/files/1/0054/8411/8114/files/yeswood-777230f48a73ea27c72cd9e8ba2c580bf7e1cb279a227d78dd3c85ae709c1688.jpg",
+          "sha256": "5fc0e50df64e6a82cfebf988d9fcb7145796c213fbdb474a5d8f723ddeb63fed",
+          "bytes": 139803
+        }
+      ],
+      "supportingFiles": [
+        {
+          "path": "references/sources.json",
+          "kind": "product-page",
+          "sha256": "d6337e919157669ecd7e5f74ddf0c590de0d453965dac0a05d492e29a54127f1",
+          "bytes": 1298,
+          "normalization": "utf8-lf"
+        }
+      ],
+      "missingReferences": [],
+      "validation": [
+        "docs/validation/1601-bedding-visual-20261124/README.md"
+      ],
+      "manifest": "assets/models/bed-yeswood-y83b33/asset.json",
+      "readme": "assets/models/bed-yeswood-y83b33/README.md"
+    },
+    {
+      "format": 1,
       "id": "beverage-can-330",
       "name": "330ml标准易拉罐",
       "types": [
@@ -7491,6 +7739,23 @@
     },
     {
       "format": 1,
+      "id": "duvet-y83b33",
+      "name": "Y83B33 搭配被子 · 暖白",
+      "types": [
+        "bed_duvet_y83b33"
+      ],
+      "route": "blender",
+      "document": "docs/BED-YESWOOD-Y83B33.md",
+      "sourceLinks": [
+        "https://yeswoodhome.com/products/yws-696045565660"
+      ],
+      "references": [],
+      "missingReferences": [],
+      "manifest": "assets/models/duvet-y83b33/asset.json",
+      "readme": "assets/models/duvet-y83b33/README.md"
+    },
+    {
+      "format": 1,
       "id": "entry-console",
       "name": "定制玄关置物台柜",
       "types": [],
@@ -7979,6 +8244,23 @@
       "validation": [],
       "manifest": "assets/models/litter-box/asset.json",
       "readme": "assets/models/litter-box/README.md"
+    },
+    {
+      "format": 1,
+      "id": "mattress-y83b33",
+      "name": "Y83B33 搭配床垫 · 米白 1.8米",
+      "types": [
+        "bed_mattress_y83b33"
+      ],
+      "route": "blender",
+      "document": "docs/BED-YESWOOD-Y83B33.md",
+      "sourceLinks": [
+        "https://yeswoodhome.com/products/yws-696045565660"
+      ],
+      "references": [],
+      "missingReferences": [],
+      "manifest": "assets/models/mattress-y83b33/asset.json",
+      "readme": "assets/models/mattress-y83b33/README.md"
     },
     {
       "format": 1,
@@ -9082,6 +9364,23 @@
       ],
       "manifest": "assets/models/pet-feeder-mijia-2/asset.json",
       "readme": "assets/models/pet-feeder-mijia-2/README.md"
+    },
+    {
+      "format": 1,
+      "id": "pillow-y83b33",
+      "name": "Y83B33 搭配枕头 · 米白",
+      "types": [
+        "bed_pillow_y83b33"
+      ],
+      "route": "blender",
+      "document": "docs/BED-YESWOOD-Y83B33.md",
+      "sourceLinks": [
+        "https://yeswoodhome.com/products/yws-696045565660"
+      ],
+      "references": [],
+      "missingReferences": [],
+      "manifest": "assets/models/pillow-y83b33/asset.json",
+      "readme": "assets/models/pillow-y83b33/README.md"
     },
     {
       "format": 1,
@@ -11029,6 +11328,36 @@
       "module": "index-inline"
     },
     {
+      "id": "kettle_mijia_mjjysh01ym",
+      "type": "kettle_mijia_mjjysh01ym",
+      "name": "米家恒温电水壶 2 Pro · MJJYSH01YM",
+      "module": "kitchen-countertop-appliance"
+    },
+    {
+      "id": "rice_cooker_supor_f40h8093s",
+      "type": "rice_cooker_supor_f40h8093s",
+      "name": "苏泊尔 IH 电饭煲 4 L · F40H8093S",
+      "module": "kitchen-countertop-appliance"
+    },
+    {
+      "id": "air_fryer_joyoung_kl65_v573",
+      "type": "air_fryer_joyoung_kl65_v573",
+      "name": "九阳空气炸锅 6.5 L · KL65-V573",
+      "module": "kitchen-countertop-appliance"
+    },
+    {
+      "id": "griddle_liven_lr_d3027s",
+      "type": "griddle_liven_lr_d3027s",
+      "name": "利仁可拆洗电饼铛 · LR-D3027S",
+      "module": "kitchen-countertop-appliance"
+    },
+    {
+      "id": "microwave_midea_pm20m2",
+      "type": "microwave_midea_pm20m2",
+      "name": "美的微波炉 20 L · PM20M2",
+      "module": "kitchen-countertop-appliance"
+    },
+    {
       "id": "waterheater_flat",
       "type": "waterheater_flat",
       "name": "扁桶电热水器 60L",
@@ -11069,6 +11398,24 @@
       "type": "robot_p20max",
       "name": "石头 P20 Max 扫拖机器人",
       "module": "index-inline"
+    },
+    {
+      "id": "wok_ikea_vardagen_10488383",
+      "type": "wok_ikea_vardagen_10488383",
+      "name": "宜家 VARDAGEN 瓦达恩带盖炒锅 32 cm · 104.883.83",
+      "module": "kitchen-countertop-appliance"
+    },
+    {
+      "id": "pot_ikea_365_40484251",
+      "type": "pot_ikea_365_40484251",
+      "name": "宜家 IKEA 365+ 蒸锅组合底锅 5 L · 404.842.51",
+      "module": "kitchen-countertop-appliance"
+    },
+    {
+      "id": "steamer_ikea_stabil_90163525",
+      "type": "steamer_ikea_stabil_90163525",
+      "name": "宜家 STABIL 斯塔比尔蒸屉 5 L · 901.635.25",
+      "module": "kitchen-countertop-appliance"
     },
     {
       "id": "balcony_plant_rack",
@@ -11671,6 +12018,51 @@
     },
     {
       "category": "电器",
+      "type": "kettle_mijia_mjjysh01ym",
+      "name": "米家恒温电水壶 2 Pro · MJJYSH01YM",
+      "w": 273,
+      "d": 155,
+      "h": 242,
+      "module": "kitchen-countertop-appliance"
+    },
+    {
+      "category": "电器",
+      "type": "rice_cooker_supor_f40h8093s",
+      "name": "苏泊尔 IH 电饭煲 4 L · F40H8093S",
+      "w": 270,
+      "d": 326,
+      "h": 235,
+      "module": "kitchen-countertop-appliance"
+    },
+    {
+      "category": "电器",
+      "type": "air_fryer_joyoung_kl65_v573",
+      "name": "九阳空气炸锅 6.5 L · KL65-V573",
+      "w": 270,
+      "d": 374,
+      "h": 332,
+      "module": "kitchen-countertop-appliance"
+    },
+    {
+      "category": "电器",
+      "type": "griddle_liven_lr_d3027s",
+      "name": "利仁可拆洗电饼铛 · LR-D3027S",
+      "w": 346,
+      "d": 381,
+      "h": 172,
+      "module": "kitchen-countertop-appliance"
+    },
+    {
+      "category": "电器",
+      "type": "microwave_midea_pm20m2",
+      "name": "美的微波炉 20 L · PM20M2",
+      "w": 459,
+      "d": 352,
+      "h": 281,
+      "module": "kitchen-countertop-appliance"
+    },
+    {
+      "category": "电器",
       "type": "stove",
       "name": "燃气灶",
       "w": 750,
@@ -11898,6 +12290,33 @@
       "module": "index-inline"
     },
     {
+      "category": "厨房锅具",
+      "type": "wok_ikea_vardagen_10488383",
+      "name": "宜家 VARDAGEN 瓦达恩带盖炒锅 32 cm · 104.883.83",
+      "w": 376.39,
+      "d": 481.4,
+      "h": 158.01,
+      "module": "kitchen-countertop-appliance"
+    },
+    {
+      "category": "厨房锅具",
+      "type": "pot_ikea_365_40484251",
+      "name": "宜家 IKEA 365+ 蒸锅组合底锅 5 L · 404.842.51",
+      "w": 311.63,
+      "d": 234.38,
+      "h": 263.95,
+      "module": "kitchen-countertop-appliance"
+    },
+    {
+      "category": "厨房锅具",
+      "type": "steamer_ikea_stabil_90163525",
+      "name": "宜家 STABIL 斯塔比尔蒸屉 5 L · 901.635.25",
+      "w": 327.95,
+      "d": 230.08,
+      "h": 80.01,
+      "module": "kitchen-countertop-appliance"
+    },
+    {
       "category": "柜体",
       "type": "balcony_plant_rack",
       "name": "阳台开放花架 · 下部猫砂位",
@@ -12042,6 +12461,42 @@
       "w": 1600,
       "d": 400,
       "module": "index-inline"
+    },
+    {
+      "category": "床",
+      "type": "bed_yeswood_y83b33",
+      "name": "源氏木语 Y83B33 悬浮箱体床 · 1.8米（原木色）",
+      "w": 1840,
+      "d": 2150,
+      "h": 917,
+      "module": "bed-yeswood-y83b33"
+    },
+    {
+      "category": "床",
+      "type": "bed_duvet_y83b33",
+      "name": "Y83B33 搭配被子 · 暖白",
+      "w": 1940,
+      "d": 1560,
+      "h": 245,
+      "module": "bed-yeswood-y83b33"
+    },
+    {
+      "category": "床",
+      "type": "bed_pillow_y83b33",
+      "name": "Y83B33 搭配枕头 · 米白",
+      "w": 790,
+      "d": 480,
+      "h": 140,
+      "module": "bed-yeswood-y83b33"
+    },
+    {
+      "category": "床",
+      "type": "bed_mattress_y83b33",
+      "name": "Y83B33 搭配床垫 · 米白 1.8米",
+      "w": 1800,
+      "d": 2000,
+      "h": 220,
+      "module": "bed-yeswood-y83b33"
     },
     {
       "category": "床",

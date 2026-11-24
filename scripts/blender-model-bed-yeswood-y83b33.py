@@ -1,4 +1,5 @@
 """Y83B33 1800 mm storage bed, closed. Blender axes: front -Y, up +Z."""
+import json
 import math
 import sys
 from pathlib import Path
@@ -32,7 +33,7 @@ def box(name, size, center, mat=None, bevel=.002):
 
 
 def build():
-    oak = material('Red oak / natural', (.47, .255, .112))
+    oak = material('Red oak / natural', (.53, .345, .190))
     pine = material('Pine / slats and framing', (.61, .405, .219), .64)
     underside = material('Paulownia / floor panels', (.51, .34, .17), .65)
     hardware = material('Dark hardware', (.055, .048, .037), .39)
@@ -56,7 +57,15 @@ def build():
     for i in range(35):
         box(f'Pine slat {i+1:02}', (1.784, .038, .020), (0, -.999+i*(1.894/34), .228), pine, .0014)
     for side, x in [('L', -.857), ('R', .857)]:
-        box('Wood headboard upright '+side, (.077, .108, .669), (x, 1.017, .3345), oak, .004)
+        post=box('Wood headboard upright '+side, (.077, .108, .669), (x, 1.017, .3345), oak, .004)
+        for vertex in post.data.vertices:
+            y,z=vertex.co.y,vertex.co.z+post.location.z
+            # Front face eases forward at its foot. Back face leaves a shallow
+            # recess for the skirting below the headboard.
+            front=(.054-y)/.108
+            vertex.co.y-=front*(.067*(1-z/.669))
+            if z<.07:
+                vertex.co.y-=.016*(1-z/.07)
         box('Lift-hinge closed '+side, (.022, .19, .030), (x*.98, .778, .192), hardware)
     # The deep capsule-shaped shelf is cut into the headboard. Its rear panel
     # and diffuser have depth and cast their own shadows.
@@ -67,9 +76,23 @@ def build():
     bpy.context.view_layer.objects.active = head
     bpy.ops.object.modifier_apply(modifier=modifier.name)
     bpy.data.objects.remove(cutter, do_unlink=True)
-    box('Recessed shelf rear board', (1.435, .013, .134), (0, 1.043, .793), oak, .002)
-    box('Shelf light diffuser', (1.318, .010, .008), (0, .984, .852), diffuser, .002)
-    box('Integrated power module', (.099, .039, .005), (.396, .986, .730), hardware)
+    head.data.materials.clear()
+    head.data.materials.append(oak)
+    for face in head.data.polygons:
+        face.material_index = 0
+    shelf_back=box('Recessed shelf rear board', (1.435, .013, .134), (0, 1.043, .793), oak, .002)
+    shelf_light=box('Shelf light diffuser', (1.318, .010, .008), (0, .984, .852), diffuser, .002)
+    power=box('Integrated power module', (.099, .039, .005), (.396, .986, .730), hardware)
+    # Side photo indicates a shallow rearward lean. Approximate the lean
+    # while preserving the annotated plan envelope and the true shelf cavity.
+    for part in (head,shelf_back,shelf_light,power):
+        for vertex in part.data.vertices:
+            z=vertex.co.z+part.location.z
+            vertex.co.y+=math.tan(math.radians(8))*(z-.886)
+    # The chamfered headboard is the rear reference, not the angled face.
+    rear=max(v.co.y+head.location.y for v in head.data.vertices)
+    for part in (head,shelf_back,shelf_light,power):
+        part.location.y+=1.075-rear
     for x in (-.81, .81):
         box('Underbed light diffuser', (.009, 1.822, .004), (x, -.068, .080), diffuser, .001)
 
@@ -82,6 +105,8 @@ def main():
     build()
     bpy.context.view_layer.update()
     mesh_objects = list(bpy.context.scene.objects)
+    for obj in mesh_objects:
+        obj['furnishStablePart'] = 'bed-yeswood-y83b33-v1:' + obj.name
     box_vertices = [o.matrix_world @ v.co for o in mesh_objects for v in o.data.vertices]
     lo = [min(v[k] for v in box_vertices) for k in range(3)]
     hi = [max(v[k] for v in box_vertices) for k in range(3)]
@@ -90,12 +115,22 @@ def main():
     assert all(math.isfinite(c) for v in box_vertices for c in v)
     assert all(p.area>1e-11 for o in mesh_objects for p in o.data.polygons)
     assert len({o.name for o in mesh_objects}) == len(mesh_objects)
-    bpy.ops.wm.obj_export(filepath=str(dest/'y83b33-1800.obj'),
-                          forward_axis='NEGATIVE_Z', up_axis='Y',
-                          export_materials=False, export_normals=False, export_triangulated_mesh=True)
-    bpy.ops.export_scene.gltf(filepath=str(dest/'y83b33-1800.glb'))
+    args = sys.argv[sys.argv.index('--')+1:]
+    if '--preflight-contract' in args:
+        sys.path.insert(0, str(Path(__file__).parent/'lib'))
+        from blender_asset_preflight import from_args
+        from_args(bpy.context.scene)
+    else:
+        bpy.ops.wm.obj_export(filepath=str(dest/'y83b33-1800.obj'),
+                              forward_axis='NEGATIVE_Z', up_axis='Y',
+                              export_materials=False, export_normals=False, export_triangulated_mesh=True)
+    bpy.ops.export_scene.gltf(filepath=str(dest/'bed-yeswood-y83b33-v1.glb'), export_extras=True)
     bpy.context.preferences.filepaths.save_version = 0
-    bpy.ops.wm.save_as_mainfile(filepath=str(dest/'y83b33-1800.blend'))
+    bpy.ops.wm.save_as_mainfile(filepath=str(dest/'bed-yeswood-y83b33-v1.blend'))
+    if '--result' in args:
+        Path(args[args.index('--result')+1]).write_text(json.dumps({
+            'passed': True, 'blender': bpy.app.version_string, 'parts': len(mesh_objects)
+        }), encoding='utf8')
 
 
 if __name__ == '__main__':

@@ -1,0 +1,12 @@
+{
+  "type": "bed_pillow_y83b33",
+  "global": "FurnishY83B33PillowAsset",
+  "size": [
+    790,
+    140,
+    480
+  ],
+  "parts": [
+    "Puffed pillowcase"
+  ]
+}

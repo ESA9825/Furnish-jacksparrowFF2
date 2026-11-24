@@ -297,5 +297,5 @@ switch(f.type){
     }
 }
 g.traverse(o=>{if(o.isMesh)o.userData.basicFurniturePart=o.geometry.type||'structure';});return g;}
-const api={types,supported:f=>types.includes(f.type)&&!f.obj,build};root.FurnishBasicFurnitureModel=api;if(typeof module==='object'&&module.exports)module.exports=api;
+const api={types,bedCloth,supported:f=>types.includes(f.type)&&!f.obj,build};root.FurnishBasicFurnitureModel=api;if(typeof module==='object'&&module.exports)module.exports=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

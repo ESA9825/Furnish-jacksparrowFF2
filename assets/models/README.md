@@ -6,7 +6,7 @@
 
 更新：`node scripts/index-model-assets.cjs --write`；核对：`node scripts/index-model-assets.cjs --check`。
 
-86份产品／设计档案，368张参考图，20张历史原图待补；59组Blender模型。参数化验证配置93组，全部家具库195条目／165种类型。
+90份产品／设计档案，373张参考图，20张历史原图待补；63组Blender模型。参数化验证配置101组，全部家具库207条目／177种类型。
 
 | 产品／设计资料 | 参考图 | 输出／构造 | 待补原图 |
 |---|---|---|---|
@@ -16,6 +16,7 @@
 | [源氏木语-Y09HS-亚麻色单人沙发椅](armchair/README.md) | 9 | [BLEND](armchair/v4/armchair-v1.blend) · [GLB](armchair/v4/armchair-v1.glb) | 0 |
 | [源氏木语-柏林单人沙发椅](armchair-berlin/README.md) | 2 | [BLEND](armchair-berlin/v3/armchair-berlin-v1.blend) · [GLB](armchair-berlin/v3/armchair-berlin-v1.glb) | 0 |
 | [九款艺术玻璃隔断](art-glass/README.md) | 3 | 参数化 | 0 |
+| [源氏木语 Y83B33 悬浮箱体床 · 1.8米（原木色）](bed-yeswood-y83b33/README.md) | 5 | [BLEND](bed-yeswood-y83b33/v3/bed-yeswood-y83b33-v1.blend) · [GLB](bed-yeswood-y83b33/v3/bed-yeswood-y83b33-v1.glb) | 0 |
 | [330ml标准易拉罐](beverage-can-330/README.md) | 4 | [BLEND](storage-supplies/beverage-can-330/v7/beverage-can-330-v1.blend) · [GLB](storage-supplies/beverage-can-330/v7/beverage-can-330-v1.glb) | 0 |
 | [500ml标准易拉罐](beverage-can-500/README.md) | 4 | [BLEND](storage-supplies/beverage-can-500/v7/beverage-can-500-v1.blend) · [GLB](storage-supplies/beverage-can-500/v7/beverage-can-500-v1.glb) | 0 |
 | [易拉罐共用参考资料](beverage-cans/README.md) | 4 | 参考资料 | 0 |
@@ -39,6 +40,7 @@
 | [拉伯塔IP65防水筒灯7W全白4000K](downlight-labot-ip65/README.md) | 21 | [BLEND](downlight-labot-ip65/v1/downlight-labot-ip65-v1.blend) · [GLB](downlight-labot-ip65/v1/downlight-labot-ip65-v1.glb) | 3 |
 | [好太太手摇升降晾衣架 Y024 · 米粉2.4米四杆](drying-rack-hotata-y024/README.md) | 1 | [BLEND](drying-rack-hotata-y024/v1/drying-rack-hotata-y024-v1.blend) · [GLB](drying-rack-hotata-y024/v1/drying-rack-hotata-y024-v1.glb) | 0 |
 | [好太太手摇升降晾衣架 Y024 · 米粉2米四杆](drying-rack-hotata-y024-2m/README.md) | 1 | [BLEND](drying-rack-hotata-y024-2m/v1/drying-rack-hotata-y024-2m-v1.blend) · [GLB](drying-rack-hotata-y024-2m/v1/drying-rack-hotata-y024-2m-v1.glb) | 0 |
+| [Y83B33 搭配被子 · 暖白](duvet-y83b33/README.md) | 0 | [BLEND](duvet-y83b33/v2/duvet-y83b33-v1.blend) · [GLB](duvet-y83b33/v2/duvet-y83b33-v1.glb) | 0 |
 | [定制玄关置物台柜](entry-console/README.md) | 1 | 参考资料 | 0 |
 | [定制玄关洞洞板柜](entry-pegboard/README.md) | 1 | 参考资料 | 0 |
 | [艾美特 小暴风 PRO FA18-X231 空气循环扇](fan-x231/README.md) | 3 | [BLEND](fan-x231/v2/fan-x231-v1.blend) · [GLB](fan-x231/v2/fan-x231-v1.glb) | 0 |
@@ -52,6 +54,7 @@
 | [方太抽油烟机 JCD10TA](hood/README.md) | 0 | [BLEND](hood/v2/hood-v1.blend) · [GLB](hood/v2/hood-v1.glb) | 0 |
 | [网易严选2.5kg猫砂袋 · 包装示意](litter-bag/README.md) | 2 | [BLEND](litter-bag/v7/litter-bag-v1.blend) · [GLB](litter-bag/v7/litter-bag-v1.glb) | 0 |
 | [猫砂盆（型号未确认）](litter-box/README.md) | 0 | 参数化 | 2 |
+| [Y83B33 搭配床垫 · 米白 1.8米](mattress-y83b33/README.md) | 0 | [BLEND](mattress-y83b33/v1/mattress-y83b33-v1.blend) · [GLB](mattress-y83b33/v1/mattress-y83b33-v1.glb) | 0 |
 | [家用双层药箱 · 340×250×200参考](medicine-box/README.md) | 1 | [BLEND](storage-supplies/medicine/v2/medicine-box-v1.blend) · [GLB](storage-supplies/medicine/v2/medicine-box-v1.glb) | 0 |
 | [米家吸顶灯 D20](mijia-ceiling-d20/README.md) | 0 | [BLEND](mijia-ceiling-d20/v1/mijia-ceiling-d20-v1.blend) · [GLB](mijia-ceiling-d20/v1/mijia-ceiling-d20-v1.glb) | 1 |
 | [米家吸顶灯 D30](mijia-ceiling-d30/README.md) | 0 | [BLEND](mijia-ceiling-d30/v1/mijia-ceiling-d30-v1.blend) · [GLB](mijia-ceiling-d30/v1/mijia-ceiling-d30-v1.glb) | 1 |
@@ -63,6 +66,7 @@
 | [小米智能开关2与2 Pro · 86面板](panel-xiaomi-switch2/README.md) | 69 | [BLEND](panel-xiaomi-switch2/v2/panel-xiaomi-switch2-v1.blend) · [GLB](panel-xiaomi-switch2/v2/panel-xiaomi-switch2-v1.glb) | 0 |
 | [PETSTAR猫水碗 · 图示180×65](pet-bowl/README.md) | 1 | [BLEND](pet-bowl/v1/pet-bowl-v1.blend) · [GLB](pet-bowl/v1/pet-bowl-v1.glb) | 0 |
 | [米家-智能宠物喂食器2](pet-feeder-mijia-2/README.md) | 0 | 参数化 | 5 |
+| [Y83B33 搭配枕头 · 米白](pillow-y83b33/README.md) | 0 | [BLEND](pillow-y83b33/v1/pillow-y83b33-v1.blend) · [GLB](pillow-y83b33/v1/pillow-y83b33-v1.glb) | 0 |
 | [石头-P20Max-扫拖机器人](robot-p20max/README.md) | 6 | 参数化 | 0 |
 | [奥普-SE2-风暖浴霸](se2/README.md) | 3 | [BLEND](se2/se2-v1.blend) · [GLB](se2/se2-v1.glb) | 0 |
 | [定制次卧挂衣柜](secondary-wardrobe/README.md) | 1 | 参考资料 | 0 |

@@ -197,6 +197,13 @@ function hotataRack(length,width,sku,asset){
 const hotataCrank={width:96,depth:64,height:160,pivotHeight:112,lineExitHeight:158,lineExitDepth:-23};
 const types={
  bed:{defaults:{bedLinensVisible:true},fields:['bedLinensVisible']},
+ bed_mattress_y83b33:{kind:'床垫',family:'yeswood-bed-linen',bedAsset:'mattress-y83b33',assetGlobal:'FurnishY83B33MattressAsset',height:220,anchor:'bottom',defaultFrontClearance:0,defaults:{mountHeight:0},fields:['mountHeight'],create:['mountHeight'],solidModel:{global:'FurnishYeswoodBedModel',module:'bed-yeswood-y83b33',base:'mountHeight',geometryVersion:1}},
+ bed_pillow_y83b33:{kind:'枕头',family:'yeswood-bed-linen',bedAsset:'pillow-y83b33',assetGlobal:'FurnishY83B33PillowAsset',height:140,anchor:'bottom',defaultFrontClearance:0,defaults:{mountHeight:0},fields:['mountHeight'],create:['mountHeight'],solidModel:{global:'FurnishYeswoodBedModel',module:'bed-yeswood-y83b33',base:'mountHeight',geometryVersion:1}},
+ bed_duvet_y83b33:{kind:'被子',family:'yeswood-bed-linen',bedAsset:'duvet-y83b33',assetGlobal:'FurnishY83B33DuvetAsset',height:245,anchor:'bottom',defaultFrontClearance:0,defaults:{mountHeight:0},fields:['mountHeight'],create:['mountHeight'],solidModel:{global:'FurnishYeswoodBedModel',module:'bed-yeswood-y83b33',base:'mountHeight',geometryVersion:1}},
+ bed_yeswood_y83b33:{kind:'床',family:'yeswood-storage-bed',height:917,anchor:'bottom',defaultFrontClearance:0,
+  defaults:{mountHeight:0},fields:['mountHeight'],create:['mountHeight'],
+  identity:{brand:'源氏木语',model:'Y83B33180TV1',sourceUrl:'https://item.jd.com/100044602286.html?pcdk=MG4r60Y2ibeWxq_vo-JHkagkgWIlqGNJ52dg6jGhCaw%3D.M8AW.sbc1'},
+  solidModel:{global:'FurnishYeswoodBedModel',module:'bed-yeswood-y83b33',base:'mountHeight',geometryVersion:2}},
  desk:{defaults:{deskLampVisible:true},fields:['deskLampVisible'],deskDecoration:{formatVersion:90}},
  track_socket_bull_gb50k:{
   kind:'轨道插座',family:'track-socket',height:94,anchor:'bottom',clearanceReview:'missing',

@@ -1,0 +1,13 @@
+{
+  "type": "bed_duvet_y83b33",
+  "global": "FurnishY83B33DuvetAsset",
+  "size": [
+    1940,
+    245,
+    1560
+  ],
+  "parts": [
+    "Draped filled duvet",
+    "Folded head hem"
+  ]
+}

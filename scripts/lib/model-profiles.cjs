@@ -7,6 +7,10 @@ const root=path.resolve(__dirname,'../..'),P=require('../../src/core/product-rul
 const originalTypes=new Set('bed crib nightstand wardrobe dresser desk chest chair bookshelf baycushion sofa cornersofa armchair beanbag coffeetable roundtable sidetable tvstand rug shoecab floorlamp plant dryingrack table island barstool counter stove ksink fridge cabinet toilet vanity shower bathtub washer waterheater tv aircon acwall dishwasher ovencol dryer purifier officechair piano treadmill pendant curtain wallart mirror bench'.split(' '));
 const assetTypes={'pet-bowl':'pet_bowl_petstar_180','litter-bag':'cat_litter_yanxuan_25kg','cat-tower':'cat_tower_jd_10141711472484','fan-x231':'fan_airmate_fa18_x231','chair-vihals':'chair_ikea_vihals','chair-s05118':'chair_yeswood_s05118','sofa-bed':'sofa_bed_yeswood_y107h03',se2:'bath_heater_aopu_se2',y52y09:'bookshelf_yeswood_y52y09',fridge:'fridge_french_drawer',dishwasher:'dishwasher_mijia_countertop',hood:'rangehood_fotile_jcd10ta',washer:'washer','washer-tg10k60w':'washer_littleswan_tg10k60w','side-table':'sidetable_tmall_635382906309',armchair:'armchair_yeswood_y09hs','armchair-berlin':'armchair_yeswood_berlin','stack-stool':'stool_citylong_370'};
 assetTypes['downlight-labot-ip65']='downlight_labot_ip65_7w';
+assetTypes['bed-yeswood-y83b33']='bed_yeswood_y83b33';
+assetTypes['mattress-y83b33']='bed_mattress_y83b33';
+assetTypes['pillow-y83b33']='bed_pillow_y83b33';
+assetTypes['duvet-y83b33']='bed_duvet_y83b33';
 assetTypes['desk-lamp-mijia-pro']='desk_lamp_mijia_pro';
 assetTypes['drying-rack-hotata-y024']='drying_rack_hotata_y024';
 assetTypes['drying-rack-hotata-y024-2m']='drying_rack_hotata_y024_2m';

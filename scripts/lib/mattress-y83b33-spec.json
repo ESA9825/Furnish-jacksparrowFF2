@@ -1,0 +1,15 @@
+{
+  "type": "bed_mattress_y83b33",
+  "global": "FurnishY83B33MattressAsset",
+  "size": [
+    1800,
+    220,
+    2000
+  ],
+  "parts": [
+    "Cushioned mattress border",
+    "Upper seam welt",
+    "Lower seam welt",
+    "Quilted sleeping surface"
+  ]
+}

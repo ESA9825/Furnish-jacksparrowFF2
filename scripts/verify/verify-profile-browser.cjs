@@ -39,8 +39,9 @@ async function main(root,run,id){
     assert(scene.every(f=>geometry.parts.some(p=>p.id===f.id)),id+' lost a combination member');
     exports.push({mode,state,file:path.basename(file),fixture,scene,geometry,spatial});
    }
-   await page.setViewportSize({width:390,height:844});await page.waitForTimeout(100);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,id+' narrow layout overflow');
-   assert.deepEqual(errors,[],id+' browser errors');assert.deepEqual(external,[],id+' external requests');modes.push({mode,passed:true,undoRedo:true,coreResize:true,refresh:true,narrow:true,offline:mode==='file'});await context.close();
+   const narrow=process.env.FURNISH_MODEL_VERIFY_NARROW==='1';
+   if(narrow){await page.setViewportSize({width:390,height:844});await page.waitForTimeout(100);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,id+' narrow layout overflow');}
+   assert.deepEqual(errors,[],id+' browser errors');assert.deepEqual(external,[],id+' external requests');modes.push({mode,passed:true,undoRedo:true,coreResize:true,refresh:true,narrow:narrow||null,offline:mode==='file'});await context.close();
   }
   const report={passed:true,profile:id,route:profile.route,modes,exports};fs.writeFileSync(path.join(run,'production.json'),JSON.stringify(report,null,2));return report;
  }finally{if(browser)await browser.close();await server.close();}

@@ -492,6 +492,48 @@ const syncIdentity=root.FurnishPartIdentity||(typeof require==='function'?requir
   });
  }
 
+ // Project along the longest in-plane axis of each face at physical scale.
+ function projectSurfaceUV(T,g,veneer){
+    const a=g.attributes.position,n=g.attributes.normal;g.computeBoundingBox();const size=g.boundingBox.getSize(new T.Vector3()).toArray(),uv=new Float32Array(a.count*2);
+    const scale=veneer?.sampleWidthMm/1000;
+    for(let i=0;i<a.count;i++){
+     const normal=[Math.abs(n.getX(i)),Math.abs(n.getY(i)),Math.abs(n.getZ(i))];
+     const face=normal.indexOf(Math.max(...normal));
+     const axes=[0,1,2].filter(k=>k!==face).sort((a,b)=>size[a]-size[b]);
+     const point=[a.getX(i),a.getY(i),a.getZ(i)];
+     const cross=point[axes[0]],grain=point[axes[1]];
+     if(veneer){
+      uv[i*2]=(veneer.grainAxis==='v'?cross:grain)/scale;
+      uv[i*2+1]=(veneer.grainAxis==='v'?grain:cross)/scale;
+     }else{
+      uv[i*2]=cross/.6;
+      uv[i*2+1]=grain/1.8;
+     }}
+    g.setAttribute('uv',new T.BufferAttribute(uv,2));
+ }
+
+ function applyWoodVeneer(T,meshes,surface,color){
+  const veneer=(root.FurnishProducts||require('../core/product-rules.js')).cabinetAppearance.veneer(surface);
+  if(!T.Texture||!veneer||!meshes.length)return;
+  const texture=acquireVeneer(T,veneer.materialId),{maps}=texture;
+  if(!maps.baseColor){texture.release();return;}
+  let remaining=meshes.length;
+  for(const {material,geometry} of meshes){
+   material.color.set(color);
+   material.map=maps.baseColor;
+   material.normalMap=maps.normalGL;
+   material.roughnessMap=maps.roughness;
+   material.normalScale.setScalar(.25);
+   material.roughness=maps.roughness?1:.55;
+   projectSurfaceUV(T,geometry,veneer);
+   function release(){
+    material.removeEventListener('dispose',release);
+    if(--remaining===0)texture.release();
+   }
+   material.addEventListener('dispose',release);
+  }
+ }
+
  // Physical-scale, deterministic veneer approximation. No remote image dependency.
  // Textures are owned by each model, shared by its boards, released with materials.
  function applyAppearance(T,model,f,appearance=f.cabinet?.appearance){
@@ -552,23 +594,8 @@ const syncIdentity=root.FurnishPartIdentity||(typeof require==='function'?requir
    }
    o.material=materials.get(key);if(d.cabinetOwnMaterial)old.dispose();d.cabinetOwnMaterial=true;d.cabinetSurface=surface;
    if(surface==='walnut'||veneer){
-    // Project local board coordinates, with grain along its longest in-plane axis.
-    const g=o.geometry.clone(),a=g.attributes.position,n=g.attributes.normal;g.computeBoundingBox();const size=g.boundingBox.getSize(new T.Vector3()).toArray(),uv=new Float32Array(a.count*2);
-    const scale=veneer?.sampleWidthMm/1000;
-    for(let i=0;i<a.count;i++){
-     const normal=[Math.abs(n.getX(i)),Math.abs(n.getY(i)),Math.abs(n.getZ(i))];
-     const face=normal.indexOf(Math.max(...normal));
-     const axes=[0,1,2].filter(k=>k!==face).sort((a,b)=>size[a]-size[b]);
-     const point=[a.getX(i),a.getY(i),a.getZ(i)];
-     const cross=point[axes[0]],grain=point[axes[1]];
-     if(veneer){
-      uv[i*2]=(veneer.grainAxis==='v'?cross:grain)/scale;
-      uv[i*2+1]=(veneer.grainAxis==='v'?grain:cross)/scale;
-     }else{
-      uv[i*2]=cross/.6;
-      uv[i*2+1]=grain/1.8;
-     }}
-    g.setAttribute('uv',new T.BufferAttribute(uv,2));o.geometry.dispose();o.geometry=g;
+    const g=o.geometry.clone();
+    projectSurfaceUV(T,g,veneer);o.geometry.dispose();o.geometry=g;
    }
   });return model;
  }
@@ -599,6 +626,6 @@ const syncIdentity=root.FurnishPartIdentity||(typeof require==='function'?requir
   }
   for(const [o,position,rotation]of transforms){o.position.copy(position);o.rotation.copy(rotation);}g.updateMatrixWorld(true);g.userData.serviceCuts=pipes.map(p=>p.id);return g;
  }
- root.FurnishCabinetModel={build,applyAppearance,pendingVeneers,cutServices,buildRaw,createComponents};
+ root.FurnishCabinetModel={build,applyAppearance,applyWoodVeneer,projectSurfaceUV,pendingVeneers,cutServices,buildRaw,createComponents};
  if(typeof module!=='undefined')module.exports=root.FurnishCabinetModel;
 })(typeof globalThis!=='undefined'?globalThis:this);
