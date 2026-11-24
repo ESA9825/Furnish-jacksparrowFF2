@@ -22,6 +22,10 @@ const groutInput=panel.querySelector('[data-material-grout-color]'),groutAuto=pa
 const stylePane=panel.querySelector('[data-material-style]'),styleCards=panel.querySelector('[data-material-styles]');
 const styleDetails=panel.querySelector('[data-material-style-details]'),styleFields=panel.querySelector('[data-material-style-fields]');
 const customColor=panel.querySelector('[data-material-custom]');
+const currentCards=panel.querySelector('[data-material-current-cards]'),currentList=panel.querySelector('[data-material-current-list]');
+const currentResults=panel.querySelector('[data-material-current-results]'),currentSearch=panel.querySelector('[data-material-current-search]');
+const materialCategories={floor:'地面',wall:'墙面',cabinet:'柜体',furniture:'家具软装'};
+const category=t=>t.kind==='wallTile'?'wall':['cabinet','front','legacyFront','board'].includes(t.kind)?'cabinet':Object.hasOwn(materialCategories,t.kind)?t.kind:null;
 const scopeFields={
  cabinet:{name:'柜体',roles:{front:'门板',body:'柜身／开放格'}},
  curtains:{name:'窗帘',roles:{textile:'帘布',sheer:'纱帘'}},
@@ -121,6 +125,103 @@ function currentSample(target){
   return p?{color:p.color,surface:p.surface}:null;
  }
  return {color:f.color};
+}
+function fillChip(chip,{asset,surface,color,image}){
+ const source=asset&&(surface?globalThis.FurnishWoodVeneerTextures?.[asset]?.baseColor:'assets/materials/floors/'+asset+'/color.jpg');
+ chip.style.backgroundImage=source||image?'url("'+(source||image)+'")':'';
+ chip.style.backgroundColor=color||(surface?'#937050':'');
+}
+function indexEntries(){
+ const numberedWalls=new Map(),draft=work();
+ return View3D.materialCatalog().map(({target,roomId,color,image})=>{
+  const group=category(target),room=roomId?nm(state.rooms[roomId]?.name||roomId):'';
+  const picked=currentSample(target)||{};
+  const known=picked.asset?floorSamples.find(s=>s.asset===picked.asset):veneers.find(s=>s.surface===picked.surface);
+  const baseColor=picked.color||color,colorName=[...swatches,...paints].find(s=>s.color===baseColor)?.label;
+  const mat=MATS[draft.rooms[target.id]?.mat];
+  const sheen=P.styleAppearance.tileSheen(tileSheen(draft,target))?.name;
+  const material=known?.label||(target.kind==='floor'?(sheen||nm(mat?.name||'地面')):target.kind==='wallTile'?(sheen||'墙砖'):colorName||(target.kind==='wall'?'墙面漆':baseColor.toUpperCase()));
+  let name=caption(target);
+  if(group==='wall'){
+   const ordinal=(numberedWalls.get(room)||0)+1;
+   numberedWalls.set(room,ordinal);
+   name=[room,(target.kind==='wallTile'?'墙砖 ':'墙面 ')+ordinal].filter(Boolean).join(' · ');
+  }else if(group==='cabinet'||group==='furniture'){
+   if(target.boxId){
+    const {box,component}=B.selection(getF(target.id),target);
+    const boxes=getF(target.id)?.cabinet?.boxes,index=boxes?.findIndex(b=>b.id===box?.id)??-1;
+    if(index>=0)name+=' · 柜箱 '+(index+1);
+    const part=box?.components.findIndex(p=>p.id===component?.id)??-1;
+    if(part>=0)name+=' / '+(component.name||'部件 '+(part+1));
+   }else if(target.kind==='legacyFront')name+=' '+(target.column+1);
+   if(room)name=room+' · '+name;
+  }
+  return {id:key(target),target,group,name,material,chip:{color:baseColor,image,...known}};
+ });
+}
+function materialCard(entry){
+ const el=document.createElement('button'),chip=document.createElement('span'),text=document.createElement('span'),name=document.createElement('b'),detail=document.createElement('small');
+ el.type='button';el.className='material-current-sample';el.dataset.currentTarget=entry.id;
+ el.title=entry.name+' · '+entry.material;
+ el.setAttribute('aria-pressed',String(session.mode==='surface'&&session.target&&key(session.target)===entry.id||false));
+ chip.className='material-sample-chip';chip.setAttribute('aria-hidden','true');fillChip(chip,entry.chip);
+ name.textContent=entry.name;detail.textContent=entry.material;
+ text.append(name,detail);el.append(chip,text);
+ return el;
+}
+function refreshList(){
+ currentList.hidden=!session.browse;
+ if(!session.browse)return;
+ const query=currentSearch.value.trim().toLowerCase().split(/\s+/);
+ const matches=session.entries.filter(e=>e.group===session.browse&&query.every(q=>(e.name+' '+e.material).toLowerCase().includes(q)));
+ currentResults.replaceChildren(...matches.map(materialCard));
+ panel.querySelector('[data-material-current-empty]').hidden=!!matches.length;
+}
+function refreshCurrent(){
+ if(!active())return;
+ session.entries=indexEntries();
+ const target=session.target;
+ panel.querySelector('[data-material-locate]').hidden=session.mode!=='surface'||!target||!session.entries.some(e=>e.id===key(target));
+ const rendered=[];
+ for(const [group,label] of Object.entries(materialCategories)){
+  const list=session.entries.filter(e=>e.group===group),recent=session.recent[group];
+  const entry=list.find(e=>e.id===recent)??list[0];
+  const cell=document.createElement('div'),header=document.createElement('div'),title=document.createElement('span');
+  cell.className='material-current-cell';header.className='material-current-heading';title.textContent=label;
+  header.append(title);cell.append(header);
+  if(entry){
+   if(list.length>1){
+    const more=document.createElement('button');
+    more.type='button';more.className='btn';more.dataset.currentGroup=group;more.textContent='全部 '+list.length;
+    more.setAttribute('aria-label','查看全部'+label+'样片');more.setAttribute('aria-expanded',String(session.browse===group));
+    header.append(more);
+   }
+   cell.append(materialCard(entry));
+  }else{
+   const empty=document.createElement('small');empty.textContent='暂无可更换的表面';cell.append(empty);
+  }
+  rendered.push(cell);
+ }
+ currentCards.replaceChildren(...rendered);refreshList();
+}
+function browse(group){
+ const previous=session.browse;
+ session.browse=group;currentSearch.value='';refreshCurrent();
+ if(group)currentSearch.focus({preventScroll:true});
+ else if(previous)currentCards.querySelector('[data-current-group="'+previous+'"]')?.focus({preventScroll:true});
+}
+function selectCurrent(event){
+ if(!active())return;
+ const more=event.target.closest('[data-current-group]');
+ if(more){browse(session.browse===more.dataset.currentGroup?null:more.dataset.currentGroup);return;}
+ const selected=event.target.closest('[data-current-target]');
+ if(!selected)return;
+ const entry=session.entries.find(e=>e.id===selected.dataset.currentTarget);
+ if(!entry)return;
+ session.browse=null;
+ choose(entry.target);
+ panel.querySelector('[data-material-locate]').focus({preventScroll:true});
+ View3D.locateMaterial(entry.target);
 }
 function change(next,t,v){
  if(t.kind==='floor'){
@@ -242,6 +343,7 @@ function render(){
  const staged=[session.scheme?.scopes.length?'风格':'',session.edits.size?session.edits.size+' 处表面':''].filter(Boolean);
  panel.querySelector('[data-material-count]').textContent=dirty()?staged.join(' · ')+' 待应用':'';
  panel.querySelector('[data-material-apply]').disabled=!dirty();
+ refreshCurrent();
  const signature=JSON.stringify([choiceTarget,batch&&[session.tileKind,available.length],picked]);
  if(tray.dataset.signature===signature)return;
  tray.dataset.signature=signature;tray.replaceChildren();
@@ -251,11 +353,7 @@ function render(){
   const pressed=sample.asset?sample.asset===picked?.asset||sample.surface&&sample.surface===picked?.surface:sample.color?sample.color===picked?.color&&(!picked.surface||picked.surface==='solid'):sample.label===picked?.label;
   el.setAttribute('aria-pressed',String(!!pressed));
   const chip=document.createElement('span');chip.className='material-sample-chip';
-  if(sample.asset){
-   const source=sample.surface?globalThis.FurnishWoodVeneerTextures?.[sample.asset]?.baseColor:undefined;
-   if(source||!sample.surface)chip.style.backgroundImage='url("'+(source||'assets/materials/floors/'+sample.asset+'/color.jpg')+'")';
-   else chip.style.backgroundColor='#937050';
-  }else if(sample.color)chip.style.backgroundColor=sample.color;
+  fillChip(chip,sample);
   const label=document.createElement('span');label.textContent=sample.label;
   el.append(chip,label);el.onclick=()=>batch?stageMany(tileTargets().filter(t=>!locked(t)),sample):stage(t,sample);
   el.addEventListener('dragstart',event=>{
@@ -275,6 +373,8 @@ function choose(target){
  if(locked(target)){toast('表面所在图层已锁定');return;}
  session.mode='surface';
  session.target=target;
+ const group=category(target);
+ if(group)session.recent[group]=key(target);
  panel.querySelector('[data-material-message]').textContent=target.kind==='floor'?'地面外观用于三维搭配，施工铺贴和采购沿用项目设置。':'';
  render();View3D.sync();
 }
@@ -339,9 +439,12 @@ async function open(target,mode=target?'surface':'style'){
  if(active()){if(target)choose(target);else setMode(mode);return;}
  if($('#vMeasure').getAttribute('aria-pressed')==='true')$('#vMeasure').click();
  styleDetails.open=false;
- session={...source,target:null,edits:new Map(),preview:null,scheme:null,light:'plan',mode,tileKind:'all'};
+ session={...source,target:null,edits:new Map(),preview:null,scheme:null,light:'plan',mode,tileKind:'all',recent:{},browse:null};
  if(target)choose(target);
- else if(ui.sel?.kind==='room'&&state.rooms[ui.sel.id]&&!L.locked(state,'floor:'+ui.sel.id))session.target={kind:ROOMS.find(r=>r.id===ui.sel.id)?.counted===false?'bay':'floor',id:ui.sel.id};
+ else if(ui.sel?.kind==='room'&&state.rooms[ui.sel.id]&&!L.locked(state,'floor:'+ui.sel.id)){
+  session.target={kind:ROOMS.find(r=>r.id===ui.sel.id)?.counted===false?'bay':'floor',id:ui.sel.id};
+  session.recent.floor=key(session.target);
+ }
  render();View3D.sync();
 }
 async function openStyle(id){
@@ -430,6 +533,10 @@ for(const [id,preset] of Object.entries(lightPresets)){
 }
 panel.querySelector('[data-material-close]').onclick=close;
 panel.querySelector('[data-material-apply]').onclick=apply;
+panel.querySelector('[data-material-locate]').onclick=()=>{if(active()&&session.target)View3D.locateMaterial(session.target);};
+currentCards.onclick=currentResults.onclick=selectCurrent;
+currentSearch.oninput=()=>{if(active())refreshList();};
+panel.querySelector('[data-material-current-collapse]').onclick=()=>{if(active())browse(null);};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&active()){e.stopImmediatePropagation();close();button.focus();}},true);
-window.FurnishMaterialUI={open,openStyle,openTiles,close,active,dirty,lighting,choose:target=>{if(session?.mode!=='tiles')choose(target);},drop,work,afterRender,furnitureTarget,target:()=>active()&&session.mode==='surface'?session.target:null};
+window.FurnishMaterialUI={open,openStyle,openTiles,close,active,dirty,lighting,choose:target=>{if(session?.mode!=='tiles')choose(target);},drop,work,afterRender,furnitureTarget,refreshCurrent,targetKey:key,target:()=>active()&&session.mode==='surface'?session.target:null};
 })();

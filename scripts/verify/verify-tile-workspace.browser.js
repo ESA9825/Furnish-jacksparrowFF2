@@ -25,6 +25,17 @@ async(page,verification)=>{
    await p.evaluate(()=>{const build=FurnishWallTilingModel.build;FurnishWallTilingModel.build=function(...args){const group=build.apply(this,args);window.__tileWorkspaceWalls=group;return group;};const surface=FurnishFloorFinishModel.surface;FurnishFloorFinishModel.surface=function(...args){const mesh=surface.apply(this,args);window.__tileWorkspaceFloor=mesh;return mesh;};});await p.getByRole('button',{name:'3D 场景',exact:true}).click();await p.waitForFunction(()=>is3D()&&!switching);
    const geometrySaved=saved,materialHistory=await p.evaluate(()=>undoStack.length);
    const material=p.locator('#material-panel');
+   await p.locator('#vMaterials').click();
+   const cards=material.locator('[data-material-current-cards]');
+   check(await cards.locator('[data-current-target]').count()>=2,'current floor and wall samples exist');
+   await cards.getByRole('button',{name:'查看全部墙面样片'}).click();
+   await material.getByRole('searchbox',{name:'查找当前材质'}).fill('墙砖');
+   await material.locator('[data-material-current-results] [data-current-target]').first().click();
+   check(await p.evaluate(()=>FurnishMaterialUI.target()?.kind==='wallTile'),'wall sample opens the editable tiled face directly');
+   check(await material.getByRole('button',{name:'定位所选表面'}).isVisible(),'selected wall can be located again');
+   await p.waitForFunction(()=>!View3D.interacting());
+   await p.keyboard.press('Escape');
+   check(await p.evaluate(()=>JSON.stringify(state))===geometrySaved,'browsing and locating samples do not write the plan');
    const stageTiles=async()=>{
     await p.locator('#vMaterials').click();
     await material.locator('[data-style-preview="warm-walnut"]').click();
