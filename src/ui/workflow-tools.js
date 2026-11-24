@@ -22,7 +22,7 @@ function installLibraryResize(){
  addEventListener('resize',()=>{finish(false);position();});position();
 }
 let checkGeneration=0;
-let stylePreview=null,checkTimer=0,checkKey='',issues=[],checking=true,checkError='',proposal=null;
+let checkTimer=0,checkKey='',issues=[],checking=true,checkError='',proposal=null;
 const effective=()=>P.effectivePlan(PLAN,state),kindName={confirmed:['已确认价','Confirmed'],reference:['参考价','Reference'],missing:['未填写','Missing']};
 function basisHTML(){
  const basis=P.priceBasis(effective(),state,MATS,priceOf);
@@ -77,36 +77,22 @@ function propose(id){
  const b=plan.bounds,preview=`<svg class="planning-preview" viewBox="${b.x} ${b.y} ${b.w} ${b.h}">${plan.walls.map(w=>`<rect x="${w[0]}" y="${w[1]}" width="${w[2]-w[0]}" height="${w[3]-w[1]}" fill="#888"/>`).join('')}<polygon points="${P.polygon(f).map(p=>p.join(',')).join(' ')}" fill="#eec5b9"/><polygon points="${P.polygon({...f,...next}).map(p=>p.join(',')).join(' ')}" fill="#8ac6b2" stroke="#17806c" stroke-width="30"/></svg>`;
  openDialog({title:t('预览整理建议','Preview relocation'),body:`<p>${esc(f.name)} → ${esc(next.room)} · ${t('移动','Move')} ${Math.round(next.distance)} mm</p><p>${t('红色为原位置，绿色为候选位置。应用前再次核对；保留尺寸、方向和采购资料。','Red shows the original; green is the candidate. Rechecked before applying; dimensions, rotation and purchasing data remain.')}</p>${preview}`,actions:[{label:t('取消','Cancel')},{label:t('应用建议位置','Apply suggested position'),cls:'primary',fn:()=>{if(PLAN.id!==planId||snap()!==source){toast(t('方案已改变，请重新生成建议','Design changed; regenerate the proposal'));return false;}const furniture=state.furniture.map(v=>v.id===id?{...v,cx:next.cx,cy:next.cy}:v);if(P.spaceCheck(effective(),furniture,{focusId:id,scanPassages:false}).length){toast(t('候选位置检查已改变，请重新核对','Candidate check changed; review again'));return false;}mutate(()=>Object.assign(getF(id),{cx:next.cx,cy:next.cy}));return true;}}]});
 }
-let styleScopeSelection=['cabinet'];
-function refreshStylePreview(){if(!stylePreview)return;stylePreview.work=FurnishStyles.preview(state,ROOMS,stylePreview.id,stylePreview.options);syncPreviewBanner();window.View3D?.sync();}
-function styleKey(){return styleId()?JSON.stringify([stylePreview.id,stylePreview.options]):null;}
-function styleWork(work=state){return styleId()&&work===state?stylePreview.work:work;}
-function previewStyle(id){globalThis.FurnishMaterialUI?.close();const style=FurnishStyles.find(id);if(!style)return;closeDialog();stylePreview={id,planId:PLAN.id,source:snap(),options:{scopes:[...styleScopeSelection],palette:{}}};refreshStylePreview();ui.panelScope='design';ui.tab='style';renderPanel();drawer('panel',true);setView('3d').then(()=>window.View3D?.sync());syncPreviewBanner();}
-function styleId(){if(stylePreview&&(PLAN.id!==stylePreview.planId||snap()!==stylePreview.source)){stylePreview=null;syncPreviewBanner();}return stylePreview?.id||null;}
-function syncPreviewBanner(){let banner=$('#style-preview-banner');if(!banner){banner=document.createElement('div');banner.id='style-preview-banner';banner.className='preview-banner only3d';$('#stage').append(banner);}banner.hidden=!stylePreview;banner.textContent=stylePreview?t('临时配色预览 · 尚未保存；地面材料与预算保持原值','Temporary colour preview · not saved; materials and budget unchanged'):'';}
-function styleCards(selected=styleId(),attribute='data-style-preview'){return styleCardsHTML(selected,attribute);}
-function styleCabinetSurface(){
- const selected=stylePreview.options.bodySurface??'';
- return `<label>柜身饰面<select data-style-cabinet-surface><option value="">随配色预设</option>
- ${FurnishProducts.cabinetAppearance.options.map(({id,name})=>`<option value="${id}" ${selected===id?'selected':''}>${esc(name)}</option>`).join('')}
- </select></label>`;
+function previewStyle(id){return globalThis.FurnishMaterialUI?.openStyle(id);}
+function stylePanel(){
+ const style=FurnishStyles.find(state.style);
+ return `<section><h3>${t('风格与材质','Styles & materials')}</h3>${style?`<p>${esc(t(style.zh,style.en))}</p>`:''}<button type="button" class="btn" data-open-materials>${t('打开三维搭配','Open 3D workspace')}</button></section>`;
 }
-function syncStyleSurfaceFields(){
- const select=$('[data-style-cabinet-surface]'),color=$('[data-style-palette="body"]');
- if(!select||!color)return;
- select.disabled=!stylePreview.options.scopes.includes('cabinet');
- color.disabled=!!FurnishProducts.cabinetAppearance.veneer(select.value);
- color.title=color.disabled?'该饰面使用贴图自带颜色':'';
+function surfacePanel(kind,id,title){
+ const label=title||(kind==='frame'?'窗框':kind==='bay'?'飘窗台面':'地面');
+ return `<section class="style-local-surface"><button type="button" class="btn" data-material-surface="${kind}" data-material-surface-id="${esc(id)}">${esc('编辑'+label+'配色')}</button></section>`;
 }
-function styleScopeFields(){if(!stylePreview)return '';const labels={cabinet:'柜体',curtains:'窗帘／纱帘／百叶',furniture:'普通家具／软装',frames:'门窗框',bays:'飘窗台面',floors:'地板／地砖面色'},roles={cabinet:[['front','门板'],['body','柜身／开放格']],curtains:[['textile','帘布'],['sheer','纱帘']],furniture:[['wood','木家具'],['soft','软包'],['pop','点缀']],frames:[['frame','框色']],bays:[['bay','台面']],floors:[['floor','地面']]},p=FurnishStyles.palette(stylePreview.id,stylePreview.options.palette);return `<fieldset class="style-scope-fields"><legend>应用范围与颜色</legend>${Object.entries(labels).map(([key,label])=>`<div class="style-scope-row"><label><input type="checkbox" data-style-scope="${key}" ${stylePreview.options.scopes.includes(key)?'checked':''}>${label}</label><div>${roles[key].map(([role,name])=>`<label>${name}<input type="color" data-style-palette="${role}" value="${p[role]}" aria-label="${label} · ${name}"></label>`).join('')}${key==='cabinet'?styleCabinetSurface():''}</div></div>`).join('')}<p>地面只改颜色，保留材料、铺法、层厚与标高。局部表面覆盖及柜体部件设置优先保留。</p></fieldset>`;}
-function surfacePanel(kind,id,title){const color=FurnishStyles.surfaceColor(state,kind,id),fallback=kind==='frame'?'#5d6166':MATS[state.rooms[id]?.mat]?.sw||(kind==='bay'?'#eee8df':'#dfd7c9');return `<section class="style-local-surface"><h3>${esc(title||(kind==='frame'?'窗框':kind==='bay'?'飘窗台面':'地面'))}独立配色</h3><label>颜色<input type="color" data-style-local="${kind}" data-style-local-id="${esc(id)}" value="${color??fallback}"></label><button class="btn" data-style-local-reset="${kind}" data-style-local-id="${esc(id)}">跟随配色默认</button><p class="muted">单独设置优先于方案配色；不改变材质类别和尺寸。</p></section>`;}
-function stylePanel(){const style=FurnishStyles.find(styleId());return `<section><h3>${t('配色方案','Colour schemes')}</h3><p class="muted">${t('配色名称与装修风格方向分开显示；适用风格仅供搭配参考。先预览，再选择应用范围，单独设置的部件颜色与饰面优先保留。','Colour names and interior style directions are shown separately; style labels suggest pairings. Preview, then choose a scope. Individual component finishes are retained.')}</p><div class="actions style-apply-actions"><button class="btn primary" data-style-apply="selected" ${style&&stylePreview?.options.scopes.length?'':'disabled'}>应用所选范围</button><button class="btn" data-style-apply="cabinet" ${style?'':'disabled'}>${t('仅应用柜体','Apply to cabinets')}</button><button class="btn" data-style-apply="color" ${style?'':'disabled'}>${t('应用全部家具配色','Apply furniture colours')}</button><button class="btn" data-style-apply="full" ${style?'':'disabled'}>${t('应用配色与地面材料','Apply colours and flooring')}</button><button class="btn" data-style-cancel>${t('结束预览','End preview')}</button></div>${styleScopeFields()}${styleCards()}${style?`<div class="style-material-note"><b>${t(style.zh,style.en)}</b>${styleDirectionsHTML(style)}<p>${t(style.description??'柜门与柜身协调配色',style.description?'Warm white fronts and walnut carcass / open shelves':'Coordinated cabinet fronts and carcass')}</p><p>${t('门板、开放格、层板可在柜体详细设计中单独调整；玻璃、五金与石材保持各自材质。','Edit fronts, open shelves and boards in cabinet details. Glass, hardware and stone retain their materials.')}</p></div>`:''}</section>`;}
-
-document.addEventListener('change',e=>{const el=e.target;if(el.matches('[data-style-scope],[data-style-palette],[data-style-cabinet-surface]')&&stylePreview){if(el.dataset.styleScope){stylePreview.options.scopes=[...document.querySelectorAll('[data-style-scope]:checked')].map(e=>e.dataset.styleScope);styleScopeSelection=[...stylePreview.options.scopes];const button=document.querySelector('[data-style-apply=selected]');if(button)button.disabled=!styleScopeSelection.length;}else if(el.hasAttribute('data-style-cabinet-surface')){if(el.value)stylePreview.options.bodySurface=el.value;else delete stylePreview.options.bodySurface;}else stylePreview.options.palette[el.dataset.stylePalette]=el.value;syncStyleSurfaceFields();refreshStylePreview();}if(el.matches('[data-style-local]')){cancelStyle();mutate(()=>FurnishStyles.editSurface(state,el.dataset.styleLocal,el.dataset.styleLocalId,el.value));}});
-document.addEventListener('click',e=>{const el=e.target.closest('[data-style-local-reset]');if(el){cancelStyle();mutate(()=>FurnishStyles.editSurface(state,el.dataset.styleLocalReset,el.dataset.styleLocalId,undefined));renderPanel();}});
-function cancelStyle(){stylePreview=null;syncPreviewBanner();window.View3D?.sync();}
+document.addEventListener('click',e=>{
+ const el=e.target.closest('[data-open-materials],[data-material-surface]');
+ if(!el)return;
+ const {materialSurface:kind,materialSurfaceId:id}=el.dataset;
+ if(kind)globalThis.FurnishMaterialUI?.open({kind,id});else previewStyle();
+});
 function afterPanel(){
- if(stylePreview)syncStyleSurfaceFields();
  const p=$('#panel');
  if(['overview','quote'].includes(ui.tab)&&p.querySelector('.tabs')&&!p.querySelector('.price-summary')){
   if(ui.tab==='quote')p.querySelector('.tabs').insertAdjacentHTML('afterend',basisHTML());
@@ -134,7 +120,7 @@ function disposeDialog(){disposePreview?.();disposePreview=null;proposal=null;$(
 function exportDXF(){openDialog({title:t('导出 DXF 布局图','Export DXF layout'),body:`<p>${t('单位 mm，CAD Y轴向上。按墙轮廓、门窗洞口、房间、家具外包、标注分层。用于布局交接；不含结构构造、立面、节点或施工图审核。','Millimetres, CAD Y up. Separate wall outlines, openings, rooms, furniture envelopes and annotations. For layout exchange; no construction details or drawing certification.')}</p><p>${t('洞口以独立图层标出；家具按旋转后的占地外包绘制。','Openings are on a separate layer; furniture uses its rotated footprint envelope.')}</p>`,actions:[{label:t('取消','Cancel')},{label:t('下载 DXF','Download DXF'),cls:'primary',fn:()=>{try{download(PLAN.name.replace(/[\\/:*?"<>|]/g,'_')+'-layout.dxf',new Blob([FurnishDXFExport.drawing(effective(),state)],{type:'application/dxf;charset=utf-8'}));return true;}catch(e){toast(e.message);return false;}}}]});}
 function afterRender(){
  globalThis.FurnishMaterialUI?.afterRender();
- styleId();clearTimeout(checkTimer);const plan=effective(),key=checkSignature(plan);checking=key!==checkKey;checkError='';
+ clearTimeout(checkTimer);const plan=effective(),key=checkSignature(plan);checking=key!==checkKey;checkError='';
  const generation=++checkGeneration;
  const gestureActive=()=>globalThis.View3D?.interacting()||(typeof drag!=='undefined'&&(drag||pinch));
  // Review steps can contain expensive geometry reads even with a slice budget.
@@ -190,7 +176,6 @@ function initialize(){
  const localized=(element,zh,en)=>{element.dataset.zh=zh;element.dataset.en=en;element.textContent=t(zh,en);return element;};
  const rail=document.createElement('div');rail.className='canvas-rail';rail.setAttribute('aria-label',t('画布工具','Canvas tools'));rail.setAttribute('role','toolbar');$('#stage').append(rail);rail.append($('#tools'),$('#modes3d'),$('#vIso').parentElement);
  const extra=document.createElement('div');extra.className='grp rail-more';rail.append(extra);extra.append($('#tracePlan'));$('#tracePlan').textContent=t('户型','Plan');$('#tracePlan').title=t('导入或编辑墙体、门窗与功能区','Import or edit walls, openings and zones');
- const style=document.createElement('button');style.className='btn';style.innerHTML=ico('palette');style.append(localized(document.createElement('span'),'配色','Colours'));extra.append(style);style.onclick=()=>previewStyle(state.style||STYLES[0].id);
  const planButton=$('#tracePlan');planButton.classList.remove('outline');delete planButton.dataset.en;delete planButton.dataset.zh;planButton.innerHTML=ico('plan');planButton.append(localized(document.createElement('span'),'户型','Plan'));
  localized($('#projectWorkspace'),'工作台','Workspace');
  const finishes=document.createElement('div');finishes.className='grp rail-finishes';rail.append(finishes);
@@ -199,7 +184,7 @@ function initialize(){
  [...$('#tools').children].slice(3).forEach(b=>{b.classList.add('only2d');toolPop.append(b);});
  const cameraButton=$('#vCamera'),measureButton=$('#vMeasure');cameraButton.classList.add('only3d');measureButton.classList.add('only3d');toolPop.append(extra,finishes,$('#vIso').parentElement);rail.append($('#modes3d'),measureButton,cameraButton,toolMenu);
  document.body.append(toolPop);
- const materialButton=$('#vMaterials');materialButton.classList.add('only3d');rail.insertBefore(materialButton,toolMenu);
+ rail.insertBefore($('#vMaterials'),toolMenu);
  const lightingButton=$('#vLightingPreview');lightingButton.classList.add('only3d');rail.insertBefore(lightingButton,toolMenu);
  const placeTools=()=>{toolPop.hidden=!toolMenu.open;toolMenu.firstElementChild.setAttribute('aria-expanded',String(toolMenu.open));if(!toolMenu.open){if(toolPop.contains(document.activeElement))toolMenu.firstElementChild.focus({preventScroll:true});return;}const r=toolMenu.firstElementChild.getBoundingClientRect();Object.assign(toolPop.style,{left:Math.max(12,Math.min(r.right-300,innerWidth-312))+'px',bottom:Math.max(12,innerHeight-r.top+8)+'px',maxHeight:Math.max(100,r.top-20)+'px'});[...toolPop.querySelectorAll('button')].find(b=>b.getClientRects().length&&!b.disabled)?.focus({preventScroll:true});};
  toolMenu.addEventListener('toggle',placeTools);addEventListener('resize',()=>{toolMenu.open=false;});
@@ -246,8 +231,8 @@ function initialize(){
  localized($('#fileMenu summary span'),'导入／导出','Import / export');
  $('#fileMenu').addEventListener('toggle',()=>{if(!$('#fileMenu').open)return;const designs=store.designs.filter(d=>d.planId===PLAN.id);$('#file-project-scope').textContent=t(`导出「${PLAN.name}」的当前布置、${designs.filter(d=>d.editable===true).length} 个设计方案、${designs.filter(d=>d.editable!==true).length} 条历史记录及家具库。新电脑在此选择“导入项目”。其他户型需分别导出。`,`Export “${PLAN.name}”: current layout, ${designs.filter(d=>d.editable===true).length} designs, ${designs.filter(d=>d.editable!==true).length} history entries and furniture library. On the new computer, choose Import project here. Export other floor plans separately.`);});
  for(const [selector,zh,en,kind] of [['aside.lib','家具与房间','Furniture and rooms','lib'],['aside.right','属性与方案','Properties and design','panel']]){const heading=document.createElement('div');heading.className='sidebar-heading';heading.append(localized(document.createElement('b'),zh,en));const close=document.createElement('button');close.className='btn';close.innerHTML=ico('x');close.setAttribute('aria-label',t(zh==='家具与房间'?'关闭家具库':'关闭属性面板',kind==='lib'?'Close library':'Close properties'));close.onclick=()=>drawer(kind,false);heading.append(close);$(selector).prepend(heading);}
- document.addEventListener('click',e=>{const target=e.target.closest('button');if(!target)return;if(target.matches('[data-review-filter]')){ui.spaceFilter=target.dataset.reviewFilter;openSpace();}if(target.matches('[data-price-details]'))priceDetails();if(target.matches('[data-material-specs]'))materialSpecs();if(target.matches('[data-space-filter]')){ui.spaceFilter=target.dataset.spaceFilter;renderPanel();}if(target.matches('[data-space-full]'))openFullSpace();if(target.matches('[data-space-locate]'))FurnishWorkspace.locateIssue(issues[+target.dataset.spaceLocate]);if(target.matches('[data-space-accept]')){const {ignored,...issue}=issues[+target.dataset.spaceAccept],key=P.checkFingerprint(issue,effective(),state.furniture,state.spaceThreshold||800);mutate(()=>state.spaceIgnored=ignored?(state.spaceIgnored||[]).filter(v=>v!==key):[...(state.spaceIgnored||[]).slice(-99),key]);renderPanel();}if(target.matches('[data-space-propose]'))propose(target.dataset.spacePropose);if(target.matches('[data-style-preview]'))previewStyle(target.dataset.stylePreview);if(target.matches('[data-style-cancel]')){cancelStyle();ui.tab='overview';renderPanel();}if(target.matches('[data-style-apply]')){const id=styleId();if(!id)return;const selection=structuredClone(stylePreview.options);if(target.dataset.styleApply==='selected'&&!selection.scopes.length)return;cancelStyle();mutate(()=>{if(target.dataset.styleApply==='selected')FurnishStyles.applySelected(state,ROOMS,id,selection);else if(target.dataset.styleApply==='cabinet')FurnishStyles.applyCabinets(state,id,selection.palette,selection.bodySurface);else if(target.dataset.styleApply==='full')FurnishStyles.apply(state,ROOMS,id,!!PLAN.customDraft,selection.palette,selection.bodySurface);else{FurnishStyles.applyColors(state,id,selection.palette,selection.bodySurface);}});ui.tab='overview';renderPanel();toast(t('配色已应用，可撤销','Colours applied; undo available'));}});
+ document.addEventListener('click',e=>{const target=e.target.closest('button');if(!target)return;if(target.matches('[data-review-filter]')){ui.spaceFilter=target.dataset.reviewFilter;openSpace();}if(target.matches('[data-price-details]'))priceDetails();if(target.matches('[data-material-specs]'))materialSpecs();if(target.matches('[data-space-filter]')){ui.spaceFilter=target.dataset.spaceFilter;renderPanel();}if(target.matches('[data-space-full]'))openFullSpace();if(target.matches('[data-space-locate]'))FurnishWorkspace.locateIssue(issues[+target.dataset.spaceLocate]);if(target.matches('[data-space-accept]')){const {ignored,...issue}=issues[+target.dataset.spaceAccept],key=P.checkFingerprint(issue,effective(),state.furniture,state.spaceThreshold||800);mutate(()=>state.spaceIgnored=ignored?(state.spaceIgnored||[]).filter(v=>v!==key):[...(state.spaceIgnored||[]).slice(-99),key]);renderPanel();}if(target.matches('[data-space-propose]'))propose(target.dataset.spacePropose);});
  const distanceAction=e=>{const target=e.target.closest('[data-wall-net]');if(!target||e.type==='keydown'&&!['Enter',' '].includes(e.key))return;e.preventDefault();e.stopImmediatePropagation();netDistance(target.dataset.wallTarget,target.dataset.wallNet);};svg.addEventListener('pointerdown',distanceAction,true);svg.addEventListener('keydown',distanceAction,true);
 }
-window.FurnishWorkflowTools={clearDistances:()=>$('#gWallNet')?.remove(),redrawDistances:wallDimensions,afterPanel,afterRender,spacePanel,stylePanel,styleCards,previewStyle,styleId,styleKey,styleWork,surfacePanel,disposeDialog,materialSpecs,priceDetails,exportDXF,openSpace};initialize();installLibraryResize();
+window.FurnishWorkflowTools={clearDistances:()=>$('#gWallNet')?.remove(),redrawDistances:wallDimensions,afterPanel,afterRender,spacePanel,stylePanel,previewStyle,surfacePanel,disposeDialog,materialSpecs,priceDetails,exportDXF,openSpace};initialize();installLibraryResize();
 })();

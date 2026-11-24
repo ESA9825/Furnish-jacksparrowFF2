@@ -2,11 +2,52 @@
 module.exports=async(p,V)=>{
  const assert=require('node:assert/strict'),errors=[],checks=[];p.on('pageerror',e=>errors.push(e.message));
  const seed=await p.evaluate(()=>{const f=(id,type,w=900,d=500,h=900)=>({id,type,name:id,cx:8000,cy:4500,w,d,h,rot:0,color:'#abcdef'});mutate(()=>{state.furniture=[{...f('scope-cabinet','cabinet'),...FurnishCabinet.preset('storage')},f('scope-curtain','curtain',2000,100,2400),f('scope-sheer','curtain_sheer',2000,100,2400),f('scope-table','table'),f('scope-fridge','fridge'),{...f('scope-frame','tripleslidingwindow',1200,100,1500),mountHeight:900}];});return {work:structuredClone(state),room:ROOMS.find(r=>r.counted!==false).id,bay:ROOMS.find(r=>r.counted===false)?.id};});assert(seed.bay,'fixture requires existing bay platform');
- await p.evaluate(()=>{ui.panelScope='design';ui.tab='overview';renderPanel();});assert(await p.locator('#panel').innerText().then(t=>t.includes('配色方案')&&!t.includes('风格方案')));assert.equal(await p.locator('.stcard .style-directions').count(),7);assert.equal(await p.locator('[data-style=industrial] b').innerText(),'炭灰＋焦糖');assert.match(await p.locator('[data-style=industrial] .style-directions').innerText(),/适用风格[\s\S]*工业/);await p.locator('.style-schemes').scrollIntoViewIfNeeded();await V.screenshot('colour-cards');
- await p.evaluate(()=>FurnishWorkflowTools.previewStyle('warm-walnut'));await p.locator('[data-style-scope]').first().waitFor();assert.equal(await p.locator('#panel h3').first().innerText(),'配色方案');assert.match(await p.locator('.style-material-note').innerText(),/暖白＋胡桃木[\s\S]*适用风格[\s\S]*现代中古/);checks.push('overview and preview separate colour names from suitable interior styles for all seven existing IDs');for(const key of ['cabinet','curtains','furniture','frames','bays','floors'])await p.locator('[data-style-scope="'+key+'"]').check();await p.locator('[data-style-palette="frame"]').fill('#827668');await p.locator('[data-style-palette="floor"]').fill('#d5c7af');await p.locator('[data-style-palette="bay"]').fill('#ece8de');await p.evaluate(()=>View3D.automationReady());await V.screenshot('scopes-preview');assert.deepEqual(await p.evaluate(()=>structuredClone(state)),seed.work,'preview must not write saved work');
- await p.locator('[data-style-cancel]').click();assert.deepEqual(await p.evaluate(()=>structuredClone(state)),seed.work);await p.evaluate(()=>FurnishWorkflowTools.previewStyle('warm-walnut'));await p.locator('[data-style-palette="frame"]').fill('#827668');await p.locator('[data-style-palette="floor"]').fill('#d5c7af');await p.locator('[data-style-palette="bay"]').fill('#ece8de');await p.locator('[data-style-apply="selected"]').click();const saved=await p.evaluate(()=>structuredClone(state));assert.equal(saved.styleAppearance.frameColor,'#827668');assert.equal(saved.furniture.find(f=>f.id==='scope-table').color,'#765239');assert.equal(saved.furniture.find(f=>f.id==='scope-sheer').color,'#f4f0e7');assert.equal(saved.furniture.find(f=>f.id==='scope-fridge').color,'#abcdef');assert.deepEqual(saved.rooms,seed.work.rooms);assert.deepEqual(saved.floorFinishes,seed.work.floorFinishes);checks.push('six scope controls, custom colours, temporary/cancelled preview, unchanged materials/layout/elevations and excluded appliances');
- await p.evaluate(()=>undo());assert.deepEqual(await p.evaluate(()=>structuredClone(state)),seed.work);await p.evaluate(()=>redo());assert.deepEqual(await p.evaluate(()=>structuredClone(state)),saved);checks.push('selected categories apply in one original undo/redo');
- await p.evaluate(id=>select({kind:'room',id}),seed.room);await p.locator('[data-style-local="floor"]').fill('#aabbcc');await p.evaluate(()=>select({kind:'win',id:0}));await p.locator('[data-style-local="frame"]').first().fill('#343b42');await p.evaluate(id=>select({kind:'room',id}),seed.bay);await p.locator('[data-style-local="bay"]').fill('#e1d7ca');const local=await p.evaluate(()=>structuredClone(state.styleAppearance));await p.evaluate(()=>FurnishWorkflowTools.previewStyle('cream'));await p.locator('[data-style-apply="selected"]').click();const retained=await p.evaluate(()=>structuredClone(state.styleAppearance));for(const key of ['floorOverrides','frameOverrides','bayOverrides'])assert.deepEqual(retained[key],local[key]);checks.push('individual room, bay and architectural frame overrides survive later scheme changes');
+ const workspace=p.locator('#material-panel'),details=workspace.locator('[data-material-style-details]>summary');
+ const openStyle=async id=>{await p.evaluate(id=>FurnishWorkflowTools.previewStyle(id),id);await details.click();};
+ const apply=()=>workspace.locator('[data-material-apply]').click(),close=()=>workspace.locator('[data-material-close]').click();
+ await p.evaluate(()=>{ui.panelScope='design';ui.tab='overview';renderPanel();drawer('panel',true);});
+ assert.equal(await p.locator('#panel [data-style-preview]').count(),0);
+ await p.locator('#panel [data-open-materials]').click();
+ await workspace.waitFor();
+ assert.equal(await workspace.locator('[data-style-preview]').count(),7);
+ assert.equal(await workspace.locator('[data-style-preview=industrial] b').innerText(),'炭灰＋焦糖');
+ assert.match(await workspace.locator('[data-style-preview=industrial] small').innerText(),/工业/);
+ await V.screenshot('colour-cards');
+ await openStyle('warm-walnut');
+ assert.match(await workspace.locator('[data-style-preview="warm-walnut"]').innerText(),/暖白＋胡桃木[\s\S]*现代中古/);
+ for(const key of ['cabinet','curtains','furniture','frames','bays','floors'])await workspace.locator('[data-style-scope="'+key+'"]').check();
+ const setColors=async()=>{
+  await workspace.locator('[data-style-palette="frame"]').fill('#827668');
+  await workspace.locator('[data-style-palette="floor"]').fill('#d5c7af');
+  await workspace.locator('[data-style-palette="bay"]').fill('#ece8de');
+ };
+ await setColors();await p.evaluate(()=>View3D.automationReady());await V.screenshot('scopes-preview');
+ assert.deepEqual(await p.evaluate(()=>structuredClone(state)),seed.work,'preview must not write saved work');
+ await workspace.locator('[data-style-preview=industrial]').click();
+ const floorMaterials=workspace.locator('[data-style-floor-materials]');
+ await floorMaterials.check();assert.notDeepEqual(await p.evaluate(()=>FurnishMaterialUI.work().rooms),seed.work.rooms);
+ await floorMaterials.uncheck();assert.deepEqual(await p.evaluate(()=>FurnishMaterialUI.work().rooms),seed.work.rooms);
+ await close();assert.deepEqual(await p.evaluate(()=>structuredClone(state)),seed.work);
+ await openStyle('warm-walnut');await setColors();await apply();
+ const saved=await p.evaluate(()=>structuredClone(state));
+ assert.equal(saved.styleAppearance.frameColor,'#827668');assert.equal(saved.furniture.find(f=>f.id==='scope-table').color,'#765239');
+ assert.equal(saved.furniture.find(f=>f.id==='scope-sheer').color,'#f4f0e7');assert.equal(saved.furniture.find(f=>f.id==='scope-fridge').color,'#abcdef');
+ assert.deepEqual(saved.rooms,seed.work.rooms);assert.deepEqual(saved.floorFinishes,seed.work.floorFinishes);
+ checks.push('single workspace launcher, seven visible cards, scoped preview, explicit floor-category opt-in and unchanged saved plan before applying');
+ await p.evaluate(()=>undo());assert.deepEqual(await p.evaluate(()=>structuredClone(state)),seed.work);
+ await p.evaluate(()=>redo());assert.deepEqual(await p.evaluate(()=>structuredClone(state)),saved);
+ for(const [selection,kind,color] of [[{kind:'room',id:seed.room},'floor','#aabbcc'],[{kind:'win',id:0},'frame','#343b42'],[{kind:'room',id:seed.bay},'bay','#e1d7ca']]){
+  await p.evaluate(sel=>{select(sel);ui.panelScope='object';renderPanel();},selection);
+  await p.locator('#panel [data-material-surface="'+kind+'"]').first().click();
+  await workspace.getByLabel('表面颜色').fill(color);
+  assert.notEqual(await p.evaluate(({kind,id})=>FurnishStyles.surfaceColor(state,kind,id),{kind,id:selection.id}),color);
+ }
+ await workspace.locator('[data-material-mode=style]').click();await workspace.locator('[data-style-preview=cream]').click();
+ await apply();
+ const retained=await p.evaluate(()=>structuredClone(state.styleAppearance));
+ assert.equal(retained.floorOverrides[seed.room],'#aabbcc');assert.equal(retained.bayOverrides[seed.bay],'#e1d7ca');
+ assert(Object.values(retained.frameOverrides).includes('#343b42'));
+ checks.push('individual room, frame and bay edits share the draft and override a later scheme');
  await p.evaluate(async()=>{if(repositoryClient?.flush&&repositoryClient.status.mode!=='error')await repositoryClient.flush();});await p.waitForFunction(()=>!savePending);const beforeReload=await p.evaluate(()=>structuredClone(state));await p.reload();await p.locator('#repository-loading').waitFor({state:'hidden'});await p.waitForFunction(()=>!repositoryBooting);assert.deepEqual(await p.evaluate(()=>structuredClone(state.styleAppearance)),beforeReload.styleAppearance);assert(await p.evaluate(()=>store.v>=97&&STORE==='huxing-design-v'+store.v));
  const production=await p.evaluate(async ids=>{await View3D.enter();await View3D.automationReady();const T=await import('three'),out=await View3D.blenderScene(),dv=new DataView(out.buffer),jsonSize=dv.getUint32(12,true),j=JSON.parse(new TextDecoder().decode(new Uint8Array(out.buffer,20,jsonSize))),binStart=28+jsonSize;
   const rgb=hex=>{const c=new T.Color(hex);return [c.r,c.g,c.b];},near=(a,b)=>a&&b.every((v,i)=>Math.abs(a[i]-v)<.0001),frame=j.materials.some(m=>near(m.pbrMetallicRoughness?.baseColorFactor,rgb('#343b42')));
@@ -14,5 +55,5 @@ module.exports=async(p,V)=>{
   return {frame,floor:await pixels(ids.room),bay:await pixels(ids.bay)};
  },{room:seed.room,bay:seed.bay});assert(production.frame,'architectural frame override must reach production GLB');assert(production.floor.uv&&production.bay.uv);for(const [kind,expected]of [['floor',[170,187,204]],['bay',[225,215,202]]])assert(production[kind].pixel.every((v,i)=>Math.abs(v-expected[i])<(kind==='bay'?8:22)),kind+' production texture must retain chosen tint');checks.push('saved production GLB has frame colour and embedded floor/bay tinted textures with UVs');
  await p.evaluate(()=>setView('2d'));const floorFill=await p.locator('#gRooms [data-room="'+seed.room+'"]').getAttribute('fill');if(floorFill.startsWith('url'))assert.equal(await p.locator(floorFill.slice(4,-1)+' rect').last().getAttribute('fill'),'#aabbcc');else assert.equal(floorFill,'#aabbcc');checks.push('2D flooring retains the individual finish colour');
- await p.setViewportSize({width:390,height:844});await p.evaluate(()=>FurnishWorkflowTools.previewStyle('warm-walnut'));await p.locator('aside.right.open').waitFor();await p.waitForFunction(()=>document.querySelector('#stage').classList.contains('is3d'));await p.evaluate(()=>View3D.automationReady());await V.screenshot('scopes-narrow');await p.locator('.style-schemes').scrollIntoViewIfNeeded();await V.screenshot('colour-cards-narrow');assert(await p.locator('.style-schemes').evaluate(e=>e.scrollWidth<=e.clientWidth+1));assert(await p.locator('.style-scope-fields').evaluate(e=>e.scrollWidth<=e.clientWidth+1));await p.locator('[data-style-cancel]').click();assert.deepEqual(errors,[]);return {passed:true,checks,production};
+ assert.deepEqual(errors,[]);return {passed:true,checks,production};
 };

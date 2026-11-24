@@ -128,7 +128,7 @@
       <button class="btn" id="vMeasure" aria-pressed="false" title="3D 两点测量 (M)" data-en-title="3D surface measurement (M)"><svg class="i"><use href="#i-ruler"/></svg><span data-en="Measure">测量</span></button>
       <button class="btn" id="vRestoreWalls" hidden data-en="Restore walls">恢复墙体</button>
       <button class="btn" id="vBlender" onclick="FurnishBlenderRender.open()" data-en="Blender render">Blender 渲染</button>
-      <button class="btn" id="vMaterials" aria-controls="material-panel" aria-pressed="false"><svg class="i"><use href="#i-palette"/></svg><span data-en="Materials">材质</span></button>
+      <button class="btn" id="vMaterials" aria-controls="material-panel" aria-pressed="false"><svg class="i"><use href="#i-palette"/></svg><span data-en="Styles & materials">风格与材质</span></button>
       <button class="btn" id="vLightingPreview" onclick="FurnishLightingPreview.open()" data-en="HD preview">高清预览</button>
     </div>
     <div class="grp">
@@ -314,11 +314,24 @@
 
   <div id="view-workspace">
   <main id="stage">
-    <section id="material-panel" aria-label="材质" hidden>
-      <div class="material-panel-heading"><strong data-material-target>点选场景中的表面</strong><span data-material-count role="status"></span><button type="button" class="btn" data-material-close aria-label="关闭材质面板">关闭</button><button type="button" class="btn primary" data-material-apply disabled>应用材质</button></div>
-      <div class="material-options" role="group" aria-label="材质范围">
-        <button type="button" class="btn" data-material-mode="surface" aria-pressed="true">点选表面</button><button type="button" class="btn" data-material-mode="tiles" aria-pressed="false">批量瓷砖</button>
+    <section id="material-panel" aria-label="风格与材质" hidden>
+      <div class="material-panel-heading">
+        <div class="material-options material-modes" role="group" aria-label="搭配方式">
+          <button type="button" class="btn" data-material-mode="style" aria-pressed="true">风格方案</button><button type="button" class="btn" data-material-mode="surface" aria-pressed="false">点选表面</button><button type="button" class="btn" data-material-mode="tiles" aria-pressed="false">批量瓷砖</button>
+        </div>
+        <span data-material-count role="status"></span><button type="button" class="btn" data-material-close>关闭</button><button type="button" class="btn primary" data-material-apply disabled>应用搭配</button>
+      </div>
+      <div data-material-style>
+        <div data-material-styles></div>
+        <div class="material-options material-style-summary">
+          <span data-material-style-status></span><button type="button" class="btn" data-material-style-reset hidden>恢复当前配色</button>
+          <details data-material-style-details hidden><summary>应用范围与颜色</summary><div data-material-style-fields></div></details>
+        </div>
+      </div>
+      <div class="material-options material-target" data-material-surface-heading hidden>
+        <strong data-material-target></strong>
         <label data-material-tile-filter hidden><span>范围</span><select aria-label="瓷砖范围" data-material-tile-kind><option value="all">墙砖和地砖</option><option value="floor">地砖</option><option value="wall">墙砖</option></select></label><span data-material-tile-count role="status"></span>
+        <label data-material-custom hidden>自定义颜色 <input type="color" aria-label="表面颜色"></label>
       </div>
       <div data-material-samples></div>
       <div class="material-options" data-material-sheen hidden><span>砖面</span><div data-material-sheen-options role="group" aria-label="地砖表面"></div></div>
@@ -1663,9 +1676,8 @@ const syncIdentity=FurnishPartIdentity;
   clearGroup(archFloor); clearGroup(archUp); clearGroup(solarEnvelope); lampG.clear(); doors.length = 0; slidingDoors.length = 0; colliders = [];
   solarVertices.length=0;
   const top = opt.cut===2.8?H:Math.min(opt.cut,H);
-  const materialWork=globalThis.FurnishMaterialUI?.work(state)||state;
-  const appearanceWork=globalThis.FurnishWorkflowTools?.styleWork(materialWork)||materialWork;
-  const finishPlan=FurnishProject.effectivePlan(PLAN,state);floorScenePlan=finishPlan;
+  const appearanceWork=globalThis.FurnishMaterialUI?.work(state)||state;
+  const finishPlan=FurnishProject.effectivePlan(PLAN,appearanceWork);floorScenePlan=finishPlan;
   // Use the structural footprint so finish thickness cannot open a light seam
   // between the roof and the wall. The visible ceiling still uses its finish.
   for(const room of finishPlan.rooms){
@@ -1676,12 +1688,12 @@ const syncIdentity=FurnishPartIdentity;
   }
   ground.position.y=Math.min(-.015,...Object.values(finishPlan.floorFinish?.areas||{}).flatMap(a=>[a.rawZ,a.finishedZ].filter(Number.isFinite).map(v=>v/1000-.015)));
   const satinFloor=['area_fmv3qb1oi4','area_fmv3qajd93','area_fmv3p2ig914'];
-  const floorAppearance=roomId=>({refined:finishPlan.id==='custom_mv37igji'&&satinFloor.includes(roomId)&&state.rooms[roomId]?.mat==='tile800'});
+  const floorAppearance=roomId=>({refined:finishPlan.id==='custom_mv37igji'&&satinFloor.includes(roomId)&&appearanceWork.rooms[roomId]?.mat==='tile800'});
   const roomApertures=new Map(),floorModel=FurnishFloorFinishModel;
   const finishRooms=FurnishWallFinish.spatial(finishPlan).rooms;
   const windowCoordinates={wx,wz,inside:FurnishGeometry.inPoly};
   function finishMaterial(roomId,layout,room,isFloor){
-    const kind=state.rooms[roomId].mat,color=FurnishStyles.surfaceColor(appearanceWork,isFloor?'floor':'bay',roomId);
+    const kind=appearanceWork.rooms[roomId].mat,color=FurnishStyles.surfaceColor(appearanceWork,isFloor?'floor':'bay',roomId);
     const options=floorModel.floorOptions(appearanceWork,roomId,kind);
     if(!isFloor)options.sheen=undefined;
     let material=isFloor?floorModel.sampleMaterial(THREE,appearanceWork,roomId):null;
@@ -1835,10 +1847,9 @@ function cutElectricalBoxWalls(){
  archUp.traverse(o=>{if(o.userData.recessWall||o.userData.wallFinish||o.userData.wallTiling)FurnishElectricalBoxModel.cutMesh(THREE,o,cuts,{wx,wz});});
 }
 function buildFurn(work=state){
-  work=globalThis.FurnishWorkflowTools?.styleWork(work)||work;
   // 增量重建：只重建尺寸 / 颜色 / 类型变化的家具，其余只更新位姿（几十件模型时明显更快）
   const byId = new Map(furnG.children.map(o => [o.userData.fid, o])), keep = new Set(), validFurniture=work.furniture.filter(f=>!furnitureError(f));
-  const preview=globalThis.FurnishWorkflowTools?.styleId(),plan=FurnishProject.effectivePlan(PLAN,work);
+  const plan=FurnishProject.effectivePlan(PLAN,work);
   for (const saved of work.furniture){
     const f=FurnishDrawerContents.pose(saved,validFurniture,plan);
     keep.add(f.id);
@@ -2002,7 +2013,7 @@ function sync(force){
   if(displayChanged||materialLookChanged||lightingChanged)applyLight();
   const materialWork=globalThis.FurnishMaterialUI?.work(state)||state;
   const furnitureWork=globalThis.FurnishWardrobePlannerUI?.previewWork()||globalThis.FurnishCatalog?.previewWork()||materialWork;
-  const a = JSON.stringify([materialWork.styleAppearance,globalThis.FurnishWorkflowTools?.styleKey(),state.rooms, state.demolished, state.open, PLAN.beams, opt.cut,H, PLAN.markers,state.furniture.filter(f=>(FurnishDesign.products().definition(f)?.downlight||FurnishDesign.products().definition(f)?.ceilingPanel)&&!f.obj).map(f=>[f.id,f.type,f.cx,f.cy,f.w,f.d,f.h,f.rot,f.flip,f.mountHeight]),state.furnitureDatum,state.wallFinishes,state.floorFinishes,state.wallTiling,state.ceilings,materialWork.tileGrout,typeof FurnishWallFinish==='undefined'?[]:FurnishWallFinish.serviceOpenings(PLAN,state),typeof FurnishElectricalBox==='undefined'?[]:FurnishElectricalBox.cuts(FurnishProject.effectivePlan(PLAN,state),state.furniture)]), f = JSON.stringify([furnitureWork.furniture.map(({price,referencePrice,priceDate,purchaseStatus,purchaseNote,sourceUrl,...shape})=>shape),PLAN.markers,state.rooms,H,globalThis.FurnishWorkflowTools?.styleKey(),state.wallFinishes,state.floorFinishes,state.furnitureDatum]), l = JSON.stringify([state.rooms, opt.cut,H,PLAN.beams,state.wallFinishes,state.floorFinishes,state.wallTiling]);
+  const a = JSON.stringify([materialWork.styleAppearance,materialWork.rooms, state.demolished, state.open, PLAN.beams, opt.cut,H, PLAN.markers,state.furniture.filter(f=>(FurnishDesign.products().definition(f)?.downlight||FurnishDesign.products().definition(f)?.ceilingPanel)&&!f.obj).map(f=>[f.id,f.type,f.cx,f.cy,f.w,f.d,f.h,f.rot,f.flip,f.mountHeight]),state.furnitureDatum,state.wallFinishes,state.floorFinishes,state.wallTiling,state.ceilings,materialWork.tileGrout,typeof FurnishWallFinish==='undefined'?[]:FurnishWallFinish.serviceOpenings(PLAN,state),typeof FurnishElectricalBox==='undefined'?[]:FurnishElectricalBox.cuts(FurnishProject.effectivePlan(PLAN,state),state.furniture)]), f = JSON.stringify([furnitureWork.furniture.map(({price,referencePrice,priceDate,purchaseStatus,purchaseNote,sourceUrl,...shape})=>shape),PLAN.markers,furnitureWork.rooms,H,state.wallFinishes,state.floorFinishes,state.furnitureDatum]), l = JSON.stringify([state.rooms, opt.cut,H,PLAN.beams,state.wallFinishes,state.floorFinishes,state.wallTiling]);
   const geometryChanged=force||a!==sigArch||f!==sigFurn;
   // Read-only scene polling must not reset a pointer gesture on the current models.
   if(displayChanged||geometryChanged)cancelElevationGesture();
@@ -2369,7 +2380,10 @@ function pickMaterial(e){
   const hit=measurementHit(e);
   if(!hit)return null;
   const o=hit.object,d=o.userData;
-  if(d.floor&&d.room&&!FurnishLayers.locked(state,'floor:'+d.room))return {kind:'floor',id:d.room};
+  if(d.room&&!FurnishLayers.locked(state,'floor:'+d.room))return {kind:d.floor?'floor':'bay',id:d.room};
+  if(Number.isInteger(d.bayWindowIndex)&&!o.material?.transparent){
+    return {kind:'frame',id:FurnishStyles.frameKey(PLAN,d.bayWindowIndex)};
+  }
   if(d.wallTiling){
     const face=FurnishWallTiling.binding(d.wallTiling),id=FurnishLayers.faceKey(face);
     return FurnishLayers.locked(state,id)?null:{kind:'wallTile',id,face};
@@ -2451,7 +2465,7 @@ function updateSel(){
     if(materialTarget){
       const target=materialTarget,bounds=new THREE.Box3();
       const furniture=furnG.children.find(o=>o.userData.fid===target.id);
-      const group=target.kind==='floor'?archFloor:target.kind==='wall'||target.kind==='wallTile'?archUp:furniture;
+      const group=target.kind==='floor'?archFloor:['bay','frame','wall','wallTile'].includes(target.kind)?archUp:furniture;
       group?.updateMatrixWorld(true);
       group?.traverse(o=>{
         if(!o.isMesh||!sceneObjectShown(o))return;
@@ -2460,6 +2474,8 @@ function updateSel(){
         if(target.kind==='wallTile'&&(!d.wallTiling||!FurnishWallTiling.same(d.wallTiling,target.face)))return;
         if(target.kind==='front'&&(p?.boxId!==target.boxId||p?.componentId!==target.componentId||!d.cabinetDoorSize&&d.cabinetDrawerBoard!=='front'&&!d.cabinetFoldDoor))return;
         if(target.kind==='board'&&(p?.boxId!==target.boxId||target.componentId&&p.componentId!==target.componentId))return;
+        if(target.kind==='bay'&&d.room!==target.id)return;
+        if(target.kind==='frame'&&(!Number.isInteger(d.bayWindowIndex)||FurnishStyles.frameKey(PLAN,d.bayWindowIndex)!==target.id||o.material?.transparent))return;
         if(target.kind==='legacyFront'&&(d.cabinetPart?.column!==target.column||!d.cabinetDoorSize&&d.cabinetDrawerBoard!=='front'))return;
         bounds.expandByObject(o);
       });
@@ -2985,7 +3001,7 @@ function viewportCaptureCanvas(){
 }
 function captureViewportImage(){return viewportCaptureCanvas().toDataURL('image/png');}
 function viewportCaptureAvailable(){
-  return !globalThis.FurnishCatalog?.active()&&!globalThis.FurnishWorkflowTools?.styleId()&&
+  return !globalThis.FurnishCatalog?.active()&&
    !globalThis.FurnishMaterialUI?.dirty()&&!globalThis.FurnishMaterialUI?.lighting()&&inited&&!anim&&!stage.classList.contains('animating');
 }
 function rememberViewport(){

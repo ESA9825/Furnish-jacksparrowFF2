@@ -87,11 +87,23 @@ function applySelected(work,rooms,id,value={}){
  work.style=id;return find(id);
 }
 function preview(work,rooms,id,value){const next=copy(work);applySelected(next,rooms,id,value);return next;}
-// Legacy whole-style action explicitly replaces floor material as before.
+function applyFloorMaterials(work,rooms,id,custom=false){
+ const style=find(id);
+ if(!style)return;
+ let settings=work.rooms;
+ for(const room of rooms){
+  const setting=settings[room.id],material=design.styleFloor(room,setting,style,custom);
+  if(setting&&material&&setting.mat!==material&&!tileLayers().locked(work,'floor:'+room.id)){
+   if(settings===work.rooms)settings={...settings};
+   settings[room.id]={...setting,mat:material};
+  }
+ }
+ work.rooms=settings;
+}
 function apply(work, rooms, id, custom = false, overrides={}, bodySurface) {
  const style=find(id);if(!style)return null;applySelected(work,rooms,id,{scopes:products().styleAppearance.scopes,palette:overrides,bodySurface});
- rooms.forEach(room=>{const material=design.styleFloor(room,work.rooms[room.id],style,custom);if(material)work.rooms[room.id].mat=material;});work.style=id;return style;
+ applyFloorMaterials(work,rooms,id,custom);return style;
 }
-const api={find,apply,color,furniture,applyColors,applyCabinets,palette,category,validateAppearance,surfaceColor,frameKey,editSurface,materialValue,editMaterial,floorTileSheen,wallTileMaterial,wallKey,remapWallPaint,remapWallTiles,options,applySelected,preview};
+const api={find,apply,color,furniture,applyColors,applyCabinets,palette,category,validateAppearance,surfaceColor,frameKey,editSurface,materialValue,editMaterial,floorTileSheen,wallTileMaterial,wallKey,remapWallPaint,remapWallTiles,options,applySelected,applyFloorMaterials,preview};
 if(inNode)module.exports=api;else root.FurnishStyles=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

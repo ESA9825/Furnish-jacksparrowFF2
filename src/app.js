@@ -360,17 +360,9 @@ function syncPaneBtns(){
 }
 function closeDrawers(){ if (narrow()) drawer(null); }
 
-/* ======================= 配色方案：一键统一家具配色与地面 ======================= */
+/* ======================= 风格方案 ======================= */
 const STYLES = FurnishStylePresets;
-function applyStyle(id){
-  if(window.FurnishWorkflowTools)return FurnishWorkflowTools.previewStyle(id);
-  const style=FurnishStyles.find(id);if(!style)return;
-  mutate(()=>FurnishStyles.apply(state,ROOMS,id,!!PLAN.customDraft));
-  toast(tr(`已应用「${style.zh}」配色：家具配色与客厅 / 卧室地面已更新`,`Applied "${style.en}": furniture colors and living / bedroom floors updated`),{label:tr('撤销','Undo'),fn:undo});
-}
-function styleDirectionsHTML(style){return `<small class="style-directions"><span>${tr('适用风格','Suitable styles')}</span>${esc(tr(style.applicableStyles.zh.join(' · '),style.applicableStyles.en.join(' · ')))}</small>`;}
-function styleCardsHTML(selected,attribute='data-style-preview'){return `<div class="styles style-schemes">${STYLES.map(s=>{const body=s.cabinet?.bodyColor??s.wood,front=s.cabinet?.frontColor??s.soft;return `<button class="stcard ${selected===s.id?'on':''}" ${attribute}="${s.id}" aria-pressed="${selected===s.id}"><span class="style-cabinet-sample" style="--cab-body:${body};--cab-front:${front}"><i class="style-sample-door"></i><i class="style-sample-open ${s.cabinet?.bodySurface==='walnut'?'walnut':''}"></i></span><b>${esc(tr(s.zh,s.en))}</b>${styleDirectionsHTML(s)}</button>`;}).join('')}</div>`;}
-const stylesHTML = () => styleCardsHTML(state.style,'data-style');
+const applyStyle = id => window.FurnishWorkflowTools.previewStyle(id);
 
 /* ======================= 命令面板（Ctrl+K） ======================= */
 let cmdItems = [], cmdSel = 0;
@@ -469,7 +461,6 @@ $('#panel').addEventListener('click', e => {
   const tab = t.closest('[data-tab]'); if (tab){ ui.tab = tab.dataset.tab;ui.panelScope='design';saveUI();renderPanel();$('aside.right').scrollTop=0;return; }
   const lk = t.closest('[data-lockid]'); if (lk){ e.stopPropagation(); const f = getF(lk.dataset.lockid); if(f&&FurnishLayers.locked(state,'furniture:'+f.id)){toast(tr('请先在图层管理中解锁所在图层','Unlock the layer in Layer manager first'));return;} if (f) mutate(() => { if (f.locked) delete f.locked; else f.locked = true; }); return; }
   const act = t.closest('[data-act]'); if (act){ runAct(act); return; }
-  const st = t.closest('[data-style]'); if (st){ FurnishWorkflowTools.previewStyle(st.dataset.style); return; }
   const fo = t.closest('[data-focus]'); if (fo) focusItem(fo.dataset.focus);
 });
 $('#fab').addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (b) runAct(b); });
