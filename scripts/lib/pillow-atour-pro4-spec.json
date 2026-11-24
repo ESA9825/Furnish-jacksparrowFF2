@@ -1,0 +1,6 @@
+{
+  "type": "bed_pillow_atour_pro4",
+  "global": "FurnishAtourPro4PillowAsset",
+  "size": [700, 100, 420],
+  "parts": ["Contoured blue pillowcase"]
+}

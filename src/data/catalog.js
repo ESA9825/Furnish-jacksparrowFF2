@@ -89,6 +89,7 @@ const LIB = [
   {cat:'床', items:[
     ["bed_yeswood_y83b33","源氏木语 Y83B33 悬浮箱体床 · 1.8米（原木色）",1840,2150,"#fff0db",undefined,products.height({type:"bed_yeswood_y83b33"})],
     ["bed_duvet_y83b33","Y83B33 搭配被子 · 暖白",1940,1560,"#e2d8c5",undefined,products.height({type:"bed_duvet_y83b33"})],
+    ["bed_pillow_atour_pro4","亚朵星球 深睡枕 Pro 4.0 · 岩溪蓝 10 cm",700,420,"#9fb6cd",undefined,products.height({type:"bed_pillow_atour_pro4"})],
     ["bed_pillow_y83b33","Y83B33 搭配枕头 · 米白",790,480,"#eadfcd",undefined,products.height({type:"bed_pillow_y83b33"})],
     ["bed_mattress_y83b33","Y83B33 搭配床垫 · 米白 1.8米",1800,2000,"#e4dac7",undefined,products.height({type:"bed_mattress_y83b33"})],
     ["bed","双人床 2.0m",2000,2200,"#c9d6df",4600],
@@ -331,7 +332,7 @@ function navigation(library=browseLibrary()){
 const uses=[['living','客厅','Living'],['bedroom','卧室','Bedroom'],['dining','餐厅','Dining'],['study','书房','Study'],['kitchen','厨房','Kitchen'],['laundry','洗衣家政','Laundry'],['bathroom','卫浴','Bathroom'],['entry','玄关','Entry'],['pet','宠物','Pets']];
 const useTypes={
  living:['art_glass_partition','quartz_sill','window_surround','sofa_bed_yeswood_y107h03','armchair_yeswood_berlin','armchair_yeswood_y09hs','sofa','sofa_yeswood_cherry','cornersofa','armchair','beanbag','coffeetable','coffeetable_yeswood_cherry','roundtable','sidetable','sidetable_tmall_635382906309','tea_table_800','tea_bar_mijia_pro','tv','tvstand','aircon','aircon_midea_ultra_2hp','acwall','acwall_midea_mxc3p','purifier','plant','rug','floorlamp'],
- bedroom:['quartz_sill','window_surround','bed_yeswood_y83b33','bed_mattress_y83b33','bed_pillow_y83b33','bed_duvet_y83b33','bed','crib','nightstand','wardrobe','chest','dresser','curtain','curtain_mijia_3_pro','curtain_mijia_3_pro_sheer','curtain_sheer','blind_venetian','blind_honeycomb','blind_zebra','blind_bamboo','blind_roller','mirror','acwall','acwall_midea_mxc3p'],
+ bedroom:['quartz_sill','window_surround','bed_yeswood_y83b33','bed_mattress_y83b33','bed_pillow_atour_pro4','bed_pillow_y83b33','bed_duvet_y83b33','bed','crib','nightstand','wardrobe','chest','dresser','curtain','curtain_mijia_3_pro','curtain_mijia_3_pro_sheer','curtain_sheer','blind_venetian','blind_honeycomb','blind_zebra','blind_bamboo','blind_roller','mirror','acwall','acwall_midea_mxc3p'],
  dining:['chair_ikea_vihals','table','table_folding_1100','table_folding_1200','table_folding_1300','roundtable','chair','barstool','island','cabinet','pendant'],
  study:['chair_ikea_vihals','quartz_sill','window_surround','chair_yeswood_s05118','stool_citylong_370','desk','chair','officechair','bookshelf','bookshelf_yeswood_y52y09','bookshelf_yeswood_y00y06','bookshelf_yeswood_y00y06058','armchair','floorlamp'],
  kitchen:[...countertopItems.map(([type])=>type),'panel_light_300x600','stove','stove_fotile_th36b','rangehood_fotile_jcd10ta','fridge','fridge_french_drawer','dishwasher','dishwasher_mijia_countertop','water_purifier_mijia_1200g','ksink','sink_arrow_680','sink_arrow_750','ovencol','kitchenwall','island'],

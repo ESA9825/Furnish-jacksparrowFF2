@@ -151,6 +151,8 @@ if(t==='pocketdoor_double'||t==='pocketdoor_triple'){
     }
     case 'bed_mattress_y83b33':
       return rc(x,y,w,d,c,'rx="34"')+rc(x+18,y+18,w-36,d-36,'none','rx="26"');
+    case 'bed_pillow_atour_pro4':
+      return rc(x,y,w,d,c,'rx="40"');
     case 'bed_pillow_y83b33':
       return rc(x,y,w,d,c,'rx="80"')+rc(x+13,y+13,w-26,d-26,'none','rx="70"');
     case 'bed_duvet_y83b33':

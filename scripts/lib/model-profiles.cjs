@@ -9,6 +9,7 @@ const assetTypes={'pet-bowl':'pet_bowl_petstar_180','litter-bag':'cat_litter_yan
 assetTypes['downlight-labot-ip65']='downlight_labot_ip65_7w';
 assetTypes['bed-yeswood-y83b33']='bed_yeswood_y83b33';
 assetTypes['mattress-y83b33']='bed_mattress_y83b33';
+assetTypes['pillow-atour-pro4']='bed_pillow_atour_pro4';
 assetTypes['pillow-y83b33']='bed_pillow_y83b33';
 assetTypes['duvet-y83b33']='bed_duvet_y83b33';
 assetTypes['desk-lamp-mijia-pro']='desk_lamp_mijia_pro';
@@ -31,6 +32,8 @@ const suites={
  block:['block'],panel_light_300x600:['panel-light'],bath_heater_300x600:['bath-heater-se2'],downlight_philips_dl269:['downlight'],heating_manifold:['manifold','manifold-zero-gap'],electrical_box_strong:['electrical-box'],electrical_box_weak:['electrical-box'],aquarium_mijia_2pro:['aquarium'],stove_fotile_th36b:['fotile'],waterheater_flat:['waterheater-flat','waterheater-furniture-clearances'],aircon_midea_ultra_2hp:['aircon-midea'],water_purifier_mijia_1200g:['water-purifier'],tea_bar_mijia_pro:['tea-bar'],robot_p20max_tank:['robot-vacuum'],robot_p20max_plumbed:['robot-vacuum'],robot_p20max:['robot-vacuum'],pipebox:['pipebox'],sofa_yeswood_cherry:['yeswood-sofa'],coffeetable_yeswood_cherry:['cherry-coffee-table'],tea_table_800:['tea-table'],bench_yeswood_oak:['shoe-bench'],shower_arrow_cream:['shower-arrow'],cat_tree:['cat-tree'],pet_feeder_mijia_2:['pet-feeder'],litter_box:['litter-box'],mirror:['mirror'],tv:['tv-view-consistency']
 };
 suites['downlight-labot-ip65']=['downlight-labot'];
+for(const id of ['bed-yeswood-y83b33','mattress-y83b33','pillow-y83b33','duvet-y83b33','pillow-atour-pro4'])
+ suites[id]=['bottom-elevation'];
 suites['acwall-midea-mxc3p']=['acwall-midea'];
 suites.curtain_mijia_3_pro_sheer=suites['curtain-mijia-3-pro-motor']=['curtain-mijia-3-pro','window-coverings'];
 suites['track-socket-bull-gb50k']=['track-socket-bull-gb50k'];

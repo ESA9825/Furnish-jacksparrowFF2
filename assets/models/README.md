@@ -6,7 +6,7 @@
 
 更新：`node scripts/index-model-assets.cjs --write`；核对：`node scripts/index-model-assets.cjs --check`。
 
-90份产品／设计档案，373张参考图，20张历史原图待补；63组Blender模型。参数化验证配置101组，全部家具库207条目／177种类型。
+91份产品／设计档案，375张参考图，20张历史原图待补；64组Blender模型。参数化验证配置101组，全部家具库208条目／178种类型。
 
 | 产品／设计资料 | 参考图 | 输出／构造 | 待补原图 |
 |---|---|---|---|
@@ -66,6 +66,7 @@
 | [小米智能开关2与2 Pro · 86面板](panel-xiaomi-switch2/README.md) | 69 | [BLEND](panel-xiaomi-switch2/v2/panel-xiaomi-switch2-v1.blend) · [GLB](panel-xiaomi-switch2/v2/panel-xiaomi-switch2-v1.glb) | 0 |
 | [PETSTAR猫水碗 · 图示180×65](pet-bowl/README.md) | 1 | [BLEND](pet-bowl/v1/pet-bowl-v1.blend) · [GLB](pet-bowl/v1/pet-bowl-v1.glb) | 0 |
 | [米家-智能宠物喂食器2](pet-feeder-mijia-2/README.md) | 0 | 参数化 | 5 |
+| [亚朵星球 深睡枕 Pro 4.0 · 岩溪蓝 10 cm](pillow-atour-pro4/README.md) | 2 | [BLEND](pillow-atour-pro4/v1/pillow-atour-pro4-v1.blend) · [GLB](pillow-atour-pro4/v1/pillow-atour-pro4-v1.glb) | 0 |
 | [Y83B33 搭配枕头 · 米白](pillow-y83b33/README.md) | 0 | [BLEND](pillow-y83b33/v1/pillow-y83b33-v1.blend) · [GLB](pillow-y83b33/v1/pillow-y83b33-v1.glb) | 0 |
 | [石头-P20Max-扫拖机器人](robot-p20max/README.md) | 6 | 参数化 | 0 |
 | [奥普-SE2-风暖浴霸](se2/README.md) | 3 | [BLEND](se2/se2-v1.blend) · [GLB](se2/se2-v1.glb) | 0 |

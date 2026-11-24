@@ -1,8 +1,8 @@
-/* Y83B33 storage bed in its closed display position. */
+/* Closed Y83B33 storage bed and independent fabric bedding. */
 (function(root){
 'use strict';
 const products=()=>root.FurnishProducts||require('../core/product-rules.js');
-const supported=f=>(products().family(f,'yeswood-storage-bed')||products().family(f,'yeswood-bed-linen'))&&!f.obj;
+const supported=f=>(products().family(f,'yeswood-storage-bed')||products().family(f,'bed-linen'))&&!f.obj;
 function build(T,f){
  const P=products();
  const {bedAsset='bed-yeswood-y83b33',assetGlobal='FurnishY83B33BlenderAsset'}=P.definition(f);
@@ -13,7 +13,7 @@ function build(T,f){
  if(T.Texture&&P.family(f,'yeswood-storage-bed')){
   const wood=bed.children.filter(o=>/^(?:Oak|Rounded oak|Recessed shelf rear|Wood headboard)/.test(o.name));
   surfaces.applyWoodVeneer(T,wood,'white-oak-veneer',f.color||'#fff0db');
- }else if(T.LinearMipmapLinearFilter&&P.family(f,'yeswood-bed-linen')){
+ }else if(T.LinearMipmapLinearFilter&&P.family(f,'bed-linen')){
   const cloth=root.FurnishBasicFurnitureModel||require('./basic-furniture-model.js');
   for(const mesh of bed.children){
    const material=mesh.material;

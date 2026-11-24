@@ -2,13 +2,13 @@
   "format": 2,
   "description": "Generated repository index; paths relative to repository root. This is metadata, not the application loading manifest.",
   "counts": {
-    "blenderModels": 63,
+    "blenderModels": 64,
     "parametricVerificationConfigurations": 101,
-    "verificationConfigurations": 164,
-    "catalogEntries": 207,
-    "catalogTypes": 177,
-    "productDossiers": 90,
-    "referenceImages": 373,
+    "verificationConfigurations": 165,
+    "catalogEntries": 208,
+    "catalogTypes": 178,
+    "productDossiers": 91,
+    "referenceImages": 375,
     "missingReferences": 20
   },
   "models": [
@@ -1217,6 +1217,50 @@
       ],
       "dossier": "assets/models/mattress-y83b33/asset.json",
       "references": []
+    },
+    {
+      "profile": "pillow-atour-pro4",
+      "type": "bed_pillow_atour_pro4",
+      "name": "亚朵星球 深睡枕 Pro 4.0 · 岩溪蓝 10 cm",
+      "sizeMm": [
+        700,
+        420,
+        100
+      ],
+      "parts": 1,
+      "runtimeVersion": 1,
+      "runtime": {
+        "path": "src/data/pillow-atour-pro4-blender-asset.js",
+        "sha256": "7a616a418ab47e8e3ba57aaa3fc98f37ed806c6e16333cc705bf2f97cdbc1ad0",
+        "normalization": "utf8-lf"
+      },
+      "sourceSha256": "bf737f112c23ccc33157c9fcf6934b96cb9779584034b01f5d7674258499f29d",
+      "current": {
+        "blend": "assets/models/pillow-atour-pro4/v1/pillow-atour-pro4-v1.blend",
+        "glb": "assets/models/pillow-atour-pro4/v1/pillow-atour-pro4-v1.glb"
+      },
+      "document": "docs/PILLOW-ATOUR-PRO4.md",
+      "constructor": "src/render/bed-yeswood-y83b33-model.js",
+      "author": "scripts/blender-model-pillow-atour-pro4.py",
+      "files": [
+        {
+          "path": "assets/models/pillow-atour-pro4/v1/pillow-atour-pro4-v1.blend",
+          "role": "published-source",
+          "sha256": "b442e421efb0eecbfeebf85c787a6d13deb7c358ecbfa09287a7906e2162069a",
+          "bytes": 128857
+        },
+        {
+          "path": "assets/models/pillow-atour-pro4/v1/pillow-atour-pro4-v1.glb",
+          "role": "published-source",
+          "sha256": "bf737f112c23ccc33157c9fcf6934b96cb9779584034b01f5d7674258499f29d",
+          "bytes": 53096
+        }
+      ],
+      "dossier": "assets/models/pillow-atour-pro4/asset.json",
+      "references": [
+        "assets/models/pillow-atour-pro4/references/jd-hero.jpg",
+        "assets/models/pillow-atour-pro4/references/jd-side.jpg"
+      ]
     },
     {
       "profile": "pillow-y83b33",
@@ -9367,6 +9411,42 @@
     },
     {
       "format": 1,
+      "id": "pillow-atour-pro4",
+      "name": "亚朵星球 深睡枕 Pro 4.0 · 岩溪蓝 10 cm",
+      "types": [
+        "bed_pillow_atour_pro4"
+      ],
+      "route": "blender",
+      "document": "docs/PILLOW-ATOUR-PRO4.md",
+      "sourceLinks": [
+        "https://item.m.jd.com/product/100385738150.html",
+        "https://www.jd.com/brand/15248f7a36386fa205223.html"
+      ],
+      "references": [
+        {
+          "path": "references/jd-hero.jpg",
+          "kind": "product-page",
+          "url": "https://img14.360buyimg.com/pop/jfs/t1/575977/37/5991/46767/6af6e06eF0219f056/00833203205a8660.jpg",
+          "sha256": "ea443e682a5314b22db7a55d6f260122509a040305bdd54876fa9e117419afad",
+          "bytes": 92771
+        },
+        {
+          "path": "references/jd-side.jpg",
+          "kind": "product-page",
+          "url": "https://img14.360buyimg.com/pop/jfs/t1/491395/26/5357/49817/6a6ae0e7Fb8353cea/0083320320c24dac.jpg",
+          "sha256": "52f06f25f3bf1ace1961aaaef0967af1c95a69b89fe3ff3fb55b9575aa066de5",
+          "bytes": 99837
+        }
+      ],
+      "missingReferences": [],
+      "validation": [
+        "docs/validation/pillow-atour-pro4-20261124/README.md"
+      ],
+      "manifest": "assets/models/pillow-atour-pro4/asset.json",
+      "readme": "assets/models/pillow-atour-pro4/README.md"
+    },
+    {
+      "format": 1,
       "id": "pillow-y83b33",
       "name": "Y83B33 搭配枕头 · 米白",
       "types": [
@@ -12478,6 +12558,15 @@
       "w": 1940,
       "d": 1560,
       "h": 245,
+      "module": "bed-yeswood-y83b33"
+    },
+    {
+      "category": "床",
+      "type": "bed_pillow_atour_pro4",
+      "name": "亚朵星球 深睡枕 Pro 4.0 · 岩溪蓝 10 cm",
+      "w": 700,
+      "d": 420,
+      "h": 100,
       "module": "bed-yeswood-y83b33"
     },
     {
