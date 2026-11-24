@@ -189,6 +189,9 @@ body.m3d .only2d,body:not(.m3d) .only3d{display:none!important}
 .showsec{padding:6px 4px 2px}
 .showsec + .showsec{border-top:1px solid var(--line);margin-top:8px;padding-top:12px}
 .showsec > b{display:block;font-size:10.5px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin:0 0 8px}
+.navigation-input{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600}
+.navigation-input select{padding:5px 8px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--card);font-weight:400}
+.dlg-body .navigation-input{margin-bottom:8px}
 .chiprow{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
 .chiprow .btn{padding:5px 10px;font-size:12px;border-radius:var(--r-pill)}
 .chiprow .btn.chip.on{border-color:var(--accent)}

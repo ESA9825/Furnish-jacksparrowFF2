@@ -1,6 +1,8 @@
 /* Shared wheel interpretation. Device hints are heuristic; users can override them. */
 (function(root){
- const key='furnish-navigation-input';let mode='auto';
+ const key='furnish-navigation-input';
+ // macOS wheels can emit small pixel deltas even without scroll smoothing.
+ let mode=/^Mac/.test(root.navigator?.platform||'')?'mouse':'auto';
  try{const saved=root.localStorage?.getItem(key);if(['auto','touchpad','mouse'].includes(saved))mode=saved;}catch(e){}
  function setMode(value){if(!['auto','touchpad','mouse'].includes(value))return;mode=value;try{root.localStorage?.setItem(key,value);}catch(e){}}
  function wheel(e){

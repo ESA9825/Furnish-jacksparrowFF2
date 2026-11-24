@@ -13,6 +13,18 @@ for(const invalid of [39,120.01,Infinity])assert.equal(N.setCameraFov(invalid),6
 assert.equal(N.cameraFov(),60);assert.equal(N.setCameraFov(NaN),60);
 assert.ok(Math.abs(N.projection(999,1).horizontal-60)<1e-10);
 const event=(x,y,extra={})=>({deltaX:x,deltaY:y,deltaMode:0,...extra});
+const navigationSource=fs.readFileSync(require.resolve('../src/core/navigation-input.js'),'utf8');
+for(const [platform,saved,expected] of [
+ ['MacIntel',null,'mouse'],['MacIntel','unknown','mouse'],['MacIntel','auto','auto'],
+ ['MacIntel','touchpad','touchpad'],['Win32',null,'auto'],['Win32','mouse','mouse']
+]){
+ const context=vm.createContext({navigator:{platform},localStorage:{getItem:()=>saved}});
+ vm.runInContext(navigationSource,context);
+ const navigation=context.FurnishNavigation;
+ assert.equal(navigation.getMode(),expected,`${platform} preference ${saved}`);
+ assert.equal(navigation.wheel(event(0,3)).kind,expected==='mouse'?'zoom':'pan');
+ assert.equal(navigation.wheel(event(0,3,{ctrlKey:true})).kind,'zoom');
+}
 N.setMode('auto');
 assert.equal(N.wheel(event(0,120)).kind,'zoom');
 assert.equal(N.wheel(event(0,3)).kind,'pan');

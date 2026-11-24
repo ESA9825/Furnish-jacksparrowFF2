@@ -650,9 +650,17 @@ function wipeAll(){
   openDialog({title:tr('清除本机全部数据','Erase local data'),body:`<p>${wipeNotice}</p><p>${tr('将清除本浏览器的户型、布置、命名方案、恢复记录和自定义家具，无法撤销。请先导出需要保留的项目。','All locally saved projects, designs, recovery points and custom furniture will be erased. Export any projects you want to keep first.')}</p><p id="wipe-error" class="project-error" role="alert"></p>`,actions:[{label:tr('取消','Cancel')},{label:tr('确认清除全部数据','Erase all data'),cls:'danger',fn:()=>{storageWiping=true;repositoryClient?.stop();autosave.invalidate();historyPersistence.invalidate();$('#dlgActions').querySelectorAll('button').forEach(b=>b.disabled=true);window.FurnishStorage.clear().then(()=>{['huxing-design-v30','huxing-design-v29','huxing-design-v28','huxing-design-v27','huxing-design-v26','huxing-design-v25','huxing-design-v24','huxing-design-v23','huxing-design-v22','huxing-design-v21','huxing-design-v20','huxing-design-v19','huxing-design-v18','huxing-design-v17','huxing-design-v16','huxing-design-v15','huxing-design-v14','huxing-design-v13','huxing-design-v12','huxing-design-v11','huxing-design-v10','huxing-design-v9','huxing-design-v8','huxing-design-v7','huxing-design-v6','huxing-design-v5','huxing-design-v4','huxing-design-v3','huxing-design-v2','huxing-design-v1','huxing-history','huxing-recent','huxing-panes',UI_KEY].forEach(k=>localStorage.removeItem(k));location.reload();}).catch(e=>{storageWiping=false;save();persistHistory();$('#wipe-error').textContent=tr('清除未完成：','Erase failed: ')+e.message;$('#dlgActions').querySelectorAll('button').forEach(b=>b.disabled=false);});return false;}}]});return false;
 }
 
+function navigationInput(id){
+  const options=[['auto','自动识别','Auto'],['touchpad','触摸板','Touchpad'],['mouse','鼠标','Mouse']];
+  return `<label class="navigation-input"><span data-zh="操作设备" data-en="Input device">${tr('操作设备','Input device')}</span><select id="${id}">${options.map(([value,zh,en])=>`<option value="${value}" data-zh="${zh}" data-en="${en}" ${FurnishNavigation.getMode()===value?'selected':''}>${tr(zh,en)}</option>`).join('')}</select></label>`;
+}
+function updateNavigationInput(e){
+  FurnishNavigation.setMode(e.target.value);
+  document.querySelectorAll('.navigation-input select').forEach(select=>{select.value=FurnishNavigation.getMode();});
+}
 function openHelp(){
   const g = (title, rows) => `<h4>${title}</h4>` + rows.map(([k, zh, en]) => `<div><span>${tr(zh, en)}</span><kbd>${k}</kbd></div>`).join('');
-  openDialog({title:tr('快捷键与操作', 'Shortcuts & Controls'), wide:true, body:`<label>${tr('操作设备','Input device')} <select id="navigation-input">${[['auto','自动识别','Auto'],['touchpad','触摸板','Touchpad'],['mouse','鼠标','Mouse']].map(([v,zh,en])=>`<option value="${v}" ${FurnishNavigation.getMode()===v?'selected':''}>${tr(zh,en)}</option>`).join('')}</select></label><p class="muted">${tr('触摸板：双指滑动平移，捏合缩放。3D 按住空格拖动平移，拖动空白处旋转。自动识别不准时请手动选择；仅记住本机偏好。','Touchpad: two-finger scroll pans, pinch zooms. In 3D, Space-drag pans and dragging empty space orbits. Select a device if auto detection is inaccurate; saved on this device.')}</p><div class="keys">
+  openDialog({title:tr('快捷键与操作', 'Shortcuts & Controls'), wide:true, body:`${navigationInput('navigation-input')}<p class="muted">${tr('鼠标滚轮缩放。触摸板双指滑动平移，捏合缩放。3D 按住空格拖动平移，拖动空白处旋转。操作设备也可在顶部「显示」菜单切换，仅保存在本机。','Mouse wheel zooms. On a touchpad, two-finger scrolling pans and pinching zooms. In 3D, Space-drag pans and dragging empty space orbits. Use the View menu to change the input device. This setting is stored on this device.')}</p><div class="keys">
     ${g(tr('工具与视图', 'Tools & view'), [['V','选择 / 移动','Select / move'],['Alt','拖动家具时临时关闭吸附','Temporarily disable snapping while moving furniture'],['Shift','拖动家具时锁定水平／垂直方向','Lock horizontal/vertical movement while dragging furniture'],['B','框选','Box select'],['M','测量（Shift 水平/垂直）','Measure (Shift = straight)'],['X','拆改非承重墙','Demolish walls'],['N','文字标注','Text note'],['Ctrl+K','命令面板：搜索一切','Command palette'],
       ['T','切换 2D / 3D','Toggle 2D / 3D'],['F','适应窗口','Fit to window'],['Z','缩放到所选','Zoom to selection'],['+ / −','放大 / 缩小','Zoom in / out'],
       [tr('空格+拖动','Space+drag'),'平移画面（也可用中键）','Pan (or middle mouse)'],['[ / ]','收起 / 展开左右面板','Toggle side panels'],['Shift+F','全屏','Fullscreen'],['Esc','取消选择 / 退出工具','Deselect / exit tool']])}
@@ -663,7 +671,7 @@ function openHelp(){
       [tr('右键 / 长按','Right-click / long-press'),'操作菜单','Action menu'],[tr('双击家具','Double-click'),'旋转 90°','Rotate 90°'],[tr('拖顶部圆点','Top dot'),'旋转（Shift 任意角度）','Rotate (Shift = free)'],
       [tr('拖右侧／下方白色手柄','Right / bottom white handle'),'单独调整宽／深','Resize width / depth'],[tr('拖角落橙色方块','Orange corner square'),'同时调整宽深','Resize both'],[tr('双指','2 fingers'),'缩放 / 平移','Zoom / pan']])}
     ${g(tr('3D 漫游', '3D walk'), [['W A S D','移动','Move'],['Shift','快走','Run'],['E','开关正前方的门','Toggle door ahead'],['Esc','暂停','Pause']])}
-  </div>`,onOpen:()=>{document.querySelector('#navigation-input').onchange=e=>FurnishNavigation.setMode(e.target.value);}});
+  </div>`,onOpen:()=>{$('#dlgBody').scrollTop=0;$('#navigation-input').onchange=updateNavigationInput;}});
 }
 
 // 自定义家具：任意名称 / 尺寸 / 形状 / 高度 / 颜色 / 单价，保存到「我的家具」
@@ -1067,6 +1075,8 @@ document.querySelectorAll('[data-layer]').forEach(b => b.onclick = () => setLaye
 document.querySelectorAll('[data-grid]').forEach(b => b.onclick = () => { ui.grid = +b.dataset.grid; saveUI(); syncLayerBtns(); });
 $('#furnHidden').onclick = () => setLayer('furn', true);
 $('#resetBtn').onclick = $('#resetMenu').onclick = () => openReset();
+$('#view-navigation').innerHTML=navigationInput('view-navigation-input');
+$('#view-navigation-input').onchange=updateNavigationInput;
 $('#helpBtn').onclick = () => openHelp();
 $('#addCustom').onclick = () => openCustom();
 $('#exportCsv').onclick = exportCSV;
