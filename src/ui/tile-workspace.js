@@ -3,6 +3,7 @@
 'use strict';
 const FloorModel=FurnishFloorFinishModel;
 const C=FurnishTileEditor,T=FurnishWallTiling,F=FurnishFloorFinish,P=FurnishProject,G=FurnishTileGrout,copy=v=>JSON.parse(JSON.stringify(v));
+const Takeoff=FurnishTileTakeoff,TakeoffDrawing=FurnishTileTakeoffDrawing;
 let session=null;
 const S=FurnishTileParameters,I=FurnishTileInteraction,labels=Object.fromEntries(Object.entries(S.definitions).map(([k,v])=>[k,v.label])),groupNames=S.groupLabels;
 const q=s=>session?.host.querySelector(s),plan=()=>P.effectivePlan(PLAN,session.work),chosen=()=>session.targets.filter(t=>session.selected.has(t.key)),dirty=()=>session&&C.signature(session.work)!==C.signature(session.base);
@@ -26,6 +27,20 @@ function open(scope={}){
  const initial=s.targets.filter(t=>(scope.all?(!scope.roomIds||scope.roomIds.includes(t.roomId)):t.roomId===s.roomId)&&(scope.face?t.kind==='wall'&&C.contains(t,scope.face):scope.kinds?scope.kinds.includes(t.kind):scope.kind==='wall'?t.kind==='wall':t.kind==='floor'));initial.forEach(t=>s.selected.add(t.key));s.focus=initial[0]?.key;
  openDialog({title:'铺砖',wide:true,beforeClose,body:`<section data-tiling-workspace><p class="muted tiling-intro">选择表面后修改参数；平面、立面和3D共用草稿。点击应用后一次保存，可一次撤销。</p><div class="tiling-columns"><section class="tiling-targets"><h3>选择表面</h3><label>房间<select data-tiling-room>${options(rooms.map(r=>[r.id,name(r.id)]),s.roomId)}</select></label><div class="actions"><button class="btn" data-tiling-select="floor">选地面</button><button class="btn" data-tiling-select="all-floors">选全部瓷砖地面</button><button class="btn" data-tiling-select="walls">选全部墙面</button><button class="btn" data-tiling-select="none">清空选择</button></div><div data-tiling-targets></div><p class="muted" data-tiling-selected></p></section><section class="tiling-preview"><div class="actions"><button class="btn" data-tiling-view="plan">图上选面</button><button class="btn on" data-tiling-view="drawing">平面／立面</button><button class="btn" data-tiling-view="3d">3D预览</button></div><p class="tiling-selection-scope" data-tiling-selection-scope role="status"></p><label>当前查看表面<select data-tiling-focus></select></label><div class="tiling-selection-legend" data-tiling-selection-legend hidden><span><i class="tiling-swatch selected"></i>其它已选表面</span><span><i class="tiling-swatch focused"></i>当前查看（已选）</span></div><label data-tiling-band-choice hidden>当前分带<select data-tiling-band-focus></select></label><p class="muted" data-tiling-band-readout hidden></p><button class="btn" data-tiling-edit-band hidden>编辑当前分带参数</button><div class="actions"><button class="btn" data-tiling-adjust>调整砖缝基准</button><button class="btn" data-tiling-export>导出预览SVG</button></div><div data-tiling-drawing></div><div data-tiling-3d hidden></div><button type="button" class="btn" data-tiling-open-materials hidden>在材质中调整砖面与美缝</button><p data-tiling-preview-note class="muted" role="status"></p></section><section class="tiling-settings" data-tiling-fields></section></div><p class="project-error" role="alert" data-tiling-error></p><div class="tiling-close-note" data-tiling-close-note hidden><b>有未应用的铺砖草稿。</b><button class="btn" data-tiling-continue>继续编辑</button><button class="btn danger" data-tiling-discard>放弃草稿并关闭</button></div><details data-tiling-review><summary>完成面与起铺核对</summary><div data-tiling-review-content></div></details><p data-tiling-summary role="status"></p></section>`,actions:[{label:'取消',fn:()=>{close();return false;}},{label:'应用铺砖',cls:'primary',fn:()=>{apply();return false;}}],onClose:()=>dispose(s)});
  s.host=document.querySelector('[data-tiling-workspace]');
+ const tools=document.createElement('div');
+ tools.className='tiling-delivery-tools';
+ tools.innerHTML=`<details data-tiling-compare hidden><summary>比较起铺与窄边</summary>
+ <div class="tiling-tool-row"><label>窄边提醒 (mm) <input type="number" min="0" max="6000" step="any" value="100" data-tiling-narrow></label><button class="btn" data-tiling-compare-run>计算候选</button></div>
+ <div data-tiling-candidates></div></details>
+ <details data-tiling-joints hidden><summary>门洞衔接</summary><div data-tiling-joint-list></div></details>
+ <details data-tiling-takeoff><summary>排砖图与用量</summary>
+ <div class="tiling-tool-row"><label>导出范围 <select data-tiling-sheet-scope><option value="selected">已选表面（含整组通铺）</option><option value="all">全部已启用墙地砖</option></select></label>
+ <button class="btn" data-tiling-sheet="html">下载排砖图册</button><button class="btn" data-tiling-sheet="csv">下载用量 CSV</button></div>
+ <p class="muted">从当前草稿生成。图册可离线打开并打印为 PDF。</p></details><p class="muted" data-tiling-tool-feedback role="status"></p>`;
+ q('[data-tiling-preview-note]').after(tools);
+ q('[data-tiling-compare-run]').onclick=compareOrigins;
+ q('[data-tiling-narrow]').oninput=()=>{s.candidate=null;renderCandidates();};
+ for(const btn of tools.querySelectorAll('[data-tiling-sheet]'))btn.onclick=()=>exportTakeoff(btn.dataset.tilingSheet);
  s.blur=()=>{if(session===s)cancelGesture();};window.addEventListener('blur',s.blur);
  q('[data-tiling-room]').onchange=e=>{if(s.error){e.target.value=s.roomId;return;}s.roomId=e.target.value;renderTargets();};
  q('[data-tiling-focus]').onchange=e=>{s.focus=e.target.value;s.picking=false;s.bandId='';fields();preview();};
@@ -96,6 +111,86 @@ function syncBands(patch){const mount=q('[data-tiling-bands][open] [data-tiling-
 function change(patch,validationKey){current();session.work=C.editLinked(session.work,plan(),chosen(),patch,session.policy);if(validationKey)session.invalid.delete(validationKey);error();renderTargets();q('[data-tiling-fields]').querySelectorAll('[data-tile-source]').forEach(el=>el.textContent=sourceLabel(el.dataset.tileSource));if(validationKey!=='bands')syncBands(patch);preview();}
 function sourceLabel(field){const list=chosen(),sources=list.flatMap(t=>C.members(t)).map(t=>{const b=C.binding(session.work,t);return b?.groups.includes(S.group(field,t.kind))?session.work.tilePresets.items.find(p=>p.id===b.presetId)?.name:null;}),names=[...new Set(sources.filter(Boolean))];return names.length?(sources.every(Boolean)?'跟随：':'部分跟随：')+names.join('、'):'独立参数';}
 function refreshBasisFields(){const list=chosen();if(!canPick(list))return;const v=C.read(session.work,plan(),list.find(t=>t.key===session.focus)||list[0]);for(const k of ['originX','originY','offset','startHeight']){const el=q(`[data-tile-field="${k}"]`);if(el)el.value=v[k]??'';}q('[data-tiling-fields]').querySelectorAll('[data-tile-source]').forEach(el=>el.textContent=sourceLabel(el.dataset.tileSource));}
+const toolStatus=message=>q('[data-tiling-tool-feedback]').textContent=message;
+function activeTarget(){return chosen().find(t=>t.key===session.focus)||chosen()[0];}
+function applyOrigin(work,p,ids,origin,policy){
+ const targets=ids.map(id=>session.targets.find(t=>t.kind==='floor'&&t.roomId===id)).filter(Boolean);
+ if(targets.length!==ids.length)throw Error('所选通铺区域已变化');
+ return C.editLinked(work,p,targets,{originX:origin[0],originY:origin[1]},policy);
+}
+function acceptToolDraft(work,message){
+ session.work=work;session.candidate=null;session.handle=null;session.picking=false;
+ error();renderTargets();fields();preview();toolStatus(message);
+}
+function compareOrigins(){
+ try{
+  current();if(session.error)throw Error(session.error);
+  const target=activeTarget(),input=q('[data-tiling-narrow]'),threshold=input.valueAsNumber;
+  if(!input.validity.valid||!Number.isFinite(threshold))throw Error('请输入 0–6000 mm 的窄边提醒宽度');
+  session.candidate={...Takeoff.candidates(plan(),target.roomId,threshold),threshold,work:session.work,roomId:target.roomId};
+  session.mode='drawing';session.picking=false;preview();toolStatus('');
+ }catch(e){toolStatus(e.message);}
+}
+function renderCandidates(target=activeTarget()){
+ const s=session,host=q('[data-tiling-candidates]'),c=s.candidate;
+ if(!c||c.work!==s.work||c.roomId!==target?.roomId){if(host.children.length)host.replaceChildren();return;}
+ const keys=c.ids.length>1?`<p class="muted">作用于整组通铺：${esc(c.ids.map(name).join('、'))}</p>`:'';
+ host.innerHTML=keys+`<div class="tiling-candidates">${c.rows.map((r,index)=>`<article><strong>${esc(r.name)}</strong>
+ ${TakeoffDrawing.diagram({room:c.room,pieces:r.pieces,kind:'floor',title:r.name},{threshold:c.threshold})}
+ <p>整砖 ${r.full} · 切砖 ${r.cut}<br>窄边 ${r.narrow} · 最窄 ${r.minimum===null?'—':Takeoff.round(r.minimum)+' mm'}</p>
+ ${index?`<button class="btn" data-tiling-origin="${index}">采用此起铺</button>`:''}</article>`).join('')}</div>`;
+ for(const btn of host.querySelectorAll('[data-tiling-origin]'))btn.onclick=()=>{
+  try{
+   current();if(s.error||s.work!==c.work)throw Error('参数已调整，请重新计算候选');
+   const r=c.rows[Number(btn.dataset.tilingOrigin)];
+   acceptToolDraft(applyOrigin(s.work,plan(),c.ids,r.layout.origin,s.policy),'已采用「'+r.name+'」作为草稿。');
+  }catch(e){toolStatus(e.message);}
+ };
+}
+function editDoorJoint(key,mode,align=false){
+ try{
+  current();if(session.error)throw Error(session.error);
+  let work=session.work,p=plan();
+  const joint=p.floorFinish?.joints.find(j=>j.key===key);
+  if(align){
+   if(!joint||joint.continuousReason)throw Error(joint?.continuousReason||'门洞已变化');
+   const id=activeTarget().roomId,other=joint.roomIds.find(r=>r!==id);
+   const ids=Takeoff.floorGroup(p,other);
+   work=applyOrigin(work,p,ids,p.floorFinish.areas[id].layout.origin,'local');
+   p=P.effectivePlan(PLAN,work);
+  }
+  acceptToolDraft(F.setDoorJoint(work,p,key,mode),'门洞衔接已填入草稿。');
+ }catch(e){toolStatus(e.message);renderDoorJoints(plan(),activeTarget());}
+}
+function renderDoorJoints(p,target){
+ const details=q('[data-tiling-joints]'),host=q('[data-tiling-joint-list]');
+ const joints=target?.kind==='floor'?(p.floorFinish?.joints||[]).filter(j=>j.roomIds.includes(target.roomId)||!j.roomIds.length).filter(j=>j.mode!=='default'||j.roomIds.length>1):[];
+ details.hidden=!joints.length;
+ if(!joints.length)return;
+ host.innerHTML=joints.map((j,i)=>{
+  const label=[j.name||j.key,j.roomIds.filter(r=>r!==target.roomId).map(name).join('／')].filter(Boolean).join(' · ');
+  const rows=[['default','沿用两侧地面'],...Object.entries(F.doorJointLabels)];
+  const disabled={continuous:!!j.continuousReason||!j.aligned,threshold:!j.thresholdAvailable,strip:!j.stripAvailable};
+  const align=j.stripAvailable&&!j.continuousReason&&!j.aligned;
+  const note=j.pending||(j.mode==='strip'?'按门洞中心线标示，型材及安装高度现场确定。':j.continuousReason);
+  return `<div class="tiling-joint"><label>${esc(label)}<select data-tiling-joint="${i}">${rows.map(([id,text])=>`<option value="${id}" ${id===j.mode?'selected':disabled[id]?'disabled':''}>${text}</option>`).join('')}</select></label>
+  ${note?'<p class="muted">'+esc(note)+'</p>':''}${align?`<button class="btn" data-tiling-joint-align="${i}">以当前地面对齐相邻铺贴并通铺</button><small>相邻通铺组的起铺基准会一起调整，并解除受影响的起铺预设关联。</small>`:''}</div>`;
+ }).join('');
+ for(const el of host.querySelectorAll('[data-tiling-joint]'))el.onchange=()=>editDoorJoint(joints[Number(el.dataset.tilingJoint)].key,el.value);
+ for(const el of host.querySelectorAll('[data-tiling-joint-align]'))el.onclick=()=>editDoorJoint(joints[Number(el.dataset.tilingJointAlign)].key,'continuous',true);
+}
+function exportTakeoff(format){
+ try{
+  current();if(session.error)throw Error(session.error);
+  const list=q('[data-tiling-sheet-scope]').value==='all'?undefined:chosen();
+  const source=Takeoff.report(plan(),session.work,list);
+  if(!source.sheets.length&&!source.joints.length)throw Error('请选择已启用的铺砖表面');
+  const title=PLAN.name+' · '+(dirty()?'排砖草稿':'排砖图册');
+  const html=format==='html',contents=html?TakeoffDrawing.html(source,title):TakeoffDrawing.csv(source);
+  download(title.replace(/[\\/:*?"<>|]/g,'_')+'.'+format,new Blob([contents],{type:(html?'text/html':'text/csv')+';charset=utf-8'}));
+  toolStatus(`已导出 ${source.sheets.length} 张图对应的${html?'图册':'用量明细'}。`);
+ }catch(e){toolStatus(e.message);}
+}
 function review(p){
  const guide=FurnishFinishGuide.inspect(p,session.work),mm=n=>Number.isFinite(n)?Number(n.toFixed(2))+' mm':'待确定';
  q('[data-tiling-review-content]').innerHTML=`<p>砖规格与起铺相位不改变实际铺贴范围。高度均以毛坯绝对标高表达；未知值保持待确定。</p><div class="tiling-review-table"><table><thead><tr><th>区域</th><th>毛坯</th><th>完成地面</th><th>墙砖竖向基准</th></tr></thead><tbody>${p.rooms.filter(r=>r.counted!==false).map(r=>{const a=p.floorFinish?.areas[r.id],wall=guide.rows.find(v=>v.id===r.id);return `<tr><th>${esc(name(r.id))}</th><td>${mm(a?.rawZ)}</td><td>${mm(a?.finishedZ)}</td><td>${wall?.enabled?(wall.wallKnown&&!Number.isFinite(wall.wallZ)?'多种基准':mm(wall.wallZ)):'未启用'}</td></tr>`;}).join('')}</tbody></table></div><p>墙砖节距不同仅能对齐起铺缝；此处参数检查不代替空间核对或现场验收。</p><label>整案家具高度基准<select data-tiling-datum>${options([['survey','毛坯绝对标高（旧方案）'],['finished-floor','完成地面（派生抬高家具）']],session.work.furnitureDatum||'survey')}</select></label><p>这项设置作用于全案，不只作用于选中表面；家具原输入高度保持。</p>`;
@@ -118,7 +213,10 @@ function bindBasis(host,target,p){
 function preview(){
  const s=session;if(!s||s.disposed)return;const list=chosen(),target=list.find(t=>t.key===s.focus)||list[0];
  const before=P.effectivePlan(PLAN,s.base),currentPlan=plan(),changed=s.targets.filter(t=>JSON.stringify(C.groupValues(s.base,before,t))!==JSON.stringify(C.groupValues(s.work,currentPlan,t)));
- q('[data-tiling-summary]').textContent=dirty()?`草稿尚未保存 · ${changed.length} 处表面参数修改${JSON.stringify(s.base.tilePresets)!==JSON.stringify(s.work.tilePresets)?'，含预设关联修改':''} · 应用后可一次撤销。`:'当前为已保存参数；选择表面与查看预览不会修改项目。';
+ const jointChange=JSON.stringify(s.base.floorFinishes?.doorJoints)!==JSON.stringify(s.work.floorFinishes?.doorJoints);
+ q('[data-tiling-compare]').hidden=!(target?.kind==='floor'&&currentPlan.floorFinish?.areas[target.roomId]?.layout);
+ renderCandidates(target);renderDoorJoints(currentPlan,target);
+ q('[data-tiling-summary]').textContent=dirty()?`草稿尚未保存 · ${changed.length} 处表面参数修改${jointChange?'，含门洞衔接修改':''}${JSON.stringify(s.base.tilePresets)!==JSON.stringify(s.work.tilePresets)?'，含预设关联修改':''} · 应用后可一次撤销。`:'当前为已保存参数；选择表面与查看预览不会修改项目。';
  if(!s.error)document.querySelector('#dlgActions .primary').disabled=!dirty();
  q('[data-tiling-selection-scope]').textContent=list.length>1?`已选 ${list.length} 个表面 · ${new Set(list.map(t=>t.roomId)).size} 个房间，参数修改作用于全部已选表面`:`已选 ${list.length} 个表面`;q('[data-tiling-selection-legend]').hidden=s.mode!=='3d';q('[data-tiling-adjust]').disabled=!canPick(list);const drawing=q('[data-tiling-drawing]'),three=q('[data-tiling-3d]');drawing.hidden=s.mode==='3d';three.hidden=s.mode!=='3d';s.host.querySelectorAll('[data-tiling-view]').forEach(b=>b.classList.toggle('on',b.dataset.tilingView===s.mode));
  q('[data-tiling-open-materials]').hidden=list.length!==1;
@@ -127,7 +225,10 @@ function preview(){
  try{
   const p=currentPlan,v=C.read(s.work,p,target),room=FurnishWallFinish.spatial(p).rooms.find(r=>r.id===target.roomId),notes=[];let elevation;
   if(target.kind==='wall'){const face=T.faces(p,s.work).find(f=>T.same(f,target.face));elevation=C.elevation(s.work,p,target);const tile=FurnishStyles.wallTileMaterial(s.work,face)?.color,grout=G.color(s.work,target.roomId,'wall',face)||G.autoColor(tile);drawing.innerHTML=FurnishTileDrawing.wall(elevation).replaceAll('#777167',grout).replaceAll('#f5eee3',tile||'#f5eee3');notes.push(...elevation.pending,...T.patterns(elevation).map(e=>e.alignmentNote).filter(Boolean));}
-  else{const kind=s.work.rooms[target.roomId].mat,{color,groutColor}=FloorModel.floorOptions(s.work,target.roomId,kind);drawing.innerHTML=FurnishTileDrawing.floor(room,v,color||'#e8e2d8',groutColor||G.autoColor(color),F.tiled(kind));const a=p.floorFinish?.areas[target.roomId];notes.push(`完成标高 ${a?.finishedZ??'待确定'} mm`);if(a?.pending)notes.push(a.pending);}
+  else{const kind=s.work.rooms[target.roomId].mat,{color,groutColor}=FloorModel.floorOptions(s.work,target.roomId,kind),finish=p.floorFinish;
+   const portals=(finish?.doorways||[]).filter(a=>a.roomId===target.roomId),joints=(finish?.joints||[]).filter(j=>j.roomIds.includes(target.roomId));
+   drawing.innerHTML=FurnishTileDrawing.floor(room,v,color||'#e8e2d8',groutColor||G.autoColor(color),F.tiled(kind),{portals,joints});
+   const a=finish?.areas[target.roomId];notes.push(`完成标高 ${a?.finishedZ??'待确定'} mm`);if(a?.pending)notes.push(a.pending);}
   if(!v.enabled)notes.push('排版未启用：二维仅展示参数示意，3D保持实际关闭状态');
   const bands=v.bands?.rows||[];q('[data-tiling-band-choice]').hidden=!bands.length;q('[data-tiling-band-readout]').hidden=!bands.length;q('[data-tiling-edit-band]').hidden=!bands.length;if(bands.length){if(!bands.some(r=>r.id===s.bandId))s.bandId=bands[0].id;q('[data-tiling-band-focus]').innerHTML=options(bands.map(r=>[r.id,r.name]),s.bandId);const b=T.patterns(elevation).find(p=>p.band?.id===s.bandId);q('[data-tiling-band-readout]').textContent=`${b.band.name}实际参数：${b.layout.width}×${b.layout.height} mm，缝${b.layout.gap} mm，沿墙${b.layout.offset} mm，竖向${b.layout.startHeight} mm（${b.layout.reference==='floor'?'完成地面以上':'毛坯绝对标高'}）${b.followFloor?'，跟随地砖对缝':''}`;}
   if(floorGroup(list))notes.unshift(`统一起铺点作用于全部 ${list.length} 个已选地面；在当前查看地面点选或拖动，砖规格、方向和缝宽保持各自设置。`);

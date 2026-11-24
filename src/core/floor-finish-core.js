@@ -4,9 +4,14 @@
 const finite=n=>typeof n==='number'&&Number.isFinite(n),clone=v=>JSON.parse(JSON.stringify(v));
 const Z=()=>root.FurnishZoneGeometry||require('./zone-geometry.js');
 const tiled=mat=>['tile800','tile600','antislip','marble'].includes(mat);
+const doorJointVersion=108, thresholdColor='#aa9b87';
+const doorJointLabels=Object.freeze({continuous:'通铺',threshold:'过门石',strip:'压边条'});
+const doorKey=(plan,kind,index)=>kind+':'+(plan[kind==='door'?'doorRefs':'slideRefs']?.[index]||'#'+index);
 function validate(data){
  if(data===undefined)return;
- if(!data||data.version!==1||Object.keys(data).some(k=>!['version','areas'].includes(k))||!data.areas||Array.isArray(data.areas)||typeof data.areas!=='object'||Object.keys(data.areas).length>500)throw Error('地面完成面数据无效');
+ if(!data||data.version!==1||Object.keys(data).some(k=>!['version','areas','doorJoints'].includes(k))||!data.areas||Array.isArray(data.areas)||typeof data.areas!=='object'||Object.keys(data.areas).length>500)throw Error('地面完成面数据无效');
+ const joints=data.doorJoints;
+ if(joints!==undefined&&(!joints||typeof joints!=='object'||Array.isArray(joints)||Object.keys(joints).length>500||Object.entries(joints).some(([id,mode])=>!/^(door|slide):[^\s\u0000-\u001f]{1,200}$/u.test(id)||!Object.hasOwn(doorJointLabels,mode)||typeof mode!=='string')))throw Error('门洞衔接设置无效');
  for(const [id,s] of Object.entries(data.areas)){
   if(!id||id.length>200||['__proto__','prototype','constructor'].includes(id)||!s||typeof s!=='object'||Array.isArray(s)||Object.keys(s).some(k=>!['enabled','rawZ','tileThickness','baseThickness','mode','targetZ','reference','drop','layout'].includes(k)))throw Error('地面区域设置无效');
   if(s.enabled!==undefined&&typeof s.enabled!=='boolean')throw Error('地面启用状态须为布尔值');
@@ -32,7 +37,7 @@ function setEnabled(work,plan,ids,enabled){
   if(enabled){areas[id]=areas[id]||defaults(room,work.rooms?.[id]);delete areas[id].enabled;}
   else if(areas[id])areas[id].enabled=false;
  }
- if(Object.keys(areas).length)next.floorFinishes={version:1,areas};validate(next.floorFinishes);return next;
+ if(Object.keys(areas).length)next.floorFinishes={...next.floorFinishes,version:1,areas};validate(next.floorFinishes);return next;
 }
 function setLayoutBasis(work,plan,ids,basis){
  if(!Array.isArray(ids)||!ids.length||!basis||Object.keys(basis).some(k=>!['origin','angle'].includes(k))||!Array.isArray(basis.origin)||basis.origin.length!==2||!basis.origin.every(n=>finite(n)&&Math.abs(n)<=1e6)||basis.angle!==undefined&&(!finite(basis.angle)||Math.abs(basis.angle)>360))throw Error('统一起铺点须为有效原图坐标，方向须为 −360–360°');
@@ -43,7 +48,7 @@ function setLayoutBasis(work,plan,ids,basis){
   const initial=defaults(room,work.rooms?.[id]),s=areas[id]||(areas[id]={...initial,enabled:false});
   s.layout={...(s.layout||initial.layout),origin:basis.origin.slice(),...(basis.angle!==undefined?{angle:basis.angle}:{})};
  }
- next.floorFinishes={version:1,areas};validate(next.floorFinishes);return next;
+ next.floorFinishes={...next.floorFinishes,version:1,areas};validate(next.floorFinishes);return next;
 }
 function setLayers(work,plan,ids,values){
  if(!Array.isArray(ids)||!ids.length||!values||Object.keys(values).some(k=>!['rawZ','tileThickness','baseThickness','bathroomBaseThickness'].includes(k))||!['rawZ','tileThickness','baseThickness'].every(k=>finite(values[k]))||values.bathroomBaseThickness!==undefined&&!finite(values.bathroomBaseThickness))throw Error('请填写毛坯标高、面层厚度和粘结找平层厚度，并选择区域');
@@ -55,12 +60,13 @@ function setLayers(work,plan,ids,values){
   const s={...old,mode:'layers',rawZ:values.rawZ,tileThickness:values.tileThickness,baseThickness:bath&&values.bathroomBaseThickness!==undefined?values.bathroomBaseThickness:values.baseThickness};
   delete s.enabled;delete s.targetZ;delete s.reference;delete s.drop;areas[id]=s;
  }
- next.floorFinishes={version:1,areas};validate(next.floorFinishes);return next;
+ next.floorFinishes={...next.floorFinishes,version:1,areas};validate(next.floorFinishes);return next;
 }
 const derivationCache=new Map();
 function derive(plan,work){
  validate(work.floorFinishes);if(!work.floorFinishes)return plan;
- const key=JSON.stringify([plan.rooms,plan.wallFinish?.rooms,plan.doors,plan.slides,work.floorFinishes,work.rooms]);
+ const key=JSON.stringify([plan.rooms,plan.wallFinish?.rooms,plan.doors,plan.slides,plan.doorRefs,plan.slideRefs,work.floorFinishes,work.rooms,
+  work.floorFinishes.doorJoints&&[work.styleAppearance?.floorOverrides,work.styleAppearance?.floorSamples,work.styleAppearance?.floorTileSheens,work.tileGrout?.rooms]]);
  if(derivationCache.has(key))return {...plan,floorFinish:clone(derivationCache.get(key))};
  const areas=Object.create(null),pending=[],records=Object.fromEntries(Object.entries(work.floorFinishes.areas).filter(([,s])=>s.enabled!==false)),rooms=(root.FurnishWallFinish||require('./wall-finish-core.js')).spatial(plan).rooms.filter(r=>r.counted!==false);
  function resolve(id,trail=[]){
@@ -92,8 +98,11 @@ function derive(plan,work){
  for(const id of Object.keys(records)){
   const a=resolve(id);if(!a)pending.push({id,message:'地面原区域已变化或移除，请重新关联／移除设置'});else if(a.pending)pending.push({id,message:a.pending});
  }
- const doorways=doorwayAreas(plan,areas),steps=doorwaySteps(doorways),signature=[...Object.values(areas).map(a=>[a.id,a.rawZ,a.finishedZ,a.pending]),...doorways.map(a=>[a.id,a.roomId,a.room.polys,a.finishedZ])];
- const data={areas,doorways,steps,pending,signature};derivationCache.set(key,clone(data));if(derivationCache.size>4)derivationCache.delete(derivationCache.keys().next().value);return {...plan,floorFinish:data};
+ const doorways=doorwayAreas(plan,areas),steps=doorwaySteps(doorways),joints=doorJoints(plan,work,doorways);
+ const byKey=new Map(joints.map(j=>[j.key,j]));
+ for(const a of doorways)if(byKey.get(a.doorKey)?.active==='threshold'){a.finishColor=thresholdColor;delete a.layout;}
+ const signature=[...Object.values(areas).map(a=>[a.id,a.rawZ,a.finishedZ,a.pending]),...doorways.map(a=>[a.id,a.roomId,a.room.polys,a.finishedZ])];
+ const data={areas,doorways,steps,joints,pending,signature};derivationCache.set(key,clone(data));if(derivationCache.size>4)derivationCache.delete(derivationCache.keys().next().value);return {...plan,floorFinish:data};
 }
 // A doorway belongs to each adjoining room up to the wall centre line. These
 // are derived surfaces, never extra room area, quantities or saved settings.
@@ -114,11 +123,71 @@ function doorwayAreas(plan,areas){
     const poly=[[band[0],band[1]],[band[2],band[1]],[band[2],band[3]],[band[0],band[3]]],covered=Object.values(areas).flatMap(v=>v.room.polys||[v.room.poly]).filter(q=>Math.max(...q.map(p=>p[0]))>band[0]&&Math.min(...q.map(p=>p[0]))<band[2]&&Math.max(...q.map(p=>p[1]))>band[1]&&Math.min(...q.map(p=>p[1]))<band[3]);
     const pieces=z.decompose([poly,...covered],p=>z.inside(p,poly)&&!covered.some(q=>z.inside(p,q)));if(!pieces.length)continue;
     const shape=z.outline(pieces),seam=[[0,0],[0,0]];seam[0][axis]=lo;seam[1][axis]=hi;seam[0][normal]=seam[1][normal]=mid;
-    out.push({...a,id:`${kind}-${index}-${i}-${side}`,roomId:room.id,kind,index,seam,room:{...a.room,...shape}});
+    out.push({...a,id:`${kind}-${index}-${i}-${side}`,doorKey:doorKey(plan,kind,index),roomId:room.id,neighborId:sides[1-side]?.id,kind,index,seam,room:{...a.room,...shape}});
    }
   }
  }
  return out;
+}
+function materialKey(work,room){
+ const id=room.id,s=work.styleAppearance;
+ return JSON.stringify([work.rooms?.[id]?.mat||room.mat,s?.floorSamples?.[id]||null,s?.floorOverrides?.[id]||s?.floorColor||null,s?.floorTileSheens?.[id]||null]);
+}
+const close=(a,b)=>Math.abs(a-b)<1e-5;
+const onPitch=(value,pitch)=>close(value,Math.round(value/pitch)*pitch);
+function sameSpec(a,b){
+ return !!(a&&b&&close(a.width,b.width)&&close(a.height,b.height)&&close(a.gap,b.gap)&&onPitch(a.angle-b.angle,360));
+}
+function sameGrid(a,b){
+ if(!sameSpec(a,b))return false;
+ const [x,y]=transform(a,b.origin,true);
+ return onPitch(x,a.width+a.gap)&&onPitch(y,a.height+a.gap);
+}
+function doorJoints(plan,work,doorways){
+ const saved=work.floorFinishes.doorJoints||{},groups=new Map(),result=[];
+ for(const a of doorways){
+  if(!groups.has(a.doorKey))groups.set(a.doorKey,[]);
+  groups.get(a.doorKey).push(a);
+ }
+ for(const [key,parts] of groups){
+  const {kind,index}=parts[0],opening=plan[kind==='door'?'doors':'slides'][index],mode=saved[key]||'default';
+  const roomIds=[...new Set(parts.flatMap(a=>[a.roomId,a.neighborId]).filter(Boolean))];
+  const paired=roomIds.length===2&&parts.every(a=>parts.some(b=>b.roomId!==a.roomId&&a.id.slice(0,-1)===b.id.slice(0,-1)));
+  const sameLevel=paired&&parts.every(a=>finite(a.finishedZ)&&close(a.finishedZ,parts[0].finishedZ));
+  const [a,b]=roomIds.map(id=>parts.find(p=>p.roomId===id));
+  const grout=area=>work.tileGrout?.rooms?.[area.roomId]?.floor;
+  const reason=!paired?'须有两个已设置完成面的相邻区域':!sameLevel?'两侧完成标高须已知且相同':!sameSpec(a.layout,b.layout)?'两侧须启用同规格、方向和缝宽的瓷砖排版':materialKey(work,a.room)!==materialKey(work,b.room)||grout(a)!==grout(b)?'两侧砖材、外观及美缝须一致':'';
+  const aligned=paired&&sameGrid(a.layout,b.layout);
+  const pending=mode==='continuous'?(reason||(!aligned?'两侧砖缝基准尚未对齐':'')):mode==='threshold'&&!sameLevel?'过门石平铺须先确认两侧同高':mode==='strip'&&!paired?'须先确定门洞两侧区域':'';
+  const thresholdRings=mode==='threshold'&&!pending?Z().outline(parts.flatMap(a=>a.room.polys)).rings:undefined;
+  result.push({key,kind,index,name:opening.name||(kind==='slide'?'推拉门':'房门'),rect:opening.rect,roomIds,mode,active:pending?'default':mode,pending,thresholdRings,
+   continuousReason:reason,aligned,thresholdAvailable:sameLevel,stripAvailable:paired,seams:[...new Map(parts.map(p=>[JSON.stringify(p.seam),p.seam])).values()]});
+ }
+ for(const [key,mode] of Object.entries(saved))if(!groups.has(key))result.push({key,roomIds:[],mode,active:'default',pending:'原门洞已移除或没有可用完成面'});
+ return result;
+}
+function setDoorJoint(work,plan,key,mode){
+ const joint=plan.floorFinish?.joints?.find(j=>j.key===key);
+ if(!joint||mode!=='default'&&!Object.hasOwn(doorJointLabels,mode))throw Error('门洞衔接已变化，请重新选择');
+ const layers=root.FurnishLayers||require('./layers-core.js');
+ if(mode!==joint.mode&&joint.roomIds.some(id=>layers.locked(work,'floor:'+id)))throw Error('门洞相邻地面的图层已锁定，请先解锁');
+ if(mode==='continuous'&&(joint.continuousReason||!joint.aligned))throw Error(joint.continuousReason||'请先对齐两侧砖缝基准');
+ if(mode==='threshold'&&!joint.thresholdAvailable)throw Error('过门石平铺须先确认两侧同高');
+ if(mode==='strip'&&!joint.stripAvailable)throw Error('须先确定门洞两侧区域');
+ const next=clone(work),data=next.floorFinishes,joints={...data.doorJoints};
+ if(mode==='default')delete joints[key];else joints[key]=mode;
+ if(Object.keys(joints).length)data.doorJoints=joints;else delete data.doorJoints;
+ validate(data);return next;
+}
+function remapBuiltinDoorJoints(work,before,after){
+ const saved=work.floorFinishes?.doorJoints;if(!saved)return;
+ const joints={};
+ for(const [kind,list] of [['door',before.doors||[]],['slide',before.slides||[]]])list.forEach((opening,index)=>{
+  const mode=saved[doorKey(before,kind,index)];if(!mode)return;
+  const refs=(kind==='door'?after.doorRefs:after.slideRefs)||[],next=refs.indexOf('preset_'+kind+index);
+  if(next>=0)joints[doorKey(after,kind,next)]=mode;
+ });
+ if(Object.keys(joints).length)work.floorFinishes.doorJoints=joints;else delete work.floorFinishes.doorJoints;
 }
 function doorwaySteps(areas){
  const groups=new Map();for(const a of areas){const key=a.id.slice(0,a.id.lastIndexOf('-'));if(!groups.has(key))groups.set(key,[]);groups.get(key).push(a);}
@@ -182,6 +251,6 @@ function checks(plan,furniture){
  }
  return issues;
 }
-const api={validate,defaults,setEnabled,setLayoutBasis,setLayers,derive,doorwayAreas,surfaces,at,transform,cells,snapOrigin,checks,onlyChange,tiled,has:w=>!!w?.floorFinishes};
+const api={validate,defaults,setEnabled,setLayoutBasis,setLayers,derive,doorwayAreas,surfaces,at,transform,cells,snapOrigin,checks,onlyChange,tiled,materialKey,sameGrid,doorJointVersion,doorJointLabels,setDoorJoint,remapBuiltinDoorJoints,has:w=>!!w?.floorFinishes};
 if(typeof module==='object'&&module.exports)module.exports=api;else root.FurnishFloorFinish=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

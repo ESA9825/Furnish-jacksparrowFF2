@@ -50,3 +50,18 @@
 [data-material-tile-filter]{display:flex;align-items:center;gap:6px}
 [data-material-tile-filter][hidden]{display:none}
 [data-material-grout] input[type=color]{width:36px;height:28px;padding:2px;border:1px solid var(--line);border-radius:5px;background:var(--paper)}
+
+.tiling-delivery-tools{margin:12px 0;color:var(--ink)}
+.tiling-delivery-tools details{border-top:1px solid var(--line);padding:10px 0}
+.tiling-delivery-tools summary{font-size:13px;font-weight:600;cursor:pointer}
+.tiling-tool-row{display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin:8px 0}
+.tiling-tool-row label{flex:0 1 auto}
+[data-tiling-workspace] .tiling-tool-row select{margin:4px 0 0}
+.tiling-tool-row input{display:block;width:7em;margin-top:4px}
+.tiling-candidates{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr))}
+.tiling-candidates article{min-width:0;padding:8px;border:1px solid var(--line);border-radius:8px;font-size:12px}
+.tiling-candidates svg{height:120px;margin:6px 0 0}
+.tiling-candidates p,.tiling-joint p{font-size:12px;line-height:1.5;margin:6px 0}
+.tiling-joint{padding:8px 0;border-bottom:1px solid var(--line)}
+.tiling-joint small{display:block;color:var(--muted);margin-top:5px}
+[data-tiling-tool-feedback]:empty{display:none}

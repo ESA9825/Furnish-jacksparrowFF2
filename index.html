@@ -473,9 +473,11 @@
 <script src="src/core/tile-parameters-core.js"></script>
 <script src="src/core/tile-preset-core.js"></script>
 <script src="src/core/tile-editor-core.js"></script>
+<script src="src/core/tile-takeoff-core.js"></script>
 <script src="src/core/tile-interaction-core.js"></script>
 <script src="src/render/tile-layout-preview.js"></script>
 <script src="src/render/tile-layout-drawing.js"></script>
+<script src="src/render/tile-takeoff-drawing.js"></script>
 <script src="src/core/finish-guide-core.js"></script>
 <script src="src/render/wall-tiling-model.js"></script>
 <script src="src/render/floor-origin-preview.js"></script>
@@ -1731,7 +1733,7 @@ const syncIdentity=FurnishPartIdentity;
   // Fill the actual door opening with each adjoining room's floor, including
   // its own grid and finished height. Legacy projects keep schematic sills.
   for(const a of finishPlan.floorFinish?.doorways||[]){
-    const m=finishMaterial(a.roomId,a.layout,null,true);
+    const m=a.finishColor?undefined:finishMaterial(a.roomId,a.layout,null,true);
     const mesh=FurnishFloorFinishModel.surface(THREE,a.room,a,{wx,wz,material:m});mesh.userData.doorway=a.id;mesh.userData.layerObject="floor:"+a.roomId;archFloor.add(mesh);
     const layers=FurnishFloorFinishModel.layers(THREE,a.room,a,{wx,wz});if(layers)archFloor.add(layers);
   }

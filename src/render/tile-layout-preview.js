@@ -24,9 +24,9 @@ function create({THREE,OrbitControls,host,onSelect=()=>{},onBasis=()=>{},onGestu
    const layers=floorModel.layers(THREE,room,area,{wx,wz});if(layers)model.add(layers);
   }
   for(const area of plan.floorFinish?.doorways||[]){
-   if(!area.layout)continue;
+   if(!area.layout&&!area.finishColor)continue;
    const finish=floorModel.floorOptions(work,area.roomId,work.rooms[area.roomId]?.mat||area.room.mat);
-   const material=floorModel.material(THREE,area.layout,finish);
+   const material=area.layout?floorModel.material(THREE,area.layout,finish):undefined;
    model.add(floorModel.surface(THREE,area.room,area,{wx,wz,material}));
   }
   model.add(root.FurnishWallTilingModel.build(THREE,plan,{wx,wz,work}));model.add(root.FurnishWallFinishModel.build(THREE,plan,{wx,wz}));

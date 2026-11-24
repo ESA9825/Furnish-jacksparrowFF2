@@ -264,8 +264,10 @@ function surface(THREE,room,area,{wx=v=>v/1000,wz=v=>v/1000,material:provided,co
   const positions=geometry.getAttribute('position'),uvs=geometry.getAttribute('uv');
   for(let i=0;i<uvs.count;i++)uvs.setXY(i,(positions.getX(i)-wx(0))/size,-(positions.getZ(i)-wz(0))/size);
  }else if(area.layout)uv(THREE,geometry,area.layout,{wx,wz});
- const m=provided||(typeof document==='undefined'||!area.layout?new THREE.MeshStandardMaterial({color:color||'#e8e2d8'}):material(THREE,area.layout,{color})),mesh=syncIdentity.produce("floor:generator-call-surface:"+(area.id||room.id),()=>syncIdentity.produce("floor-finish-model:site-1",()=>new THREE.Mesh(geometry,m)));
- mesh.position.y=(area.finishedZ??area.rawZ??0)/1000;mesh.receiveShadow=true;mesh.userData.floor=true;mesh.userData.floorFinishOwnMaterial=!!sample||!!area.layout||!provided||!!provided.userData.tileFinish?.legacy&&!!provided.userData.tileFinish.groutColor;mesh.userData.room=area.roomId||room.id;return mesh;
+ const m=provided||(typeof document==='undefined'||!area.layout?new THREE.MeshStandardMaterial({color:area.finishColor||color||'#e8e2d8'}):material(THREE,area.layout,{color})),mesh=syncIdentity.produce("floor:generator-call-surface:"+(area.id||room.id),()=>syncIdentity.produce("floor-finish-model:site-1",()=>new THREE.Mesh(geometry,m)));
+ mesh.position.y=(area.finishedZ??area.rawZ??0)/1000;mesh.receiveShadow=true;mesh.userData.floor=true;mesh.userData.floorFinishOwnMaterial=!!sample||!!area.layout||!provided||!!provided.userData.tileFinish?.legacy&&!!provided.userData.tileFinish.groutColor;mesh.userData.room=area.roomId||room.id;
+ if(area.finishColor)mesh.userData.doorThreshold=true;
+ return mesh;
 }
 function layers(THREE,room,area,{wx=v=>v/1000,wz=v=>v/1000}={}){
  if(!Number.isFinite(area?.finishedZ))return null;

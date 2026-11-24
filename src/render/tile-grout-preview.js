@@ -7,7 +7,7 @@ function create(THREE){
  function update({floorGroup,wallGroup,roomId,kind,color,targets}){
   clear();const shared=new Map(),list=targets||[{roomId,kind}],M=root.FurnishFloorFinishModel||require('./floor-finish-model.js');let count=0;
   try{for(const kind of ['wall','floor']){const ids=new Set(list.filter(t=>t.kind===kind).map(t=>t.roomId)),group=kind==='wall'?wallGroup:floorGroup;group?.traverse(mesh=>{
-   const matches=kind==='wall'?ids.has(mesh.userData.wallTiling?.roomId):mesh.userData.floor&&ids.has(mesh.userData.room);
+   const matches=kind==='wall'?ids.has(mesh.userData.wallTiling?.roomId):mesh.userData.floor&&!mesh.userData.doorThreshold&&ids.has(mesh.userData.room);
    if(!matches||!mesh.material.userData.tileFinish)return;
    const original=mesh.material,meta=original.userData.tileFinish;originals.set(mesh,original);
    if(!shared.has(original)){

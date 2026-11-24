@@ -90,7 +90,7 @@ function edit(work,plan,selected,patch){
    }
    if(has('enabled')){s.enabled=patch.enabled;wrote=true;if(patch.enabled&&!saved&&!s.layout&&F().tiled(next.rooms[id].mat))s.layout=F().defaults(room,next.rooms[id]).layout;}
    for(const k of ['rawZ','tileThickness','baseThickness','mode','targetZ','drop','levelReference'])if(has(k)){const name=k==='levelReference'?'reference':k;if(patch[k]===null)delete s[name];else s[name]=patch[k];wrote=true;}
-   if(wrote){areas[id]=s;next.floorFinishes={version:1,areas};F().validate(next.floorFinishes);}
+   if(wrote){areas[id]=s;next.floorFinishes={...next.floorFinishes,version:1,areas};F().validate(next.floorFinishes);}
    if(has('grout'))next=G().edit(next,plan,id,'floor',patch.grout==='auto'?undefined:patch.grout);
   }
  }

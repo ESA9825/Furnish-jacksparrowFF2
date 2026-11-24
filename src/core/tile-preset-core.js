@@ -84,7 +84,7 @@ function apply(work,plan,preset,targets,selected,options={}){
    for(const [group,fields]of [['spec',['width','height','angle']],['gap',['gap']],['origin',['origin']]])if(g.has(group)&&v.layout)for(const k of fields)if(Object.hasOwn(v.layout,k)){layout[k]=clone(v.layout[k]);wrote=true;}
    if(wrote)s.layout=layout;if(g.has('enabled')&&v.enabled!==undefined){s.enabled=v.enabled;wrote=true;}
    if(g.has('elevation')&&v.elevation){for(const [k,value]of Object.entries(v.elevation)){if(value===null)delete s[k];else s[k]=clone(value);}if(!s.mode)s.mode='layers';wrote=true;}
-   if(wrote){areas[room.id]=s;next.floorFinishes={version:1,areas};F().validate(next.floorFinishes);}
+   if(wrote){areas[room.id]=s;next.floorFinishes={...next.floorFinishes,version:1,areas};F().validate(next.floorFinishes);}
    if(g.has('grout')&&v.grout)next=G().edit(next,plan,room.id,'floor',v.grout.mode==='auto'?undefined:v.grout.color);
    changes.push({roomId:room.id,label:setting.name||room.name,variant:v.name});
   }

@@ -46,6 +46,7 @@ function spaceIssueVolumes(plan,furniture,item,passage=800){
    FurnishTileGrout.remapBuiltin(work,source,plan,shift);
    if(work.tilePresets)FurnishTilePresets.remapBuiltin(work,source,plan,shift);
    if(work.ceilings)FurnishCeiling.shift(work,shift);
+   FurnishFloorFinish.remapBuiltinDoorJoints(work,source,plan);
    if(work.floorFinishes)for(const s of Object.values(work.floorFinishes.areas))if(s.layout)s.layout.origin=s.layout.origin.map((v,i)=>v+shift);
    for(const route of work.wireRoutes||[])for(const p of route.points){p.x+=shift;p.y+=shift;}
    work.furniture.forEach(f=>{f.cx+=shift;f.cy+=shift;});(work.notes||[]).forEach(n=>{n.x+=shift;n.y+=shift;});(work.measures||[]).forEach(m=>{for(const p of [m.a,m.b]){p.x+=shift;p.y+=shift;}});
