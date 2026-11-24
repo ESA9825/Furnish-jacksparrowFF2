@@ -595,15 +595,26 @@ function renderArchitecturePreview(plan,dimension){
   finally{[WALLS,WINS,DOORS,SLIDES,ROOMS]=actual;}
 }
 let deferredRenderFrame=null,deferredRenderTimer=null;
+function refreshAfterScene(){
+  if(is3D()&&window.View3D?.interacting()){
+    deferredRenderTimer=setTimeout(refreshAfterScene,120);
+    return;
+  }
+  // A visible panel can reuse the collision results from the plan draw.
+  renderAllViews({sceneFirst:is3D()&&!propertyPanelVisible()});
+}
 function renderAll({sceneFirst=false,replan=false,fit=false}={}){
   cancelAnimationFrame(deferredRenderFrame);clearTimeout(deferredRenderTimer);
   // Present the production pose before expensive panel checks; bursts share
   // one derived UI refresh. Ordinary edits/undo cancel this pending refresh.
   if(sceneFirst&&!replan&&is3D()){
     window.View3D?.sync();
-    deferredRenderFrame=requestAnimationFrame(()=>{deferredRenderTimer=setTimeout(()=>renderAll(),120);});
+    deferredRenderFrame=requestAnimationFrame(()=>{deferredRenderTimer=setTimeout(refreshAfterScene,120);});
     return;
   }
+  renderAllViews({sceneFirst,replan,fit});
+}
+function renderAllViews({sceneFirst=false,replan=false,fit=false}){
   window.FurnishWorkspace?.clearOpeningPreview(false);
   window.FurnishDesignUI?.clearPlacementGuide();
   syncCustomArchitecture({replan:!replan});
