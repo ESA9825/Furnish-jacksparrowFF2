@@ -1,0 +1,27 @@
+[
+  {
+    "file": "hero.jpg",
+    "url": "https://yeswoodhome.com/cdn/shop/files/yeswood-0d61c3ab0d51bb951bedf18a6a99306d9c6ff85eefa9f0fe27bbe8258c7e6b91.png",
+    "sha256": "36ed0a28f9ccb13ccc91144b0beffe2df19354839a9d557f52054e4b237881dc"
+  },
+  {
+    "file": "side.jpg",
+    "url": "https://yeswoodhome.com/cdn/shop/files/yeswood-1abb6c9e1c6ec2e5d2aa5fa1f64d36cf4c26cc0ac024bdf1644180628f16b894.jpg",
+    "sha256": "ecbaaf712bdad8aaa531275b3751b358453f77c35afe90bdc653b66366d3a811"
+  },
+  {
+    "file": "headboard.jpg",
+    "url": "https://cdn.shopify.com/s/files/1/0054/8411/8114/files/yeswood-920279dce4d64c7b35b3aa1e818f3e74347486cb39e056a0500540f9ec5c46c6.jpg",
+    "sha256": "47f7b154afd08669b2e18c470128ad1c2cd9e04756fef8b7ca17d3a1849451ca"
+  },
+  {
+    "file": "dimensions.jpg",
+    "url": "https://cdn.shopify.com/s/files/1/0054/8411/8114/files/yeswood-2ca8ff14a844e4f19499d4215a84b482fa61cc7aa6afa500e533805057c43dac.jpg",
+    "sha256": "5aede20581010f9bdfbbfc5ab0b562d859b7dd91f4e19f6e8645c940509cc7f5"
+  },
+  {
+    "file": "storage-construction.jpg",
+    "url": "https://cdn.shopify.com/s/files/1/0054/8411/8114/files/yeswood-777230f48a73ea27c72cd9e8ba2c580bf7e1cb279a227d78dd3c85ae709c1688.jpg",
+    "sha256": "5fc0e50df64e6a82cfebf988d9fcb7145796c213fbdb474a5d8f723ddeb63fed"
+  }
+]

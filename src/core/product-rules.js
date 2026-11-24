@@ -92,6 +92,7 @@ const fields={
  bottomPhysical:{boolean:true,message:'窗帘底部基准标记须为布尔值'},
  lightPreviewLevel:numeric(0,100,'预览亮度须为0–100%'),
  lightKelvin:{values:[2700,3000,4000],message:'灯带预览色温须为2700K、3000K或4000K'},
+ bedLinensVisible:{boolean:true,message:'床的示意床品显示状态须为布尔值'},
  deskLampVisible:{boolean:true,message:'书桌装饰台灯显示状态须为布尔值'},
  petTrayOpen:{boolean:true,message:'喂食器抽拉状态须为布尔值'},
  foldingChairFolded:{boolean:true,message:'折叠椅状态须为展开或折叠'},
@@ -195,6 +196,7 @@ function hotataRack(length,width,sku,asset){
 }
 const hotataCrank={width:96,depth:64,height:160,pivotHeight:112,lineExitHeight:158,lineExitDepth:-23};
 const types={
+ bed:{defaults:{bedLinensVisible:true},fields:['bedLinensVisible']},
  desk:{defaults:{deskLampVisible:true},fields:['deskLampVisible'],deskDecoration:{formatVersion:90}},
  track_socket_bull_gb50k:{
   kind:'轨道插座',family:'track-socket',height:94,anchor:'bottom',clearanceReview:'missing',

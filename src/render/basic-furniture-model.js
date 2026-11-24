@@ -140,6 +140,7 @@ switch(f.type){
       for(let i of syncIdentity.range("basic-furniture-model.js:generator-1",0,n,1,false))g.add(syncIdentity.produce("basic-furniture-model:site-4",()=>cushion(sw - .006, .62, .06, upholstery, -w/2 + .02 + sw*(i + .5), .42, bz + .08, .025, upholsteryTile)));   // 竖向软包
       const md = d - .13, dd = md*.66, dz = d/2 - .015 - dd/2;
       g.add(syncIdentity.produce("basic-furniture-model:site-5",()=>rbox(w - .06, mt, md, '#f6f3ee', 0, fh, bz + .11 + md/2, .07)));                                              // 床垫
+      if(f.bedLinensVisible===false)break;
       g.add(syncIdentity.produce("basic-furniture-model:site-6",()=>drape(w + .02, .27, dd, duvet, top - .2, dz, .049, .035)), syncIdentity.produce("basic-furniture-model:site-7",()=>drape(w + .024, .06, .22, linen, top + .025, dz - dd/2 + .11, .026, .014)));   // 被子 + 翻边
       g.add(syncIdentity.produce("basic-furniture-model:site-8",()=>drape(w + .05, .285, .42, runner, top - .205, d/2 - .35, .033, .009)));                               // 床尾巾
       const np = w >= 1.3 ? 2 : 1, pw = (w - .16 - (np-1)*.06)/np;
