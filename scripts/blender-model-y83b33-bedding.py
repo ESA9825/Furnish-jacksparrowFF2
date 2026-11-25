@@ -1,4 +1,4 @@
-"""Independent furnishings for the Y83B33 styling scene. Metres, front -Y."""
+"""Independent styling bedding. Metres, front -Y."""
 import json
 import math
 from pathlib import Path
@@ -154,6 +154,52 @@ def duvet():
     fold.location.y=.655
 
 
+def single_mattress():
+    knit=frame.material('Ivory mattress ticking',(.86,.80,.69),.90)
+    welt=frame.material('Ivory seam binding',(.74,.67,.55),.88)
+    side=frame.material('Oatmeal mattress border',(.79,.72,.61),.89)
+    frame.box('Single mattress border',(1.200,2.000,.146),(0,0,.073),side,.021)
+    for label,y in (('Lower',.019),('Upper',.133)):
+        frame.box(label+' single mattress welt',(1.197,1.997,.009),(0,0,y),welt,.004)
+
+    def elevation(x,z,top):
+        if not top:
+            return .128
+        edge=eased(min(.592-abs(x),.992-abs(z))/.061)
+        stitch=math.pow(.5+.5*math.cos((z+.036*math.cos(6*x))*math.tau/.215),10)
+        return .137+edge*(.023-.003*stitch)
+    soft_panel('Single quilted mattress surface',1.184,1.984,.048,36,63,elevation,knit)
+
+
+def single_duvet():
+    cloth=frame.material('Sage cotton cover',(.300,.354,.266),.92)
+    hem=frame.material('Sage turned cuff',(.326,.380,.288),.91)
+    w,d=1.340,1.590
+
+    def surface(x,z):
+        u=x/(w/2)
+        side=eased((abs(x)-.607)/.063)
+        foot=eased((z-.765)/.030)
+        drop=1-(1-side)*(1-foot)
+        ridge=.014*math.exp(-((z+.005-.20*u)/.109)**2)
+        crease=-.006*math.exp(-((z-.204+.14*u)/.052)**2)
+        loft=.010*math.exp(-((z+.64+.022*u)/.074)**2)
+        long_fold=.009*math.exp(-((u-.24-.22*z)/.17)**2)*math.exp(-((z-.21)/.43)**2)
+        folds=side*(.006*math.sin(25*z+2*u)+.004*math.sin(46*z))
+        folds+=foot*.006*math.cos(26*x+.21)
+        spread=.176+ridge+crease+loft+long_fold
+        return (1-drop)*spread+drop*.022+folds
+
+    def filled(x,z,top):
+        return surface(x,z)-(0 if top else .012)
+    soft_panel('Single sage duvet shell',w,d,.059,54,64,filled,cloth)
+
+    def turned(x,z,top):
+        return surface(x,z-.684)+(.008+.007*math.exp(-((z-.05)/.035)**2) if top else .001)
+    cuff=soft_panel('Folded sage top cuff',1.290,.207,.064,49,9,turned,hem)
+    cuff.location.y=.684
+
+
 def main():
     args=sys.argv[sys.argv.index('--')+1:]
     target,profile=Path(args[0]),args[args.index('--profile')+1]
@@ -161,6 +207,8 @@ def main():
         'mattress-y83b33': (1.800,.220,2.000,mattress),
         'pillow-y83b33': (.790,.140,.480,pillow),
         'duvet-y83b33': (1.940,.245,1.560,duvet),
+        'mattress-y17b02': (1.200,.160,2.000,single_mattress),
+        'duvet-y17b02': (1.340,.185,1.590,single_duvet),
     }
     w,h,d,build=wanted[profile]
     bpy.ops.wm.read_factory_settings(use_empty=True)

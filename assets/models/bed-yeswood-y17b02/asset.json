@@ -1,0 +1,41 @@
+{
+  "format": 1,
+  "id": "bed-yeswood-y17b02",
+  "name": "源氏木语 Y17B02 半夏樱桃木箱体床 · 1.2米",
+  "types": [
+    "bed_yeswood_y17b02"
+  ],
+  "route": "blender",
+  "document": "docs/BED-YESWOOD-Y17B02.md",
+  "sourceLinks": [
+    "https://yeswoodhome.com/products/yws-600871898009",
+    "https://item.taobao.com/item.htm?id=600871898009"
+  ],
+  "references": [
+    {
+      "path": "references/closed.jpg",
+      "kind": "product-page",
+      "url": "https://img.alicdn.com/imgextra/i2/1105025069/O1CN01ZsbB5M1nJekv76U9o_!!1105025069.jpg",
+      "sha256": "b3a1c3c733422e53d47551054164d5cc737a7053a6f2ba6b97091747f5a85056",
+      "bytes": 81386
+    },
+    {
+      "path": "references/storage.jpg",
+      "kind": "product-page",
+      "url": "https://img.alicdn.com/imgextra/i2/1105025069/O1CN01i5dKaO1nJekuGTwL2_!!1105025069.jpg",
+      "sha256": "c2694355ca45e7b79e79d096300ad2943e0b38885f408c00ee7ec4e9e68c4a9b",
+      "bytes": 66780
+    },
+    {
+      "path": "references/upgrade-dimensions.jpg",
+      "kind": "product-page",
+      "url": "https://img.alicdn.com/imgextra/i2/1105025069/O1CN01MeKC5I1nJeT80oMuO_!!1105025069.jpg",
+      "sha256": "7c15638da2454f6907aed5c1be29c3d906252e4b8ea9ec3f0a5db534182074d7",
+      "bytes": 70030
+    }
+  ],
+  "missingReferences": [],
+  "validation": [
+    "docs/validation/y17b02-composition-20261125/README.md"
+  ]
+}

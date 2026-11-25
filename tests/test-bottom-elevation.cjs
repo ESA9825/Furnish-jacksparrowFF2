@@ -13,7 +13,7 @@ for(const item of items){
  rows.push({type,mode:P.bottomMode(f),bottom});
 }
 // Repeated position/height edits must invalidate cached production solids.
-for(const type of ['chair','bed','bed_yeswood_y83b33','bed_mattress_y83b33','bed_pillow_y83b33','bed_pillow_atour_pro4','bed_duvet_y83b33','fridge_french_drawer','chair_yeswood_s05118','bookshelf_yeswood_y00y06','tea_bar_mijia_pro','cat_tower_jd_10141711472484','fan_airmate_fa18_x231']){
+for(const type of ['chair','bed','bed_yeswood_y83b33','bed_mattress_y83b33','bed_pillow_y83b33','bed_pillow_atour_pro4','bed_duvet_y83b33','bed_yeswood_y17b02','bed_mattress_y17b02','bed_duvet_y17b02','fridge_french_drawer','chair_yeswood_s05118','bookshelf_yeswood_y00y06','tea_bar_mijia_pro','cat_tower_jd_10141711472484','fan_airmate_fa18_x231']){
  const i=items.find(i=>i[0]===type),f={id:type,type,w:i[2],d:i[3],h:i[6]??P.height({type}),color:i[4],cx:0,cy:0,rot:0},original=G.bodyParts(f),bottom=P.bottomHeight(f);
  for(const rot of [0,37,90])for(const flip of [false,true])for(const delta of [0,700,150]){
   const moved={...P.editBottomHeight(f,bottom+delta),rot,flip},parts=G.bodyParts(moved);assert.equal(parts.length,original.length);near(Math.min(...parts.map(p=>p.vertical.bottom)),Math.min(...original.map(p=>p.vertical.bottom))+delta);near(Math.max(...parts.map(p=>p.vertical.top)),Math.max(...original.map(p=>p.vertical.top))+delta);

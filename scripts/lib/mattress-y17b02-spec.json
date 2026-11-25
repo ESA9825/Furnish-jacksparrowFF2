@@ -1,0 +1,15 @@
+{
+  "type": "bed_mattress_y17b02",
+  "global": "FurnishY17B02MattressAsset",
+  "size": [
+    1200,
+    160,
+    2000
+  ],
+  "parts": [
+    "Single mattress border",
+    "Lower single mattress welt",
+    "Upper single mattress welt",
+    "Single quilted mattress surface"
+  ]
+}

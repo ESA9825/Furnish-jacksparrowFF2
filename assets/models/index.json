@@ -2,13 +2,13 @@
   "format": 2,
   "description": "Generated repository index; paths relative to repository root. This is metadata, not the application loading manifest.",
   "counts": {
-    "blenderModels": 64,
+    "blenderModels": 67,
     "parametricVerificationConfigurations": 101,
-    "verificationConfigurations": 165,
-    "catalogEntries": 208,
-    "catalogTypes": 178,
-    "productDossiers": 91,
-    "referenceImages": 375,
+    "verificationConfigurations": 168,
+    "catalogEntries": 211,
+    "catalogTypes": 181,
+    "productDossiers": 94,
+    "referenceImages": 378,
     "missingReferences": 20
   },
   "models": [
@@ -1176,6 +1176,133 @@
         "assets/models/bed-yeswood-y83b33/references/dimensions.jpg",
         "assets/models/bed-yeswood-y83b33/references/storage-construction.jpg"
       ]
+    },
+    {
+      "profile": "bed-yeswood-y17b02",
+      "type": "bed_yeswood_y17b02",
+      "name": "源氏木语 Y17B02 半夏樱桃木箱体床 · 1.2米",
+      "sizeMm": [
+        1260,
+        2120,
+        1000
+      ],
+      "parts": 58,
+      "runtimeVersion": 1,
+      "runtime": {
+        "path": "src/data/bed-yeswood-y17b02-blender-asset.js",
+        "sha256": "dbe68276573280619c687e838cb49ab18543d6bf9bce29241c1590d0ba89b766",
+        "normalization": "utf8-lf"
+      },
+      "sourceSha256": "898217f80477988f557fdb398f93675d446663def8a8a61eb3781ee632e5a52a",
+      "current": {
+        "blend": "assets/models/bed-yeswood-y17b02/v1/bed-yeswood-y17b02-v1.blend",
+        "glb": "assets/models/bed-yeswood-y17b02/v1/bed-yeswood-y17b02-v1.glb"
+      },
+      "document": "docs/BED-YESWOOD-Y17B02.md",
+      "constructor": "src/render/bed-yeswood-y83b33-model.js",
+      "author": "scripts/blender-model-bed-yeswood-y17b02.py",
+      "files": [
+        {
+          "path": "assets/models/bed-yeswood-y17b02/v1/bed-yeswood-y17b02-v1.blend",
+          "role": "published-source",
+          "sha256": "d3851c9c837d636d8c49b7139fb52e3198d3855aeb2eda9510c0b3ad7a659a38",
+          "bytes": 148108
+        },
+        {
+          "path": "assets/models/bed-yeswood-y17b02/v1/bed-yeswood-y17b02-v1.glb",
+          "role": "published-source",
+          "sha256": "898217f80477988f557fdb398f93675d446663def8a8a61eb3781ee632e5a52a",
+          "bytes": 757800
+        }
+      ],
+      "dossier": "assets/models/bed-yeswood-y17b02/asset.json",
+      "references": [
+        "assets/models/bed-yeswood-y17b02/references/closed.jpg",
+        "assets/models/bed-yeswood-y17b02/references/storage.jpg",
+        "assets/models/bed-yeswood-y17b02/references/upgrade-dimensions.jpg"
+      ]
+    },
+    {
+      "profile": "mattress-y17b02",
+      "type": "bed_mattress_y17b02",
+      "name": "半夏搭配床垫 · 米白 1.2米",
+      "sizeMm": [
+        1200,
+        2000,
+        160
+      ],
+      "parts": 4,
+      "runtimeVersion": 1,
+      "runtime": {
+        "path": "src/data/mattress-y17b02-blender-asset.js",
+        "sha256": "4ba9dec671a2434f3f1d7c6ebfd8ad50ab21cbd822196cb6cb50351b902289e8",
+        "normalization": "utf8-lf"
+      },
+      "sourceSha256": "10985ca30f1716128a4220ccc28d06bc85f21c242750d0b7f321e2280091adb2",
+      "current": {
+        "blend": "assets/models/mattress-y17b02/v1/mattress-y17b02-v1.blend",
+        "glb": "assets/models/mattress-y17b02/v1/mattress-y17b02-v1.glb"
+      },
+      "document": "docs/BED-YESWOOD-Y17B02.md",
+      "constructor": "src/render/bed-yeswood-y83b33-model.js",
+      "author": "scripts/blender-model-y83b33-bedding.py",
+      "files": [
+        {
+          "path": "assets/models/mattress-y17b02/v1/mattress-y17b02-v1.blend",
+          "role": "published-source",
+          "sha256": "008d965a0727b663c02efe03e3af329e04b1a4f0f569b129aa8aa92376f22c95",
+          "bytes": 259174
+        },
+        {
+          "path": "assets/models/mattress-y17b02/v1/mattress-y17b02-v1.glb",
+          "role": "published-source",
+          "sha256": "10985ca30f1716128a4220ccc28d06bc85f21c242750d0b7f321e2280091adb2",
+          "bytes": 314624
+        }
+      ],
+      "dossier": "assets/models/mattress-y17b02/asset.json",
+      "references": []
+    },
+    {
+      "profile": "duvet-y17b02",
+      "type": "bed_duvet_y17b02",
+      "name": "半夏搭配单人被 · 灰绿",
+      "sizeMm": [
+        1340,
+        1590,
+        185
+      ],
+      "parts": 2,
+      "runtimeVersion": 1,
+      "runtime": {
+        "path": "src/data/duvet-y17b02-blender-asset.js",
+        "sha256": "df128f2aa8b5aaf7f8e8033d5e7767dc35cc279f8351b9346cf974d7495072fd",
+        "normalization": "utf8-lf"
+      },
+      "sourceSha256": "6bd20b8b38c4bcbeedc158de8b050193889b586c48c210e954e8a1b5581ac92b",
+      "current": {
+        "blend": "assets/models/duvet-y17b02/v1/duvet-y17b02-v1.blend",
+        "glb": "assets/models/duvet-y17b02/v1/duvet-y17b02-v1.glb"
+      },
+      "document": "docs/BED-YESWOOD-Y17B02.md",
+      "constructor": "src/render/bed-yeswood-y83b33-model.js",
+      "author": "scripts/blender-model-y83b33-bedding.py",
+      "files": [
+        {
+          "path": "assets/models/duvet-y17b02/v1/duvet-y17b02-v1.blend",
+          "role": "published-source",
+          "sha256": "4695563338003d79592d62885e303fa9f90716fb8f7341da5f41f3b90e692e4a",
+          "bytes": 368345
+        },
+        {
+          "path": "assets/models/duvet-y17b02/v1/duvet-y17b02-v1.glb",
+          "role": "published-source",
+          "sha256": "6bd20b8b38c4bcbeedc158de8b050193889b586c48c210e954e8a1b5581ac92b",
+          "bytes": 378468
+        }
+      ],
+      "dossier": "assets/models/duvet-y17b02/asset.json",
+      "references": []
     },
     {
       "profile": "mattress-y83b33",
@@ -6333,6 +6460,49 @@
     },
     {
       "format": 1,
+      "id": "bed-yeswood-y17b02",
+      "name": "源氏木语 Y17B02 半夏樱桃木箱体床 · 1.2米",
+      "types": [
+        "bed_yeswood_y17b02"
+      ],
+      "route": "blender",
+      "document": "docs/BED-YESWOOD-Y17B02.md",
+      "sourceLinks": [
+        "https://yeswoodhome.com/products/yws-600871898009",
+        "https://item.taobao.com/item.htm?id=600871898009"
+      ],
+      "references": [
+        {
+          "path": "references/closed.jpg",
+          "kind": "product-page",
+          "url": "https://img.alicdn.com/imgextra/i2/1105025069/O1CN01ZsbB5M1nJekv76U9o_!!1105025069.jpg",
+          "sha256": "b3a1c3c733422e53d47551054164d5cc737a7053a6f2ba6b97091747f5a85056",
+          "bytes": 81386
+        },
+        {
+          "path": "references/storage.jpg",
+          "kind": "product-page",
+          "url": "https://img.alicdn.com/imgextra/i2/1105025069/O1CN01i5dKaO1nJekuGTwL2_!!1105025069.jpg",
+          "sha256": "c2694355ca45e7b79e79d096300ad2943e0b38885f408c00ee7ec4e9e68c4a9b",
+          "bytes": 66780
+        },
+        {
+          "path": "references/upgrade-dimensions.jpg",
+          "kind": "product-page",
+          "url": "https://img.alicdn.com/imgextra/i2/1105025069/O1CN01MeKC5I1nJeT80oMuO_!!1105025069.jpg",
+          "sha256": "7c15638da2454f6907aed5c1be29c3d906252e4b8ea9ec3f0a5db534182074d7",
+          "bytes": 70030
+        }
+      ],
+      "missingReferences": [],
+      "validation": [
+        "docs/validation/y17b02-composition-20261125/README.md"
+      ],
+      "manifest": "assets/models/bed-yeswood-y17b02/asset.json",
+      "readme": "assets/models/bed-yeswood-y17b02/README.md"
+    },
+    {
+      "format": 1,
       "id": "bed-yeswood-y83b33",
       "name": "源氏木语 Y83B33 悬浮箱体床 · 1.8米（原木色）",
       "types": [
@@ -7783,6 +7953,24 @@
     },
     {
       "format": 1,
+      "id": "duvet-y17b02",
+      "name": "半夏搭配单人被 · 灰绿",
+      "types": [
+        "bed_duvet_y17b02"
+      ],
+      "route": "blender",
+      "document": "docs/BED-YESWOOD-Y17B02.md",
+      "sourceLinks": [],
+      "references": [],
+      "missingReferences": [],
+      "validation": [
+        "docs/validation/y17b02-composition-20261125/README.md"
+      ],
+      "manifest": "assets/models/duvet-y17b02/asset.json",
+      "readme": "assets/models/duvet-y17b02/README.md"
+    },
+    {
+      "format": 1,
       "id": "duvet-y83b33",
       "name": "Y83B33 搭配被子 · 暖白",
       "types": [
@@ -8288,6 +8476,24 @@
       "validation": [],
       "manifest": "assets/models/litter-box/asset.json",
       "readme": "assets/models/litter-box/README.md"
+    },
+    {
+      "format": 1,
+      "id": "mattress-y17b02",
+      "name": "半夏搭配床垫 · 米白 1.2米",
+      "types": [
+        "bed_mattress_y17b02"
+      ],
+      "route": "blender",
+      "document": "docs/BED-YESWOOD-Y17B02.md",
+      "sourceLinks": [],
+      "references": [],
+      "missingReferences": [],
+      "validation": [
+        "docs/validation/y17b02-composition-20261125/README.md"
+      ],
+      "manifest": "assets/models/mattress-y17b02/asset.json",
+      "readme": "assets/models/mattress-y17b02/README.md"
     },
     {
       "format": 1,
@@ -12549,6 +12755,33 @@
       "w": 1840,
       "d": 2150,
       "h": 917,
+      "module": "bed-yeswood-y83b33"
+    },
+    {
+      "category": "床",
+      "type": "bed_yeswood_y17b02",
+      "name": "源氏木语 Y17B02 半夏樱桃木箱体床 · 1.2米",
+      "w": 1260,
+      "d": 2120,
+      "h": 1000,
+      "module": "bed-yeswood-y83b33"
+    },
+    {
+      "category": "床",
+      "type": "bed_mattress_y17b02",
+      "name": "半夏搭配床垫 · 米白 1.2米",
+      "w": 1200,
+      "d": 2000,
+      "h": 160,
+      "module": "bed-yeswood-y83b33"
+    },
+    {
+      "category": "床",
+      "type": "bed_duvet_y17b02",
+      "name": "半夏搭配单人被 · 灰绿",
+      "w": 1340,
+      "d": 1590,
+      "h": 185,
       "module": "bed-yeswood-y83b33"
     },
     {

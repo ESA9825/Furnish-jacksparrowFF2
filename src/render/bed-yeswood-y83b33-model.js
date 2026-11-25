@@ -1,4 +1,4 @@
-/* Closed Y83B33 storage bed and independent fabric bedding. */
+/* Closed Yeswood storage beds and independent fabric bedding. */
 (function(root){
 'use strict';
 const products=()=>root.FurnishProducts||require('../core/product-rules.js');
@@ -11,7 +11,8 @@ function build(T,f){
  const bed=model.build(T,asset,{...f,h:P.height(f)},P.value(f,'mountHeight'));
  const surfaces=root.FurnishCabinetModel||require('./cabinet-model.js');
  if(T.Texture&&P.family(f,'yeswood-storage-bed')){
-  const wood=bed.children.filter(o=>/^(?:Oak|Rounded oak|Recessed shelf rear|Wood headboard)/.test(o.name));
+  const finished=bedAsset==='bed-yeswood-y17b02'?/^Cherry /:/^(?:Oak|Rounded oak|Recessed shelf rear|Wood headboard)/;
+  const wood=bed.children.filter(o=>finished.test(o.name));
   surfaces.applyWoodVeneer(T,wood,'white-oak-veneer',f.color||'#fff0db');
  }else if(T.LinearMipmapLinearFilter&&P.family(f,'bed-linen')){
   const cloth=root.FurnishBasicFurnitureModel||require('./basic-furniture-model.js');

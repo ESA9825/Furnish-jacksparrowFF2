@@ -149,14 +149,24 @@ if(t==='pocketdoor_double'||t==='pocketdoor_triple'){
         +ec(0,d*.13,w*(tank?.389:.459),d*(tank?.391:.371),shade(c,.91),DASH)
         +rc(-w*.07,d*.475,w*.14,d*.018,'#20272b','rx="3"');
     }
+    case 'bed_mattress_y17b02':
     case 'bed_mattress_y83b33':
       return rc(x,y,w,d,c,'rx="34"')+rc(x+18,y+18,w-36,d-36,'none','rx="26"');
     case 'bed_pillow_atour_pro4':
       return rc(x,y,w,d,c,'rx="40"');
     case 'bed_pillow_y83b33':
       return rc(x,y,w,d,c,'rx="80"')+rc(x+13,y+13,w-26,d-26,'none','rx="70"');
+    case 'bed_duvet_y17b02':
     case 'bed_duvet_y83b33':
       return rc(x,y,w,d,c,'rx="47"')+rc(x+12,y+12,w-24,d*.14,shade(c,1.05),'rx="35"')+ln(x+28,y+d*.19,x+w-28,y+d*.19,DASH);
+    case 'bed_yeswood_y17b02': {
+      const post=Math.min(.025*w,.022*d),head=2*post,side=.02*w;
+      let s=rc(x+side,y+head,w-2*side,d-head-post,shade(c,1.10));
+      for(let i=1;i<15;i++)s+=ln(x+side,y+head+i*(d-head-post)/15,x+w-side,y+head+i*(d-head-post)/15);
+      s+=rc(x+post,y+post*.4,w-2*post,head*.8,shade(c,.84),'rx="6"');
+      for(const dx of [post,w-post])for(const dz of [post,d-post])s+=ec(x+dx,y+dz,post,post,shade(c,.88));
+      return s;
+    }
     case 'bed_yeswood_y83b33': {
       const rim=w*.014,head=d*.066,foot=d*.012,step=(d-head-foot)/14;
       let s=rc(x,y,w,d,shade(c,.90),`rx="${w*.017}"`);

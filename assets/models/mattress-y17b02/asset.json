@@ -1,0 +1,16 @@
+{
+  "format": 1,
+  "id": "mattress-y17b02",
+  "name": "半夏搭配床垫 · 米白 1.2米",
+  "types": [
+    "bed_mattress_y17b02"
+  ],
+  "route": "blender",
+  "document": "docs/BED-YESWOOD-Y17B02.md",
+  "sourceLinks": [],
+  "references": [],
+  "missingReferences": [],
+  "validation": [
+    "docs/validation/y17b02-composition-20261125/README.md"
+  ]
+}

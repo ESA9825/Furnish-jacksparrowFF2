@@ -1,0 +1,16 @@
+{
+  "format": 1,
+  "id": "duvet-y17b02",
+  "name": "半夏搭配单人被 · 灰绿",
+  "types": [
+    "bed_duvet_y17b02"
+  ],
+  "route": "blender",
+  "document": "docs/BED-YESWOOD-Y17B02.md",
+  "sourceLinks": [],
+  "references": [],
+  "missingReferences": [],
+  "validation": [
+    "docs/validation/y17b02-composition-20261125/README.md"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "type": "bed_duvet_y17b02",
+  "global": "FurnishY17B02DuvetAsset",
+  "size": [
+    1340,
+    185,
+    1590
+  ],
+  "parts": [
+    "Single sage duvet shell",
+    "Folded sage top cuff"
+  ]
+}
