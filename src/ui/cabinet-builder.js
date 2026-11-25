@@ -327,6 +327,15 @@ host.querySelector('[data-component-surface]')?.addEventListener('change',e=>{tr
   }});
  }
  function upgrade(id){try{const original=getF(id),draft=FurnishCabinetBuilder.upgrade(original,{referencePrice:priceOf(original)});open(id,{draft});}catch(e){toast(e.message);}}
- function toggleScene(id,part){const f=getF(id);if(!f||(globalThis.FurnishElectricalUI?.active()?FurnishElectricalUI.physicalLocked(f):furnitureLocked(f)))return;try{const next=f.kitchen?FurnishKitchen.toggle(f,part.column,part.drawer,undefined,part.leaf,part.bay,part.lid,part.lane,part.section,part.componentId,part.sourceSection):FurnishCabinet.toggle(f,part.column,part.drawer,part.lid,part.lane,part.section,part.leaf,part.tier,part.componentId);mutate(()=>Object.assign(f,next),{sceneFirst:true});}catch(e){toast(e.message);}}
+ function toggleScene(id,part){
+  const f=getF(id);
+  if(!f||(globalThis.FurnishElectricalUI?.active()?FurnishElectricalUI.physicalLocked(f):furnitureLocked(f)))return;
+  try{
+   const next=f.kitchen
+    ?FurnishKitchen.toggle(f,part.column,part.drawer,undefined,part.leaf,part.bay,part.lid,part.lane,part.section,part.componentId,part.sourceSection)
+    :FurnishCabinet.toggle(f,part.column,part.drawer,part.lid,part.lane,part.section,part.leaf,part.tier,part.componentId);
+   mutate(()=>Object.assign(f,next),{sceneFirst:true,furnitureEdit:true});
+  }catch(e){toast(e.message);}
+ }
  root.FurnishCabinetBuilderUI={open,upgrade,toggleScene,mountShell,focusInspector,disclosures,restoreDisclosures,libraryItems,placement,componentInspector,componentTree,workspaceTools,previewDoors,plinthAppearance,bindInventory,bindComparison};
 })(typeof globalThis!=='undefined'?globalThis:this);
