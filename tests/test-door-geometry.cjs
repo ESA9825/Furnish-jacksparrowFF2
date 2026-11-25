@@ -1,13 +1,13 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const G=require('../src/core/layout-geometry.js');
 const html=fs.readFileSync(require.resolve('../index.html'),'utf8');
-const door3D=html.slice(html.indexOf('  syncIdentity.each("index.html:generator-50",DOORS,d => {'),html.indexOf('  syncIdentity.each("index.html:generator-52",SLIDES',html.indexOf('  syncIdentity.each("index.html:generator-50",DOORS,d => {')));
+const door3D=html.slice(html.indexOf('  syncIdentity.each("index.html:generator-50",DOORS,(opening,index) => {'),html.indexOf('  syncIdentity.each("index.html:generator-52",SLIDES',html.indexOf('  syncIdentity.each("index.html:generator-50",DOORS,(opening,index) => {')));
 const doorHeight=html.match(/const SWING_DOOR_HEIGHT = [^;]+;/)[0];
 const lintels=html.slice(html.indexOf('  syncIdentity.each("index.html:generator-46",[...DOORS.map(d =>'),html.indexOf('  const bayPosts='));
 const app=fs.readFileSync(require.resolve('../src/app.js'),'utf8');
 const setup=app.slice(app.indexOf('const PLANS ='),app.indexOf('const {materials:'));
-class Group {constructor(){this.children=[];this.position={set:(x,y,z)=>Object.assign(this.position,{x,y,z})};this.rotation={};}add(...v){this.children.push(...v);}}
-class Mesh extends Group {constructor(){super();this.userData={};this.scale={};}}
+class Group {constructor(){this.children=[];this.traverse=fn=>{fn(this);this.children.forEach(c=>c.traverse(fn));};this.position={set:(x,y,z)=>Object.assign(this.position,{x,y,z})};this.rotation={};}add(...v){this.children.push(...v);}}
+class Mesh extends Group {constructor(){super();this.isMesh=true;this.userData={};this.scale={};}}
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-8,`${a} != ${b}`);
 for(const horizontal of [true,false])for(const end of [false,true])for(const face of [0,1])for(const thickness of [100,240]){
  const rect=horizontal?[0,0,900,thickness]:[0,0,thickness,900];
@@ -34,7 +34,7 @@ for(const horizontal of [true,false])for(const end of [false,true])for(const fac
  // Run the actual production 3D door builder, then transform the closed leaf corners.
  const three={Group,Mesh,SphereGeometry:class{}};
  const spans=[];
- const scene=vm.createContext(Object.assign({FurnishPartIdentity:require("../src/core/part-identity.js"),syncIdentity:require("../src/core/part-identity.js")},{DOORS:[d],SLIDES:[],wallBox:(r,bottom,top)=>spans.push({bottom,top}),THREE:three,FurnishGeometry:G,M:v=>v/1000,wx:v=>v/1000,wz:v=>v/1000,top:2.8,mat:()=>{},metal:()=>{},doors:[],archUp:new Group(),box:(w,h,t,m,x,y,z)=>{const leaf=new Mesh();leaf.position.set(x,y+h/2,z);leaf.width=w;leaf.height=h;leaf.depth=t;return leaf;}}));
+ const scene=vm.createContext(Object.assign({FurnishPartIdentity:require("../src/core/part-identity.js"),syncIdentity:require("../src/core/part-identity.js")},{DOORS:[d],PLAN:{},appearanceWork:{},previousDoors:new Map(),FurnishProducts:require('../src/core/product-rules.js'),FurnishStyles:require('../src/core/style-core.js'),SLIDES:[],H:2.8,paintFor:()=>null,wallBox:(r,bottom,height,top)=>{if(top>bottom)spans.push({bottom,top:Math.min(top,height)});},THREE:three,FurnishGeometry:G,M:v=>v/1000,wx:v=>v/1000,wz:v=>v/1000,top:2.8,mat:()=>{},metal:()=>{},doors:[],archUp:new Group(),box:(w,h,t,m,x,y,z)=>{const leaf=new Mesh();leaf.position.set(x,y+h/2,z);leaf.width=w;leaf.height=h;leaf.depth=t;return leaf;}}));
  vm.runInContext(doorHeight,scene);
  for(const cut of [1,2.05,2.1,2.8]){
   scene.top=cut;scene.doors.length=0;spans.length=0;

@@ -28,9 +28,18 @@ function furniture(f,id,overrides={},bodySurface){
 function applyCabinets(work,id,overrides={},bodySurface){if(!find(id))return null;work.furniture=work.furniture.map(f=>{const next=furniture(f,id,overrides,bodySurface);return next.cabinet?.appearance||next.kitchen?.appearance?next:f;});work.style=id;return find(id);}
 function applyColors(work,id,overrides={},bodySurface){if(!find(id))return null;work.furniture=work.furniture.map(f=>furniture(f,id,overrides,bodySurface));work.style=id;return find(id);}
 const tileLayers=()=>root.FurnishLayers||require('./layers-core.js');
-function materialRules(){const r=products().styleAppearance;return {floorSamples:r.floorSample,wallPaint:validColor,floorTileSheens:r.tileSheen,wallTileMaterials:validWallTile};}
+function materialRules(){const r=products().styleAppearance;return {floorSamples:r.floorSample,wallPaint:validColor,floorTileSheens:r.tileSheen,wallTileMaterials:validWallTile,doorFinishes:validDoorFinish};}
 function validWallTile(v){return v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).length>0&&Object.keys(v).every(k=>k==='color'?validColor(v.color):k==='sheen'&&products().styleAppearance.tileSheen(v.sheen));}
-function validMaterialKey(key,id){return key==='wallPaint'?validWallKey(id):key==='wallTileMaterials'?!!tileLayers().tileFace(id):true;}
+function validDoorFinish(value){
+ const {leaves,casings}=products().styleAppearance.interiorDoorAppearance;
+ const fields={leaf:v=>typeof v==='string'&&Object.hasOwn(leaves,v),casing:v=>typeof v==='string'&&Object.hasOwn(casings,v),leafColor:validColor,casingColor:validColor};
+ return value&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).length>0&&Object.entries(value).every(([k,v])=>Object.hasOwn(fields,k)&&fields[k](v));
+}
+function validMaterialKey(key,id){
+ if(key==='wallPaint')return validWallKey(id);
+ if(key==='wallTileMaterials')return !!tileLayers().tileFace(id);
+ return key!=='doorFinishes'||id.startsWith('door:')&&id.length>5;
+}
 function validateAppearance(value){
  if(value===undefined)return;const r=products().styleAppearance,rules=materialRules();if(!value||typeof value!=='object'||Array.isArray(value)||value.version!==1||Object.keys(value).some(k=>!['version',...Object.keys(rules),...r.surfaces.flatMap(k=>[k+'Color',k+'Overrides'])].includes(k)))throw Error('风格表面配色无效');
  for(const k of r.surfaces){if(value[k+'Color']!==undefined&&!validColor(value[k+'Color']))throw Error('风格颜色须为六位HEX');const rows=value[k+'Overrides'];if(rows!==undefined&&(!rows||typeof rows!=='object'||Array.isArray(rows)||Object.keys(rows).length>1000||Object.entries(rows).some(([id,c])=>!id||id.length>500||!validColor(c))))throw Error('局部表面配色无效');}
@@ -42,6 +51,34 @@ function surfaceColor(work,kind,id){const a=work?.styleAppearance;const override
 function frameKey(plan,index){return plan.winRefs?.[index]??'window:'+index;}
 function editSurface(work,kind,id,value){if(!products().styleAppearance.surfaces.includes(kind)||typeof id!=='string'||!id||value!==undefined&&!validColor(value))throw Error('表面配色无效');validateAppearance(work.styleAppearance);work.styleAppearance??={version:1};const a=work.styleAppearance,key=kind+'Overrides';if(value===undefined){if(a[key]){delete a[key][id];if(!Object.keys(a[key]).length)delete a[key];}}else Object.defineProperty(a[key]??={},id,{value,enumerable:true,configurable:true,writable:true});if(Object.keys(a).length===1)delete work.styleAppearance;}
 const materialValue=(work,key,id)=>{const rows=work.styleAppearance?.[key];return rows&&Object.hasOwn(rows,id)?rows[id]:undefined;};
+const doorKey=(plan,index)=>(root.FurnishDraft||require('./floorplan-core.js')).doorKey(plan,'door',index);
+function doorIndex(plan,id){return (plan.doors||[]).findIndex((d,index)=>!d.entry&&doorKey(plan,index)===id);}
+function doorFinish(work,id){
+ const {leaves,casings}=products().styleAppearance.interiorDoorAppearance;
+ const saved=materialValue(work,'doorFinishes',id),leaf=leaves[saved?.leaf??'original'];
+ const casing=casings[saved?.casing&&saved.casing!=='auto'?saved.casing:leaf.casing];
+ return {leaf,casing,leafColor:saved?.leafColor??leaf.color,casingColor:saved?.casingColor??saved?.leafColor??leaf.color};
+}
+function doorFinishValue(value){
+ const fields=Object.entries(value||{}).filter(([key,v])=>v!==undefined&&!(key==='leaf'&&v==='original')&&!(key==='casing'&&v==='auto'));
+ return fields.length?Object.fromEntries(fields):undefined;
+}
+function editDoorFinish(work,id,value){
+ editMaterial(work,'doorFinishes',id,doorFinishValue(value));
+}
+function remapBuiltinDoors(work,before,after){
+ if(!work.styleAppearance?.doorFinishes)return;
+ const mapped={};
+ (after.doorRefs||[]).forEach((ref,index)=>{
+  const match=/^preset_door(\d+)$/.exec(ref);
+  if(!match)return;
+  const previous=Number(match[1]);
+  const finish=materialValue(work,'doorFinishes',doorKey(before,previous));
+  if(finish&&before.doors[previous]&&!after.doors[index].entry)mapped[doorKey(after,index)]=finish;
+ });
+ if(Object.keys(mapped).length)work.styleAppearance.doorFinishes=mapped;
+ else {delete work.styleAppearance.doorFinishes;if(Object.keys(work.styleAppearance).length===1)delete work.styleAppearance;}
+}
 const wallTileMaterial=(work,face)=>materialValue(work,'wallTileMaterials',tileLayers().faceKey(face));
 function floorTileSheen(work,id,kind){
  const rules=products().styleAppearance,sample=materialValue(work,'floorSamples',id);
@@ -104,6 +141,6 @@ function apply(work, rooms, id, custom = false, overrides={}, bodySurface) {
  const style=find(id);if(!style)return null;applySelected(work,rooms,id,{scopes:products().styleAppearance.scopes,palette:overrides,bodySurface});
  applyFloorMaterials(work,rooms,id,custom);return style;
 }
-const api={find,apply,color,furniture,applyColors,applyCabinets,palette,category,validateAppearance,surfaceColor,frameKey,editSurface,materialValue,editMaterial,floorTileSheen,wallTileMaterial,wallKey,remapWallPaint,remapWallTiles,options,applySelected,applyFloorMaterials,preview};
+const api={find,apply,color,furniture,applyColors,applyCabinets,palette,category,validateAppearance,surfaceColor,frameKey,editSurface,materialValue,editMaterial,doorKey,doorIndex,doorFinish,doorFinishValue,editDoorFinish,remapBuiltinDoors,floorTileSheen,wallTileMaterial,wallKey,remapWallPaint,remapWallTiles,options,applySelected,applyFloorMaterials,preview};
 if(inNode)module.exports=api;else root.FurnishStyles=api;
 })(typeof globalThis!=='undefined'?globalThis:this);

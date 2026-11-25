@@ -6,7 +6,7 @@ const Z=()=>root.FurnishZoneGeometry||require('./zone-geometry.js');
 const tiled=mat=>['tile800','tile600','antislip','marble'].includes(mat);
 const doorJointVersion=108, thresholdColor='#aa9b87';
 const doorJointLabels=Object.freeze({continuous:'通铺',threshold:'过门石',strip:'压边条'});
-const doorKey=(plan,kind,index)=>kind+':'+(plan[kind==='door'?'doorRefs':'slideRefs']?.[index]||'#'+index);
+const doorKey=(plan,kind,index)=>(root.FurnishDraft||require('./floorplan-core.js')).doorKey(plan,kind,index);
 function validate(data){
  if(data===undefined)return;
  if(!data||data.version!==1||Object.keys(data).some(k=>!['version','areas','doorJoints'].includes(k))||!data.areas||Array.isArray(data.areas)||typeof data.areas!=='object'||Object.keys(data.areas).length>500)throw Error('地面完成面数据无效');

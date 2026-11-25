@@ -312,7 +312,7 @@ main.drawer-panel #fab-editor{visibility:hidden}
 #material-panel .material-modes .btn[aria-pressed=true]{background:var(--paper);font-weight:650}
 #material-panel button[hidden]{display:none}
 .material-current{margin-top:10px;padding:7px 0;border-block:1px solid var(--line)}
-[data-material-current-cards]{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+[data-material-current-cards]{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
 .material-current-cell{min-width:0}
 .material-current-heading{display:flex;align-items:center;justify-content:space-between;gap:3px;margin-bottom:3px;font-size:12px;font-weight:650}
 #material-panel .material-current-heading .btn{padding:1px 5px;min-height:22px;font-size:11px;color:var(--muted)}
@@ -323,6 +323,10 @@ main.drawer-panel #fab-editor{visibility:hidden}
 .material-current-sample>span:last-child{display:grid;gap:2px;min-width:0}
 .material-current-sample b,.material-current-sample small{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:11px}
 .material-current-sample small{color:var(--muted)}
+.material-door-options{flex-wrap:wrap}
+.material-door-options label{display:flex;align-items:center;gap:5px;white-space:nowrap}
+.material-door-options select{max-width:180px;min-height:29px;padding:3px 5px;border:1px solid var(--line);border-radius:7px;color:var(--ink);background:var(--card);font:inherit}
+.material-door-options input[type=color]{width:35px;height:28px;padding:2px;border:1px solid var(--line);border-radius:6px;background:var(--card);cursor:pointer}
 .material-current-search{display:flex;justify-content:space-between;gap:8px;margin:8px 0 5px}
 .material-current-search input{box-sizing:border-box;width:min(320px,100%);padding:4px 7px}
 [data-material-current-results]{display:grid;grid-template-columns:repeat(auto-fill,minmax(166px,1fr));gap:5px;max-height:115px;overflow:auto}

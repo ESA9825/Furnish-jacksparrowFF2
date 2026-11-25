@@ -346,6 +346,14 @@
         <label data-material-tile-filter hidden><span>范围</span><select aria-label="瓷砖范围" data-material-tile-kind><option value="all">墙砖和地砖</option><option value="floor">地砖</option><option value="wall">墙砖</option></select></label><span data-material-tile-count role="status"></span>
         <label data-material-custom hidden>自定义颜色 <input type="color" aria-label="表面颜色"></label>
       </div>
+      <div class="material-options material-door-options" data-material-door hidden>
+        <label><span data-en="Door leaf">门扇样式</span> <select data-door-leaf></select></label>
+        <label><span data-en="Leaf color">门扇颜色</span> <input type="color" data-door-leaf-color></label>
+        <label><span data-en="Casing">包套样式</span> <select data-door-casing></select></label>
+        <label><span data-en="Casing color">包套颜色</span> <input type="color" data-door-casing-color></label>
+        <button type="button" class="btn" data-door-preview aria-pressed="false">开门查看</button>
+        <button type="button" class="btn" data-door-reset data-en="Restore original appearance">恢复原有外观</button>
+      </div>
       <div data-material-samples></div>
       <div class="material-options" data-material-sheen hidden><span>砖面</span><div data-material-sheen-options role="group" aria-label="地砖表面"></div></div>
       <div class="material-options" data-material-grout hidden><span>美缝</span><button type="button" class="btn" data-material-grout-auto>跟随砖色</button><input type="color" aria-label="美缝颜色" data-material-grout-color value="#d0c9bd"><button type="button" class="btn" data-material-grout-use>使用此颜色</button><span data-material-grout-state role="status"></span></div>
@@ -646,6 +654,7 @@
 <script src="src/render/side-table-model.js"></script>
 <script src="src/render/appliance-model.js"></script>
 <script src="src/render/sliding-opening-model.js"></script>
+<script src="src/render/interior-door-model.js"></script>
 <script src="src/render/aquarium-model.js"></script>
 <script src="src/core/dishwasher-fold-core.js"></script>
 <script src="src/render/dishwasher-asset-model.js"></script>
@@ -923,6 +932,7 @@ let observationTarget=null,observationSelection='',observationRevision='',observ
 let sigArch = '', sigFurn = '', sigLabels = '', grow = 1, furnGrow = 1;
 let sigNorth='';
 const doors = [], slidingDoors = [], keys = {};
+let swingPlan;
 const SWING_DOOR_HEIGHT = 2.1; // Shared by the door leaf and its opening lintel (metres).
 // 按需渲染：只有镜头 / 场景 / 动画有变化时才渲染一帧，静止时不占用 GPU（笔记本、平板省电不发热）
 let dirty = true;
@@ -1627,7 +1637,7 @@ const syncIdentity=FurnishPartIdentity;
 }
 
 /* ======================= 建筑 ======================= */
-function clearGroup(g){ g.traverse(o => { for(const m of (Array.isArray(o.material)?o.material:[o.material]))if(m?.userData.styleSurfaceOwned){m.map?.dispose();m.dispose();} if(o.isLight)o.shadow?.dispose(); if(o.isCSS2DObject)o.element.remove(); if (o.geometry) o.geometry.dispose(); if(o.userData.artGlassOwnMaterial){for(const m of new Set(Array.isArray(o.material)?o.material:[o.material])){m.normalMap?.dispose();m.roughnessMap?.dispose();m.dispose();}} if(o.userData.tvScreenOwnMaterial)o.material.dispose(); if((o.userData.wallTilingOwnMaterial||o.userData.floorFinishOwnMaterial)&&!o.material.userData.styleSurfaceOwned){if(!o.material.userData.floorSample)o.material.map?.dispose();o.material.dispose();} if(o.userData.wallFinishOwnMaterial||o.userData.cabinetOwnMaterial||o.userData.ceilingOwnMaterial||o.userData.beamDimension)o.material.dispose(); }); g.clear(); }
+function clearGroup(g){ g.traverse(o => { for(const m of (Array.isArray(o.material)?o.material:[o.material]))if(m?.userData.styleSurfaceOwned){m.map?.dispose();m.dispose();} if(o.isLight)o.shadow?.dispose(); if(o.isCSS2DObject)o.element.remove(); if (o.geometry) o.geometry.dispose(); if(o.userData.artGlassOwnMaterial){for(const m of new Set(Array.isArray(o.material)?o.material:[o.material])){m.map?.dispose();m.normalMap?.dispose();m.roughnessMap?.dispose();m.dispose();}} if(o.userData.tvScreenOwnMaterial)o.material.dispose(); if((o.userData.wallTilingOwnMaterial||o.userData.floorFinishOwnMaterial)&&!o.material.userData.styleSurfaceOwned){if(!o.material.userData.floorSample)o.material.map?.dispose();o.material.dispose();} if(o.userData.wallFinishOwnMaterial||o.userData.cabinetOwnMaterial||o.userData.ceilingOwnMaterial||o.userData.beamDimension)o.material.dispose(); }); g.clear(); }
 function addSolarOccluder(geometry,x,y,z){
   const {index,attributes:{position}}=geometry;
   for(let i=0;i<(index?.count??position.count);i++){
@@ -1702,6 +1712,8 @@ const syncIdentity=FurnishPartIdentity;
 
   pauseCeilingWash();ceilingDisplay.clear();observation.clear();
   interiorDaylight?.reset();
+  const previousDoors=swingPlan===DOORS?new Map(doors.map(d=>[d.key,d.open])):new Map();
+  swingPlan=DOORS;
   clearGroup(archFloor); clearGroup(archUp); clearGroup(solarEnvelope); lampG.clear(); doors.length = 0; slidingDoors.length = 0; colliders = [];
   solarVertices.length=0;
   const top = opt.cut===2.8?H:Math.min(opt.cut,H);
@@ -1837,20 +1849,39 @@ const syncIdentity=FurnishPartIdentity;
       mu.position.set(cx + (hz ? t : 0), sill + gh/2, cz + (hz ? 0 : t)); mu.castShadow = true;mu.userData.bayWindowIndex=windowIndex; archUp.add(mu); }
     syncIdentity.each("index.html:generator-49",[sill + .02, gTop - .02],y => { const tr = syncIdentity.produce("index:site-231",()=>new THREE.Mesh(new THREE.BoxGeometry(hz ? L : .06, .04, hz ? .06 : L), windowFrameMat)); tr.position.set(cx, y, cz);tr.userData.bayWindowIndex=windowIndex; archUp.add(tr); });
   },(item,slot)=>item.id||"plan-slot:"+slot);
-  syncIdentity.each("index.html:generator-50",DOORS,d => {
-    const control={open:true};
-    syncIdentity.each("index.html:generator-51",FurnishGeometry.doorLeaves(d),d=>{
-    const pivot = new THREE.Group(), L = M(d.len), dh = Math.min(SWING_DOOR_HEIGHT, top);
-    pivot.position.set(wx(d.h[0]), 0, wz(d.h[1]));
-    const leafOffset = M(FurnishGeometry.doorLeafOffset(d));
-    const leaf = syncIdentity.produce("index.html:generator-call-21",()=>box(L, dh, .04, mat(d.entry ? '#6b4f3a' : '#efe6d8', {roughness:.5}), L/2, 0, leafOffset));leaf.userData.furnishPartSource="index:site-232";
-    const knob = syncIdentity.produce("index:site-233",()=>new THREE.Mesh(new THREE.SphereGeometry(.03, 12, 8), metal())); knob.position.set(L - .07, Math.min(1, dh - .05), leafOffset); knob.scale.z = 2.2;
-    pivot.add(leaf, knob);
-    const ang = v => Math.atan2(-v[1], v[0]), door = {pivot, length:L, a0:ang(d.c), a1:ang(d.o),get open(){return control.open;},set open(value){control.open=value;}};
-    if (door.a1 - door.a0 > Math.PI) door.a1 -= Math.PI*2; if (door.a0 - door.a1 > Math.PI) door.a1 += Math.PI*2;
-    door.a1=door.a0+(door.a1-door.a0)*FurnishGeometry.doorHingeAngle(d)/90;
-    door.cur = door.a1; pivot.rotation.y = door.cur; leaf.userData.door = knob.userData.door = door;
-    doors.push(door); archUp.add(pivot);
+  syncIdentity.each("index.html:generator-50",DOORS,(opening,index) => {
+    const key=FurnishStyles.doorKey(PLAN,index),control={open:previousDoors.get(key)??true};
+    const finish=!opening.entry?FurnishStyles.doorFinish(appearanceWork,key):null;
+    const original=FurnishProducts.styleAppearance.interiorDoorAppearance.leaves.original;
+    function tag(o,prefix,door){
+      if(!o.isMesh)return;
+      if(door)o.userData.door=door;
+      if(!finish)return;
+      o.userData.interiorDoorKey=key;
+      if(o.userData.interiorDoorPart)o.userData.furnishStablePart=key+'/'+prefix+'/'+o.userData.interiorDoorPart;
+    }
+    if(finish?.casing.profile){
+      const casing=FurnishInteriorDoorModel.buildCasing(THREE,opening,{plan:finishPlan,height:SWING_DOOR_HEIGHT*1000,top:top*1000,finish,wx,wz,box,mat});
+      casing.traverse(o=>tag(o,'casing'));archUp.add(casing);
+    }
+    syncIdentity.each("index.html:generator-51",FurnishGeometry.doorLeaves(opening),(d,leafIndex)=>{
+      const pivot=new THREE.Group(),L=M(d.len),dh=Math.min(SWING_DOOR_HEIGHT,top),offset=FurnishGeometry.doorLeafOffset(d);
+      pivot.position.set(wx(d.h[0]),0,wz(d.h[1]));
+      if(finish&&finish.leaf!==original){
+        pivot.add(FurnishInteriorDoorModel.buildLeaf(THREE,{length:d.len,height:dh*1000,offset,finish,box,rbox,mat}));
+      }else{
+        const leafOffset=M(offset);
+        const leaf=syncIdentity.produce("index.html:generator-call-21",()=>box(L,dh,.04,mat(finish?.leafColor??'#6b4f3a',{roughness:.5}),L/2,0,leafOffset));leaf.userData.furnishPartSource="index:site-232";
+        const knob=syncIdentity.produce("index:site-233",()=>new THREE.Mesh(new THREE.SphereGeometry(.03,12,8),metal()));knob.position.set(L-.07,Math.min(1,dh-.05),leafOffset);knob.scale.z=2.2;
+        pivot.add(leaf,knob);
+      }
+      const ang=v=>Math.atan2(-v[1],v[0]),door={key,pivot,length:L,a0:ang(d.c),a1:ang(d.o),get open(){return control.open;},set open(value){control.open=value;}};
+      if(door.a1-door.a0>Math.PI)door.a1-=Math.PI*2;
+      if(door.a0-door.a1>Math.PI)door.a1+=Math.PI*2;
+      door.a1=door.a0+(door.a1-door.a0)*FurnishGeometry.doorHingeAngle(d)/90;
+      door.cur=pivot.rotation.y=door.open?door.a1:door.a0;
+      pivot.traverse(o=>tag(o,'leaf-'+(leafIndex+1),door));
+      doors.push(door);archUp.add(pivot);
     },(_,leaf)=>leaf===0?"hinge-leaf":"opposite-leaf");
   },(item,slot)=>item.id||"plan-slot:"+slot);
   syncIdentity.each("index.html:generator-52",SLIDES,({rect:[x0,y0,x1,y1],v,panels,floorTrack,stackSide})=>{
@@ -2070,6 +2101,13 @@ function sync(force){
     interiorDaylight?.begin(opt.cut===2.8?floorScenePlan:null,archFloor,archUp,furnG,furnitureWork.furniture);
   }
   if (force || l !== sigLabels){ sigLabels = l; buildLabels(); }
+  const doorPose=globalThis.FurnishMaterialUI?.doorPose?.();
+  for(const d of doors){
+    const next=d.key===doorPose?.id?doorPose.open:undefined;
+    if(d.previewOpen===next)continue;
+    d.previewOpen=next;
+    if(next!==undefined){d.cur=d.pivot.rotation.y=next?d.a1:d.a0;selKey=null;invalidate(true);}
+  }
   syncReplacementFootprint(furnitureWork);
   applyObservationLayers();
   if(materialMode&&(geometryChanged||displayChanged))globalThis.FurnishMaterialUI.refreshCurrent();
@@ -2433,6 +2471,7 @@ function pickMaterial(e){
   const hit=measurementHit(e);
   if(!hit)return null;
   const o=hit.object,d=o.userData;
+  if(d.interiorDoorKey)return {kind:'door',id:d.interiorDoorKey};
   if(d.room&&!FurnishLayers.locked(state,'floor:'+d.room))return {kind:d.floor?'floor':'bay',id:d.room};
   if(Number.isInteger(d.bayWindowIndex)&&!o.material?.transparent){
     return {kind:'frame',id:FurnishStyles.frameKey(PLAN,d.bayWindowIndex)};
@@ -2495,7 +2534,9 @@ function materialIndex(){
   archUp.traverse(mesh=>{
     if(!shown(mesh))return;
     const d=mesh.userData,m=observation.material(mesh);
-    if(d.wallTiling&&!d.wallTiling.bandJoint){
+    if(d.interiorDoorKey&&!layers.locked(state,d.interiorDoorKey)){
+      add({kind:'door',id:d.interiorDoorKey},mesh,m);
+    }else if(d.wallTiling&&!d.wallTiling.bandJoint){
       const face=FurnishWallTiling.binding(d.wallTiling),id=layers.faceKey(face);
       if(!layers.locked(state,id))add({kind:'wallTile',id,face},mesh,m,face.roomId,tiles.get(id));
     }else if(d.paintFaces&&!layers.locked(state,'wallPaint:'+d.paintFaces.id)){
@@ -2537,6 +2578,10 @@ function locateMaterial(target){
   if(dir.lengthSq()<.01)dir.set(0,0,1);
   const f=getF(target.id),side=target.face?.side??target.side;
   if(f){const a=(f.rot||0)*Math.PI/180;dir.set(-Math.sin(a),.22,Math.cos(a));}
+  else if(target.kind==='door'){
+    const door=DOORS[FurnishStyles.doorIndex(PLAN,target.id)];
+    if(door){const [x,z]=door._base?.o??door.o;dir.set(-x+z*.14,.12,-z-x*.14);}
+  }
   else if(entry.normal!==undefined)dir.set(entry.normal===0?side:0,.2,entry.normal===1?side:0);
   else dir.y=1.15;
   dir.normalize();
@@ -2619,7 +2664,7 @@ function updateSel(){
     if(materialTarget){
       const target=materialTarget,bounds=new THREE.Box3();
       const furniture=furnG.children.find(o=>o.userData.fid===target.id);
-      const group=target.kind==='floor'?archFloor:['bay','frame','wall','wallTile'].includes(target.kind)?archUp:furniture;
+      const group=target.kind==='floor'?archFloor:['bay','frame','wall','wallTile','door'].includes(target.kind)?archUp:furniture;
       group?.updateMatrixWorld(true);
       group?.traverse(o=>{
         if(!o.isMesh||!sceneObjectShown(o))return;
@@ -2630,6 +2675,7 @@ function updateSel(){
         if(target.kind==='board'&&(p?.boxId!==target.boxId||target.componentId&&p.componentId!==target.componentId))return;
         if(target.kind==='bay'&&d.room!==target.id)return;
         if(target.kind==='frame'&&(!Number.isInteger(d.bayWindowIndex)||FurnishStyles.frameKey(PLAN,d.bayWindowIndex)!==target.id||o.material?.transparent))return;
+        if(target.kind==='door'&&d.interiorDoorKey!==target.id)return;
         if(target.kind==='legacyFront'&&(d.cabinetPart?.column!==target.column||!d.cabinetDoorSize&&d.cabinetDrawerBoard!=='front'))return;
         bounds.expandByObject(o);
       });
@@ -3028,7 +3074,7 @@ function loop(){
   else if (opt.mode === 'orbit') orbit.update();                 // 镜头有变化时会触发 change → invalidate
   else if (walkCtl.isLocked || touchWalk){ stepWalk(dt); dirty = true; }
   doors.forEach(d => {
-    const tg = d.open ? d.a1 : d.a0; if (d.cur === tg) return;
+    const tg = swingTarget(d); if (d.cur === tg) return;
     d.cur = Math.abs(tg - d.cur) < 1e-3 ? tg : d.cur + (tg - d.cur) * Math.min(1, dt*6);
     d.pivot.rotation.y = d.cur; invalidate(true);
   });
@@ -3066,7 +3112,7 @@ function loop(){
 
 function syncCeilingModeButtons(){document.querySelectorAll('[data-ceiling-display]').forEach(b=>{const on=b.dataset.ceilingDisplay===ui.ceilingMode;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));});}
 function blenderScene(options={}, {observationCeilings=false,includeLighting=false}={}){
- if(globalThis.FurnishCatalog?.active()||globalThis.FurnishMaterialUI?.dirty()||globalThis.FurnishMaterialUI?.lighting())throw Error('请先应用或关闭临时预览，再导出三维场景。');
+ if(globalThis.FurnishCatalog?.active()||globalThis.FurnishMaterialUI?.dirty()||globalThis.FurnishMaterialUI?.lighting()||globalThis.FurnishMaterialUI?.doorPose())throw Error('请先应用或关闭临时预览，再导出三维场景。');
  if(!inited||!active||anim||fly)throw Error(tr('请等待三维视角稳定后重试。','Wait for the 3D camera to settle and retry.'));
  cancelElevationGesture();sync();
  if(furnitureRenderErrors.size)throw Error(tr('请先修复三维模型错误再导出。','Resolve 3D model errors before exporting.'));
@@ -3086,7 +3132,7 @@ function blenderScene(options={}, {observationCeilings=false,includeLighting=fal
   return includeLighting?encoded.then(data=>({...data,lighting})):encoded;
  }finally{display?.clear();applyObservationLayers();}
 }
-function blenderSyncSignature(){if(globalThis.FurnishCatalog?.active()||globalThis.FurnishMaterialUI?.dirty()||globalThis.FurnishMaterialUI?.lighting())return null;if(!inited||!active||anim||fly||selectionTransform?.dragging())return null;sync();return JSON.stringify([PLAN.id,sigArch,sigFurn,state.objectLayers?.assignments,state.objectLayers?.layers?.map(l=>[l.id,l.visible]),opt.furn,opt.lamps,sceneSun().night&&(opt.nightLights??opt.lamps)]);}
+function blenderSyncSignature(){if(globalThis.FurnishCatalog?.active()||globalThis.FurnishMaterialUI?.dirty()||globalThis.FurnishMaterialUI?.lighting()||globalThis.FurnishMaterialUI?.doorPose())return null;if(!inited||!active||anim||fly||selectionTransform?.dragging())return null;sync();return JSON.stringify([PLAN.id,sigArch,sigFurn,state.objectLayers?.assignments,state.objectLayers?.layers?.map(l=>[l.id,l.visible]),opt.furn,opt.lamps,sceneSun().night&&(opt.nightLights??opt.lamps)]);}
 let highQualityState='',highQualityRevision=0;
 function highQualitySignature(){
  if(opt.sunPreview)return null;
@@ -3095,7 +3141,8 @@ function highQualitySignature(){
  camera.updateWorldMatrix(true,false);
  return JSON.stringify([FurnishLighting.VERSION,highQualityRevision,PLAN.id,FurnishDesign.activeDesign(store,PLAN.id)?.id,opt.night,opt.hour,opt.solar,sigNorth,opt.cut,ui.ceilingMode,camera.matrixWorld.elements,camera.projectionMatrix.elements]);
 }
-function productionMotionPending(){return doors.some(d=>d.cur!==(d.open?d.a1:d.a0))||[...slidingDoors,...furnG.children.map(g=>g.userData.slidingDoor).filter(Boolean)].some(d=>d.cur!==(d.open?1:0))||furnG.children.map(g=>g.userData.curtain).filter(Boolean).some(d=>d.cur!==(d.target??(d.open?1:0)));}
+const swingTarget=d=>(d.previewOpen??d.open)?d.a1:d.a0;
+function productionMotionPending(){return doors.some(d=>d.cur!==swingTarget(d))||[...slidingDoors,...furnG.children.map(g=>g.userData.slidingDoor).filter(Boolean)].some(d=>d.cur!==(d.open?1:0))||furnG.children.map(g=>g.userData.curtain).filter(Boolean).some(d=>d.cur!==(d.target??(d.open?1:0)));}
 function progressiveState(){
  const signature=highQualitySignature();if(!signature||productionMotionPending())return null;
  const parts=JSON.parse(signature),cameraState={matrixWorld:camera.matrixWorld.elements.slice(),projectionMatrix:camera.projectionMatrix.elements.slice(),near:camera.near,far:camera.far,aspect:camera.aspect};

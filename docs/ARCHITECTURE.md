@@ -785,3 +785,4 @@ FurnitureSolids沿完整生产键为活家具弱引用保留当前局部／世�
 ## 2026-11-19：主灯与夜灯分控
 
 design-core 的 sceneSettings 保留旧方案的缺省夜灯值，patchSceneSettings 供显示菜单及 MCP 共用，沿原 mutate 链保存。downlight-model 同步地脚灯的直接光、可见性与发光面，独立于常规照明；渲染签名读取实际夜灯状态。显式字段及讲解取景沿 v101 项目、仓库与缓存。
+2026-11-25（建筑平开门材质）。product-rules 定义门扇与套线选项，style-core 按共用门洞键校验与映射可选 doorFinishes。interior-door-model 复用生产门轴／端态并生成静态套线、随动门板与五金，主三维选材和 GLB 读取同一批部件。项目、工作区与恢复缓存沿既有入口支持 v110。见 [室内门扇与包套](MATERIAL-WORKSPACE.md#室内门扇与包套)。

@@ -704,7 +704,23 @@ const tileSheens=Object.freeze([
 ]);
 const tileSheen=id=>tileSheens.find(sheen=>sheen.id===id);
 const supportsTileSheen=(kind,sample)=>sample?sample==='interior_tiles':(root.FurnishFloorFinish||require('./floor-finish-core.js')).tiled(kind);
-const styleAppearance=Object.freeze({formatVersion:97,materialFormatVersion:105,tileSheenFormatVersion:106,wallTileMaterialFormatVersion:107,floorSamples,floorSample,tileSheens,tileSheen,supportsTileSheen,scopes:['cabinet','curtains','furniture','frames','bays','floors'],surfaces:['floor','bay','frame'],palette:['front','body','soft','wood','textile','sheer','pop','frame','bay','floor']});
+const interiorDoorLeaves=Object.freeze({
+ original:{name:'原有门扇',en:'Original',color:'#efe6d8',casing:'none'},
+ flush:{name:'平板木门',en:'Flush wood door',color:'#e7ded1',casing:'flat-double'},
+ panel:{name:'框板木门',en:'Recessed-panel wood door',color:'#e7ded1',casing:'flat-double',shape:'panel'},
+ frosted:{name:'窄框磨砂玻璃门',en:'Slim-frame frosted glass',color:'#343638',casing:'narrow-double',glass:'mist'},
+ reeded:{name:'窄框长虹玻璃门',en:'Slim-frame fluted glass',color:'#343638',casing:'narrow-double',glass:'reeded'}
+});
+const interiorDoorCasings=Object.freeze({
+ auto:{name:'随门扇样式',en:'Match door style'},
+ none:{name:'无遮边套线',en:'No casing'},
+ 'flat-double':{name:'平板双包套',en:'Flat double-sided casing',profile:[[54,9]]},
+ 'stepped-double':{name:'阶梯双包套',en:'Stepped double-sided casing',profile:[[58,8],[27,5]]},
+ 'narrow-double':{name:'窄边双包套',en:'Slim double-sided casing',profile:[[26,6]]},
+ 'narrow-single':{name:'窄边单包套（原开启对侧）',en:'Slim single-sided casing (opposite original swing)',profile:[[26,6]],single:true}
+});
+const interiorDoorAppearance=Object.freeze({formatVersion:110,leaves:interiorDoorLeaves,casings:interiorDoorCasings});
+const styleAppearance=Object.freeze({formatVersion:97,materialFormatVersion:105,tileSheenFormatVersion:106,wallTileMaterialFormatVersion:107,interiorDoorAppearance,floorSamples,floorSample,tileSheens,tileSheen,supportsTileSheen,scopes:['cabinet','curtains','furniture','frames','bays','floors'],surfaces:['floor','bay','frame'],palette:['front','body','soft','wood','textile','sheer','pop','frame','bay','floor']});
 function styleRole(f){
  if(!f||f.obj)return null;const r=definition(f);if(!r)return null;
  if(r.family==='window-covering')return r.covering?.kind==='sheer'?'sheer':'textile';

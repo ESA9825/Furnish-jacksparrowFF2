@@ -6,6 +6,7 @@
   const point = p => Array.isArray(p) && p.length === 2 && p.every(v => finite(v) && v >= 0 && v <= 4096);
   const clone = v => JSON.parse(JSON.stringify(v));
   const doorHingeRules={min:1,max:180,default:90};
+  const doorKey=(plan,kind,index)=>kind+':'+(plan[kind==='door'?'doorRefs':'slideRefs']?.[index]||'#'+index);
   function validateDoorHinges(d){
     if(d.hingeAngles===undefined)return;const n=d.doorType==='double'?2:1,r=doorHingeRules;
     if(d.kind!==undefined&&d.kind!=='door'||!Array.isArray(d.hingeAngles)||d.hingeAngles.length!==n||Array.from(d.hingeAngles).some(v=>!finite(v)||v<r.min||v>r.max))fail('门扇最大开启角度须逐扇设置，范围为1–180°');
@@ -587,6 +588,6 @@
       if(openings(before)!==openings(after))fail('Bearing wall openings are locked');
     }
   }
-  root.FurnishDraft={doorHingeRules,validateDoorHinges,build,validate,upgrade,minWallLength,wallCorners,snapWall,fitZonesToWalls,beamDefaults,editCeilingBeam,serviceDiameter,editService,beamVertical,editBeam,splitZone,removeZoneSplit,applyZoneSplits,addZone,editZone,editZoneBoundary,insertZoneVertex,deleteZoneVertex,splitRegion,mergeRegions,adjacentRegions,removeZone,setRegionSetting,editableRegion,removeRegion,editZoneSplit,applyZones,roomsFromWalls,wallRect,batchWalls,fromPlan,editOpening,openingReferences,openingPlacement,openingDimension,assertWallEditable,assertBearingUnchanged};
+  root.FurnishDraft={doorKey,doorHingeRules,validateDoorHinges,build,validate,upgrade,minWallLength,wallCorners,snapWall,fitZonesToWalls,beamDefaults,editCeilingBeam,serviceDiameter,editService,beamVertical,editBeam,splitZone,removeZoneSplit,applyZoneSplits,addZone,editZone,editZoneBoundary,insertZoneVertex,deleteZoneVertex,splitRegion,mergeRegions,adjacentRegions,removeZone,setRegionSetting,editableRegion,removeRegion,editZoneSplit,applyZones,roomsFromWalls,wallRect,batchWalls,fromPlan,editOpening,openingReferences,openingPlacement,openingDimension,assertWallEditable,assertBearingUnchanged};
   if(typeof module!=='undefined') module.exports=root.FurnishDraft;
 })(typeof window==='undefined'?globalThis:window);

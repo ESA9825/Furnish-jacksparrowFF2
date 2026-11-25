@@ -22,9 +22,14 @@ const groutInput=panel.querySelector('[data-material-grout-color]'),groutAuto=pa
 const stylePane=panel.querySelector('[data-material-style]'),styleCards=panel.querySelector('[data-material-styles]');
 const styleDetails=panel.querySelector('[data-material-style-details]'),styleFields=panel.querySelector('[data-material-style-fields]');
 const customColor=panel.querySelector('[data-material-custom]');
+const doorRow=panel.querySelector('[data-material-door]');
+const doorLeaf=doorRow.querySelector('[data-door-leaf]'),doorCasing=doorRow.querySelector('[data-door-casing]');
+const doorLeafColor=doorRow.querySelector('[data-door-leaf-color]'),doorCasingColor=doorRow.querySelector('[data-door-casing-color]');
+const doorPreview=doorRow.querySelector('[data-door-preview]'),doorReset=doorRow.querySelector('[data-door-reset]');
+const doorStyles=P.styleAppearance.interiorDoorAppearance;
 const currentCards=panel.querySelector('[data-material-current-cards]'),currentList=panel.querySelector('[data-material-current-list]');
 const currentResults=panel.querySelector('[data-material-current-results]'),currentSearch=panel.querySelector('[data-material-current-search]');
-const materialCategories={floor:'地面',wall:'墙面',cabinet:'柜体',furniture:'家具软装'};
+const materialCategories={floor:'地面',wall:'墙面',door:'室内门',cabinet:'柜体',furniture:'家具软装'};
 const category=t=>t.kind==='wallTile'?'wall':['cabinet','front','legacyFront','board'].includes(t.kind)?'cabinet':Object.hasOwn(materialCategories,t.kind)?t.kind:null;
 const scopeFields={
  cabinet:{name:'柜体',roles:{front:'门板',body:'柜身／开放格'}},
@@ -53,6 +58,7 @@ function furnitureTarget(f,part,front,legacyPart){
  return null;
 }
 function samples(target){
+ if(target.kind==='door')return [];
  if(target.kind==='floor')return [{label:'跟随方案'},...swatches,...floorSamples];
  if(target.kind==='wallTile'||target.kind==='tiles')return [{label:'跟随方案'},...swatches];
  if(target.kind==='frame'||target.kind==='bay')return [{label:'跟随方案'},...swatches];
@@ -66,6 +72,16 @@ function caption(t){
  if(t.kind==='wallTile')return nm(state.rooms[t.face.roomId]?.name||t.face.roomId)+' · 墙砖';
  if(t.kind==='wall')return '墙面';
  if(t.kind==='frame')return '窗框';
+ if(t.kind==='door'){
+  const index=S.doorIndex(PLAN,t.id),door=DOORS[index],name=nm(door?.name||tr('房门','Interior door'));
+  if(index<0)return name;
+  const [x,y,X,Y]=door.rect,center=[(x+X)/2,(y+Y)/2],o=door._base?.o??door.o;
+  const rooms=[...new Set([-1,1].map(side=>{
+   const r=roomAt(center[0]+side*o[0]*((X-x)/2+10),center[1]+side*o[1]*((Y-y)/2+10));
+   return r&&nm(state.rooms[r.id]?.name||r.name);
+  }).filter(Boolean))];
+  return [rooms.join(' / '),name+' '+(index+1)].filter(Boolean).join(' · ');
+ }
  if(t.kind==='bay')return nm(state.rooms[t.id]?.name||t.id)+' · 飘窗台面';
  const suffix={front:' · 门板／抽面',legacyFront:' · 分区门板／抽面',board:' · 柜箱／板件',cabinet:' · 柜身',furniture:''};
  return (getF(t.id)?.name||t.id)+suffix[t.kind];
@@ -115,6 +131,7 @@ function currentSample(target){
   const color=draft.styleAppearance?.[target.kind+'Overrides']?.[target.id];
   return color?{color}:{label:'跟随方案'};
  }
+ if(target.kind==='door')return S.materialValue(draft,'doorFinishes',target.id);
  const f=draft.furniture.find(f=>f.id===target.id);
  if(!f)return null;
  const config=f.kitchen??f.cabinet;
@@ -140,7 +157,8 @@ function indexEntries(){
   const baseColor=picked.color||color,colorName=[...swatches,...paints].find(s=>s.color===baseColor)?.label;
   const mat=MATS[draft.rooms[target.id]?.mat];
   const sheen=P.styleAppearance.tileSheen(tileSheen(draft,target))?.name;
-  const material=known?.label||(target.kind==='floor'?(sheen||nm(mat?.name||'地面')):target.kind==='wallTile'?(sheen||'墙砖'):colorName||(target.kind==='wall'?'墙面漆':baseColor.toUpperCase()));
+  const door=target.kind==='door'?S.doorFinish(draft,target.id):null;
+  const material=door?tr(door.leaf.name,door.leaf.en)+' · '+tr(door.casing.name,door.casing.en):known?.label||(target.kind==='floor'?(sheen||nm(mat?.name||'地面')):target.kind==='wallTile'?(sheen||'墙砖'):colorName||(target.kind==='wall'?'墙面漆':baseColor.toUpperCase()));
   let name=caption(target);
   if(group==='wall'){
    const ordinal=(numberedWalls.get(room)||0)+1;
@@ -156,7 +174,7 @@ function indexEntries(){
    }else if(target.kind==='legacyFront')name+=' '+(target.column+1);
    if(room)name=room+' · '+name;
   }
-  return {id:key(target),target,group,name,material,chip:{color:baseColor,image,...known}};
+  return {id:key(target),target,group,name,material,chip:{color:door?.leafColor||baseColor,image,...known}};
  });
 }
 function materialCard(entry){
@@ -224,6 +242,11 @@ function selectCurrent(event){
  View3D.locateMaterial(entry.target);
 }
 function change(next,t,v){
+ if(t.kind==='door'){
+  if(locked(t)||S.doorIndex(PLAN,t.id)<0)throw Error(tr('门已锁定或移除','Door is locked or removed'));
+  S.editDoorFinish(next,t.id,v.doorFinish);
+  return;
+ }
  if(t.kind==='floor'){
   if(!state.rooms[t.id]||locked(t))throw Error('地面所在图层已锁定');
   if(Object.hasOwn(v,'label')){
@@ -319,6 +342,8 @@ function render(){
  panel.querySelector('[data-material-surface-heading]').hidden=styling;
  const subjects=batch?available:!styling&&t?[t]:[],draft=work();
  const choiceTarget=batch?{kind:'tiles'}:t,choices=subjects.length?samples(choiceTarget):[];
+ doorRow.hidden=styling||batch||t?.kind!=='door';
+ if(!doorRow.hidden)renderDoor(draft,t);
  const selectedSamples=common(subjects.map(t=>JSON.stringify(currentSample(t))));
  const picked=selectedSamples.mixed||!selectedSamples.value?null:JSON.parse(selectedSamples.value);
  const sheenTiles=subjects.filter(t=>hasSheen(draft,t,batch)),sheen=common(sheenTiles.map(t=>tileSheen(draft,t)));
@@ -367,10 +392,12 @@ function render(){
 function choose(target){
  if(!active())return;
  if(!target){
-  if(session.mode==='surface'&&session.target)panel.querySelector('[data-material-message]').textContent='请点选可编辑的地面、墙面或家具表面';
+  if(session.mode==='surface'&&session.target)panel.querySelector('[data-material-message]').textContent='请点选可编辑的地面、墙面、室内门或家具表面';
   return;
  }
  if(locked(target)){toast('表面所在图层已锁定');return;}
+ if(target.kind==='door'&&S.doorIndex(PLAN,target.id)<0)return;
+ if(session.target?.id!==target.id||session.target?.kind!==target.kind)session.doorOpen=false;
  session.mode='surface';
  session.target=target;
  const group=category(target);
@@ -381,11 +408,42 @@ function choose(target){
 function stage(target,sample){
  if(target)stageMany([target],sample);
 }
+function renderDoor(draft,t){
+ const saved=currentSample(t),appearance=S.doorFinish(draft,t.id);
+ for(const [select,options,value] of [[doorLeaf,doorStyles.leaves,saved?.leaf??'original'],[doorCasing,doorStyles.casings,saved?.casing??'auto']]){
+  const lang=tr('简体','English');
+  if(select.dataset.lang!==lang){
+   select.replaceChildren(...Object.entries(options).map(([id,o])=>new Option(tr(o.name,o.en),id)));
+   select.dataset.lang=lang;
+  }
+  select.value=value;
+ }
+ doorLeafColor.value=appearance.leafColor;
+ doorCasingColor.value=appearance.casingColor;
+ doorCasingColor.disabled=!appearance.casing.profile;
+ doorReset.disabled=!saved;
+ doorPreview.textContent=session.doorOpen?tr('关门查看','View closed'):tr('开门查看','View open');
+ doorPreview.setAttribute('aria-pressed',String(!!session.doorOpen));
+}
+for(const [field,input] of [['leaf',doorLeaf],['casing',doorCasing],['leafColor',doorLeafColor],['casingColor',doorCasingColor]]){
+ input.onchange=()=>{
+  const t=session?.target;
+  if(active()&&t?.kind==='door')stage(t,{doorFinish:{...currentSample(t),[field]:input.value}});
+ };
+}
+doorReset.onclick=()=>{if(active()&&session.target?.kind==='door')stage(session.target,{doorFinish:null});};
+doorPreview.onclick=()=>{
+ if(!active()||session.target?.kind!=='door')return;
+ session.doorOpen=!session.doorOpen;render();View3D.sync();
+};
 function stageMany(targets,sample){
  if(!active()||!targets.length)return;
  const edits=new Map(session.edits);
  for(const target of targets){
   const id=key(target),previous=edits.get(id)?.sample;
+  if(target.kind==='door'&&JSON.stringify(S.doorFinishValue(sample.doorFinish))===JSON.stringify(S.materialValue(state,'doorFinishes',target.id))){
+   edits.delete(id);continue;
+  }
   const merged=target.kind==='floor'||target.kind==='wallTile'?{...previous,...(sample.label?{asset:sample.asset,color:sample.color}:{}),...sample}:sample;
   edits.set(id,{target,sample:merged});
  }
@@ -538,5 +596,7 @@ currentCards.onclick=currentResults.onclick=selectCurrent;
 currentSearch.oninput=()=>{if(active())refreshList();};
 panel.querySelector('[data-material-current-collapse]').onclick=()=>{if(active())browse(null);};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&active()){e.stopImmediatePropagation();close();button.focus();}},true);
-window.FurnishMaterialUI={open,openStyle,openTiles,close,active,dirty,lighting,choose:target=>{if(session?.mode!=='tiles')choose(target);},drop,work,afterRender,furnitureTarget,refreshCurrent,targetKey:key,target:()=>active()&&session.mode==='surface'?session.target:null};
+const target=()=>active()&&session.mode==='surface'?session.target:null;
+const doorPose=()=>target()?.kind==='door'?{id:session.target.id,open:!!session.doorOpen}:null;
+window.FurnishMaterialUI={open,openStyle,openTiles,close,active,dirty,lighting,choose:t=>{if(session?.mode!=='tiles')choose(t);},drop,work,afterRender,furnitureTarget,refreshCurrent,targetKey:key,target,doorPose};
 })();

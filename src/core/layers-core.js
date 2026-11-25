@@ -52,6 +52,7 @@
  function objectValue(work,key){
   const [kind,...parts]=key.split(':'),id=parts.join(':');
   if(kind==='furniture')return work.furniture?.find(f=>f.id===id);
+  if(kind==='door')return work.styleAppearance?.doorFinishes?.[key];
   if(kind==='floor')return [work.floorFinishes?.areas?.[id],work.rooms?.[id]?.mat,work.tileGrout?.rooms?.[id]?.floor,work.styleAppearance?.floorOverrides?.[id],work.styleAppearance?.floorSamples?.[id],work.styleAppearance?.floorTileSheens?.[id]];
   if(kind==='wallTile'){const surfaces=work.wallTiling?.surfaces?.filter(s=>faceKey(s)===key),roomId=surfaces?.[0]?.roomId,override=work.tileGrout?.walls?.find(s=>faceKey(s)===key);return [surfaces,work.wallFinishes?.surfaces?.filter(s=>faceKey(s)===key),override||work.tileGrout?.rooms?.[roomId]?.wall,work.styleAppearance?.wallTileMaterials?.[key]];}
   if(kind==='ceiling')return work.ceilings?.items?.find(c=>c.id===id);
@@ -62,6 +63,7 @@
   if(JSON.stringify(before.objectLayers)!==JSON.stringify(after.objectLayers)&&onlyChange(before,after))return;
   const keys=new Set([...(before.furniture||[]).map(furnitureKey),...Object.keys(before.objectLayers?.assignments||{})]);
   if(list(before).find(l=>l.id==='0')?.locked){
+   for(const w of [before,after])for(const key of Object.keys(w.styleAppearance?.doorFinishes||{}))keys.add(key);
    for(const id of Object.keys(before.rooms||{})){keys.add('floor:'+id);keys.add('roomCeiling:'+id);}
    for(const s of before.wallTiling?.surfaces||[])keys.add(faceKey(s));
    for(const c of before.ceilings?.items||[])keys.add('ceiling:'+c.id);
