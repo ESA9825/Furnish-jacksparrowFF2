@@ -74,10 +74,11 @@
     lastSavedAt=Date.now();onAcknowledge(receipt);publish(pending?'pending':'saved',pending?'正在保存后续编辑…':'设计已保存到本地正式文件'+(result.warning?'；'+result.warning:''));return receipt;
    }catch(e){
     if(stopped)throw e;
-    pending=pending||value;blocked=true;retryable=e.status!==409;
-    lastFailure=(e.status===409?'文件保存存在冲突，已停止覆盖：':'本地文件保存失败：')+e.message+'\n请保留当前窗口，直至正式文件保存成功。';
+    const conflict=e.status===409;
+    pending=pending||value;blocked=true;retryable=!conflict;
+    lastFailure=conflict?'文件保存存在冲突，已停止覆盖：'+e.message:'本地文件保存失败：'+e.message+'\n请保留当前窗口，直至正式文件保存成功。';
     if(e.code!=='BACKEND_CACHE_UNAVAILABLE')try{await archive(pending.value);}catch{/* The edit remains queued even if archiving also fails. */}
-    if(!stopped)publish(e.status===409?'conflict':'error',lastFailure);
+    if(!stopped)publish(conflict?'conflict':'error',lastFailure);
     queueRetry(e);throw e;
    }
    finally{running=null;}})();

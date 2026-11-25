@@ -125,6 +125,34 @@
    repositoryClient={status:{mode:'error',message},schedule(){},get pending(){return false;},stop(){}};toast(message);
   }finally{renderWorkspace();$('#save-now').onclick=()=>saveNow();const settings=document.createElement('button');settings.className='btn';settings.id='storage-settings';settings.textContent='保存位置与历史备份';settings.onclick=()=>{$('#fileMenu').open=false;openStorage();};$('#file-storage-actions').append(settings);if(location.protocol!=='file:'){const button=document.createElement('button');button.className='btn';button.id='repository-recovery';button.textContent='本机恢复副本';button.onclick=()=>{$('#fileMenu').open=false;openRecoveries();};$('#file-recovery-actions').append(button);}repositoryBooting=false;repositoryResume();progress.value=progress.max;loading.remove();syncSaved();renderDesignBar();}
  }
- addEventListener('beforeunload',e=>{if(repositoryClient?.pending){repositoryClient.flush?.().catch(()=>{});e.preventDefault();e.returnValue='';}});
+ let cachedUnload=null;
+ window.FurnishDesktopUnload={
+  async prepare(){
+   if(storageWiping)return {mode:'busy',message:'正在清除本机数据，请等待操作完成。'};
+   document.activeElement?.blur();
+   autosave.flush();
+   if(repositoryClient?.pending){
+    try{await repositoryClient.flush();}catch{/* Use the repository's concrete failure message. */}
+   }
+   if(repositoryClient?.pending)return repositoryClient.status;
+   return {mode:'ready'};
+  },
+  async preserve(deadline){
+   if(storageWiping||repositoryBooting)return;
+   autosave.flush();
+   if(!repositoryClient?.pending)return {mode:'ready'};
+   const workspace=store,updatedAt=store.updatedAt;
+   if(await cache(workspace)&&Date.now()<deadline&&store===workspace&&store.updatedAt===updatedAt){
+    cachedUnload={workspace,updatedAt,until:Date.now()+2000};
+    return {mode:'ready'};
+   }
+  }
+ };
+ addEventListener('beforeunload',e=>{
+  const cached=cachedUnload;cachedUnload=null;
+  if(!repositoryClient?.pending)return;
+  if(cached?.workspace===store&&cached.updatedAt===store.updatedAt&&Date.now()<cached.until)return;
+  repositoryClient.flush().catch(()=>{});e.preventDefault();e.returnValue='';
+ });
  initialize();
 })();

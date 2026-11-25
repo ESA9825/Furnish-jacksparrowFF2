@@ -14,6 +14,52 @@ try{
  diagnostics=require('./diagnostics.cjs').start({root,app});
 }catch(e){app.whenReady().then(()=>{dialog.showErrorBox('Furnish 无法启动',e.message);app.exit(1);});}
 const preferences={nodeIntegration:false,contextIsolation:true,sandbox:true,webSecurity:true};
+const preparingUnload=new WeakSet(),resumingClose=new WeakSet();
+let resumingQuit=false;
+function isWorkspace(win){
+ if(!win||win.isDestroyed())return false;
+ const url=win.webContents.getURL();
+ return localPage(url,backend.url)&&['/','/index.html'].includes(new URL(url).pathname);
+}
+async function checkUnload(win,method){
+ let timer;
+ const timeout=20000,deadline=Date.now()+timeout;
+ try{
+  return await Promise.race([
+   win.webContents.executeJavaScript(`window.FurnishDesktopUnload?.${method}(${deadline})`),
+   new Promise(resolve=>{timer=setTimeout(()=>resolve({mode:'timeout',message:'等待超过 '+timeout/1000+' 秒，保存可能仍在进行。'}),timeout);})
+  ]);
+ }finally{clearTimeout(timer);}
+}
+async function finishUnload(win,action,proceed){
+ if(preparingUnload.has(win))return;
+ preparingUnload.add(win);
+ try{
+  const result=await checkUnload(win,'prepare');
+  if(!isWorkspace(win))return;
+  // An older page may lack the hook. Its beforeunload guard still applies.
+  if(!result||result.mode==='ready'){proceed();return;}
+  const conflict=result.mode==='conflict';
+  const choice=await dialog.showMessageBox(win,{type:'warning',title:'设计尚未写入文件',
+   message:conflict?'检测到保存冲突，已停止写入':result.mode==='timeout'?'还在等待保存完成':'设计保存未完成',
+   detail:result.message+'\n\n继续编辑可保留当前窗口。选择保留恢复缓存后'+action+'，下次打开时会按原规则恢复或提供恢复副本。',
+   buttons:['继续编辑','保留恢复缓存并'+action],defaultId:0,cancelId:0});
+  if(choice.response!==1||!isWorkspace(win))return;
+  const cached=await checkUnload(win,'preserve');
+  if(!isWorkspace(win))return;
+  if(cached?.mode==='ready')proceed();
+  else await dialog.showMessageBox(win,{type:'warning',title:'尚未'+action,message:'无法确认最新编辑已保留在恢复缓存中',detail:'当前窗口仍然打开。你可以继续保存，或先导出完整项目。',buttons:['确定']});
+ }catch(e){
+  diagnostics.record('unload-error',{action,message:e.message});
+  if(!win.isDestroyed())await dialog.showMessageBox(win,{type:'warning',title:'尚未'+action,message:'无法确认设计是否保存',detail:'当前窗口仍然打开。你可以继续保存，或先导出完整项目。',buttons:['确定']});
+ }finally{preparingUnload.delete(win);}
+}
+function refreshWindow(win){
+ if(!win||win.isDestroyed())return;
+ const reload=()=>win.webContents.reload();
+ if(isWorkspace(win))void finishUnload(win,'刷新',reload);
+ else reload();
+}
 function attach(win){
  win.on('page-title-updated',(event,title)=>{event.preventDefault();if(!win.isDestroyed())win.setTitle('Furnish · '+title);});
  win.webContents.setWindowOpenHandler(({url})=>{
@@ -23,10 +69,14 @@ function attach(win){
  });
  win.webContents.on('will-navigate',(event,url)=>{if(!localPage(url,backend.url)&&url!=='about:blank'&&!url.startsWith('blob:'+backend.url)){event.preventDefault();if(externalPage(url))shell.openExternal(url).catch(()=>{});}});
  win.webContents.on('did-create-window',child=>attach(child));
- win.webContents.on('will-prevent-unload',event=>{
-  // The existing beforeunload handler starts flushing. Keep its veto by default.
-  const choice=dialog.showMessageBoxSync(win,{type:'warning',title:'设计尚未写入文件',message:'仍有设计正在保存，或文件保存遇到冲突。',detail:'建议继续编辑，等保存完成或导出项目后再关闭。直接关闭会保留桌面缓存，下次启动继续按原恢复规则处理。',buttons:['继续编辑','保留缓存并关闭'],defaultId:0,cancelId:0});
-  if(choice===1)event.preventDefault();
+ win.on('close',event=>{
+  if(resumingClose.delete(win)||!isWorkspace(win))return;
+  event.preventDefault();
+  void finishUnload(win,'关闭',()=>{resumingClose.add(win);win.close();});
+ });
+ win.webContents.on('will-prevent-unload',()=>{
+  // Direct navigation and older pages still get the renderer's veto.
+  void dialog.showMessageBox(win,{type:'warning',title:'设计尚未写入文件',message:'页面仍有待保存的编辑',detail:'请等待顶部保存状态更新，然后在桌面菜单使用“视图 → 刷新”，或再次关闭窗口。',buttons:['继续编辑']});
  });
 }
 async function createWindow(){
@@ -124,7 +174,7 @@ if(root){
     {label:'Furnish',submenu:[{label:'打开工作目录',click:()=>shell.openPath(root)},{label:'在浏览器中打开',click:()=>shell.openExternal(backend.url)},{type:'separator'},{role:'quit',label:'退出'}]},
     ...(process.platform==='darwin'?[macEditMenu()]:[]),
     codexMenu(),
-    {label:'视图',submenu:[{role:'reload',label:'刷新'},{role:'togglefullscreen',label:'全屏'},{role:'toggleDevTools',label:'开发者工具'}]},
+    {label:'视图',submenu:[{label:'刷新',accelerator:'CmdOrCtrl+R',click:(_item,win)=>refreshWindow(win||mainWindow)},{role:'togglefullscreen',label:'全屏'},{role:'toggleDevTools',label:'开发者工具'}]},
     {label:'帮助',submenu:[{label:'关于 Furnish',click:aboutFurnish}]}
    ]));
    await createWindow();
@@ -136,6 +186,15 @@ if(root){
   }).catch(e=>{diagnostics.record('startup-error',{message:e.message});console.error(e.stack||e);dialog.showErrorBox('Furnish 无法启动',e.message);app.quit();});
   app.on('window-all-closed',()=>{if(process.platform!=='darwin')app.quit();});
   app.on('activate',activateMainWindow);
+  app.on('before-quit',event=>{
+   const win=mainWindow;
+   if(resumingQuit||quitting||!isWorkspace(win))return;
+   event.preventDefault();
+   void finishUnload(win,'退出',()=>{
+    resumingQuit=true;resumingClose.add(win);
+    try{app.quit();}finally{resumingQuit=false;resumingClose.delete(win);}
+   });
+  });
   app.on('will-quit',event=>{if(backend&&!quitting){
    event.preventDefault();quitting=true;
    // Keep the instance lock until the owned backend stops; queue a quick reopen.

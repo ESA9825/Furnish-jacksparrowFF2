@@ -10,7 +10,7 @@ async function harness({proxy,load,mcpStart,registration,autoRegister=false,clos
  const app=new EventEmitter();Object.assign(app,{isPackaged:false,setPath(){},getPath(){return '/profile';},requestSingleInstanceLock(){return true;},whenReady(){return ready.promise;},relaunch(){calls.push('relaunch');},quit(){const event={preventDefault(){this.prevented=true;}};app.emit('will-quit',event);if(!event.prevented)calls.push('exit');}});
  const backend={url:'http://127.0.0.1:8765/',close(){calls.push('backend.close');return closeFailure?Promise.reject(Error('cleanup failed')):closing.promise;}};
  class Window extends EventEmitter{
-  constructor(){super();this.destroyed=false;this.minimized=true;windows.push(this);const session=new EventEmitter();session.setProxy=()=>proxy?.promise||Promise.resolve();session.setPermissionRequestHandler=session.setPermissionCheckHandler=()=>{};this.webContents=new EventEmitter();this.webContents.session=session;this.webContents.setWindowOpenHandler=()=>{};}
+  constructor(){super();this.destroyed=false;this.minimized=true;windows.push(this);const session=new EventEmitter();session.setProxy=()=>proxy?.promise||Promise.resolve();session.setPermissionRequestHandler=session.setPermissionCheckHandler=()=>{};this.webContents=new EventEmitter();this.webContents.session=session;this.webContents.setWindowOpenHandler=()=>{};this.webContents.getURL=()=>'';}
   isDestroyed(){return this.destroyed;}
   check(name){if(this.destroyed)throw Error('Object has been destroyed');calls.push(name);}
   isMinimized(){this.check('isMinimized');return this.minimized;}
