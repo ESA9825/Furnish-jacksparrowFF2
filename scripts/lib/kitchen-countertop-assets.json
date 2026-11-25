@@ -403,5 +403,65 @@
       "Time underline 3",
       "Top folded painted shell"
     ]
+  },
+  "toshiba-d232": {
+    "global": "FurnishToshibaD232Asset",
+    "size": [
+      420,
+      337,
+      399
+    ],
+    "nativeAxes": true,
+    "product": {
+      "brand": "东芝",
+      "model": "D232",
+      "sourceUrl": "https://item.jd.com/10232038915570.html"
+    },
+    "parts": [
+      "Black window surround",
+      "Ceramic chamber floor",
+      "Rear circulation grill dark insert",
+      "Rear circulation grill surround",
+      "Rear grill louver 1",
+      "Rear grill louver 2",
+      "Rear grill louver 3",
+      "Rear grill louver 4",
+      "Rear grill louver 5",
+      "Rear grill louver 6",
+      "Rear grill louver 7",
+      "Recessed black base",
+      "Rotary dial face",
+      "Rotary dial trim ring",
+      "Rubber foot front left",
+      "Rubber foot front right",
+      "Rubber foot rear left",
+      "Rubber foot rear right",
+      "Segment display markings",
+      "Separate lower white fascia",
+      "Shadow gap at lower door seam",
+      "Smoked door glass",
+      "Stainless cavity liner",
+      "Stainless cavity rear",
+      "Standby key metal rim",
+      "Standby key warm insert",
+      "Steam outlet backing",
+      "Steam outlet blank span",
+      "Steam outlet lower lip",
+      "Steam outlet vane 1",
+      "Steam outlet vane 2",
+      "Steam outlet vane 3",
+      "Steam outlet vane 4",
+      "Steam outlet vane 5",
+      "Steam outlet vane 6",
+      "Toshiba front wordmark",
+      "Touch mode glyphs",
+      "Touch mode tint 1",
+      "Touch mode tint 2",
+      "Touch mode tint 3",
+      "Touch mode tint 4",
+      "White front door fascia",
+      "White rear cover",
+      "Wraparound chassis"
+    ]
   }
 }

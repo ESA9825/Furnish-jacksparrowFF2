@@ -6,7 +6,7 @@
 
 更新：`node scripts/index-model-assets.cjs --write`；核对：`node scripts/index-model-assets.cjs --check`。
 
-94份产品／设计档案，378张参考图，20张历史原图待补；67组Blender模型。参数化验证配置101组，全部家具库211条目／181种类型。
+95份产品／设计档案，381张参考图，20张历史原图待补；68组Blender模型。参数化验证配置101组，全部家具库212条目／182种类型。
 
 | 产品／设计资料 | 参考图 | 输出／构造 | 待补原图 |
 |---|---|---|---|
@@ -93,6 +93,7 @@
 | [整提卷纸 · 220×220×340估算](toilet-paper-pack/README.md) | 1 | [BLEND](storage-supplies/rolls/v2/toilet-paper-pack-v1.blend) · [GLB](storage-supplies/rolls/v2/toilet-paper-pack-v1.glb) | 0 |
 | [透明工具箱 · 佳帮手大号](toolbox-jiabangshou-390/README.md) | 1 | [BLEND](storage-supplies/toolbox-jiabangshou-390/v2/toolbox-jiabangshou-390-v1.blend) · [GLB](storage-supplies/toolbox-jiabangshou-390/v2/toolbox-jiabangshou-390-v1.glb) | 0 |
 | [工具收纳箱 · 霜山9L](toolbox-shimoyama-9l/README.md) | 2 | [BLEND](storage-supplies/toolbox-shimoyama-9l/v8/toolbox-shimoyama-9l-v1.blend) · [GLB](storage-supplies/toolbox-shimoyama-9l/v8/toolbox-shimoyama-9l-v1.glb) | 0 |
+| [东芝小白茶 Mix · D232](toshiba-d232/README.md) | 3 | [BLEND](toshiba-d232/v1/toshiba-d232-v1.blend) · [GLB](toshiba-d232/v1/toshiba-d232-v1.glb) | 0 |
 | [公牛 GN‑GB50K · 墨云灰 · 500 mm＋3五孔](track-socket-bull-gb50k/README.md) | 4 | [BLEND](track-socket-bull-gb50k/v1/track-socket-bull-gb50k-v1.blend) · [GLB](track-socket-bull-gb50k/v1/track-socket-bull-gb50k-v1.glb) | 0 |
 | [宜家大号拉斯克手推车](trolley-ikea-raskog-large/README.md) | 6 | [BLEND](storage-supplies/raskog-20261112-v2/trolley-ikea-raskog-large-v1.blend) · [GLB](storage-supplies/raskog-20261112-v2/trolley-ikea-raskog-large-v1.glb) | 0 |
 | [定制电视柜](tv-cabinet-references/README.md) | 1 | 参考资料 | 0 |

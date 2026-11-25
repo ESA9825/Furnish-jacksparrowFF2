@@ -61,13 +61,14 @@ def publish(source, target, profile='se2', spec=None):
     hinges = {}
 
     # PM20M2 keeps the old placement's -Z front with a proper rotation.
-    # The other countertop assets preserve their previously published OBJ axes.
+    # Legacy countertop assets preserve their OBJ axes; new assets can use native axes.
     microwave = profile == 'midea-microwave-pm20m2'
-    mirrored_axes = bool(countertop) and not microwave
+    legacy_axes = bool(countertop and not countertop.get('nativeAxes'))
+    mirrored_axes = legacy_axes and not microwave
 
     def xyz(v):
         # Remove float32 interchange noise at exact contact planes (0.0001 mm grid).
-        result = [round(-v.x if microwave else v.x, 7), round(v.z, 7), round(v.y if countertop else -v.y, 7)]
+        result = [round(-v.x if microwave else v.x, 7), round(v.z, 7), round(v.y if legacy_axes else -v.y, 7)]
         if not all(math.isfinite(x) for x in result):
             raise ValueError('Non-finite geometry')
         return result

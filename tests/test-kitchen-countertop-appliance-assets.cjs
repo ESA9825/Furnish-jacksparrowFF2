@@ -22,7 +22,8 @@ const near=(a,b)=>assert(Math.abs(a-b)<.001,`${a} != ${b}`);
  assert.equal(catalog.length,Object.keys(specs).length);
  for(const [index,[id,spec]] of Object.entries(specs).entries()){
   const asset=globalThis[spec.global]=require('../src/data/'+id+'-blender-asset.js');
-  const glb=fs.readFileSync(require.resolve('../assets/models/kitchen-countertop-appliances/'+sourceFiles[index]+'-refined.glb'));
+  const source=spec.nativeAxes?`${id}/v1/${id}-v1.glb`:`kitchen-countertop-appliances/${sourceFiles[index]}-refined.glb`;
+  const glb=fs.readFileSync(require.resolve('../assets/models/'+source));
   assert.equal(crypto.createHash('sha256').update(glb).digest('hex'),asset.sourceSha256);
   assert.deepEqual(asset.parts.map(p=>p.name).sort(),spec.parts);
   assert.equal(new Set(asset.parts.map(p=>p.identity)).size,spec.parts.length);
@@ -46,6 +47,7 @@ const near=(a,b)=>assert(Math.abs(a-b)<.001,`${a} != ${b}`);
   const lid=model.children.find(o=>o.name==='Thin curved smoked glass lid');
   const deck=model.children.find(o=>o.name==='Gloss black lower deck and touch control arc');
   const door=model.children.find(o=>o.name==='Smoked glass across the door aperture');
+  const toshibaGlass=model.getObjectByName('Smoked door glass');
   if(lens){near(lens.material.transmission,.24);assert(lens.material.isMeshPhysicalMaterial);assert(lens.geometry.attributes.position.array[2]<0);}
   if(lid){near(lid.material.transmission,.52);assert(lid.material.isMeshPhysicalMaterial);}
   if(deck){near(deck.material.specularIntensity,.48);assert(deck.material.isMeshPhysicalMaterial);}
@@ -57,7 +59,15 @@ const near=(a,b)=>assert(Math.abs(a-b)<.001,`${a} != ${b}`);
    const control=model.children.find(o=>o.name==='Right hand control panel');
    assert(control&&new T.Box3().setFromObject(control).max.x<0,'the right control panel faces the aisle without mirroring its labels');
   }
-  const physicalCount=lens||lid||deck||door?1:0;
+  if(toshibaGlass){
+   near(toshibaGlass.material.transmission,.86);
+   model.updateMatrixWorld(true);
+   const ray=new T.Raycaster(new T.Vector3(0,.22,.5),new T.Vector3(0,0,-1));
+   assert.equal(ray.intersectObject(model.getObjectByName('White front door fascia')).length,0,'white fascia has an actual window opening');
+   assert.equal(ray.intersectObjects(model.children)[0].object,toshibaGlass);
+   assert(new T.Box3().setFromObject(model.getObjectByName('Rotary dial face'),true).min.x>0,'dial is on the right facing +Z');
+  }
+  const physicalCount=lens||lid||deck||door||toshibaGlass?1:0;
   assert.equal(model.children.filter(o=>o.material.isMeshPhysicalMaterial).length,physicalCount);
   model.userData.fid=f.id;
   model.position.y=f.mountHeight/1000;
@@ -110,5 +120,5 @@ const near=(a,b)=>assert(Math.abs(a-b)<.001,`${a} != ${b}`);
   assert.deepEqual(recovered.current.furniture,[raised]);
   assert.deepEqual(recovered.designs[0].work.furniture,[raised]);
  }
- console.log('PASS eight catalog models, their legacy OBJ matches, default/elevated solids, material export and named project round-trip');
+ console.log(`PASS ${Object.keys(specs).length} catalog models, OBJ lookup, default/elevated solids, material export and named project round-trip`);
 })().catch(e=>{console.error(String(e.stack||e).replace(/data:text\/javascript;base64,[A-Za-z0-9+/=]+/g,'three-r160'));process.exitCode=1;});

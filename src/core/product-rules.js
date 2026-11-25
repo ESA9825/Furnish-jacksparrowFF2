@@ -369,6 +369,8 @@ for(const [type,kind,name,size,color,asset,assetGlobal,brand,model,sourceUrl,opt
   'liven-griddle-lr-d3027s','FurnishLivenD3027SAsset','利仁','LR-D3027S','https://item.jd.com/100071917903.html',{reverse:true}],
  ['microwave_midea_pm20m2','微波炉','美的微波炉 20 L · PM20M2',[459,352,281],'#2a2b2c',
   'midea-microwave-pm20m2','FurnishMideaPM20M2Asset','美的','PM20M2','https://item.jd.com/100033969830.html',{reverse:true,plan:'microwave'}],
+ ['oven_toshiba_d232','微蒸烤一体机','东芝小白茶 Mix · D232',[420,399,337],'#ece9e2',
+  'toshiba-d232','FurnishToshibaD232Asset','东芝','D232','https://item.jd.com/10232038915570.html',{plan:'microwave'}],
  ['wok_ikea_vardagen_10488383','炒锅','宜家 VARDAGEN 瓦达恩带盖炒锅 32 cm · 104.883.83',[376.39,481.4,158.01],'#383736',
   'ikea-vardagen-wok-10488383','FurnishIkeaVardagenWokAsset','宜家/IKEA','104.883.83','https://www.ikea.cn/cn/zh/p/vardagen-wok-with-lid-carbon-steel-10488383/',{reverse:true,plan:'wok',cookware:true}],
  ['pot_ikea_365_40484251','蒸锅','宜家 IKEA 365+ 蒸锅组合底锅 5 L · 404.842.51',[311.63,234.38,263.95],'#c3c6c8',

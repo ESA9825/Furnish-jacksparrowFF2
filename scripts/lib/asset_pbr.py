@@ -13,6 +13,7 @@ def physical_materials(doc, profile, spec):
         'liven-griddle-lr-d3027s': ('Gloss black lower deck and touch control arc', 'KHR_materials_specular', 'specularFactor', 'specularIntensity', .48),
         'ikea-vardagen-wok-10488383': ('Thin curved smoked glass lid', 'KHR_materials_transmission', 'transmissionFactor', 'transmission', .52),
         'midea-microwave-pm20m2': ('Smoked glass across the door aperture', 'KHR_materials_transmission', 'transmissionFactor', 'transmission', .82),
+        'toshiba-d232': ('Smoked door glass', 'KHR_materials_transmission', 'transmissionFactor', 'transmission', .86),
     }.get(profile)
     if countertop:
         allowed.add(countertop[1])

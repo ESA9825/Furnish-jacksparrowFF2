@@ -22,6 +22,7 @@ assetTypes['crank-hotata-y024-2m']='crank_hotata_y024_2m';
 assetTypes['acwall-midea-mxc3p']='acwall_midea_mxc3p';
 assetTypes['curtain-mijia-3-pro-motor']='curtain_mijia_3_pro';
 assetTypes['track-socket-bull-gb50k']='track_socket_bull_gb50k';
+assetTypes['toshiba-d232']='oven_toshiba_d232';
 const suites={
  pet_feeding_insert:['pet-feeding-frame'],
  'pet-bowl':['pet-supplies'],'litter-bag':['pet-supplies'],
@@ -40,6 +41,7 @@ for(const id of ['bed-yeswood-y83b33','mattress-y83b33','pillow-y83b33','duvet-y
 suites['acwall-midea-mxc3p']=['acwall-midea'];
 suites.curtain_mijia_3_pro_sheer=suites['curtain-mijia-3-pro-motor']=['curtain-mijia-3-pro','window-coverings'];
 suites['track-socket-bull-gb50k']=['track-socket-bull-gb50k'];
+suites['toshiba-d232']=['kitchen-countertop-appliance-assets'];
 suites['drying-rack-hotata-y024']=suites['drying-rack-hotata-y024-2m']=['drying-rack-hotata'];
 suites['desk-lamp-mijia-pro']=['desk-lamp'];suites.cove_light=['cove-light'];
 const mijiaCeilingLights=require('./mijia-ceiling-light-specs.json');

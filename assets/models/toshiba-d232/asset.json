@@ -1,0 +1,44 @@
+{
+  "format": 1,
+  "id": "toshiba-d232",
+  "name": "东芝小白茶 Mix · D232",
+  "types": [
+    "oven_toshiba_d232"
+  ],
+  "route": "blender",
+  "document": "docs/OVEN-TOSHIBA-D232.md",
+  "sourceLinks": [
+    "https://3.cn/3dxx-ZKm?jkl=@Z4DhqBMldA@",
+    "https://item.jd.com/10232038915570.html"
+  ],
+  "references": [
+    {
+      "path": "references/product-page/jd-main.jpg",
+      "kind": "product-page",
+      "url": "https://img14.360buyimg.com/n0/jfs/t1/587917/21/8479/188132/6b0071c9F2d57299e/0083320320f48b0f.jpg",
+      "sha256": "354e914bd12076ee0fab714a71f48eed191fc93d0072a6dc6d98067af6720c05",
+      "bytes": 286486,
+      "legacyPaths": []
+    },
+    {
+      "path": "references/product-page/jd-third.jpg",
+      "kind": "product-page",
+      "url": "https://img14.360buyimg.com/n0/jfs/t1/515499/12/10367/170112/6a9fce06Fd7b83a59/0083320320ef14be.jpg",
+      "sha256": "b88e9e90377904cc47d0e747ccd188b20e1da1d427c344664dc4916ade4c4272",
+      "bytes": 226131,
+      "legacyPaths": []
+    },
+    {
+      "path": "references/product-page/jd-fourth.jpg",
+      "kind": "product-page",
+      "url": "https://img14.360buyimg.com/n0/jfs/t1/504077/38/10234/61134/6a884731Fded6cd3b/008332032073a48e.jpg",
+      "sha256": "df1cade2b674972c8f60f13a5f05b558dc935b7f480c395d70e0554a3fd2c044",
+      "bytes": 110464,
+      "legacyPaths": []
+    }
+  ],
+  "missingReferences": [],
+  "validation": [
+    "docs/validation/toshiba-d232-visual-20261125/README.md"
+  ]
+}

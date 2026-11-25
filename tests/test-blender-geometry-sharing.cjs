@@ -16,6 +16,21 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),E=require('../s
  globalThis.FileReader=class{readAsArrayBuffer(blob){blob.arrayBuffer().then(result=>{this.result=result;this.onloadend?.();});}};
  try{
   const oldX=originalGeometry.attributes.position.getX(0),encoding=E.encode(T,{groups:[root],camera});originalGeometry.attributes.position.setX(0,oldX+1000);const encoded=await encoding;originalGeometry.attributes.position.setX(0,oldX);const jsonLength=new DataView(encoded.buffer).getUint32(12,true),doc=JSON.parse(new TextDecoder().decode(new Uint8Array(encoded.buffer,20,jsonLength)));
+  const thin=doc.materials.find(m=>m.extensions?.KHR_materials_transmission);
+  assert.equal(thin.extensions.KHR_materials_transmission.transmissionFactor,.5);
+  assert.equal(thin.extensions.KHR_materials_volume,undefined);
+  assert(!doc.extensionsUsed.includes('KHR_materials_volume'));
+  const bulk=new T.Group();bulk.userData.fid='optics';
+  for(const [i,attenuationDistance] of [2,Infinity].entries()){
+   const mesh=new T.Mesh(source,new T.MeshPhysicalMaterial({transmission:.8,thickness:.004,attenuationDistance}));
+   mesh.userData.furnishPartToken='bulk:'+i;bulk.add(mesh);
+  }
+  const volumeExport=await E.encode(T,{groups:[bulk],camera});
+  const volumeLength=new DataView(volumeExport.buffer).getUint32(12,true);
+  const volumeDoc=JSON.parse(new TextDecoder().decode(new Uint8Array(volumeExport.buffer,20,volumeLength)));
+  const volumes=volumeDoc.materials.map(m=>m.extensions.KHR_materials_volume);
+  assert.deepEqual(volumes.map(v=>v.thicknessFactor),[.004,.004]);
+  assert.deepEqual(volumes.map(v=>v.attenuationDistance),[2,undefined]);
   // Change a byte deliberately outside the sampled hash positions. The full
   // comparison must reject this collision rather than merge nearby vertices.
   const negative=new T.Group();negative.userData.fid='negative';for(let i=0;i<2;i++){const geometry=source.clone();if(i)new Uint8Array(geometry.attributes.position.array.buffer)[1]^=1;const node=new T.Mesh(geometry,a);node.userData.furnishPartToken='negative:'+i;negative.add(node);}const collision=await E.encode(T,{groups:[negative],camera}),size=new DataView(collision.buffer).getUint32(12,true),collisionDoc=JSON.parse(new TextDecoder().decode(new Uint8Array(collision.buffer,20,size)));assert.equal(collisionDoc.meshes.length,2,'sample-hash collision cannot merge different vertex bits');
