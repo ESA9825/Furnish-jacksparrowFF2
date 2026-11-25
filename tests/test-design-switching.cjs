@@ -19,6 +19,20 @@ assert.throws(()=>P.unpack(P.pack({planId:'p',current:work,designs:[{...b,editab
 const legacy=JSON.stringify(w.designs[0]);w.activeDesigns.p=w.designs[0].id;D.saveActiveDesign(w,'p',current);assert.equal(JSON.stringify(w.designs[0]),legacy);
 console.log('PASS independent design autosave, history isolation, no aliasing and project roundtrip');
 
+const opened={...work,designNote:'door open',furniture:[{id:'cabinet',cabinet:{doorOpen:true}}]};
+const activeRecord={id:'active',planId:'p',editable:true,work:structuredClone(work),ts:1};
+const focusedWorkspace={designs:[activeRecord],activeDesigns:{p:activeRecord.id}};
+D.saveActiveDesign(focusedWorkspace,'p',opened,7,{furnitureId:'cabinet'});
+assert.deepEqual(activeRecord.work,opened);
+D.saveActiveDesign(focusedWorkspace,'p',opened,8,{furnitureId:'cabinet'});
+assert.equal(activeRecord.ts,7);
+const withNote={...opened,designNote:'verified clearance'};
+D.saveActiveDesign(focusedWorkspace,'p',withNote,9,{furnitureId:'cabinet'});
+assert.deepEqual(activeRecord.work,withNote);
+opened.furniture[0].cabinet.doorOpen=false;
+assert.equal(activeRecord.work.furniture[0].cabinet.doorOpen,true);
+assert.equal(activeRecord.ts,9);
+
 const C=require('../src/core/repository-core.js'),plan=require('../src/data/plans.js')[0];
 let sequence=0;const W=require('../src/core/work-state.js').create({makeId:()=> 'switch-'+(++sequence),colorFor:()=> '#ddd',materials:require('../src/data/catalog.js').materials});
 const actual=W.fresh(plan),repo={v:Math.max(2,P.formatVersion([actual])),planId:plan.id,work:{[plan.id]:actual},designs:[{id:'live',name:'设计',planId:plan.id,editable:true,work:structuredClone(actual)}],activeDesigns:{[plan.id]:'live'}};

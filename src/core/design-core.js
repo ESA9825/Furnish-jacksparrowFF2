@@ -470,9 +470,14 @@
  }
  // Active selection is workspace metadata; work records and project snapshots stay independent.
  function activeDesign(workspace,planId){return workspace.designs.find(d=>d.editable===true&&d.planId===planId&&d.id===workspace.activeDesigns?.[planId]);}
- function saveActiveDesign(workspace,planId,work,now=Date.now()){
+ function saveActiveDesign(workspace,planId,work,now=Date.now(),{furnitureId}={}){
   const d=activeDesign(workspace,planId);if(!d)return;
-  const value=JSON.stringify(work);if(JSON.stringify(d.work)!==value){d.work=JSON.parse(value);d.ts=now;}
+  // A differing record proves that the active design needs a new snapshot.
+  // If the record matches, other persisted fields can still have changed.
+  const furnitureChanged=furnitureId!==undefined
+   &&JSON.stringify(d.work.furniture?.find(f=>f.id===furnitureId))!==JSON.stringify(work.furniture?.find(f=>f.id===furnitureId));
+  const value=JSON.stringify(work);
+  if(furnitureChanged||JSON.stringify(d.work)!==value){d.work=JSON.parse(value);d.ts=now;}
  }
  function preserveCurrentDesign(workspace,planId,work){
   if(activeDesign(workspace,planId))return;

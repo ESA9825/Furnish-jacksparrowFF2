@@ -156,12 +156,12 @@ const autosave = FurnishAutosave.create({
   onChange: status => { saveErr=status.error; savePending=status.pending; savedAt=status.savedAt; syncSaved(); },
   onFailure: () => {if(!repositoryClient)toast(tr('自动保存失败，请立即导出项目文件备份。','Autosave failed; export a project file now.'));},
 });
-function save({defer=false}={}){
+function save({defer=false,furnitureId}={}){
   if(storageWiping)return;
   if(repositoryBooting)return;
   store.updatedAt=Math.max(Date.now(),(store.updatedAt||0)+1);
   store.work[PLAN.id] = state;
-  FurnishDesign.saveActiveDesign(store,PLAN.id,state);
+  FurnishDesign.saveActiveDesign(store,PLAN.id,state,undefined,{furnitureId});
   const requiredVersion=FurnishProject.formatVersion([...Object.values(store.work),...store.designs.map(d=>d.work)],store.custom);
   store.v=Math.max(store.v>=7?Math.max(9,store.v):store.v,requiredVersion,2);STORE='huxing-design-v'+store.v;
   autosave.save(store,{defer});
@@ -231,7 +231,7 @@ function normalizeFurnitureEdit(work,previous,{furnitureEdit=false}={}){
     FurnishCabinet.normalizePegboardHatches(work.furniture,FurnishProject.effectivePlan(PLAN,work),{editable:f=>!furnitureLocked(f)});
   }
 }
-function commit(before,checkLayers=false,{sceneFirst=false,furnitureEdit=false,appearanceEdit=false,previous=JSON.parse(before)}={}){
+function commit(before,checkLayers=false,{sceneFirst=false,furnitureId,furnitureEdit=furnitureId!==undefined,appearanceEdit=false,previous=JSON.parse(before)}={}){
   try{
     if(!appearanceEdit&&!globalThis.FurnishElectricalUI?.active())normalizeFurnitureEdit(state,previous,{furnitureEdit});
     globalThis.FurnishElectricalUI?.assertEditable(previous,state);
@@ -245,18 +245,21 @@ function commit(before,checkLayers=false,{sceneFirst=false,furnitureEdit=false,a
   undoStack.push(before);
   if(undoStack.length>150)undoStack.shift();
   redoStack.length=0;
-  save({defer:sceneFirst});
+  save({defer:sceneFirst,furnitureId});
   snapshot(false,previous,'编辑前',undefined,{owned:true});
 }
-function mutate(fn,{sceneFirst=false,furnitureEdit=false,appearanceEdit=false}={}){
+function mutate(fn,{sceneFirst=false,furnitureId,appearanceEdit=false}={}){
   const before=snap(),previous=JSON.parse(before);
   try{
     fn();
     globalThis.FurnishElectricalUI?.assertEditable(previous,state);
     FurnishLayers.assertEditable(previous,state);
   }catch(e){state=previous;renderAll();throw e;}
-  if(snap()===before)return;
-  commit(before,true,{sceneFirst,furnitureEdit,appearanceEdit,previous});
+  // A caller supplying furnitureId edits only that record before normalization.
+  const unchanged=furnitureId===undefined?snap()===before
+    :JSON.stringify(getF(furnitureId))===JSON.stringify(previous.furniture.find(f=>f.id===furnitureId));
+  if(unchanged)return;
+  commit(before,true,{sceneFirst,furnitureId,appearanceEdit,previous});
   renderAll({sceneFirst});
 }
 function undo(){ if (!undoStack.length) return toast(tr('没有可撤销的操作', 'Nothing to undo')); try{globalThis.FurnishElectricalUI?.assertEditable(state,JSON.parse(undoStack.at(-1)));}catch(e){return toast('已到插座视图的撤销边界；家具布局受到保护');} redoStack.push(snap()); state = JSON.parse(undoStack.pop()); syncCutClipboard();validateSel(); save(); renderAll(); }

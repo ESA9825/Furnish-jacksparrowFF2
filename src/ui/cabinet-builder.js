@@ -334,7 +334,7 @@ host.querySelector('[data-component-surface]')?.addEventListener('change',e=>{tr
    const next=f.kitchen
     ?FurnishKitchen.toggle(f,part.column,part.drawer,undefined,part.leaf,part.bay,part.lid,part.lane,part.section,part.componentId,part.sourceSection)
     :FurnishCabinet.toggle(f,part.column,part.drawer,part.lid,part.lane,part.section,part.leaf,part.tier,part.componentId);
-   mutate(()=>Object.assign(f,next),{sceneFirst:true,furnitureEdit:true});
+   mutate(()=>Object.assign(f,next),{sceneFirst:true,furnitureId:id});
   }catch(e){toast(e.message);}
  }
  root.FurnishCabinetBuilderUI={open,upgrade,toggleScene,mountShell,focusInspector,disclosures,restoreDisclosures,libraryItems,placement,componentInspector,componentTree,workspaceTools,previewDoors,plinthAppearance,bindInventory,bindComparison};
