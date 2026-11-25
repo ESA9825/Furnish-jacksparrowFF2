@@ -26,5 +26,20 @@ for(const query of ['热水壶','电水壶','电热水壶','電熱水壺']){
 }
 assert(!C.matches(kettle,{query:'热水器'}));
 assert(C.matches(custom,{query:'热水壶'},{name:'自定义電水壺'}));
+const bedding=leaf('furniture/beds').filter(it=>C.matches(it,{query:'半夏床品组合',use:'bedroom'}));
+assert.equal(bedding.length,1);
+const [set]=bedding;
+assert(C.isAssemblyItem(set));
+assert.deepEqual(C.assemblyMembers(set).map(({item,dy,mountHeight})=>[item[0],dy,mountHeight]),[
+ ['bed_yeswood_y17b02',0,0],
+ ['bed_mattress_y17b02',0,400],
+ ['bed_pillow_atour_pro4',-775,560],
+ ['bed_duvet_y17b02',240,410]
+]);
+for(const {item} of C.assemblyMembers(set)){
+ assert.equal(C.findItem(item[0],item[1]),item);
+ assert(!C.isAssemblyItem(item));
+}
+assert(!C.matches(set,{maxWidth:1260}));
 for(const g of nav)assert(g.children.length&&g.children.every(c=>c.items.length));
-console.log('PASS complete unique taxonomy, source identity/specs unchanged, room uses, search aliases and custom/unknown fallbacks');
+console.log('PASS unique taxonomy, source specs, room uses, search aliases, custom fallbacks and the four-piece bedding set');

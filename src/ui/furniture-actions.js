@@ -32,11 +32,15 @@ function selectIds(ids, primary){
   select(ids.length ? {kind:'furn', id:ids.includes(primary) ? primary : ids[ids.length-1], ids} : null);
 }
 function toggleSel(id){ const ids = selIds(),members=new Set(FurnishDesign.expandGroups(state.furniture,[id])); selectIds(ids.includes(id) ? ids.filter(x => !members.has(x)) : [...ids, ...members]); }
+function newFurnitureGroupId(){
+ let id;do{id=uid();}while(state.furniture.some(f=>f.groupId===id));
+ return id;
+}
 function groupSel(){
  if(globalThis.FurnishElectricalUI?.active())return toast('请在家具布局视图中更改分组');
  if(selItems().some(furnitureLocked))return toast(tr('请先解锁家具及所在图层','Unlock the items and their layers first'));
  const ids=selIds();if(ids.length<2)return toast(tr('请先选择至少 2 件家具','Select at least 2 items first'));
- let groupId;do{groupId=uid();}while(state.furniture.some(f=>f.groupId===groupId));
+ const groupId=newFurnitureGroupId();
  mutate(()=>state.furniture=FurnishDesign.groupFurniture(state.furniture,ids,groupId));selectIds(ids,ui.sel?.id);
  toast(tr('已打组：点击任一成员可移动整组','Grouped: select any member to move the group'));
 }
@@ -209,6 +213,11 @@ function pushOut(f,axis){
   return false;
 }
 function createCatalogFurniture(it,x,y){
+  const members=FurnishCatalogData.assemblyMembers(it);
+  if(members.length){
+   const items=members.map(({item,dy,mountHeight})=>FurnishProducts.editBottomHeight(createCatalogFurniture(item,x,y+dy)[0],mountHeight));
+   return FurnishDesign.groupFurniture(items,items.map(f=>f.id),newFurnitureGroupId());
+  }
   const [type,name,w,d,color,price,h]=it,f=F(type,name,x,y,w,d,0,color);
   if(FurnishKitchen.isLaundryAreaItem(it))return FurnishCabinetAssembly.createLaundryCabinet(f,uid,it[10].endsWith('left')?'left':'right');
   if(h!==undefined)f.h=h;
@@ -227,9 +236,19 @@ function addItem(it, x, y){
   if(it[7]&&store.custom?.find(c=>c.id===it[7])?.cabinet?.reusable){window.FurnishCabinetBuilderUI.open();toast('请先放入柜箱，再从组件库拖入已保存组件');return;}
   if(window.FurnishCatalog?.active()){window.FurnishCatalog.choose(it);return;}
   if(state.furniture.length>=2000)return toast(tr('每个方案最多 2000 件家具。','Up to 2000 furniture items per design.'));
-  const [type,name,w,d] = it, items=createCatalogFurniture(it,Math.round(x/10)*10,Math.round(y/10)*10),f=items[0];
-  if(FurnishKitchen.isLaundryAreaItem(it)){
-   try{if(state.furniture.length+items.length>2000)throw Error('家具数量不足以放入完整洗衣区');const root=items[0],before=[root.cx,root.cy];pushOut(root);for(const member of items.slice(1)){member.cx+=root.cx-before[0];member.cy+=root.cy-before[1];}mutate(()=>state.furniture.push(...items));selectIds([root.id],root.id);pushRecent(it);toast('已添加完整洗衣区：吊柜、开放格、水槽、地柜与洗衣机',{label:tr('撤销','Undo'),fn:undo});}catch(e){toast(e.message);}return;
+  const [,name,w,d] = it, items=createCatalogFurniture(it,Math.round(x/10)*10,Math.round(y/10)*10),f=items[0];
+  if(items.length>1){
+   if(state.furniture.length+items.length>2000)return toast(tr('每个方案最多 2000 件家具，无法放入完整组合。','The full set would exceed 2,000 furniture items.'));
+   const laundry=FurnishKitchen.isLaundryAreaItem(it),envelope={...f,...(!laundry&&{w,d})};
+   try{
+    pushOut(envelope);
+    const dx=envelope.cx-f.cx,dy=envelope.cy-f.cy;
+    mutate(()=>state.furniture.push(...FurnishDesign.transformFurniture(items,{dx,dy})));
+    selectIds(laundry?[f.id]:items.map(member=>member.id),f.id);
+    pushRecent(it);
+    toast(laundry?'已添加完整洗衣区：吊柜、开放格、水槽、地柜与洗衣机':tr(`已放入「${name}」共 ${items.length} 件`,`Added "${nm(name)}" · ${items.length} items`),{label:tr('撤销','Undo'),fn:undo});
+   }catch(e){toast(e.message);}
+   return;
   }
   pushOut(f);
   if(FurnishProducts.definition(f)?.ceilingPanel){try{Object.assign(f,FurnishCeiling.fitCeilingPanel(FurnishProject.effectivePlan(PLAN,state),f,state.furniture));}catch(error){toast(error.message);}}

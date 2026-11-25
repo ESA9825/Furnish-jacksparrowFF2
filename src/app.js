@@ -300,6 +300,13 @@ function furnSVG(type,w,d,color,f,context){
   const error=f&&furnitureError(f);if(error)return furnitureFallbackSVG(f,error);
   try{return FurnishFurnitureSVG.render(type,w,d,color,PAL,f,context);}catch(e){if(!f)throw e;const message=e.message||String(e);furnitureRenderErrors.set(f.id,message);return furnitureFallbackSVG(f,message);}
 }
+function catalogPlanSVG(it,f){
+  const members=FurnishCatalogData.assemblyMembers(it);
+  if(members.length)return members.map(({item:[type,,w,d,color],dy})=>
+    `<g transform="translate(0 ${dy})">${furnSVG(type,w,d,color)}</g>`).join('');
+  const [type,,w,d,color]=it,spec=FurnishKitchen.catalogSpec(it);
+  return furnSVG(type,w,d,color,f||(spec.sinkStyle?{type,w,d,...spec}:undefined));
+}
 
 function updateHeader(){
   const tot = ROOMS.filter(r => r.counted !== false).reduce((a,r) => a + area(r.poly), 0);
@@ -715,13 +722,13 @@ function catalogDisplayName(name,model){
   const title=nm(name),suffix=model?' · '+model:'';
   return suffix&&title.endsWith(suffix)?title.slice(0,-suffix.length):title;
 }
-const itemCard = (it, ci, ii) => { const [t,n,w,d,col,price,,cid] = it, pad = Math.max(w,d)*.08, source=cid?store.custom.find(c=>c.id===cid):null,spec=FurnishKitchen.catalogSpec(it),preview=spec.sinkStyle?{type:t,w,d,...spec}:undefined;
+const itemCard = (it, ci, ii) => { const [t,n,w,d,,price,,cid] = it, pad = Math.max(w,d)*.08, source=cid?store.custom.find(c=>c.id===cid):null;
   const h=FurnishCatalogData.itemHeight(it),favorite=catalogFavorites.has(FurnishCatalogData.itemKey(it)),knownPrice=Number.isFinite(price)&&(!!cid||price>0);
   const identity=source??FurnishCatalogData.itemIdentity(it);
   const title=catalogDisplayName(n,cid?null:identity?.model);
   return `<div class="item ${cid ? 'custom' : ''}${window.FurnishCatalog?.isCandidate(it)?' replacement-picked':''}" data-key="${ci}:${ii}" title="${esc(nm(n))} · ${tr('点击添加，或拖到平面图中的指定位置', 'Click to add, or drag onto the plan')}">
     <div class="catalog-card-tools"><button class="catalog-favorite" data-favorite aria-pressed="${favorite}" aria-label="${esc(tr(favorite?'取消收藏':'收藏到本机',favorite?'Remove favorite':'Save favorite on this device'))}">${ico('heart')}</button>${cid?`<button class="del" data-cdel="${cid}" title="${tr('从「我的家具」删除','Remove from My Items')}">${ico('x')}</button>`:''}</div>
-    <div class="catalog-item-thumb"><svg aria-hidden="true" viewBox="${-w/2-pad} ${-d/2-pad} ${w+2*pad} ${d+2*pad}">${furnSVG(t,w,d,col,preview)}</svg></div><b class="catalog-item-name">${esc(title)}</b>
+    <div class="catalog-item-thumb"><svg aria-hidden="true" viewBox="${-w/2-pad} ${-d/2-pad} ${w+2*pad} ${d+2*pad}">${catalogPlanSVG(it)}</svg></div><b class="catalog-item-name">${esc(title)}</b>
     ${furnitureIdentification(t,identity)}
     <div class="catalog-item-spec"><small>${w}×${d} <span>mm</span></small><small>${tr('高','H')} ${Number.isFinite(h)?h+' mm':tr('待核对','Unknown')}</small></div>
     <div class="catalog-item-price"><span>${tr('参考','Ref.')}</span><strong>${knownPrice?FurnishProject.purchaseMoney(price):tr('未录入','Unknown')}</strong></div><button class="catalog-details" data-catalog-details>${tr('查看规格','Details')} <span aria-hidden="true">↗</span></button></div>`; };
@@ -800,7 +807,7 @@ addEventListener('pointermove', e => {
   if (!libDrag.ghost){
     if (Math.hypot(e.clientX-libDrag.sx, e.clientY-libDrag.sy) < TAP) return;
     const g = libDrag.ghost = document.createElement('div'); g.id = 'ghost';
-    g.innerHTML = `<svg viewBox="${-it[2]/2} ${-it[3]/2} ${it[2]} ${it[3]}">${furnSVG(it[0],it[2],it[3],it[4],FurnishKitchen.catalogSpec(it).sinkStyle?{type:it[0],w:it[2],d:it[3],...FurnishKitchen.catalogSpec(it)}:undefined)}</svg>`;
+    g.innerHTML = `<svg viewBox="${-it[2]/2} ${-it[3]/2} ${it[2]} ${it[3]}">${catalogPlanSVG(it)}</svg>`;
     document.body.appendChild(g); libDrag.el.classList.add('dragging');
   }
   // 幽灵图按落点处的比例显示真实大小（3D 中近大远小）

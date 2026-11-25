@@ -36,9 +36,11 @@
   const row=(label,value)=>`<div><dt>${label}</dt><dd>${esc(value)}</dd></div>`;
   const price=Number.isFinite(c.price)&&(it[7]||c.price>0)?P.purchaseMoney(c.price):tr('未录入','Not recorded');
   const dimensions=`${c.w} × ${c.d} × ${Number.isFinite(h)?h:tr('未录入','Unknown')} mm`;
-  const body=`<div class="catalog-spec-preview"><svg viewBox="${-c.w*.6} ${-c.d*.6} ${c.w*1.2} ${c.d*1.2}">${furnSVG(c.type,c.w,c.d,c.color,c)}</svg></div>
+  const members=FurnishCatalogData.assemblyMembers(it);
+  const memberDetails=members.length?`<ul>${members.map(({item})=>`<li>${esc(nm(item[1]))}</li>`).join('')}</ul><p class="hint">${tr('一次放入整套。可整组移动，点「解组」后可逐件调整位置、尺寸和离地高度。','Place the full set at once. Move it as a group, or choose Ungroup to edit each item’s position, size, and elevation.')}</p>`:'';
+  const body=`<div class="catalog-spec-preview"><svg viewBox="${-c.w*.6} ${-c.d*.6} ${c.w*1.2} ${c.d*1.2}">${catalogPlanSVG(it,c)}</svg></div>
     <dl class="catalog-spec">${row(tr('类别','Category'),nm(FurnishProducts.kind(c)))}${c.brand?row(tr('品牌','Brand'),c.brand):''}${c.model?row(tr('型号','Model'),c.model):''}${row(tr('初始宽 × 深 × 高','Initial width × depth × height'),dimensions)}${row(tr('参考单价','Reference price'),price)}${uses.length?row(tr('用途','Uses'),uses.join(' · ')):''}${row(tr('条目来源','Source'),it[7]?tr('我的家具','My items'):tr('内置产品库','Built-in library'))}</dl>
-    <p class="hint">${tr(isArea?'包含地柜、吊柜、开放格、水槽及独立洗衣机。默认洗衣机居左，可在柜体设计中选择居左或居右。':isLaundry?'仅包含地柜与设备空位，不含水槽、洗衣机及吊柜。默认洗衣机空位居左，可在柜体设计中选择居左或居右。':'此处显示初始参数尺寸，柜体高度为柜身高。安装标高、整体包络和开启预留请查看添加后的属性。',isArea?'Includes base and upper cabinets, open storage, a sink and a separate washer. Washer starts on the left; choose either side in the cabinet designer.':isLaundry?'Base cabinet and appliance bay only; sink, washer and upper cabinets are separate. The bay starts on the left; choose either side in the cabinet designer.':'These are initial parameter dimensions; cabinet height refers to its body. See the placed item’s Properties for mounting elevation, overall bounds and opening clearances.')}</p>`;
+    ${memberDetails||`<p class="hint">${tr(isArea?'包含地柜、吊柜、开放格、水槽及独立洗衣机。默认洗衣机居左，可在柜体设计中选择居左或居右。':isLaundry?'仅包含地柜与设备空位，不含水槽、洗衣机及吊柜。默认洗衣机空位居左，可在柜体设计中选择居左或居右。':'此处显示初始参数尺寸，柜体高度为柜身高。安装标高、整体包络和开启预留请查看添加后的属性。',isArea?'Includes base and upper cabinets, open storage, a sink and a separate washer. Washer starts on the left; choose either side in the cabinet designer.':isLaundry?'Base cabinet and appliance bay only; sink, washer and upper cabinets are separate. The bay starts on the left; choose either side in the cabinet designer.':'These are initial parameter dimensions; cabinet height refers to its body. See the placed item’s Properties for mounting elevation, overall bounds and opening clearances.')}</p>`}`;
   openDialog({title:catalogDisplayName(c.name,it[7]?null:c.model),body,actions:[{label:tr('关闭','Close')},{label:active()?tr('预览替换','Preview replacement'):tr('添加到方案','Add to plan'),cls:'primary',fn:()=>{
    if(replacementSession&&session!==replacementSession){toast('替换已结束，请关闭规格窗口重新选择');return false;}
    let p=drawingCenter();if(ui.sel?.kind==='room'){const room=ROOMS.find(r=>r.id===ui.sel.id);if(room){const b=bbox(room.poly);p={x:(b[0]+b[2])/2,y:(b[1]+b[3])/2};}}
@@ -101,7 +103,7 @@
  function openPicker(){
   if(!session||!valid())return;
   if($('#replacement-panel').classList.contains('is-collapsed'))togglePanel();
-  const host=$('#replacement-picker'),items=libAll().flatMap(c=>c.items).filter(it=>!FurnishKitchen.isLaundryAreaItem(it));
+  const host=$('#replacement-picker'),items=libAll().flatMap(c=>c.items).filter(it=>!FurnishCatalogData.isAssemblyItem(it));
   const kinds=[...new Set(items.map(it=>FurnishProducts.kind(it[0])))];
   const kind=session.pickerKind??FurnishProducts.kind(getF(session.id));
   host.hidden=false;$('#replacement-panel').classList.add('is-picking');$('#replacement-pick').textContent='返回对比';$('#replacement-apply').disabled=true;
@@ -149,7 +151,7 @@
  function choose(it){
   if(!session)return;
   if(!valid()){cancel();return toast('方案或选择已改变，请重新开始替换');}
-  if(FurnishKitchen.isLaundryAreaItem(it))return toast('组合洗衣区包含多件家具，请选择单件产品替换');
+  if(FurnishCatalogData.isAssemblyItem(it))return toast(tr('该组合包含多件家具，请选择单件产品替换','This set contains multiple items. Choose one item for replacement.'));
   $('#replacement-picker').hidden=true;$('#replacement-panel').classList.remove('is-picking');session.candidate=source(it);session.itemKey=FurnishCatalogData.itemKey(it);syncCandidateCards();if($('#replacement-panel').classList.contains('is-collapsed'))togglePanel();$('#replacement-subtitle').textContent=nm(session.candidate.name);$('#replacement-pick').textContent='换一款';preview();closeDrawers();
   if(!is3D()&&narrow()&&session?.preview){
    zoomToBox(groupBox([getF(session.id),session.preview]),1000);

@@ -3,6 +3,16 @@
 'use strict';
 const products=typeof module==='object'&&module.exports?require('../core/product-rules.js'):root.FurnishProducts;
 const cabinets=typeof module==='object'&&module.exports?require('../core/cabinet-core.js'):root.FurnishCabinet;
+const kitchen=typeof module==='object'&&module.exports?require('../core/kitchen-core.js'):root.FurnishKitchen;
+// Local plan Y points toward the foot of the bed. Elevations are above the finished floor.
+const y17b02Bedding=[
+ {type:'bed_yeswood_y17b02',dy:0,mountHeight:0},
+ {type:'bed_mattress_y17b02',dy:0,mountHeight:400},
+ {type:'bed_pillow_atour_pro4',dy:-775,mountHeight:560},
+ {type:'bed_duvet_y17b02',dy:240,mountHeight:410}
+];
+const furnitureAssemblies=new Map([['y17b02-bedding',y17b02Bedding]]);
+const isAssemblyItem=it=>furnitureAssemblies.has(it?.[10])||kitchen.isLaundryAreaItem(it);
 const countertopItems=Object.entries(products.types).filter(([,rule])=>rule.countertop);
 function countertopLibrary(cookware){
  return countertopItems.filter(([,rule])=>!!rule.countertop.cookware===cookware).map(([type,{countertop,height,identity}])=>
@@ -88,6 +98,7 @@ const LIB = [
   ]},
   {cat:'床', items:[
     ["bed_yeswood_y83b33","源氏木语 Y83B33 悬浮箱体床 · 1.8米（原木色）",1840,2150,"#fff0db",undefined,products.height({type:"bed_yeswood_y83b33"})],
+    ["bed_yeswood_y17b02","源氏木语 Y17B02 半夏床品组合 · 1.2米",1340,2120,"#fff1da",undefined,products.height({type:"bed_yeswood_y17b02"}),null,null,null,"y17b02-bedding"],
     ["bed_yeswood_y17b02","源氏木语 Y17B02 半夏樱桃木箱体床 · 1.2米",1260,2120,"#fff1da",undefined,products.height({type:"bed_yeswood_y17b02"})],
     ["bed_mattress_y17b02","半夏搭配床垫 · 米白 1.2米",1200,2000,"#e4dac7",undefined,products.height({type:"bed_mattress_y17b02"})],
     ["bed_duvet_y17b02","半夏搭配单人被 · 灰绿",1340,1590,"#95a188",undefined,products.height({type:"bed_duvet_y17b02"})],
@@ -285,6 +296,14 @@ const retiredItems=[
  ['bookshelf','大书架',1600,350,'#e2cfb4',2400]
 ];
 const findItem=(type,name)=>LIB.flatMap(c=>c.items).find(i=>i[0]===type&&i[1]===name)||retiredItems.find(i=>i[0]===type&&i[1]===name)||null;
+function assemblyMembers(it){
+ const recipe=furnitureAssemblies.get(it?.[10]);
+ return recipe?.map(({type,dy,mountHeight})=>{
+  const member=LIB.find(group=>group.cat==='床').items.find(entry=>entry[0]===type&&!isAssemblyItem(entry));
+  if(!member)throw Error('家具组合缺少单件库条目：'+type);
+  return {item:member,dy,mountHeight};
+ })??[];
+}
 // Browsing is a derived view: historical specifications and price precedence stay unchanged.
 const categoryNames={'阳台柜':'洗衣 · 家政','厨房':'厨房橱柜','门 · 隔断':'门窗 · 隔断','生活用品':'宠物'};
 const petTypes=new Set(['pet_feeding_insert','pet_bowl_petstar_180','cat_litter_yanxuan_25kg','aquarium_mijia_2pro','cat_tower_jd_10141711472484','cat_tree','pet_feeder_mijia_2','litter_box']);
@@ -362,7 +381,7 @@ function matches(it,{query='',maxWidth=0,maxDepth=0,use='all'}={},extra={}){
  const fields=[products.kind(it[0]),it[1],...itemUse.map(id=>uses.find(u=>u[0]===id).slice(1).join(' ')),identity.brand,identity.model,extra.name,extra.brand,extra.model];
  return products.matchesSearch(fields,query)&&(!maxWidth||it[2]<=maxWidth)&&(!maxDepth||it[3]<=maxDepth)&&(use==='all'||itemUse.includes(use));
 }
-const api={materials:MATS,library:LIB,typePrices:TYPE_PRICE,findItem,browseLibrary,navigation,uses,itemUses,itemKey,itemHeight,itemIdentity,matches};
+const api={materials:MATS,library:LIB,typePrices:TYPE_PRICE,findItem,browseLibrary,navigation,uses,itemUses,itemKey,itemHeight,itemIdentity,matches,isAssemblyItem,assemblyMembers};
 if(typeof module==='object'&&module.exports)module.exports=api;
 else root.FurnishCatalogData=api;
 })(typeof globalThis!=='undefined'?globalThis:this);
