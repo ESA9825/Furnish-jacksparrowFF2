@@ -9,6 +9,12 @@
 - 门开启行程、电源线、嵌位预留、散热和检修尺寸尚未取得同型号安装资料。模型用于闭门布置，施工尺寸以厂家安装资料为准。
 - 2D、正式 3D、导出及实体测距复用厨电静态资产与原产品规则。沿用原有 `mountHeight` 和项目保存方式。
 
+## 官方安装资料查询
+
+2026-11-25 核对美的官方服务目录。D232 商品号 `2040726` 的下载地址为空。该目录列整机 **420 × 399 × 338 mm**、220 V，其中高度比京东尺寸图大 1 mm。现有模型采用京东尺寸图的 337 mm，现场核对上方净空时按两份资料中的较高值 338 mm 预留。 [官方商品条目](https://sale.midea.cn/detail/index?itemid=10000000004007421617825) · [官方服务数据](https://www.midea.cn/detail/index/get_detail_by_id?icid=2040726)
+
+官方商城确认前排蒸汽。柜体嵌位散热净距、开门最大包络、原厂插头出线及供电条件还需配套安装说明。东芝中国列明生活家电服务由美的集团提供，热线为 400-822-9088。 [东芝中国服务与支持](https://www.toshiba.com.cn/service/personal_home/product_texu_info/smym-jd.html)
+
 ## 源工程与复验
 
 [可编辑 Blender 工程](../assets/models/toshiba-d232/v1/toshiba-d232-v1.blend) · [交换 GLB](../assets/models/toshiba-d232/v1/toshiba-d232-v1.glb) · [参考和渲染复核](validation/toshiba-d232-visual-20261125/README.md)
